@@ -15,4 +15,6 @@ test:
 	uv run pytest -vv tests/
 
 fix-licenses:
+	cp ../.licenserc.yaml ./
 	docker run  --rm -v $(CURDIR):/github/workspace ghcr.io/apache/skywalking-eyes/license-eye:785bb7f3810572d6912666b4f64bad28e4360799 -v info -c .licenserc.yaml header fix
+	rm ./.licenserc.yaml
