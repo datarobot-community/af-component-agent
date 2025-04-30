@@ -8,20 +8,26 @@
 import json
 import time
 import uuid
-from typing import Union
+from typing import Any, Dict, Union
 
-from openai.types.chat import ChatCompletion
-from openai.types.chat import ChatCompletionMessage
-from openai.types.chat import CompletionCreateParams
+from openai.types.chat import (
+    ChatCompletion,
+    ChatCompletionMessage,
+    CompletionCreateParams,
+)
 from openai.types.chat.chat_completion import Choice
 
 
 def create_inputs_from_completion_params(
     completion_create_params: CompletionCreateParams,
-) -> Union[dict, str]:
+) -> Union[Dict[str, Any], str]:
     """Load the user prompt from a JSON string or file."""
-    input_prompt = next(
-        (msg for msg in completion_create_params["messages"] if msg.get("role") == "user"),
+    input_prompt: Any = next(
+        (
+            msg
+            for msg in completion_create_params["messages"]
+            if msg.get("role") == "user"
+        ),
         {},
     )
     if len(input_prompt) == 0:
@@ -33,7 +39,7 @@ def create_inputs_from_completion_params(
     except json.JSONDecodeError:
         inputs = user_prompt
 
-    return inputs
+    return inputs  # type: ignore[no-any-return]
 
 
 def create_completion_from_response_text(response_text: str) -> ChatCompletion:

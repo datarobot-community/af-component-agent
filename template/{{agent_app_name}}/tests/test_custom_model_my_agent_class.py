@@ -36,7 +36,7 @@ class TestMyAgent:
             api_key="test_key",
             api_base="test_base",
             verbose=True,
-            extra_param="extra_value"
+            extra_param="extra_value",
         )
         assert agent.api_key == "test_key"
         assert agent.api_base == "test_base"

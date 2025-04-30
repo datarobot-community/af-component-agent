@@ -5,17 +5,13 @@
 # This is proprietary source code of DataRobot, Inc. and its affiliates.
 #
 # Released under the terms of DataRobot Tool and Utility Agreement.
-from typing import Dict
-from typing import Union
-
-from crewai import LLM
-from crewai import Agent
-from crewai import Crew
-from crewai import Task
+from typing import Any, Dict, Union
 
 
 class MyAgent:
-    def __init__(self, api_key: str, api_base: str, verbose: Union[bool, str], **kwargs):
+    def __init__(
+        self, api_key: str, api_base: str, verbose: Union[bool, str], **kwargs: Any
+    ):
         self.api_key = api_key
         self.api_base = api_base
         if isinstance(verbose, str):

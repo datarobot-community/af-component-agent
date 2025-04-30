@@ -5,14 +5,18 @@
 # This is proprietary source code of DataRobot, Inc. and its affiliates.
 #
 # Released under the terms of DataRobot Tool and Utility Agreement.
-from typing import Iterator
+from typing import Iterator, Union
 
-from helpers import create_completion_from_response_text
-from helpers import create_inputs_from_completion_params
+from helpers import (
+    create_completion_from_response_text,
+    create_inputs_from_completion_params,
+)
 from my_agent_class.agent import MyAgent
-from openai.types.chat import ChatCompletion
-from openai.types.chat import ChatCompletionChunk
-from openai.types.chat import CompletionCreateParams
+from openai.types.chat import (
+    ChatCompletion,
+    ChatCompletionChunk,
+    CompletionCreateParams,
+)
 
 
 def load_model(code_dir: str) -> str:
@@ -24,7 +28,7 @@ def load_model(code_dir: str) -> str:
 def chat(
     completion_create_params: CompletionCreateParams,
     model: str,
-) -> ChatCompletion | Iterator[ChatCompletionChunk]:
+) -> Union[ChatCompletion, Iterator[ChatCompletionChunk]]:
     """When using the chat endpoint, this function is called.
 
     Agent inputs are in OpenAI message format and defined as the 'user' portion
@@ -60,4 +64,4 @@ def chat(
 
     # Return the response as a ChatCompletion object
     response = create_completion_from_response_text(response)
-    return response
+    return response  # type: ignore[no-any-return]
