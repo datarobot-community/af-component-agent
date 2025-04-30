@@ -15,7 +15,7 @@ ARG UID=10101
 ARG GID=10101
 
 # This reproduces a open source variant of https://images.chainguard.dev/directory/image/python
-FROM cgr.dev/chainguard/wolfi-base AS chainguard_python_dev
+FROM cgr.dev/chainguard/wolfi-base:latest AS chainguard_python_dev
 
 ARG PYTHON_VERSION=3.11
 SHELL ["/bin/sh", "-o", "pipefail", "-c"]
@@ -24,11 +24,13 @@ RUN echo "[Python $PYTHON_VERSION]"
 ENV PATH="${PATH}:/sbin"
 RUN apk update && apk upgrade
 # Wolfi python image
+# hadolint ignore=DL3018,3059
 RUN apk add --no-cache ca-certificates-bundle gdbm glibc glibc-locale-posix \
 ld-linux libbz2-1 libcrypto3 libexpat1 libffi libgcc libssl3 libstdc++ \
 mpdecimal ncurses ncurses-terminfo readline sqlite-libs \
 wolfi-baselayout xz zlib
 # Wolfi python dev image
+# hadolint ignore=DL3018,3059
 RUN apk add --no-cache apk-tools  bash  binutils  build-base  busybox  cyrus-sasl  \
 gcc  git  glibc-dev  gmp  heimdal-libs  isl  keyutils-libs  \
 krb5-conf  krb5-libs  libatomic  libbrotlicommon1  libbrotlidec1  \
@@ -38,12 +40,14 @@ libunistring  libverto  libxcrypt  libxcrypt-dev  libzstd1  \
 linux-headers  make  mpc  mpfr  nss-db  nss-hesiod  \
 openssf-compiler-options  pkgconf  posix-cc-wrappers  wget
 # Python
+# hadolint ignore=DL3018,3059
 RUN apk add --no-cache \
     python-$PYTHON_VERSION \
     python-$PYTHON_VERSION-base \
     py$PYTHON_VERSION-pip \
     py3-pip-wheel
 # Python dev
+# hadolint ignore=DL3018,3059
 RUN apk add python-$PYTHON_VERSION-dev \
     python-$PYTHON_VERSION-base-dev \
     py$PYTHON_VERSION-pip-base \
@@ -61,8 +65,10 @@ ARG VENV_PATH
 USER root
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+# hadolint ignore=DL3018,3059
 RUN apk add --no-cache graphviz openblas openssh-server gzip zip unzip curl \
   openjdk-11 vim nano procps tzdata poppler-utils
+# hadolint ignore=DL3018,3059
 RUN apk add rust sqlite
 
 ENV PYTHONUNBUFFERED=1 \
@@ -119,7 +125,6 @@ FROM base AS builder
 ARG WORKDIR
 ARG VENV_PATH
 
-COPY ./run_agent.py ${WORKDIR}/
 COPY ./requirements.txt ${WORKDIR}/
 COPY ./requirements-genai.txt ${WORKDIR}/
 COPY ./agent/requirements-agent.txt ${WORKDIR}/
