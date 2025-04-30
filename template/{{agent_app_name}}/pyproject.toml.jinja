@@ -6,16 +6,39 @@ description = "FastAPI Server"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
+    "click>=8.1.8",
+    "datarobot>=3.7.0",
+    "datarobot-drum>=1.16.12",
+    "openai>=1.76.2",
+    "python-dotenv>=1.1.0",
+    "requests>=2.32.3",
+    "traceloop-sdk>=0.40.2",
     "uvicorn>=0.22.0",
 ]
 
 [project.optional-dependencies]
+crewai = [
+    "crewai>=0.117.1",
+    "crewai-tools>=0.43.0",
+]
+langchain = [
+    "langchain>=0.3.24",
+    "langchain-community>=0.3.23",
+]
+llamaindex = [
+    "llama-index>=0.12.33",
+    "llama-index-llms-langchain>=0.6.1",
+    "llama-index-llms-litellm>=0.4.1",
+    "llama-index-llms-openai>=0.3.38",
+]
 dev = [
     "pytest-cov>=6.1.1",
     "pytest>=7.4.0",
     "ruff>=0.3.0",
     "mypy>=1.8.0",
     "pydantic>=2.6.1",
+    "requests-mock>=1.12.1",
+    "pre-commit>=4.2.0",
 ]
 
 [tool.pytest.ini_options]
