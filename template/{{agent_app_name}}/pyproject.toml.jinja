@@ -9,6 +9,7 @@ dependencies = [
     "click>=8.1.8",
     "datarobot>=3.7.0",
     "datarobot-drum>=1.16.12",
+    "litellm",
     "openai>=1.76.2",
     "python-dotenv>=1.1.0",
     "requests>=2.32.3",
@@ -158,3 +159,6 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module = "datarobot.*"
 implicit_reexport = true
+
+[tool.uv.sources]
+litellm = { git = "https://github.com/datarobot-forks/litellm", rev = "mattn/add-datarobot-support-to-litellm" }
