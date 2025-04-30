@@ -1,0 +1,28 @@
+# Copyright 2025 DataRobot, Inc. and its affiliates.
+#
+# All rights reserved.
+#
+# This is proprietary source code of DataRobot, Inc. and its affiliates.
+#
+# Released under the terms of DataRobot Tool and Utility Agreement.
+from typing import Dict
+from typing import Union
+
+from crewai import LLM
+from crewai import Agent
+from crewai import Crew
+from crewai import Task
+
+
+class MyAgent:
+    def __init__(self, api_key: str, api_base: str, verbose: Union[bool, str], **kwargs):
+        self.api_key = api_key
+        self.api_base = api_base
+        if isinstance(verbose, str):
+            self.verbose = verbose.lower() == "true"
+        elif isinstance(verbose, bool):
+            self.verbose = verbose
+
+    def run(self, inputs: Dict[str, str]) -> str:
+        _ = inputs, self.api_key
+        return "success"
