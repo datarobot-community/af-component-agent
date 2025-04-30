@@ -4,6 +4,7 @@ SHELL := bash
 
 req:
 	uv sync --all-extras
+	uv pip install git+https://github.com/datarobot-forks/litellm@mattn/add-datarobot-support-to-litellm
 
 lint:
 	uv run ruff check . --fix
