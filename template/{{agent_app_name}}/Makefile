@@ -10,6 +10,7 @@ lint:
 	uv run ruff check . --fix
 	uv run ruff format .
 	uv run mypy --pretty .
+	uv run yamlfix custom_model
 
 test:
 	uv run pytest -vv tests/
