@@ -1,0 +1,17 @@
+# questions
+agent_app_name:
+  type: str
+  default: "web"
+  help: "The name/folder of your Agent Deployment. Required to use a python friendly name like agent or agent_backend"
+  
+base_answers_file:
+  type: str
+  default: ".datarobot/answers/base.yml"
+  help: "Path to the base component answers file"
+
+# Grab the base component answers to re-use answers
+_external_data:
+  base: "{{ base_answers_file }}"
+
+_subdirectory: template
+_answers_file: ".datarobot/answers/agent-{{ agent_app_name }}.yml"

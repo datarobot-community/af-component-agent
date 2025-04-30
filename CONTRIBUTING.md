@@ -4,7 +4,8 @@ Guidelines for developing and contributing to this project.
 
 ## List of project maintainers
 
-- [Your Name](Your GitHub User URL)
+- [DataRobot](https://www.datarobot.com)
+- [Matt Nitzken](https://github.com/mjnitz02)
 
 
 ## Opening new issues
