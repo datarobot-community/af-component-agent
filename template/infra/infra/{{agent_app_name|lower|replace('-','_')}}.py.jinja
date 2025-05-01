@@ -101,17 +101,17 @@ deployment_args = DeploymentArgs(
         required_in_prediction_requests=True,
     ),
     predictions_data_collection_settings=(
-        pulumi_datarobot.DeploymentPredictionsDataCollectionSettingsArgs(
-            enabled=True)
+        pulumi_datarobot.DeploymentPredictionsDataCollectionSettingsArgs(enabled=True)
     ),
     predictions_settings=(
         pulumi_datarobot.DeploymentPredictionsSettingsArgs(
-            min_computes=0, max_computes=2)
+            min_computes=0, max_computes=2
+        )
     ),
 )
 
 agent_deployment = CustomModelDeployment(
-    resource_name="Agent Chat Deployment " +  {{agent_app_name}}_resource_name,
+    resource_name="Agent Chat Deployment " + {{agent_app_name}}_resource_name,
     use_case_ids=[use_case.id],
     custom_model_version_id=custom_model.version_id,
     prediction_environment=prediction_environment,
