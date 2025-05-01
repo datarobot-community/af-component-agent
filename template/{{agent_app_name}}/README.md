@@ -3,9 +3,6 @@ The agent template provides a set of utilities for constructing a single or mult
 as CrewAI, LangGraph, LlamaIndex, and others. The template is designed to be flexible and extensible, allowing you 
 to create a wide range of agent-based applications.
 
-The Agent Framework is component from [App Framework Studio](https://github.com/datarobot/app-framework-studio)
-* Part of https://datarobot.atlassian.net/wiki/spaces/BOPS/pages/6542032899/App+Framework+-+Studio
-
 ## Agent Development
 The agent is developed by modifying the `custom_model` code. There are several things to consider:
 - The agent itself lives within the `my_agent_class` sub-package. If renamed, please adjust the imports in `custom.py`.
