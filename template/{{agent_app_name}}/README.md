@@ -1,4 +1,4 @@
-# af-component-agent
+# DataRobot Agent Template
 The agent template provides a set of utilities for constructing a single or multi-agent flow using platforms such
 as CrewAI, LangGraph, LlamaIndex, and others. The template is designed to be flexible and extensible, allowing you 
 to create a wide range of agent-based applications.
