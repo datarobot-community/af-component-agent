@@ -16,8 +16,11 @@ import re
 
 import pulumi
 import pulumi_datarobot
+import datarobot as dr
 from datarobot_pulumi_utils.schema.apps import ApplicationSourceArgs
 from datarobot_pulumi_utils.schema.apps import CustomAppResourceBundles
+from datarobot_pulumi_utils.schema.custom_models import DeploymentArgs
+from datarobot_pulumi_utils.schema.custom_models import RegisteredModelArgs
 from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 from datarobot_pulumi_utils.pulumi.stack import PROJECT_NAME
 
@@ -41,11 +44,13 @@ EXCLUDE_PATTERNS = [
 
 __all__ = [
     "{{agent_app_name}}_application_name",
+    "{{agent_app_name}}_resource_name",
     "{{agent_app_name}}_application_path",
     "get_{{agent_app_name}}_app_files",
 ]
 
 {{agent_app_name}}_application_name: str = "{{agent_app_name}}"
+{{agent_app_name}}_resource_name: str = "[{{agent_app_name}}]"
 {{agent_app_name}}_application_path = project_dir.parent / "{{agent_app_name}}"
 
 
@@ -75,12 +80,32 @@ if "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT" in os.environ:
     )
 else:
     execution_environment = pulumi_datarobot.ExecutionEnvironment(
-        resource_name=f"DataRobot Agent Python 3.11 " + {{agent_app_name}}_application_name,
+        resource_name=f"DataRobot Agent Python 3.11 " + {{agent_app_name}}_resource_name,
         programming_language="python",
         description="DataRobot Agent Execution Environment [Python 3.11]",
-        docker_context_path=os.path.join(str({{agent_app_name}}_application_path), "docker_context.tar.gz"),
+        docker_context_path=os.path.join(str({{agent_app_name}}_application_path), "docker_context"),
         use_cases=["customModel", "notebook"],
     )
+
+prediction_environment = pulumi_datarobot.PredictionEnvironment(
+    resource_name="DataRobot Agent Prediction Environment " + {{agent_app_name}}_resource_name,
+    platform=dr.enums.PredictionEnvironmentPlatform.DATAROBOT_SERVERLESS,
+)
+
+custom_model = pulumi_datarobot.CustomModel(
+    resource_name="DataRobot Agent Custom Model " + {{agent_app_name}}_resource_name,
+    base_environment_id=execution_environment.id,
+    target_type=dr.TARGET_TYPE.TEXT_GENERATION,
+    target_name="user_prompt",
+    language="python",
+    runtime_parameter_values=[],
+    use_case_ids=[use_case.id],
+    folder_path=os.path.join(str({{agent_app_name}}_application_path), "custom_model"),
+)
+
+registered_model_args = RegisteredModelArgs(
+    resource_name="DataRobot Agent Registered Model " + {{agent_app_name}}_resource_name,
+)
 
 
 # Start of Pulumi settings and application infrastructure
