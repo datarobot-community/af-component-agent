@@ -47,7 +47,6 @@ __all__ = [
     "{{agent_app_name}}_application_name",
     "{{agent_app_name}}_resource_name",
     "{{agent_app_name}}_application_path",
-    "get_{{agent_app_name}}_app_files",
 ]
 
 {{agent_app_name}}_application_name: str = "{{agent_app_name}}"
@@ -55,23 +54,7 @@ __all__ = [
 {{agent_app_name}}_application_path = project_dir.parent / "{{agent_app_name}}"
 
 
-def get_{{agent_app_name}}_app_files() -> list[tuple[str, str]]:
-    # Get all files from application path
-    source_files = [
-        (f.as_posix(), f.relative_to({{agent_app_name}}_application_path).as_posix())
-        for f in {{agent_app_name}}_application_path.glob("**/*")
-        if f.is_file() and "metadata.yaml" not in f.name
-    ]
-    source_files = [
-        (file_path, file_name)
-        for file_path, file_name in source_files
-        if not any(
-            exclude_pattern.match(file_name) for exclude_pattern in EXCLUDE_PATTERNS
-        )
-    ]
-
-    return source_files
-
+# Start of Pulumi settings and application infrastructure
 if "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT" in os.environ:
     execution_environment_id = os.environ["DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT"]
     pulumi.info(f"Using existing execution environment '{execution_environment_id}'")
@@ -132,9 +115,9 @@ agent_deployment = CustomModelDeployment(
 )
 
 
-# Start of Pulumi settings and application infrastructure
+pulumi.export("application_name", {{agent_app_name}}_application_name)
+pulumi.export("application_path", str({{agent_app_name}}_application_path))
+
 pulumi.export("Use Case ID", use_case.id)
 pulumi.export("Execution Environment ID", execution_environment.id)
 pulumi.export("Deployment ID", agent_deployment.id)
-pulumi.export("application_name", {{agent_app_name}}_application_name)
-pulumi.export("application_path", str({{agent_app_name}}_application_path))
