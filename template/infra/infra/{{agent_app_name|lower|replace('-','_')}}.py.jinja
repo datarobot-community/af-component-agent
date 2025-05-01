@@ -40,16 +40,12 @@ EXCLUDE_PATTERNS = [
 
 
 __all__ = [
-    "{{agent_app_name}}_app",
-    "{{agent_app_name}}_app_env_name",
-    "{{agent_app_name}}_app_resource_name",
-    "{{agent_app_name}}_app_runtime_parameters",
-    "{{agent_app_name}}_app_source",
+    "{{agent_app_name}}_application_name",
     "{{agent_app_name}}_application_path",
     "get_{{agent_app_name}}_app_files",
 ]
 
-{{agent_app_name}}_app_env_name: str = "DATAROBOT_APPLICATION_ID"
+{{agent_app_name}}_application_name: str = "{{agent_app_name}}"
 {{agent_app_name}}_application_path = project_dir.parent / "{{agent_app_name}}"
 
 
@@ -70,9 +66,23 @@ def get_{{agent_app_name}}_app_files() -> list[tuple[str, str]]:
 
     return source_files
 
+if "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT" in os.environ:
+    execution_environment_id = os.environ["DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT"]
+    pulumi.info(f"Using existing execution environment '{execution_environment_id}'")
+    execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
+        id=execution_environment_id,
+        resource_name="Execution Environment [PRE-EXISTING]",
+    )
+else:
+    execution_environment = pulumi_datarobot.ExecutionEnvironment(
+        resource_name=f"DataRobot Agent Python 3.11 [{{{agent_app_name}}_application_name}]",
+        programming_language="python",
+        description="DataRobot Agent Execution Environment [Python 3.11]",
+        docker_context_path=os.path.join(str({{agent_app_name}}_application_path, "docker_context.tar.gz"),
+        use_cases=["customModel", "notebook"],
+
 
 # Start of Pulumi settings and application infrastructure
 pulumi.export("Use Case ID", use_case.id)
-pulumi.export("project_dir", project_dir)
-pulumi.export("app_env_name", {{agent_app_name}}_app_env_name)
-pulumi.export("application_path", {{agent_app_name}}_application_path)
+pulumi.export("application_name", {{agent_app_name}}_application_name)
+pulumi.export("application_path", str({{agent_app_name}}_application_path))
