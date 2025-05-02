@@ -32,3 +32,9 @@ tasks:
         -v info -c .licenserc.yaml header fix
       - rm ./.licenserc.yaml
     silent: true
+  cli:
+    cmds:
+      - echo "Running CLI"
+      - echo "{{.CLI_ARGS}}"
+      - uv run cli.py {{.CLI_ARGS}}
+    silent: true
