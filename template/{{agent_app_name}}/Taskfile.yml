@@ -19,7 +19,7 @@ tasks:
       - uv run yamlfix custom_model
     silent: true
   test:
-    cmds: [echo "Running pytest on tests", uv run pytest -vv tests/]
+    cmds: [echo "Running pytest on tests", uv run pytest -vv ./tests/]
     silent: true
   dir:
     cmds: [echo "Running pytest on tests", uv run pytest -vv tests/]
@@ -31,4 +31,9 @@ tasks:
       - docker run  --rm -v {{.TASKFILE_DIR}}:/github/workspace ghcr.io/apache/skywalking-eyes/license-eye:785bb7f3810572d6912666b4f64bad28e4360799
         -v info -c .licenserc.yaml header fix
       - rm ./.licenserc.yaml
+    silent: true
+  cli:
+    cmds:
+      - echo "Running CLI {{.CLI_ARGS}}"
+      - uv run cli.py {{.CLI_ARGS}}
     silent: true
