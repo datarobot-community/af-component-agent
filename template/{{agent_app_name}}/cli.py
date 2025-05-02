@@ -10,7 +10,7 @@ from typing import Any, Optional
 import click
 from dotenv import load_dotenv
 
-from .agent_cli.environment import Environment
+from agent_cli.environment import Environment
 
 load_dotenv()
 

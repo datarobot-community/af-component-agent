@@ -15,7 +15,7 @@ tasks:
       - echo "Linting the codebase"
       - uv run ruff check . --fix
       - uv run ruff format .
-      - uv run mypy --pretty .
+      - uv run mypy --pretty agent_cli custom_model
       - uv run yamlfix custom_model
     silent: true
   test:
@@ -34,7 +34,6 @@ tasks:
     silent: true
   cli:
     cmds:
-      - echo "Running CLI"
-      - echo "{{.CLI_ARGS}}"
+      - echo "Running CLI {{.CLI_ARGS}}"
       - uv run cli.py {{.CLI_ARGS}}
     silent: true
