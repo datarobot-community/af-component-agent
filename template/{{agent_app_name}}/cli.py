@@ -1,0 +1,97 @@
+# Copyright 2025 DataRobot, Inc. and its affiliates.
+#
+# All rights reserved.
+#
+# This is proprietary source code of DataRobot, Inc. and its affiliates.
+#
+# Released under the terms of DataRobot Tool and Utility Agreement.
+from typing import Any, Optional
+
+import click
+from dotenv import load_dotenv
+
+from .agent_cli.environment import Environment
+
+load_dotenv()
+
+pass_environment = click.make_pass_decorator(Environment)
+
+
+@click.group()
+@click.option("--codespace_id", default=None, help="Codespace ID for the session.")
+@click.option("--api_token", default=None, help="API token for authentication.")
+@click.option("--base_url", default=None, help="Base URL for the API.")
+@click.pass_context
+def cli(
+    ctx: Any,
+    codespace_id: Optional[str],
+    api_token: Optional[str],
+    base_url: Optional[str],
+) -> None:
+    """A CLI for interacting executing agent custom models using the chat endpoint and OpenAI completions.
+
+    Examples:
+
+    > task cli -- execute --help
+
+    > task cli -- execute-deployment --help
+
+    > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
+
+    """
+    ctx.obj = Environment(codespace_id, api_token, base_url)
+
+
+@cli.command()
+@pass_environment
+@click.option("--user_prompt", default=None, help="Input to use for chat.")
+@click.option("--use_drum", is_flag=True, help="Use DRUM as backend for chat.")
+@click.option("--remote_codespace", is_flag=True, help="Use remote codespace.")
+def execute(
+    environment: Any, user_prompt: Optional[str], use_drum: bool, remote_codespace: bool
+) -> None:
+    """Execute agent code using OpenAI completions.
+
+    Examples:
+
+    > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
+
+    > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}' --use_drum
+
+    > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}' --remote_codespace
+    """
+    click.echo("Running agent...")
+    if remote_codespace:
+        response = environment.interface.execute_remote(
+            user_prompt=user_prompt, use_drum=use_drum
+        )
+    else:
+        response = environment.interface.execute_local(
+            user_prompt=user_prompt, use_drum=use_drum
+        )
+    click.echo("\nExecution Result:")
+    click.echo(response)
+
+
+@cli.command()
+@pass_environment
+@click.option("--user_prompt", default=None, help="Input to use for predict.")
+@click.option("--deployment_id", default=None, help="ID for the deployment.")
+def execute_deployment(
+    environment: Any, user_prompt: Optional[str], deployment_id: Optional[str]
+) -> None:
+    """Query a deployed model using the command line for OpenAI completions.
+
+    Example:
+
+    > task cli -- execute-deployment --user_prompt '{"topic": "Artificial Intelligence"}' --deployment_id 680a77a9a3
+    """
+    click.echo("Querying deployment...")
+    response = environment.interface.deployment(
+        deployment_id=deployment_id, user_prompt=user_prompt
+    )
+    click.echo(response)
+
+
+if __name__ == "__main__":
+    cli()
