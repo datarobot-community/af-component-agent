@@ -11,11 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from unittest.mock import ANY, Mock, patch
 
-from ..custom_model.my_agent_class.agent import MyAgent
+import pytest
+
+from custom_model.my_agent_class.agent import MyAgent
 
 
 class TestMyAgent:
+    @pytest.fixture
+    def agent(self):
+        return MyAgent(api_key="test_key", api_base="test_base", verbose=True)
+
     def test_init_with_string_verbose_true(self):
         # Test initialization with verbose as string "true"
         agent = MyAgent(api_key="test_key", api_base="test_base", verbose="true")
@@ -49,15 +56,118 @@ class TestMyAgent:
         assert agent.api_base == "test_base"
         assert agent.verbose is True
 
-    def test_run_method_returns_success(self):
-        # Test that run method returns "success"
-        agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
-        inputs = {"prompt": "test prompt"}
-        result = agent.run(inputs)
-        assert result == "success"
+    @patch("custom_model.my_agent_class.agent.LLM")
+    def test_llm_property(self, mock_llm, agent):
+        # Test that LLM is created with correct parameters
+        agent.llm
+        mock_llm.assert_called_once_with(
+            model="datarobot/azure/gpt-4",
+            clientId="custom-model",
+            api_base="test_base",
+            api_key="test_key",
+        )
 
-    def test_run_with_empty_inputs(self):
-        # Test run method with empty inputs dictionary
-        agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
-        result = agent.run({})
-        assert result == "success"
+    @patch("custom_model.my_agent_class.agent.Agent")
+    def test_agent_planner_property(self, mock_agent, agent):
+        # Mock the llm property
+        mock_llm = Mock()
+        with patch.object(MyAgent, "llm", return_value=mock_llm):
+            agent.agent_planner
+            mock_agent.assert_called_once_with(
+                role="Content Planner",
+                goal=ANY,
+                backstory=ANY,
+                allow_delegation=False,
+                verbose=True,
+                llm=ANY,
+            )
+
+    @patch("custom_model.my_agent_class.agent.Agent")
+    def test_agent_writer_property(self, mock_agent, agent):
+        # Mock the llm property
+        mock_llm = Mock()
+        with patch.object(MyAgent, "llm", return_value=mock_llm):
+            agent.agent_writer
+            mock_agent.assert_called_once_with(
+                role="Content Writer",
+                goal=ANY,
+                backstory=ANY,
+                allow_delegation=False,
+                verbose=True,
+                llm=ANY,
+            )
+
+    @patch("custom_model.my_agent_class.agent.Agent")
+    def test_agent_editor_property(self, mock_agent, agent):
+        # Mock the llm property
+        mock_llm = Mock()
+        with patch.object(MyAgent, "llm", return_value=mock_llm):
+            agent.agent_editor
+            mock_agent.assert_called_once_with(
+                role="Editor",
+                goal=ANY,
+                backstory=ANY,
+                allow_delegation=False,
+                verbose=True,
+                llm=ANY,
+            )
+
+    @patch("custom_model.my_agent_class.agent.Task")
+    def test_task_plan_property(self, mock_task, agent):
+        # Mock the agent_planner property
+        mock_planner = Mock()
+        with patch.object(MyAgent, "agent_planner", return_value=mock_planner):
+            agent.task_plan
+            mock_task.assert_called_once_with(
+                description=ANY,
+                expected_output=ANY,
+                agent=ANY,
+            )
+
+    @patch("custom_model.my_agent_class.agent.Task")
+    def test_task_write_property(self, mock_task, agent):
+        # Mock the agent_planner property
+        mock_planner = Mock()
+        with patch.object(MyAgent, "agent_writer", return_value=mock_planner):
+            agent.task_write
+            mock_task.assert_called_once_with(
+                description=ANY,
+                expected_output=ANY,
+                agent=ANY,
+            )
+
+    @patch("custom_model.my_agent_class.agent.Task")
+    def test_task_edit_property(self, mock_task, agent):
+        # Mock the agent_planner property
+        mock_planner = Mock()
+        with patch.object(MyAgent, "agent_editor", return_value=mock_planner):
+            agent.task_edit
+            mock_task.assert_called_once_with(
+                description=ANY,
+                expected_output=ANY,
+                agent=ANY,
+            )
+
+    def test_run_method(self, agent):
+        # Create a mock result with a raw attribute
+        mock_result = Mock()
+        mock_result.raw = "success"
+
+        # Create a mock crew with a kickoff method that returns the mock result
+        mock_crew = Mock()
+        mock_crew.kickoff.return_value = mock_result
+
+        # Patch the crew method to return our mock
+        with patch.object(MyAgent, "crew", return_value=mock_crew):
+            # Call the run method with test inputs
+            inputs = {"topic": "Artificial Intelligence"}
+            result = agent.run(inputs)
+
+            # Verify crew() was called
+            agent.crew.assert_called_once()
+
+            # Verify kickoff was called with the right inputs
+            mock_crew.kickoff.assert_called_once_with(inputs=inputs)
+
+            # Verify the returned result
+            assert result == "success"
