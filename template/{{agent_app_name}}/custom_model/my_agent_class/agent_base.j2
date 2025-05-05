@@ -1,0 +1,17 @@
+from typing import Any, Dict, Union
+
+
+class MyAgent:
+    def __init__(
+        self, api_key: str, api_base: str, verbose: Union[bool, str], **kwargs: Any
+    ):
+        self.api_key = api_key
+        self.api_base = api_base
+        if isinstance(verbose, str):
+            self.verbose = verbose.lower() == "true"
+        elif isinstance(verbose, bool):
+            self.verbose = verbose
+
+    def run(self, inputs: Dict[str, str]) -> str:
+        _ = inputs, self.api_key
+        return "success"
