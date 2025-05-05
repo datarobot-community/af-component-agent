@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Iterator, Union
+from typing import Dict, Iterator, Union, cast
 
 from helpers import (
     create_completion_from_response_text,
@@ -67,8 +67,12 @@ def chat(
     inputs = create_inputs_from_completion_params(completion_create_params)
 
     # Execute the agent with the inputs
-    response = agent.run(inputs=inputs)
+    response, usage_metrics = agent.run(inputs=inputs)
+    response = str(response)
+    usage_metrics = cast(Dict[str, int], usage_metrics)
 
     # Return the response as a ChatCompletion object
-    response = create_completion_from_response_text(response)
+    response = create_completion_from_response_text(
+        response_text=response, usage_metrics=usage_metrics
+    )
     return response  # type: ignore[no-any-return]
