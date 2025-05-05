@@ -60,7 +60,7 @@ class RunAgent:
 
     @property
     def code_dir(self) -> str:
-        return "/home/notebooks/storage/"
+        return os.path.split(os.path.abspath(__file__))[0]
 
     @staticmethod
     def construct_prompt(
@@ -151,6 +151,7 @@ class RunAgent:
             return cast(ChatCompletion, completion)
 
     def store_output(self, chat_result: ChatCompletion) -> None:
+        print(f"Storing result: {self.code_dir}/output.json")
         with open(os.path.join(self.code_dir, "output.json"), "w") as fp:
             fp.write(chat_result.to_json())
 

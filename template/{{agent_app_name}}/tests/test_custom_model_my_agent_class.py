@@ -152,6 +152,11 @@ class TestMyAgent:
         # Create a mock result with a raw attribute
         mock_result = Mock()
         mock_result.raw = "success"
+        mock_result.token_usage = Mock(
+            completion_tokens=10,
+            prompt_tokens=5,
+            total_tokens=15,
+        )
 
         # Create a mock crew with a kickoff method that returns the mock result
         mock_crew = Mock()
@@ -170,4 +175,7 @@ class TestMyAgent:
             mock_crew.kickoff.assert_called_once_with(inputs=inputs)
 
             # Verify the returned result
-            assert result == "success"
+            assert result == (
+                "success",
+                {"completion_tokens": 10, "prompt_tokens": 5, "total_tokens": 15},
+            )
