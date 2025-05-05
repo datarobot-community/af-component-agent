@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {% if agent_template_framework == "crewai" %}
-{% include 'template/{{agent_app_name}}/custom_model/my_agent_templates/agent_crewai.j2' %}
+{% include 'template/{{agent_app_name}}/custom_model/my_agent_class/agent_crewai.j2' %}
 {% else %}
-{% include 'template/{{agent_app_name}}/custom_model/my_agent_templates/agent_base.j2' %}
+{% include 'template/{{agent_app_name}}/custom_model/my_agent_class/agent_base.j2' %}
 {% endif %}
