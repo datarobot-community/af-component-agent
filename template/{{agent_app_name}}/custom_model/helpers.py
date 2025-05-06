@@ -11,13 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import functools
 import json
 import time
 import uuid
-from typing import Any, Callable, Dict, Tuple, TypeVar, Union, cast
+from typing import Any, Dict, Union
 
-from crewai import CrewOutput
 from openai.types import CompletionUsage
 from openai.types.chat import (
     ChatCompletion,
@@ -25,25 +23,6 @@ from openai.types.chat import (
     CompletionCreateParams,
 )
 from openai.types.chat.chat_completion import Choice
-
-FuncT = TypeVar("FuncT", bound=Callable[..., Any])
-
-
-def deployment_response_crewai(func: FuncT) -> FuncT:
-    @functools.wraps(func)
-    def wrapper_response_crewai(
-        *args: Any, **kwargs: Any
-    ) -> Tuple[str, Dict[str, int]]:
-        value: CrewOutput = func(*args, **kwargs)
-
-        usage_metrics: Dict[str, int] = {
-            "completion_tokens": value.token_usage.completion_tokens,
-            "prompt_tokens": value.token_usage.prompt_tokens,
-            "total_tokens": value.token_usage.total_tokens,
-        }
-        return str(value.raw), usage_metrics
-
-    return cast(FuncT, wrapper_response_crewai)
 
 
 def create_inputs_from_completion_params(
