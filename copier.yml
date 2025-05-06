@@ -1,13 +1,13 @@
 # questions
 agent_app_name:
   type: str
-  default: "web"
+  default: "agent"
   help: "The name/folder of your Agent Deployment. Required to use a python friendly name like agent or agent_backend"
 
 agent_template_framework:
   type: str
   default: "base"
-  help: "Supported frameworks: base, crewai, langgraph, llama_index"
+  help: "The agentic framework template to start with. Supported frameworks: base, crewai, langgraph, llama_index"
   
 base_answers_file:
   type: str
