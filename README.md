@@ -14,7 +14,7 @@ The Agent Framework is component from [App Framework Studio](https://github.com/
 
 To start for a repo:
 
-`uvx copier copy https://github.com/datarobot/af-component-agent-crewai .`
+`uvx copier copy https://github.com/datarobot/af-component-agent .`
 
 If a template requires multiple agents, it can be used multiple times with a different answer to the `agent_app` question.
 
