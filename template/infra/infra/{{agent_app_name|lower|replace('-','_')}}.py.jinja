@@ -119,10 +119,14 @@ agent_deployment = CustomModelDeployment(
     deployment_args=deployment_args,
 )
 
+app_runtime_parameters = [
+    dr.ApplicationSourceRuntimeParameterValueArgs(
+        key={{llm_app_name}}_application_name.upper() + "_DEPLOYMENT_ID",
+        type="deployment",
+        value=agent_deployment.id,
+    ),
+]
 
-pulumi.export("application_name", {{agent_app_name}}_application_name)
-pulumi.export("application_path", str({{agent_app_name}}_application_path))
-
-pulumi.export("Use Case ID", use_case.id)
-pulumi.export("Execution Environment ID", execution_environment.id)
-pulumi.export("Deployment ID", agent_deployment.id)
+pulumi.export("Use Case ID " + {{agent_app_name}}_resource_name, use_case.id)
+pulumi.export("Execution Environment ID " + {{agent_app_name}}_resource_name, execution_environment.id)
+pulumi.export("Deployment ID " + {{agent_app_name}}_resource_name, agent_deployment.id)
