@@ -121,7 +121,7 @@ agent_deployment = CustomModelDeployment(
 
 app_runtime_parameters = [
     dr.ApplicationSourceRuntimeParameterValueArgs(
-        key={{llm_app_name}}_application_name.upper() + "_DEPLOYMENT_ID",
+        key={{agent_app_name}}_application_name.upper() + "_DEPLOYMENT_ID",
         type="deployment",
         value=agent_deployment.id,
     ),
