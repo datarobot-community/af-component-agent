@@ -58,7 +58,9 @@ class TestMyAgentCrewAI:
     def test_agent_planner_property(self, mock_agent, agent):
         # Mock the llm property
         mock_llm = Mock()
-        with patch.object(MyAgent, "llm_with_datarobot_llm_gateway", return_value=mock_llm):
+        with patch.object(
+            MyAgent, "llm_with_datarobot_llm_gateway", return_value=mock_llm
+        ):
             agent.agent_planner
             mock_agent.assert_called_once_with(
                 role="Content Planner",
@@ -73,7 +75,9 @@ class TestMyAgentCrewAI:
     def test_agent_writer_property(self, mock_agent, agent):
         # Mock the llm property
         mock_llm = Mock()
-        with patch.object(MyAgent, "llm_with_datarobot_llm_gateway", return_value=mock_llm):
+        with patch.object(
+            MyAgent, "llm_with_datarobot_llm_gateway", return_value=mock_llm
+        ):
             agent.agent_writer
             mock_agent.assert_called_once_with(
                 role="Content Writer",
@@ -88,7 +92,9 @@ class TestMyAgentCrewAI:
     def test_agent_editor_property(self, mock_agent, agent):
         # Mock the llm property
         mock_llm = Mock()
-        with patch.object(MyAgent, "llm_with_datarobot_llm_gateway", return_value=mock_llm):
+        with patch.object(
+            MyAgent, "llm_with_datarobot_llm_gateway", return_value=mock_llm
+        ):
             agent.agent_editor
             mock_agent.assert_called_once_with(
                 role="Editor",
