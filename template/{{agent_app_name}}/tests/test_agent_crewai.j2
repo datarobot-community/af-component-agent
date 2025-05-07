@@ -46,7 +46,7 @@ class TestMyAgentCrewAI:
     @patch("custom_model.my_agent_class.agent.LLM")
     def test_llm_property(self, mock_llm, agent):
         # Test that LLM is created with correct parameters
-        agent.llm
+        agent.llm_with_datarobot_llm_gateway
         mock_llm.assert_called_once_with(
             model="datarobot/azure/gpt-4",
             clientId="custom-model",

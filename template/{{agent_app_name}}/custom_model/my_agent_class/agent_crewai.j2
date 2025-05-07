@@ -1,4 +1,5 @@
 import functools
+import os
 from typing import Any, Callable, Dict, Tuple, TypeVar, Union, cast
 
 from crewai import LLM, Agent, Crew, CrewOutput, Task
@@ -35,11 +36,19 @@ class MyAgent:
             self.verbose = verbose
 
     @property
-    def llm(self) -> LLM:
+    def llm_with_datarobot_llm_gateway(self) -> LLM:
         return LLM(
-            model="datarobot/azure/gpt-4",
+            model="datarobot/openai/gpt-4",
             clientId="custom-model",
             api_base=self.api_base,
+            api_key=self.api_key,
+        )
+
+    @property
+    def llm_with_datarobot_deployment(self) -> LLM:
+        return LLM(
+            model="datarobot/openai/gpt-4",
+            api_base=f"{self.api_base}/api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/",
             api_key=self.api_key,
         )
 
@@ -57,7 +66,7 @@ class MyAgent:
             "the Content Writer to write an article on this topic.",
             allow_delegation=False,
             verbose=self.verbose,
-            llm=self.llm,
+            llm=self.llm_with_datarobot_llm_gateway,
         )
 
     @property
@@ -82,7 +91,7 @@ class MyAgent:
             "as opposed to objective statements.",
             allow_delegation=False,
             verbose=self.verbose,
-            llm=self.llm,
+            llm=self.llm_with_datarobot_llm_gateway,
         )
 
     @property
@@ -101,7 +110,7 @@ class MyAgent:
             "or opinions when possible.",
             allow_delegation=False,
             verbose=self.verbose,
-            llm=self.llm,
+            llm=self.llm_with_datarobot_llm_gateway,
         )
 
     @property
