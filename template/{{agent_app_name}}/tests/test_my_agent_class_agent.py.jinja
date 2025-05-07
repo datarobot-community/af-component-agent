@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 {% if agent_template_framework == "crewai" %}
-{% include 'template/{{agent_app_name}}/custom_model/my_agent_class/agent_crewai.j2' %}
+{% include 'template/{{agent_app_name}}/tests/test_agent_crewai.j2' %}
 {% elif agent_template_framework == "langgraph" %}
-{% include 'template/{{agent_app_name}}/custom_model/my_agent_class/agent_langgraph.j2' %}
+{% include 'template/{{agent_app_name}}/tests/test_agent_langgraph.j2' %}
 {% else %}
-{% include 'template/{{agent_app_name}}/custom_model/my_agent_class/agent_base.j2' %}
+{% include 'template/{{agent_app_name}}/tests/test_agent_base.j2' %}
 {% endif %}
