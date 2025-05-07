@@ -120,7 +120,7 @@ agent_deployment = CustomModelDeployment(
 )
 
 app_runtime_parameters = [
-    dr.ApplicationSourceRuntimeParameterValueArgs(
+    pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
         key={{agent_app_name}}_application_name.upper() + "_DEPLOYMENT_ID",
         type="deployment",
         value=agent_deployment.id,
