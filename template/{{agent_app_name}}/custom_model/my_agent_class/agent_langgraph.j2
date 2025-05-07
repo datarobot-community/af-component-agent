@@ -54,12 +54,14 @@ class MyAgent:
             api_key=self.api_key,
             model_kwargs={
                 "clientId": "custom-model",
-            }
+            },
         )
 
     @property
     def llm_with_datarobot_deployment(self) -> ChatLiteLLM:
-        deployment_url = f"{self.api_base}/api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/"
+        deployment_url = (
+            f"{self.api_base}/api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/"
+        )
         os.environ["DATAROBOT_API_KEY"] = self.api_key
         os.environ["DATAROBOT_API_BASE"] = deployment_url
         return ChatLiteLLM(
