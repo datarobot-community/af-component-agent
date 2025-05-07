@@ -1,9 +1,10 @@
 import functools
+import os
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Tuple, TypeVar, Union, cast
 
+from langchain_community.chat_models import ChatLiteLLM
 from langchain_core.messages import HumanMessage
-from langchain_openai import ChatOpenAI
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.graph.state import CompiledGraph, CompiledStateGraph
 from langgraph.prebuilt import create_react_agent
@@ -44,13 +45,29 @@ class MyAgent:
             self.verbose = verbose
 
     @property
-    def llm(self) -> ChatOpenAI:
-        return ChatOpenAI(
-            model="openai/Meta-Llama-3-8B-Instruct.Q4_K_M",
-            base_url="http://localhost:5001/v1/",
-            api_key="local_has_no_key",
-            temperature=0.7,
-            max_tokens=512,  # For POC purposes, this is set to 512. In production, this should be way higher.
+    def llm_with_datarobot_llm_gateway(self) -> ChatLiteLLM:
+        os.environ["DATAROBOT_API_KEY"] = self.api_key
+        os.environ["DATAROBOT_API_BASE"] = self.api_base
+        return ChatLiteLLM(
+            model="datarobot/azure/gpt-4",
+            api_base=self.api_base,
+            api_key=self.api_key,
+            model_kwargs={
+                "clientId": "custom-model",
+            },
+        )
+
+    @property
+    def llm_with_datarobot_deployment(self) -> ChatLiteLLM:
+        deployment_url = (
+            f"{self.api_base}/api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/"
+        )
+        os.environ["DATAROBOT_API_KEY"] = self.api_key
+        os.environ["DATAROBOT_API_BASE"] = deployment_url
+        return ChatLiteLLM(
+            model="datarobot/azure/gpt-4",
+            api_base=deployment_url,
+            api_key=self.api_key,
         )
 
     @staticmethod
@@ -66,7 +83,7 @@ class MyAgent:
     @property
     def agent_planner(self) -> CompiledGraph:
         return create_react_agent(
-            self.llm,
+            self.llm_with_datarobot_llm_gateway,
             tools=[],
             prompt=self.make_system_prompt(
                 "You are a content planner. You are working with an content writer and editor colleague."
@@ -97,7 +114,7 @@ class MyAgent:
     @property
     def agent_writer(self) -> CompiledGraph:
         return create_react_agent(
-            self.llm,
+            self.llm_with_datarobot_llm_gateway,
             tools=[],
             prompt=self.make_system_prompt(
                 "You are a content writer. You are working with an planner and editor colleague."
@@ -139,7 +156,7 @@ class MyAgent:
     @property
     def agent_editor(self) -> CompiledGraph:
         return create_react_agent(
-            self.llm,
+            self.llm_with_datarobot_llm_gateway,
             tools=[],
             prompt=self.make_system_prompt(
                 "You are a content editor. You are working with an planner and writer colleague."
@@ -171,7 +188,7 @@ class MyAgent:
         )
         return Command(
             update={
-                # share internal message history of research agent with other agents
+                # share internal message history with other agents
                 "messages": result["messages"],
             },
             goto="writer_node",
@@ -184,7 +201,7 @@ class MyAgent:
         )
         return Command(
             update={
-                # share internal message history of research agent with other agents
+                # share internal message history with other agents
                 "messages": result["messages"],
             },
             goto="editor_node",
@@ -197,7 +214,7 @@ class MyAgent:
         )
         return Command(
             update={
-                # share internal message history of research agent with other agents
+                # share internal message history with other agents
                 "messages": result["messages"],
             },
             goto=END,
