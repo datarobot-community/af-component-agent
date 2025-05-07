@@ -128,5 +128,7 @@ app_runtime_parameters = [
 ]
 
 pulumi.export("Use Case ID " + {{agent_app_name}}_resource_name, use_case.id)
-pulumi.export("Execution Environment ID " + {{agent_app_name}}_resource_name, execution_environment.id)
+pulumi.export(
+    "Execution Environment ID " + {{agent_app_name}}_resource_name, execution_environment.id
+)
 pulumi.export("Deployment ID " + {{agent_app_name}}_resource_name, agent_deployment.id)
