@@ -143,14 +143,14 @@ class AgentKernel(Kernel):
             raise ValueError("Either user_prompt or data must be provided.")
 
         if use_remote:
-            cmd = {
+            remote_cmd = {
                 "filePath": "/home/notebooks/storage/custom_model/run_agent.py",
                 "commandType": "python",
                 "commandArgs": command_args,
             }
             response = requests.post(
                 f"{self.nbx_session_url}/{self.codespace_id}/scripts/execute/",
-                json=cmd,
+                json=remote_cmd,
                 headers=self.headers,
             )
             assert response.status_code == 200
@@ -159,12 +159,13 @@ class AgentKernel(Kernel):
             self.await_kernel_execution(response.json()["kernelId"])
             return self.get_output_remote(output_path)
         else:
-            cmd = f"python3 custom_model/run_agent.py {command_args}"
-            os.system(cmd)
+            local_cmd = f"python3 custom_model/run_agent.py {command_args}"
+            os.system(local_cmd)
             return self.get_output_local(output_path)
 
     @staticmethod
-    def get_output_local(output_path) -> Any:
+    def get_output_local(output_path: str) -> Any:
+        """Read the local output file and remove it."""
         with open(output_path, "r") as f:
             output = f.read()
 
@@ -172,7 +173,8 @@ class AgentKernel(Kernel):
             os.remove(output_path)
         return output
 
-    def get_output_remote(self, output_path) -> Any:
+    def get_output_remote(self, output_path: str) -> Any:
+        """Download the output file from the remote and remove it."""
         data = {"paths": [output_path]}
         response = requests.post(
             f"{self.nbx_session_url}/{self.codespace_id}/filesystem/objects/download/",
