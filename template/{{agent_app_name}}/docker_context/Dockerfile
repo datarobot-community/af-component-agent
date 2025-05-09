@@ -128,7 +128,6 @@ ARG WORKDIR
 ARG VENV_PATH
 
 COPY ./requirements.txt ${WORKDIR}/
-COPY ./requirements-genai.txt ${WORKDIR}/
 COPY ./agent/requirements-agent.txt ${WORKDIR}/
 
 # hadolint ignore=DL3013
@@ -137,9 +136,7 @@ RUN python3 -m pip install --upgrade pip setuptools && \
     python3 -m pip install --no-cache-dir -r ${WORKDIR}/requirements-agent.txt && rm ${WORKDIR}/requirements-agent.txt
 
 # Generative AI Agents
-RUN python3 -m pip uninstall -y urllib3 && \
-    python3 -m pip install --no-cache-dir -r ${WORKDIR}/requirements-genai.txt && rm ${WORKDIR}/requirements-genai.txt && \
-    python3 -m pip uninstall -y litellm && \
+RUN python3 -m pip uninstall -y litellm && \
     python3 -m pip install --no-cache-dir --no-warn-conflicts git+https://github.com/datarobot-forks/litellm@mattn/add-datarobot-support-to-litellm
 
 RUN rm ${VENV_PATH}/share/jupyter/kernels/python3/kernel.json && chmod a+x ${WORKDIR}/start_server.sh
