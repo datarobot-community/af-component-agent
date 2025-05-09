@@ -32,7 +32,6 @@ class Environment:
             or "https://app.datarobot.com"
         )
         self.base_url = self.base_url.replace("/api/v2", "")
-        self.agent_root = "custom_model"
 
     @property
     def interface(self) -> AgentKernel:
@@ -40,5 +39,4 @@ class Environment:
             codespace_id=str(self.codespace_id),
             api_token=str(self.api_token),
             base_url=str(self.base_url),
-            agent_root=str(self.agent_root),
         )
