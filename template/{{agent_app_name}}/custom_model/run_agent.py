@@ -35,9 +35,6 @@ from openai.types.chat.completion_create_params import (
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
-    "--store_output", action="store_true", help="Store output in a file"
-)
-parser.add_argument(
     "--use_drum",
     action="store_true",
     help="Use DRUM for execution instead of direct execution",
@@ -153,7 +150,4 @@ else:
     result = runner.execute_direct(
         user_prompt=args.user_prompt, extra_body=args.extra_body
     )
-
-# Store results to file if requested
-if args.store_output:
-    runner.store_output(result, args.output_path)
+runner.store_output(result, args.output_path)
