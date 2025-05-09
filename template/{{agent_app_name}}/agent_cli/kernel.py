@@ -113,7 +113,11 @@ class AgentKernel(Kernel):
         )
 
     def execute(
-        self, use_remote: bool = False, user_prompt: Optional[str] = None, use_drum: bool = False, output_path: str = ""
+        self,
+        use_remote: bool = False,
+        user_prompt: Optional[str] = None,
+        use_drum: bool = False,
+        output_path: str = "",
     ) -> Any:
         if user_prompt is not None:
             extra_body = json.dumps(
@@ -123,9 +127,11 @@ class AgentKernel(Kernel):
                     "verbose": True,
                 }
             )
-            command_args = (f"--user_prompt '{user_prompt}' "
-                            f"--extra_body '{extra_body}'"
-                            f" --output_path '{output_path}'")
+            command_args = (
+                f"--user_prompt '{user_prompt}' "
+                f"--extra_body '{extra_body}'"
+                f" --output_path '{output_path}'"
+            )
             if use_drum:
                 command_args += " --use_drum"
         else:
@@ -133,7 +139,7 @@ class AgentKernel(Kernel):
 
         if use_remote:
             json_data = {
-                "filePath": f"/home/notebooks/storage/custom_model/run_agent.py",
+                "filePath": "/home/notebooks/storage/custom_model/run_agent.py",
                 "commandType": "python",
                 "commandArgs": command_args,
             }
@@ -148,14 +154,13 @@ class AgentKernel(Kernel):
 
             return self.get_output_remote()
         else:
-            cmd = (
-                f"python3 custom_model/run_agent.py "
-                f"{command_args}"
-            )
+            cmd = f"python3 custom_model/run_agent.py {command_args}"
 
             os.system(cmd)
 
-            with open(os.path.join(os.getcwd(), "custom_model", "output.json"), "r") as f:
+            with open(
+                os.path.join(os.getcwd(), "custom_model", "output.json"), "r"
+            ) as f:
                 output = f.read()
 
             if os.path.exists(os.path.join(os.getcwd(), "custom_model", "output.json")):
@@ -163,7 +168,7 @@ class AgentKernel(Kernel):
             return output
 
     def get_output_remote(self) -> Any:
-        data = {"paths": [f"/home/notebooks/storage/custom_model/output.json"]}
+        data = {"paths": ["/home/notebooks/storage/custom_model/output.json"]}
         response = requests.post(
             f"{self.nbx_session_url}/{self.codespace_id}/filesystem/objects/download/",
             json=data,
@@ -177,7 +182,7 @@ class AgentKernel(Kernel):
             f"{self.nbx_session_url}/{self.codespace_id}/filesystem/objects/delete/",
             headers=self.headers,
             json={
-                "paths": [f"/home/notebooks/storage/custom_model/output.json"],
+                "paths": ["/home/notebooks/storage/custom_model/output.json"],
             },
         )
         assert response.status_code == 204
