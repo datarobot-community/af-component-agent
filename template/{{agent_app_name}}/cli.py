@@ -52,9 +52,9 @@ def cli(
 @pass_environment
 @click.option("--user_prompt", default=None, help="Input to use for chat.")
 @click.option("--use_drum", is_flag=True, help="Use DRUM as backend for chat.")
-@click.option("--remote_codespace", is_flag=True, help="Use remote codespace.")
+@click.option("--use_remote", is_flag=True, help="Use remote codespace.")
 def execute(
-    environment: Any, user_prompt: Optional[str], use_drum: bool, remote_codespace: bool
+    environment: Any, user_prompt: Optional[str], use_drum: bool, use_remote: bool
 ) -> None:
     """Execute agent code using OpenAI completions.
 
@@ -64,17 +64,12 @@ def execute(
 
     > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}' --use_drum
 
-    > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}' --remote_codespace
+    > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}' --use_remote
     """
     click.echo("Running agent...")
-    if remote_codespace:
-        response = environment.interface.execute_remote(
-            user_prompt=user_prompt, use_drum=use_drum
-        )
-    else:
-        response = environment.interface.execute_local(
-            user_prompt=user_prompt, use_drum=use_drum
-        )
+    response = environment.interface.execute(
+        use_remote=use_remote, user_prompt=user_prompt, use_drum=use_drum
+    )
     click.echo("\nExecution Result:")
     click.echo(response)
 
