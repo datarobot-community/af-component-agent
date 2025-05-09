@@ -107,20 +107,14 @@ class AgentKernel(Kernel):
         api_token: str,
         codespace_id: str,
         base_url: str,
-        agent_root: str,
     ):
         super().__init__(
             api_token=api_token, codespace_id=codespace_id, base_url=base_url
         )
-        self.agent_root = agent_root
 
-    def execute_remote(
-        self, user_prompt: Optional[str] = None, use_drum: bool = False
+    def execute(
+        self, use_remote: bool = False, user_prompt: Optional[str] = None, use_drum: bool = False, output_path: str = ""
     ) -> Any:
-        """
-        Execute a command and return the output.
-        """
-        print("Executing agent remotely...")
         if user_prompt is not None:
             extra_body = json.dumps(
                 {
@@ -129,63 +123,47 @@ class AgentKernel(Kernel):
                     "verbose": True,
                 }
             )
-            command_args = f"--store_output --user_prompt '{user_prompt}' --extra_body '{extra_body}'"
+            command_args = (f"--user_prompt '{user_prompt}' "
+                            f"--extra_body '{extra_body}'"
+                            f" --output_path '{output_path}'")
             if use_drum:
                 command_args += " --use_drum"
+        else:
+            raise ValueError("Either user_prompt or data must be provided.")
+
+        if use_remote:
             json_data = {
-                "filePath": f"/home/notebooks/storage/{self.agent_root}/run_agent.py",
+                "filePath": f"/home/notebooks/storage/custom_model/run_agent.py",
                 "commandType": "python",
                 "commandArgs": command_args,
             }
-        else:
-            raise ValueError("Either user_prompt or data must be provided.")
-        response = requests.post(
-            f"{self.nbx_session_url}/{self.codespace_id}/scripts/execute/",
-            json=json_data,
-            headers=self.headers,
-        )
-        assert response.status_code == 200
-        print("Executing kernel...")
-        self.await_kernel_execution(response.json()["kernelId"])
-
-        return self.get_output_remote()
-
-    def execute_local(
-        self, user_prompt: Optional[str] = None, use_drum: bool = False
-    ) -> Any:
-        print("Executing agent locally...")
-        if user_prompt is not None:
-            extra_body = json.dumps(
-                {
-                    "api_key": self.api_token,
-                    "api_base": self.base_url,
-                    "verbose": True,
-                }
+            response = requests.post(
+                f"{self.nbx_session_url}/{self.codespace_id}/scripts/execute/",
+                json=json_data,
+                headers=self.headers,
             )
+            assert response.status_code == 200
+            print("Executing kernel...")
+            self.await_kernel_execution(response.json()["kernelId"])
+
+            return self.get_output_remote()
+        else:
             cmd = (
-                f"python3 {self.agent_root}/run_agent.py "
-                f"--store_output "
-                f"--user_prompt '{user_prompt}' "
-                f"--extra_body '{extra_body}'"
+                f"python3 custom_model/run_agent.py "
+                f"{command_args}"
             )
-            if use_drum:
-                cmd += " --use_drum"
-        else:
-            raise ValueError("Either user_prompt or data must be provided.")
-        if os.path.exists(os.path.join(os.getcwd(), self.agent_root, "output.json")):
-            os.remove(os.path.join(os.getcwd(), self.agent_root, "output.json"))
 
-        os.system(cmd)
+            os.system(cmd)
 
-        with open(os.path.join(os.getcwd(), self.agent_root, "output.json"), "r") as f:
-            output = f.read()
+            with open(os.path.join(os.getcwd(), "custom_model", "output.json"), "r") as f:
+                output = f.read()
 
-        if os.path.exists(os.path.join(os.getcwd(), self.agent_root, "output.json")):
-            os.remove(os.path.join(os.getcwd(), self.agent_root, "output.json"))
-        return output
+            if os.path.exists(os.path.join(os.getcwd(), "custom_model", "output.json")):
+                os.remove(os.path.join(os.getcwd(), "custom_model", "output.json"))
+            return output
 
     def get_output_remote(self) -> Any:
-        data = {"paths": [f"/home/notebooks/storage/{self.agent_root}/output.json"]}
+        data = {"paths": [f"/home/notebooks/storage/custom_model/output.json"]}
         response = requests.post(
             f"{self.nbx_session_url}/{self.codespace_id}/filesystem/objects/download/",
             json=data,
@@ -199,7 +177,7 @@ class AgentKernel(Kernel):
             f"{self.nbx_session_url}/{self.codespace_id}/filesystem/objects/delete/",
             headers=self.headers,
             json={
-                "paths": [f"/home/notebooks/storage/{self.agent_root}/output.json"],
+                "paths": [f"/home/notebooks/storage/custom_model/output.json"],
             },
         )
         assert response.status_code == 204

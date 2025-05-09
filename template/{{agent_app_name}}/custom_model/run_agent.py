@@ -48,6 +48,9 @@ parser.add_argument(
 parser.add_argument(
     "--extra_body", type=str, default="", help="extra_body for chat endpoint"
 )
+parser.add_argument(
+    "--output_path", type=str, default="", help="json output file location"
+)
 args = parser.parse_args()
 
 
@@ -132,9 +135,11 @@ class RunAgent:
 
             return cast(ChatCompletion, completion)
 
-    def store_output(self, chat_result: ChatCompletion) -> None:
-        print(f"Storing result: {self.code_dir}/output.json")
-        with open(os.path.join(self.code_dir, "output.json"), "w") as fp:
+    def store_output(self, chat_result: ChatCompletion, output_path: str) -> None:
+        if len(output_path) == 0:
+            output_path = os.path.join(self.code_dir, "output.json")
+        print(f"Storing result: {output_path}")
+        with open(output_path, "w") as fp:
             fp.write(chat_result.to_json())
 
 
@@ -151,4 +156,4 @@ else:
 
 # Store results to file if requested
 if args.store_output:
-    runner.store_output(result)
+    runner.store_output(result, args.output_path)
