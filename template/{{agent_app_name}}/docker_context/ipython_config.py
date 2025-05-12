@@ -13,4 +13,5 @@
 # limitations under the License.
 
 # This need to load extensions automaticaly when kernel starting
-c.InteractiveShellApp.extensions = ["dataframe_formatter"]  # ruff: noqa: F821
+
+c.InteractiveShellApp.extensions = ["dataframe_formatter"]
