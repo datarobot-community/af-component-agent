@@ -166,7 +166,7 @@ class AgentKernel(Kernel):
             self.await_kernel_execution(response.json()["kernelId"])
             return self.get_output_remote(output_path)
         else:
-            local_cmd = f"python3 run_agent.py {command_args}"
+            local_cmd = f"python3 docker_context/run_agent.py {command_args}"
             os.system(local_cmd)
             return self.get_output_local(output_path)
 
