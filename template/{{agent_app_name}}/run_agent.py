@@ -16,7 +16,9 @@
 
 import argparse
 import json
+import logging
 import os
+import sys
 from typing import Any, cast
 
 import requests
@@ -31,6 +33,8 @@ from openai.types.chat import (
 from openai.types.chat.completion_create_params import (
     CompletionCreateParamsNonStreaming,
 )
+
+root = logging.getLogger()
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -49,6 +53,24 @@ parser.add_argument(
     "--output_path", type=str, default="", help="json output file location"
 )
 args = parser.parse_args()
+
+
+def setup_logging(logger: logging.Logger, log_level: int = logging.INFO) -> None:
+    logger.setLevel(log_level)
+    handler_stream = logging.StreamHandler(sys.stdout)
+    handler_stream.setLevel(log_level)
+    formatter = logging.Formatter("%(message)s")
+    handler_stream.setFormatter(formatter)
+
+    if os.path.exists("agent.log"):
+        os.remove("agent.log")
+    handler_file = logging.FileHandler("agent.log")
+    handler_file.setLevel(log_level)
+    formatter_file = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    handler_file.setFormatter(formatter_file)
+
+    logger.addHandler(handler_stream)
+    logger.addHandler(handler_file)
 
 
 def construct_prompt(user_prompt: str, extra_body: str) -> Any:
@@ -75,10 +97,7 @@ def construct_prompt(user_prompt: str, extra_body: str) -> Any:
 def execute_drum(
     user_prompt: str, extra_body: str, custom_model_dir: str, output_path: str
 ) -> ChatCompletion:
-    print("Executing agent as [chat] endpoint. DRUM Executor.")
-    print(
-        "NOTE: Realtime logging may be delayed in terminal and displayed after execution."
-    )
+    root.info("Executing agent as [chat] endpoint. DRUM Executor.")
     with DrumServerRun(
         target_type=TargetType.TEXT_GENERATION.value,
         labels=None,
@@ -90,6 +109,7 @@ def execute_drum(
         target_name="response",
         wait_for_server_timeout=360,
         port=8191,
+        stream_output=True,
     ) as drum_runner:
         response = requests.get(drum_runner.url_server_address)
         if not response.ok:
@@ -104,7 +124,7 @@ def execute_drum(
         completion_create_params = construct_prompt(user_prompt, extra_body)
         completion = client.chat.completions.create(**completion_create_params)
 
-        print(f"Storing result: {output_path}")
+        root.info(f"Storing result: {output_path}")
         if len(output_path) == 0:
             output_path = os.path.join(custom_model_dir, "output.json")
         with open(output_path, "w") as fp:
@@ -114,6 +134,7 @@ def execute_drum(
 
 
 # Agent execution
+setup_logging(root, logging.INFO)
 if len(args.custom_model_dir) == 0:
     args.custom_model_dir = os.path.join(os.getcwd(), "custom_model")
 result = execute_drum(

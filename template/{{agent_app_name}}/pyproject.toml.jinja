@@ -8,7 +8,7 @@ requires-python = ">=3.10"
 dependencies = [
     "click>=8.1.8",
     "datarobot>=3.7.0",
-    "datarobot-drum>=1.16.12",
+    "datarobot-drum",
     "dotenv>=0.9.9",
     "legacy-cgi>=2.6.3",
     "openai>=1.76.2",
@@ -167,3 +167,6 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module = "datarobot.*"
 implicit_reexport = true
+
+[tool.uv.sources]
+datarobot-drum = { git = "https://github.com/datarobot/datarobot-user-models", subdirectory = "custom_model_runner", rev = "mattn/BUZZOK-25745-handle-streaming-drum" }
