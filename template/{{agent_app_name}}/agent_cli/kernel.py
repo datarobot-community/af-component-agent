@@ -114,37 +114,43 @@ class AgentKernel(Kernel):
 
     def execute(
         self,
+        user_prompt: str,
         use_remote: bool = False,
-        user_prompt: Optional[str] = None,
-        use_drum: bool = False,
+        custom_model_dir: str = "",
         output_path: str = "",
     ) -> Any:
+        if len(user_prompt) == 0:
+            raise ValueError("user_prompt must be provided.")
+
+        if len(custom_model_dir) == 0:
+            if use_remote:
+                custom_model_dir = "/home/notebooks/storage/custom_model"
+            else:
+                custom_model_dir = os.path.join(os.getcwd(), "custom_model")
+
         if len(output_path) == 0:
             if use_remote:
                 output_path = "/home/notebooks/storage/custom_model/output.json"
             else:
                 output_path = os.path.join(os.getcwd(), "custom_model", "output.json")
-        if user_prompt is not None:
-            extra_body = json.dumps(
-                {
-                    "api_key": self.api_token,
-                    "api_base": self.base_url,
-                    "verbose": True,
-                }
-            )
-            command_args = (
-                f"--user_prompt '{user_prompt}' "
-                f"--extra_body '{extra_body}'"
-                f" --output_path '{output_path}'"
-            )
-            if use_drum:
-                command_args += " --use_drum"
-        else:
-            raise ValueError("Either user_prompt or data must be provided.")
+
+        extra_body = json.dumps(
+            {
+                "api_key": self.api_token,
+                "api_base": self.base_url,
+                "verbose": True,
+            }
+        )
+        command_args = (
+            f"--user_prompt '{user_prompt}' "
+            f"--extra_body '{extra_body}'"
+            f" --custom_model_dir '{custom_model_dir}'"
+            f" --output_path '{output_path}'"
+        )
 
         if use_remote:
             remote_cmd = {
-                "filePath": "/home/notebooks/storage/custom_model/run_agent.py",
+                "filePath": "/home/notebooks/storage/run_agent.py",
                 "commandType": "python",
                 "commandArgs": command_args,
             }
@@ -153,13 +159,14 @@ class AgentKernel(Kernel):
                 json=remote_cmd,
                 headers=self.headers,
             )
+            print(response.json())
             assert response.status_code == 200
 
             print("Executing kernel...")
             self.await_kernel_execution(response.json()["kernelId"])
             return self.get_output_remote(output_path)
         else:
-            local_cmd = f"python3 custom_model/run_agent.py {command_args}"
+            local_cmd = f"python3 run_agent.py {command_args}"
             os.system(local_cmd)
             return self.get_output_local(output_path)
 

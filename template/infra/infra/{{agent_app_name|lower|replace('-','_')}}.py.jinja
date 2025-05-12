@@ -67,7 +67,7 @@ else:
         programming_language="python",
         description="DataRobot Agent Execution Environment [Python 3.11]",
         docker_context_path=os.path.join(
-            str({{agent_app_name}}_application_path), "docker_context.tar.gz"
+            str({{agent_app_name}}_application_path), "docker_context"
         ),
         use_cases=["customModel", "notebook"],
     )
