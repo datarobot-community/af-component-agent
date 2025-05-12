@@ -139,6 +139,9 @@ RUN python3 -m pip install --upgrade pip setuptools && \
 RUN python3 -m pip uninstall -y litellm && \
     python3 -m pip install --no-cache-dir --no-warn-conflicts git+https://github.com/datarobot-forks/litellm@mattn/add-datarobot-support-to-litellm
 
+# Copy agent runtime into work directory
+COPY ./run_agent.py ${WORKDIR}/
+
 RUN rm ${VENV_PATH}/share/jupyter/kernels/python3/kernel.json && chmod a+x ${WORKDIR}/start_server.sh
 COPY ./kernel.json ${VENV_PATH}/share/jupyter/kernels/python3/
 
@@ -158,8 +161,6 @@ LABEL com.datarobot.repo-sha=$GIT_COMMIT
 RUN chown -R $UNAME:$UNAME ${WORKDIR} /home/notebooks
 
 COPY --from=builder --chown=$UNAME $WORKDIR $WORKDIR
-
-COPY ./run_agent.py /home/notebooks/storage
 
 # This is required for custom models to work with this image
 COPY ./start_server_drum.sh /opt/code/start_server.sh

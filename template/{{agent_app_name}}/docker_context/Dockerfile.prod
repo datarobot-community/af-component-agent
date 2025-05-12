@@ -99,6 +99,9 @@ RUN python3 -m pip install --upgrade pip setuptools && \
 RUN python3 -m pip uninstall -y litellm && \
     python3 -m pip install --no-cache-dir --no-warn-conflicts git+https://github.com/datarobot-forks/litellm@mattn/add-datarobot-support-to-litellm
 
+# Copy agent runtime into work directory
+COPY ./run_agent.py ${WORKDIR}/
+
 RUN rm ${VENV_PATH}/share/jupyter/kernels/python3/kernel.json && chmod a+x ${WORKDIR}/start_server.sh
 COPY ./kernel.json ${VENV_PATH}/share/jupyter/kernels/python3/
 
