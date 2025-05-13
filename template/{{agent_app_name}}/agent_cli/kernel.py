@@ -126,17 +126,13 @@ class AgentKernel(Kernel):
             if use_remote:
                 custom_model_dir = "/home/notebooks/storage/custom_model"
             else:
-                custom_model_dir = os.path.join(
-                    os.getcwd(), "custom_model"
-                )
+                custom_model_dir = os.path.join(os.getcwd(), "custom_model")
 
         if len(output_path) == 0:
             if use_remote:
                 output_path = "/home/notebooks/storage/custom_model/output.json"
             else:
-                output_path = os.path.join(
-                    os.getcwd(), "custom_model", "output.json"
-                )
+                output_path = os.path.join(os.getcwd(), "custom_model", "output.json")
 
         extra_body = json.dumps(
             {
