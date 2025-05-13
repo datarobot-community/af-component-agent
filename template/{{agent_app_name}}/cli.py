@@ -66,7 +66,7 @@ def execute(environment: Any, user_prompt: Optional[str], use_remote: bool) -> N
         user_prompt=user_prompt,
         use_remote=use_remote,
     )
-    click.echo("\nExecution Result:")
+    click.echo("\nStored Execution Result:")
     click.echo(response)
 
 

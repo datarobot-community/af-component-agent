@@ -16,7 +16,9 @@
 
 import argparse
 import json
+import logging
 import os
+import sys
 from typing import Any, cast
 
 import requests
@@ -31,6 +33,8 @@ from openai.types.chat import (
 from openai.types.chat.completion_create_params import (
     CompletionCreateParamsNonStreaming,
 )
+
+root = logging.getLogger()
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -49,6 +53,31 @@ parser.add_argument(
     "--output_path", type=str, default="", help="json output file location"
 )
 args = parser.parse_args()
+
+
+def setup_logging(
+    logger: logging.Logger, output_path: str, log_level: int = logging.INFO
+) -> None:
+    if len(output_path) == 0:
+        output_path = "output.log"
+    else:
+        output_path = f"{output_path}.log"
+
+    logger.setLevel(log_level)
+    handler_stream = logging.StreamHandler(sys.stdout)
+    handler_stream.setLevel(log_level)
+    formatter = logging.Formatter("%(message)s")
+    handler_stream.setFormatter(formatter)
+
+    if os.path.exists(output_path):
+        os.remove(output_path)
+    handler_file = logging.FileHandler(output_path)
+    handler_file.setLevel(log_level)
+    formatter_file = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    handler_file.setFormatter(formatter_file)
+
+    logger.addHandler(handler_stream)
+    logger.addHandler(handler_file)
 
 
 def construct_prompt(user_prompt: str, extra_body: str) -> Any:
@@ -75,10 +104,8 @@ def construct_prompt(user_prompt: str, extra_body: str) -> Any:
 def execute_drum(
     user_prompt: str, extra_body: str, custom_model_dir: str, output_path: str
 ) -> ChatCompletion:
-    print("Executing agent as [chat] endpoint. DRUM Executor.")
-    print(
-        "NOTE: Realtime logging may be delayed in terminal and displayed after execution."
-    )
+    root.info("Executing agent as [chat] endpoint. DRUM Executor.")
+    root.info("Starting DRUM server.")
     with DrumServerRun(
         target_type=TargetType.TEXT_GENERATION.value,
         labels=None,
@@ -90,32 +117,41 @@ def execute_drum(
         target_name="response",
         wait_for_server_timeout=360,
         port=8191,
+        stream_output=True,
     ) as drum_runner:
+        root.info("Verifying DRUM server.")
         response = requests.get(drum_runner.url_server_address)
         if not response.ok:
             raise RuntimeError("Server failed to start")
 
         # Use a standard OpenAI client to call the DRUM server. This mirrors the behavior of a deployed agent.
+        root.info("Building prompt.")
         client = OpenAI(
             base_url=drum_runner.url_server_address,
             api_key="not-required",
             max_retries=0,
         )
         completion_create_params = construct_prompt(user_prompt, extra_body)
+
+        root.info("Executing Agent.")
         completion = client.chat.completions.create(**completion_create_params)
 
-        print(f"Storing result: {output_path}")
-        if len(output_path) == 0:
-            output_path = os.path.join(custom_model_dir, "output.json")
-        with open(output_path, "w") as fp:
-            fp.write(completion.to_json())
+    # Continue outside the context manager to ensure the server is stopped and logs
+    # are flushed before we write the output
+    root.info(f"Storing result: {output_path}")
+    if len(output_path) == 0:
+        output_path = os.path.join(custom_model_dir, "output.json")
+    with open(output_path, "w") as fp:
+        fp.write(completion.to_json())
 
-        return cast(ChatCompletion, completion)
+    root.info(completion.to_json())
+    return cast(ChatCompletion, completion)
 
 
 # Agent execution
 if len(args.custom_model_dir) == 0:
     args.custom_model_dir = os.path.join(os.getcwd(), "custom_model")
+setup_logging(logger=root, output_path=args.output_path, log_level=logging.INFO)
 result = execute_drum(
     user_prompt=args.user_prompt,
     extra_body=args.extra_body,

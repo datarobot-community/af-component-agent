@@ -167,8 +167,14 @@ class AgentKernel(Kernel):
             return self.get_output_remote(output_path)
         else:
             local_cmd = f"python3 run_agent.py {command_args}"
-            os.system(local_cmd)
-            return self.get_output_local(output_path)
+            try:
+                result = os.system(local_cmd)
+                if result != 0:
+                    raise RuntimeError(f"Command failed with exit code {result}")
+                return self.get_output_local(output_path)
+            except Exception as e:
+                print(f"Error executing command: {e}")
+                raise
 
     @staticmethod
     def get_output_local(output_path: str) -> Any:
