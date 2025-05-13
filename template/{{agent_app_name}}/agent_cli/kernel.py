@@ -126,13 +126,17 @@ class AgentKernel(Kernel):
             if use_remote:
                 custom_model_dir = "/home/notebooks/storage/custom_model"
             else:
-                custom_model_dir = os.path.join(os.path.dirname(os.getcwd()), "custom_model")
+                custom_model_dir = os.path.join(
+                    os.getcwd(), "custom_model"
+                )
 
         if len(output_path) == 0:
             if use_remote:
                 output_path = "/home/notebooks/storage/custom_model/output.json"
             else:
-                output_path = os.path.join(os.path.dirname(os.getcwd()), "custom_model", "output.json")
+                output_path = os.path.join(
+                    os.getcwd(), "custom_model", "output.json"
+                )
 
         extra_body = json.dumps(
             {
@@ -166,9 +170,15 @@ class AgentKernel(Kernel):
             self.await_kernel_execution(response.json()["kernelId"])
             return self.get_output_remote(output_path)
         else:
-            local_cmd = f"python3 docker_context/run_agent.py {command_args}"
-            os.system(local_cmd)
-            return self.get_output_local(output_path)
+            local_cmd = f"python3 run_agent.py {command_args}"
+            try:
+                result = os.system(local_cmd)
+                if result != 0:
+                    raise RuntimeError(f"Command failed with exit code {result}")
+                return self.get_output_local(output_path)
+            except Exception as e:
+                print(f"Error executing command: {e}")
+                raise
 
     @staticmethod
     def get_output_local(output_path: str) -> Any:
