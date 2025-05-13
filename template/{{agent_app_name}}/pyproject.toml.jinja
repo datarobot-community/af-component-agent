@@ -19,22 +19,17 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-crewai = [
+agents = [
     "crewai>=0.117.1",
     "crewai-tools>=0.43.0",
-]
-langchain = [
     "langchain>=0.3.24",
     "langchain-community>=0.3.23",
-]
-langgraph = [
     "langgraph>=0.4.2",
-]
-llamaindex = [
     "llama-index>=0.12.33",
     "llama-index-llms-langchain>=0.6.1",
     "llama-index-llms-litellm>=0.4.1",
     "llama-index-llms-openai>=0.3.38",
+    "ragas>=0.2.15",
 ]
 dev = [
     "pytest-cov>=6.1.1",
