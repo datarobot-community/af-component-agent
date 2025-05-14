@@ -1,0 +1,42 @@
+import pytest
+
+from custom_model.my_agent_class.agent import MyAgent
+
+
+class TestMyAgentLlamaIndex:
+    @pytest.fixture
+    def agent(self):
+        return MyAgent(api_key="test_key", api_base="test_base", verbose=True)
+
+    def test_init_with_string_verbose_true(self):
+        # Test initialization with verbose as string "true"
+        agent = MyAgent(api_key="test_key", api_base="test_base", verbose="true")
+        assert agent.api_key == "test_key"
+        assert agent.api_base == "test_base"
+        assert agent.verbose is True
+
+    def test_init_with_string_verbose_false(self):
+        # Test initialization with verbose as string "false"
+        agent = MyAgent(api_key="test_key", api_base="test_base", verbose="false")
+        assert agent.api_key == "test_key"
+        assert agent.api_base == "test_base"
+        assert agent.verbose is False
+
+    def test_init_with_bool_verbose(self):
+        # Test initialization with verbose as boolean
+        agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
+        assert agent.api_key == "test_key"
+        assert agent.api_base == "test_base"
+        assert agent.verbose is True
+
+    def test_init_with_extra_kwargs(self):
+        # Test initialization with extra kwargs
+        agent = MyAgent(
+            api_key="test_key",
+            api_base="test_base",
+            verbose=True,
+            extra_param="extra_value",
+        )
+        assert agent.api_key == "test_key"
+        assert agent.api_base == "test_base"
+        assert agent.verbose is True
