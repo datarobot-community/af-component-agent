@@ -1,0 +1,39 @@
+import functools
+import os
+from typing import Any, Callable, Dict, Tuple, TypeVar, Union, cast
+
+from crewai import LLM, Agent, Crew, CrewOutput, Task
+
+
+class MyAgent:
+    def __init__(
+        self, api_key: str, api_base: str, verbose: Union[bool, str], **kwargs: Any
+    ):
+        self.api_key = api_key
+        self.api_base = api_base
+        if isinstance(verbose, str):
+            self.verbose = verbose.lower() == "true"
+        elif isinstance(verbose, bool):
+            self.verbose = verbose
+
+    @property
+    def llm_with_datarobot_llm_gateway(self) -> LLM:
+        return LLM(
+            model="datarobot/azure/gpt-4",
+            clientId="custom-model",
+            api_base=self.api_base,
+            api_key=self.api_key,
+        )
+
+    @property
+    def llm_with_datarobot_deployment(self) -> LLM:
+        return LLM(
+            model="datarobot/azure/gpt-4",
+            api_base=f"{self.api_base}/api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/",
+            api_key=self.api_key,
+        )
+
+    @deployment_response_crewai
+    def run(self, inputs: Dict[str, str]) -> str:
+        _ = inputs
+        return "success"

@@ -7,7 +7,7 @@ agent_app_name:
 agent_template_framework:
   type: str
   default: "base"
-  help: "The agentic framework template to start with. Supported frameworks: base, crewai, langgraph, llama_index"
+  help: "The agentic framework template to start with. Supported frameworks: base, crewai, langgraph, llamaindex"
   
 base_answers_file:
   type: str
