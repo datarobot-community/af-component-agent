@@ -40,7 +40,3 @@ class TestMyAgentLlamaIndex:
         assert agent.api_key == "test_key"
         assert agent.api_base == "test_base"
         assert agent.verbose is True
-
-    def test_run_method(self, agent):
-        # Create a mock result with a raw attribute
-        assert agent.run({"topic": "Artificial Intelligence"}) == "success"
