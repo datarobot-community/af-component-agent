@@ -1,4 +1,4 @@
-from typing import Any, Dict, Union
+from typing import Any, Dict, Tuple, Union
 
 
 class MyAgent:
@@ -12,6 +12,11 @@ class MyAgent:
         elif isinstance(verbose, bool):
             self.verbose = verbose
 
-    def run(self, inputs: Dict[str, str]) -> str:
+    def run(self, inputs: Dict[str, str]) -> Tuple[str, Dict[str, int]]:
         _ = inputs, self.api_key
-        return "success"
+        usage = {
+            "completion_tokens": 0,
+            "prompt_tokens": 0,
+            "total_tokens": 0,
+        }
+        return "success", usage
