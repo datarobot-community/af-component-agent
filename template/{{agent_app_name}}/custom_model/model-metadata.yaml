@@ -1,4 +1,5 @@
 ---
 name: CrewAI Multi-Agent Example
 type: inference
-targetType: textgeneration
+targetType: AgenticWorkflow
+targetName: response
