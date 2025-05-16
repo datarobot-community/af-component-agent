@@ -18,7 +18,14 @@ from typing import Any, Dict, Optional
 
 import requests
 from openai import OpenAI
-from openai.types.chat import ChatCompletion
+from openai.types.chat import (
+    ChatCompletion,
+    ChatCompletionSystemMessageParam,
+    ChatCompletionUserMessageParam,
+)
+from openai.types.chat.completion_create_params import (
+    CompletionCreateParamsNonStreaming,
+)
 
 
 class Kernel:
@@ -112,6 +119,28 @@ class AgentKernel(Kernel):
             api_token=api_token, codespace_id=codespace_id, base_url=base_url
         )
 
+    @staticmethod
+    def construct_prompt(user_prompt: str, extra_body: str) -> str:
+        extra_body_params = json.loads(extra_body) if extra_body else {}
+        completion_create_params = CompletionCreateParamsNonStreaming(
+            model="datarobot-deployed-llm",
+            messages=[
+                ChatCompletionSystemMessageParam(
+                    content="You are a helpful assistant",
+                    role="system",
+                ),
+                ChatCompletionUserMessageParam(
+                    content=user_prompt,
+                    role="user",
+                ),
+            ],
+            n=1,
+            temperature=0.01,
+            extra_body=extra_body_params,  # type: ignore[typeddict-unknown-key]
+        )
+        completion = json.dumps(completion_create_params)
+        return completion
+
     def execute(
         self,
         user_prompt: str,
@@ -121,6 +150,17 @@ class AgentKernel(Kernel):
     ) -> Any:
         if len(user_prompt) == 0:
             raise ValueError("user_prompt must be provided.")
+
+        # Construct the raw prompt and headers
+        extra_body = json.dumps(
+            {
+                "api_key": self.api_token,
+                "api_base": self.base_url,
+                "verbose": True,
+            }
+        )
+        chat_completion = self.construct_prompt(user_prompt, extra_body)
+        default_headers = "{}"
 
         if len(custom_model_dir) == 0:
             if use_remote:
@@ -134,16 +174,9 @@ class AgentKernel(Kernel):
             else:
                 output_path = os.path.join(os.getcwd(), "custom_model", "output.json")
 
-        extra_body = json.dumps(
-            {
-                "api_key": self.api_token,
-                "api_base": self.base_url,
-                "verbose": True,
-            }
-        )
         command_args = (
-            f"--user_prompt '{user_prompt}' "
-            f"--extra_body '{extra_body}'"
+            f"--chat_completion '{chat_completion}' "
+            f"--default_headers '{default_headers}'"
             f" --custom_model_dir '{custom_model_dir}'"
             f" --output_path '{output_path}'"
         )

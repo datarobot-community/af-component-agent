@@ -14,11 +14,12 @@
 
 from typing import Dict, Iterator, Union, cast
 
+from agent import MyAgent
+from auth import initialize_authorization_context
 from helpers import (
     create_completion_from_response_text,
     create_inputs_from_completion_params,
 )
-from my_agent_class.agent import MyAgent
 from openai.types.chat import (
     ChatCompletion,
     ChatCompletionChunk,
@@ -58,6 +59,10 @@ def chat(
         )
     """
     _ = model
+
+    # Initialize the authorization context for downstream agents and tools to retrieve
+    # access tokens for external services.
+    initialize_authorization_context(completion_create_params)
 
     # Instantiate the agent, all fields from the completion_create_params are passed to the agent
     # allowing environment variables to be passed during execution
