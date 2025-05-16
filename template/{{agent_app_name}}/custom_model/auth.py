@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from contextvars import ContextVar
-from typing import Any, Dict
+from typing import Any, Dict, cast
 
 from openai.types.chat import CompletionCreateParams
 
@@ -31,9 +31,8 @@ def initialize_authorization_context(
     agents and tools to retrieve access tokens to connect to external services. When set,
     authorization context will be automatically propagated when using ToolClient class.
     """
-    set_authorization_context(
-        completion_create_params.get("extra_body", {}).get("authorization_context", {})
-    )
+    authorization_context = completion_create_params.get("authorization_context", {})
+    set_authorization_context(cast(Dict[str, Any], authorization_context))
 
 
 def set_authorization_context(authorization_context: Dict[str, Any]) -> None:

@@ -13,7 +13,7 @@
 # limitations under the License.
 import json
 import os
-from typing import Any, Dict, Iterator, Optional, Union
+from typing import Any, Dict, Iterator, Optional, Union, cast
 
 import datarobot as dr
 import openai
@@ -68,10 +68,11 @@ class ToolClient:
         Returns:
             Dict[str, Any]: The authorization context.
         """
-        return get_authorization_context()
+        authorization_context = get_authorization_context()
+        return cast(Dict[str, Any], authorization_context)
 
     def call(
-        self, deployment_id: str, payload: Dict[str, Any], **kwargs
+        self, deployment_id: str, payload: Dict[str, Any], **kwargs: Any
     ) -> UnstructuredPredictionResult:
         """Run the custom model tool using score_unstructured hook.
 
@@ -95,7 +96,7 @@ class ToolClient:
         )
 
     def score(
-        self, deployment_id: str, data_frame: pd.DataFrame, **kwargs
+        self, deployment_id: str, data_frame: pd.DataFrame, **kwargs: Any
     ) -> PredictionResult:
         """Run the custom model tool using score hook.
 
