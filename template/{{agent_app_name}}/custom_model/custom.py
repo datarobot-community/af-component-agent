@@ -18,7 +18,7 @@ from helpers import (
     create_completion_from_response_text,
     create_inputs_from_completion_params,
 )
-from my_agent_class.agent import MyAgent
+from agent_templates.agent import MyAgent
 from openai.types.chat import (
     ChatCompletion,
     ChatCompletionChunk,
