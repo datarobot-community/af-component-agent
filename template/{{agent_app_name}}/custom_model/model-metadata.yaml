@@ -1,5 +1,0 @@
----
-name: CrewAI Multi-Agent Example
-type: inference
-targetType: agenticworkflow
-targetName: response
