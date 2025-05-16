@@ -1,9 +1,9 @@
 import pytest
 
-from custom_model.my_agent_class.agent import MyAgent
+from custom_model.agent import MyAgent
 
 
-class TestMyAgentLlamaIndex:
+class TestMyAgentLanggraph:
     @pytest.fixture
     def agent(self):
         return MyAgent(api_key="test_key", api_base="test_base", verbose=True)
