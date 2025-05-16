@@ -14,11 +14,11 @@
 
 from typing import Dict, Iterator, Union, cast
 
+from agent import MyAgent
 from helpers import (
     create_completion_from_response_text,
     create_inputs_from_completion_params,
 )
-from agent import MyAgent
 from openai.types.chat import (
     ChatCompletion,
     ChatCompletionChunk,
