@@ -15,11 +15,11 @@
 from typing import Dict, Iterator, Union, cast
 
 from agent import MyAgent
+from auth import initialize_authorization_context
 from helpers import (
     create_completion_from_response_text,
     create_inputs_from_completion_params,
 )
-from auth import initialize_authorization_context
 from openai.types.chat import (
     ChatCompletion,
     ChatCompletionChunk,

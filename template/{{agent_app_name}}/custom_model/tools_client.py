@@ -11,23 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
-from typing import Dict, Any, Tuple, Union, Iterator, Optional
-
-import openai
-import datarobot as dr
-import pandas as pd
 import json
+import os
+from typing import Any, Dict, Iterator, Optional, Union
+
+import datarobot as dr
+import openai
+import pandas as pd
+from auth import get_authorization_context
 from datarobot_predict.deployment import (
-    predict_unstructured,
-    predict,
     PredictionResult,
     UnstructuredPredictionResult,
+    predict,
+    predict_unstructured,
 )
 from openai.types import CompletionCreateParams
 from openai.types.chat import ChatCompletion, ChatCompletionChunk
-
-from auth import get_authorization_context
 
 
 class ToolClient:

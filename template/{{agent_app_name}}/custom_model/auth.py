@@ -13,10 +13,9 @@
 # limitations under the License.
 
 from contextvars import ContextVar
-from typing import Dict, Any
+from typing import Any, Dict
 
 from openai.types.chat import CompletionCreateParams
-
 
 authorization_context_var: ContextVar[Dict[str, Any]] = ContextVar(
     "authorization_context"
