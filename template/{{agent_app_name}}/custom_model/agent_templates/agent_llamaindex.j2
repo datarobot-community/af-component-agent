@@ -41,7 +41,7 @@ class MyAgent:
     @property
     def llm(self) -> DataRobotLiteLLM:
         return DataRobotLiteLLM(
-            model="datarobot/bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0",
+            model="datarobot/vertex_ai/gemini-1.5-flash-002",
             additional_kwargs={"clientId": "custom-model"},
             api_base=self.api_base,
             api_key=self.api_key,
