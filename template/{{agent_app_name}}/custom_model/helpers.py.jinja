@@ -14,15 +14,15 @@
 import json
 import time
 import uuid
-{% if agent_template_framework == "langgraph" -%}
+{%- if agent_template_framework == "langgraph" %}
 from typing import Any, Dict, Union, List
 {% else %}
 from typing import Any, Dict, Union
 {%  endif -%}
 
-{% if agent_template_framework == "crewai" -%}
+{%- if agent_template_framework == "crewai" %}
 from crewai import CrewOutput
-{%  endif %}
+{%  endif -%}
 from openai.types import CompletionUsage
 from openai.types.chat import (
     ChatCompletion,
@@ -31,7 +31,7 @@ from openai.types.chat import (
 )
 from openai.types.chat.chat_completion import Choice
 from ragas import MultiTurnSample
-{% if agent_template_framework == "langgraph" -%}
+{%- if agent_template_framework == "langgraph" %}
 from ragas.integrations.langgraph import convert_to_ragas_messages
 {%  endif -%}
 
@@ -93,7 +93,7 @@ def create_completion_from_response_text(
 
 {% if agent_template_framework == "crewai" -%}
 def to_custom_model_response(
-        crew_output: CrewOutput,
+    crew_output: CrewOutput,
 ) -> CustomModelChatResponse:
     usage_metrics: Dict[str, int] = {
         "completion_tokens": crew_output.token_usage.completion_tokens,

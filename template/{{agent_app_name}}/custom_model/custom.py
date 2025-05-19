@@ -24,7 +24,7 @@ from auth import initialize_authorization_context
 from helpers import (
     CustomModelChatResponse,
     create_inputs_from_completion_params,
-    to_custom_model_response
+    to_custom_model_response,
 )
 from openai.types.chat import CompletionCreateParams
 
