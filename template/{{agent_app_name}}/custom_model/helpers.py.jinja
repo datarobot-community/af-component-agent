@@ -37,6 +37,7 @@ from ragas.integrations.langgraph import convert_to_ragas_messages
 class CustomModelChatResponse(ChatCompletion):
     pipeline_interactions: str | None = None
 
+
 def create_inputs_from_completion_params(
     completion_create_params: CompletionCreateParams,
 ) -> Union[Dict[str, Any], str]:
@@ -88,8 +89,7 @@ def create_completion_from_response_text(
     )
     return completion
 
-
-{%- if agent_template_framework == "crewai" -%}
+{% if agent_template_framework == "crewai" %}
 def to_custom_model_response(
     crew_output: CrewOutput,
 ) -> CustomModelChatResponse:
@@ -105,7 +105,7 @@ def to_custom_model_response(
         pipeline_interactions=None,
     )
     return response
-{%- elif agent_template_framework == "langgraph" %}
+{% elif agent_template_framework == "langgraph" %}
 def _extract_pipeline_interactions(events):
     messages = []
     for e in events:
@@ -131,7 +131,7 @@ def to_custom_model_response(
         pipeline_interactions=pipeline_interactions,
     )
     return response
-{%- elif agent_template_framework == "llamaindex" %}
+{% elif agent_template_framework == "llamaindex" %}
 def to_custom_model_response(
         agent_result: str,
         usage_metrics: Dict[str, int],
