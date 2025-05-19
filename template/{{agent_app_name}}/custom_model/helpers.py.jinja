@@ -83,7 +83,7 @@ def create_completion_from_response_text(
     return completion
 
 
-{ % if agent_template_framework == "crewai" %}
+{% if agent_template_framework == "crewai" %}
 def to_custom_model_response(
         crew_output: CrewOutput,
 ) -> CustomModelChatResponse:
