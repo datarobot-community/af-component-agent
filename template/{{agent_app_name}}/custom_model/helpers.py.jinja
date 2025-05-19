@@ -132,8 +132,8 @@ def to_custom_model_response(
     return response
 {% elif agent_template_framework == "llamaindex" -%}
 def to_custom_model_response(
-        agent_result: str,
-        usage_metrics: Dict[str, int],
+    agent_result: str,
+    usage_metrics: Dict[str, int],
 ) -> CustomModelChatResponse:
     response = create_completion_from_response_text(
         response_text=agent_result,
