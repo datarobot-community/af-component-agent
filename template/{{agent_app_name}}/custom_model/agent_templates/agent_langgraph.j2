@@ -207,7 +207,7 @@ class MyAgent:
         execution_graph = workflow.compile()
         return execution_graph
 
-    def run(self, inputs: Dict[str, str]) -> list[Any], Dict[str, int]]:
+    def run(self, inputs: Dict[str, str]) -> (list[Any], Dict[str, int]):
         # This crew uses one input which is a dictionary with the topic
         # Example: {"topic": "Artificial Intelligence"}
         input_message = {
