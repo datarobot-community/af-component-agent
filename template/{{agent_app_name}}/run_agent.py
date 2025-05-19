@@ -83,7 +83,7 @@ def execute_drum(
     root.info("Executing agent as [chat] endpoint. DRUM Executor.")
     root.info("Starting DRUM server.")
     with DrumServerRun(
-        target_type=TargetType.AGENTIC_WORKFLOW.value,
+        target_type=TargetType.TEXT_GENERATION.value,
         labels=None,
         custom_model_dir=custom_model_dir,
         with_error_server=True,
