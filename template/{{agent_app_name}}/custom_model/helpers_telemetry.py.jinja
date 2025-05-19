@@ -11,12 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor
-from opentelemetry.instrumentation.crewai import CrewAIInstrumentor
-from opentelemetry.instrumentation.openai import OpenAIInstrumentor
-from opentelemetry.instrumentation.requests import RequestsInstrumentor
-
-instrument_requests = RequestsInstrumentor().instrument()
-instrument_aiohttp = AioHttpClientInstrumentor().instrument()
-instrument_openai = OpenAIInstrumentor().instrument()
-instrument_crewai = CrewAIInstrumentor().instrument()
+{% if agent_template_framework == "crewai" %}{% include 'template/{{agent_app_name}}/custom_model/telemetry_templates/agent_crewai.j2' %}
+{% elif agent_template_framework == "langgraph" %}{% include 'template/{{agent_app_name}}/custom_model/telemetry_templates/agent_langgraph.j2' %}
+{% elif agent_template_framework == "llamaindex" %}{% include 'template/{{agent_app_name}}/custom_model/telemetry_templates/agent_llamaindex.j2' %}
+{% else %}{% include 'template/{{agent_app_name}}/custom_model/telemetry_templates/agent_base.j2' %}{% endif %}
