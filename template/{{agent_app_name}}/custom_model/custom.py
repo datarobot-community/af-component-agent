@@ -19,14 +19,12 @@ from helpers_telemetry import instrument_openai  # noqa # pylint: disable=unused
 from helpers_telemetry import instrument_crewai  # noqa # pylint: disable=unused-import
 # isort: on
 
-from typing import Dict, Iterator, Union, cast
-
 from agent import MyAgent
 from auth import initialize_authorization_context
 from helpers import (
+    CustomModelChatResponse,
     create_inputs_from_completion_params,
-    to_custom_model_response,
-    CustomModelChatResponse
+    to_custom_model_response
 )
 from openai.types.chat import CompletionCreateParams
 
