@@ -107,7 +107,7 @@ def to_custom_model_response(
     )
     return response
 {% elif agent_template_framework == "langgraph" -%}
-def _extract_pipeline_interactions(events):
+def _extract_pipeline_interactions(events: List[dict[str, Any]]) -> MultiTurnSample:
     messages = []
     for e in events:
         for k, v in e.items():
@@ -120,16 +120,14 @@ def _extract_pipeline_interactions(events):
 def to_custom_model_response(
     events: List[dict[str, Any]], usage_metrics: Dict[str, int]
 ) -> CustomModelChatResponse:
-    response = events[-1]
-    node_name = next(iter(response))
-    output = str(response[node_name]["messages"][-1].content)
-
-    pipeline_interactions = _extract_pipeline_interactions(events)
+    last_event = events[-1]
+    node_name = next(iter(last_event))
+    output = str(last_event[node_name]["messages"][-1].content)
 
     response = create_completion_from_response_text(
         response_text=output,
         usage_metrics=usage_metrics,
-        pipeline_interactions=pipeline_interactions,
+        pipeline_interactions=_extract_pipeline_interactions(events),
     )
     return response
 {% elif agent_template_framework == "llamaindex" -%}
