@@ -15,7 +15,7 @@ import json
 import time
 import uuid
 {%- if agent_template_framework == "langgraph" %}
-from typing import Any, Dict, Union, List
+from typing import Any, Dict, List, Union
 {%- else %}
 from typing import Any, Dict, Union
 {%- endif %}
@@ -89,7 +89,7 @@ def create_completion_from_response_text(
     return completion
 
 
-{% if agent_template_framework == "crewai" -%}
+{%- if agent_template_framework == "crewai" -%}
 def to_custom_model_response(
     crew_output: CrewOutput,
 ) -> CustomModelChatResponse:
@@ -105,7 +105,7 @@ def to_custom_model_response(
         pipeline_interactions=None,
     )
     return response
-{% elif agent_template_framework == "langgraph" %}
+{%- elif agent_template_framework == "langgraph" %}
 def _extract_pipeline_interactions(events):
     messages = []
     for e in events:
@@ -131,7 +131,7 @@ def to_custom_model_response(
         pipeline_interactions=pipeline_interactions,
     )
     return response
-{% elif agent_template_framework == "llamaindex" %}
+{%- elif agent_template_framework == "llamaindex" %}
 def to_custom_model_response(
         agent_result: str,
         usage_metrics: Dict[str, int],
@@ -142,4 +142,4 @@ def to_custom_model_response(
         pipeline_interactions=None,
     )
     return response
-{% endif -%}
+{%- endif %}
