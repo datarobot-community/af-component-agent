@@ -19,8 +19,7 @@ from typing import Any, Dict, Union, List
 {%- else %}
 from typing import Any, Dict, Union
 {%- endif %}
-
-{%- if agent_template_framework == "crewai" %}
+{% if agent_template_framework == "crewai" %}
 from crewai import CrewOutput
 {%- endif %}
 from openai.types import CompletionUsage
@@ -37,7 +36,6 @@ from ragas.integrations.langgraph import convert_to_ragas_messages
 
 class CustomModelChatResponse(ChatCompletion):
     pipeline_interactions: str | None = None
-
 
 def create_inputs_from_completion_params(
     completion_create_params: CompletionCreateParams,
