@@ -1,5 +1,3 @@
-#jinja2: trim_blocks:True
-#jinja2: lstrip_blocks:True
 # Copyright 2025 DataRobot, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,14 +14,14 @@
 import json
 import time
 import uuid
-{%- if agent_template_framework == "langgraph" %}
+{% if agent_template_framework == "langgraph" -%}
 from typing import Any, Dict, List, Union
-{%- else %}
+{% else -%}
 from typing import Any, Dict, Union
-{%- endif %}
-{% if agent_template_framework == "crewai" %}
+{%- endif -%}
+{% if agent_template_framework == "crewai" -%}
 from crewai import CrewOutput
-{%- endif %}
+{%- endif -%}
 from openai.types import CompletionUsage
 from openai.types.chat import (
     ChatCompletion,
@@ -32,9 +30,9 @@ from openai.types.chat import (
 )
 from openai.types.chat.chat_completion import Choice
 from ragas import MultiTurnSample
-{%- if agent_template_framework == "langgraph" %}
+{% if agent_template_framework == "langgraph" -%}
 from ragas.integrations.langgraph import convert_to_ragas_messages
-{%- endif %}
+{% endif -%}
 
 class CustomModelChatResponse(ChatCompletion):
     pipeline_interactions: str | None = None
@@ -91,7 +89,8 @@ def create_completion_from_response_text(
     )
     return completion
 
-{% if agent_template_framework == "crewai" %}
+
+{% if agent_template_framework == "crewai" -%}
 def to_custom_model_response(
     crew_output: CrewOutput,
 ) -> CustomModelChatResponse:
@@ -107,7 +106,7 @@ def to_custom_model_response(
         pipeline_interactions=None,
     )
     return response
-{% elif agent_template_framework == "langgraph" %}
+{% elif agent_template_framework == "langgraph" -%}
 def _extract_pipeline_interactions(events):
     messages = []
     for e in events:
@@ -133,7 +132,7 @@ def to_custom_model_response(
         pipeline_interactions=pipeline_interactions,
     )
     return response
-{% elif agent_template_framework == "llamaindex" %}
+{% elif agent_template_framework == "llamaindex" -%}
 def to_custom_model_response(
         agent_result: str,
         usage_metrics: Dict[str, int],
@@ -144,4 +143,4 @@ def to_custom_model_response(
         pipeline_interactions=None,
     )
     return response
-{%- endif %}
+{% endif %}
