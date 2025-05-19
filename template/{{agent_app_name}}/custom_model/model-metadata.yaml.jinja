@@ -2,3 +2,7 @@
 name: {{ agent_app_name }}
 type: inference
 targetType: agenticworkflow
+runtimeParameterDefinitions:
+  - fieldName: OTEL_SDK_ENABLED
+    defaultValue: true
+    type: boolean
