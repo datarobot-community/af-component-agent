@@ -240,11 +240,9 @@ class MyAgent:
         )
         # Execute the graph and store calls to the agent in events
         events = [event for event in graph_stream]
-
         usage_metrics: Dict[str, int] = {
             "completion_tokens": 0,
             "prompt_tokens": 0,
             "total_tokens": 0,
         }
-
         return events, usage_metrics
