@@ -29,6 +29,7 @@ from ragas.integrations.langgraph import convert_to_ragas_messages
 
 {% include 'template/{{agent_app_name}}/custom_model/helper_templates/common.j2' %}
 
+
 def _extract_pipeline_interactions(events: List[dict[str, Any]]) -> MultiTurnSample:
     """Extract the pipeline interactions from the events."""
     messages = []
@@ -43,7 +44,7 @@ def _extract_pipeline_interactions(events: List[dict[str, Any]]) -> MultiTurnSam
 def to_custom_model_response(
     events: List[dict[str, Any]], usage_metrics: Dict[str, int]
 ) -> CustomModelChatResponse:
-    """Convert the CrewAI agent output to a custom model response."""
+    """Convert the Langgraph agent output to a custom model response."""
     last_event = events[-1]
     node_name = next(iter(last_event))
     output = str(last_event[node_name]["messages"][-1].content)
