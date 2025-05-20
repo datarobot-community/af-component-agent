@@ -12,11 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # isort: off
-# Telemetry configurations
-from helpers_telemetry import instrument_requests  # noqa # pylint: disable=unused-import
-from helpers_telemetry import instrument_aiohttp  # noqa # pylint: disable=unused-import
-from helpers_telemetry import instrument_openai  # noqa # pylint: disable=unused-import
-from helpers_telemetry import instrument_crewai  # noqa # pylint: disable=unused-import
+from helpers_telemetry import *  # noqa # pylint: disable=unused-import
 # isort: on
 
 from agent import MyAgent
