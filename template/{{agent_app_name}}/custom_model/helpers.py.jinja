@@ -26,7 +26,8 @@ from openai.types.chat import (
 )
 from openai.types.chat.chat_completion import Choice
 from ragas import MultiTurnSample
-{% if agent_template_framework == "langgraph" %}from ragas.integrations.langgraph import convert_to_ragas_messages{% endif %}
+{% if agent_template_framework == "langgraph" %}from ragas.integrations.langgraph import convert_to_ragas_messages
+{% endif %}
 
 class CustomModelChatResponse(ChatCompletion):
     pipeline_interactions: str | None = None
