@@ -59,7 +59,8 @@ if "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT" in os.environ:
     pulumi.info(f"Using existing execution environment '{execution_environment_id}'")
     execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
         id=execution_environment_id,
-        resource_name="Execution Environment [PRE-EXISTING]",
+        resource_name="Execution Environment [PRE-EXISTING] "
+        + {{agent_app_name}}_resource_name,
     )
 else:
     execution_environment = pulumi_datarobot.ExecutionEnvironment(
