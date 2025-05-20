@@ -76,4 +76,6 @@ def chat(
     # Execute the agent with the inputs
     agent_result = agent.run(inputs=inputs)
 
+    if isinstance(agent_result, tuple):
+        return to_custom_model_response(*agent_result)
     return to_custom_model_response(agent_result)
