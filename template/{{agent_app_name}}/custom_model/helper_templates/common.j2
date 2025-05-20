@@ -1,0 +1,50 @@
+class CustomModelChatResponse(ChatCompletion):
+    pipeline_interactions: str | None = None
+
+
+def create_inputs_from_completion_params(
+    completion_create_params: CompletionCreateParams,
+) -> Union[Dict[str, Any], str]:
+    """Load the user prompt from a JSON string or file."""
+    input_prompt: Any = next(
+        (
+            msg
+            for msg in completion_create_params["messages"]
+            if msg.get("role") == "user"
+        ),
+        {},
+    )
+    if len(input_prompt) == 0:
+        raise ValueError("No user prompt found in the messages.")
+    user_prompt = input_prompt.get("content")
+
+    try:
+        inputs = json.loads(user_prompt)
+    except json.JSONDecodeError:
+        inputs = user_prompt
+
+    return inputs  # type: ignore[no-any-return]
+
+
+def create_completion_from_response_text(
+    response_text: str, usage_metrics: Dict[str, int]
+) -> ChatCompletion:
+    """Convert the text of the LLM response into a chat completion response."""
+    completion_id = str(uuid.uuid4())
+    completion_timestamp = int(time.time())
+
+    choice = Choice(
+        index=0,
+        message=ChatCompletionMessage(role="assistant", content=response_text),
+        finish_reason="stop",
+    )
+    completion = ChatCompletion(
+        id=completion_id,
+        object="chat.completion",
+        choices=[choice],
+        created=completion_timestamp,
+        model="MODEL_NAME",
+        usage=CompletionUsage(**usage_metrics),
+    )
+
+    return completion
