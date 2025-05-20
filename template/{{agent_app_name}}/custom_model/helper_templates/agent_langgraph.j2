@@ -1,0 +1,57 @@
+# Copyright 2025 DataRobot, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+import json
+import time
+import uuid
+from typing import Any, Dict, List, Union
+
+from openai.types import CompletionUsage
+from openai.types.chat import (
+    ChatCompletion,
+    ChatCompletionMessage,
+    CompletionCreateParams,
+)
+from openai.types.chat.chat_completion import Choice
+from ragas import MultiTurnSample
+from ragas.integrations.langgraph import convert_to_ragas_messages
+
+
+{% include 'template/{{agent_app_name}}/custom_model/helper_templates/common.j2' %}
+
+
+def _extract_pipeline_interactions(events: List[dict[str, Any]]) -> MultiTurnSample:
+    """Extract the pipeline interactions from the events."""
+    messages = []
+    for e in events:
+        for k, v in e.items():
+            messages.extend(v["messages"])
+    ragas_trace = convert_to_ragas_messages(messages)
+    pipeline_interactions = MultiTurnSample(user_input=ragas_trace)
+    return pipeline_interactions
+
+
+def to_custom_model_response(
+    events: List[dict[str, Any]], usage_metrics: Dict[str, int]
+) -> CustomModelChatResponse:
+    """Convert the Langgraph agent output to a custom model response."""
+    last_event = events[-1]
+    node_name = next(iter(last_event))
+    output = str(last_event[node_name]["messages"][-1].content)
+
+    response = create_completion_from_response_text(
+        response_text=output,
+        usage_metrics=usage_metrics,
+        pipeline_interactions=_extract_pipeline_interactions(events),
+    )
+    return response

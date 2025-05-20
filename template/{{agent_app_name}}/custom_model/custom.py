@@ -15,19 +15,14 @@
 from helpers_telemetry import *  # noqa # pylint: disable=unused-import
 # isort: on
 
-from typing import Dict, Iterator, Union, cast
-
 from agent import MyAgent
 from auth import initialize_authorization_context
 from helpers import (
-    create_completion_from_response_text,
+    CustomModelChatResponse,
     create_inputs_from_completion_params,
+    to_custom_model_response,
 )
-from openai.types.chat import (
-    ChatCompletion,
-    ChatCompletionChunk,
-    CompletionCreateParams,
-)
+from openai.types.chat import CompletionCreateParams
 
 
 def load_model(code_dir: str) -> str:
@@ -39,7 +34,7 @@ def load_model(code_dir: str) -> str:
 def chat(
     completion_create_params: CompletionCreateParams,
     model: str,
-) -> Union[ChatCompletion, Iterator[ChatCompletionChunk]]:
+) -> CustomModelChatResponse:
     """When using the chat endpoint, this function is called.
 
     Agent inputs are in OpenAI message format and defined as the 'user' portion
@@ -75,12 +70,8 @@ def chat(
     inputs = create_inputs_from_completion_params(completion_create_params)
 
     # Execute the agent with the inputs
-    response, usage_metrics = agent.run(inputs=inputs)
-    response = str(response)
-    usage_metrics = cast(Dict[str, int], usage_metrics)
+    agent_result = agent.run(inputs=inputs)
 
-    # Return the response as a ChatCompletion object
-    response = create_completion_from_response_text(
-        response_text=response, usage_metrics=usage_metrics
-    )
-    return response  # type: ignore[no-any-return]
+    if isinstance(agent_result, tuple):
+        return to_custom_model_response(*agent_result)
+    return to_custom_model_response(agent_result)
