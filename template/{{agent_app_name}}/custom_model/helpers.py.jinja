@@ -14,10 +14,10 @@
 import json
 import time
 import uuid
-{% if agent_template_framework == "langgraph" -%}from typing import Any, Dict, List, Union
-{% else -%}from typing import Any, Dict, Union
-{% endif %}
-{% if agent_template_framework == "crewai" %}from crewai import CrewOutput{% endif %}
+{% if agent_template_framework == "langgraph" -%}from typing import Any, Dict, List, Union{% else -%}from typing import Any, Dict, Union{% endif %}
+
+{% if agent_template_framework == "crewai" %}from crewai import CrewOutput
+{% endif -%}
 from openai.types import CompletionUsage
 from openai.types.chat import (
     ChatCompletion,
