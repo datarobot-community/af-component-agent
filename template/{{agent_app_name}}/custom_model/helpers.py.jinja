@@ -89,6 +89,7 @@ def create_completion_from_response_text(
 def to_custom_model_response(
     crew_output: CrewOutput,
 ) -> CustomModelChatResponse:
+    """Convert the CrewAI agent output to a custom model response."""
     usage_metrics: Dict[str, int] = {
         "completion_tokens": crew_output.token_usage.completion_tokens,
         "prompt_tokens": crew_output.token_usage.prompt_tokens,
@@ -103,6 +104,7 @@ def to_custom_model_response(
     return response
 {% elif agent_template_framework == "langgraph" -%}
 def _extract_pipeline_interactions(events: List[dict[str, Any]]) -> MultiTurnSample:
+    """Extract the pipeline interactions from the events."""
     messages = []
     for e in events:
         for k, v in e.items():
@@ -115,6 +117,7 @@ def _extract_pipeline_interactions(events: List[dict[str, Any]]) -> MultiTurnSam
 def to_custom_model_response(
     events: List[dict[str, Any]], usage_metrics: Dict[str, int]
 ) -> CustomModelChatResponse:
+    """Convert the CrewAI agent output to a custom model response."""
     last_event = events[-1]
     node_name = next(iter(last_event))
     output = str(last_event[node_name]["messages"][-1].content)
@@ -130,6 +133,7 @@ def to_custom_model_response(
     agent_result: str,
     usage_metrics: Dict[str, int],
 ) -> CustomModelChatResponse:
+    """Convert the LLamaIndex agent output to a custom model response."""
     response = create_completion_from_response_text(
         response_text=agent_result,
         usage_metrics=usage_metrics,
