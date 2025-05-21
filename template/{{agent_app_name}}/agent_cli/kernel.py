@@ -141,13 +141,13 @@ class AgentKernel(Kernel):
         completion = json.dumps(completion_create_params)
         return completion
 
-    def execute(
+    def validate_execute_args(
         self,
         user_prompt: str,
         use_remote: bool = False,
         custom_model_dir: str = "",
         output_path: str = "",
-    ) -> Any:
+    ) -> tuple[str, str]:
         if len(user_prompt) == 0:
             raise ValueError("user_prompt must be provided.")
 
@@ -181,33 +181,7 @@ class AgentKernel(Kernel):
             f" --output_path '{output_path}'"
         )
 
-        if use_remote:
-            remote_cmd = {
-                "filePath": "/home/notebooks/storage/run_agent.py",
-                "commandType": "python",
-                "commandArgs": command_args,
-            }
-            response = requests.post(
-                f"{self.nbx_session_url}/{self.codespace_id}/scripts/execute/",
-                json=remote_cmd,
-                headers=self.headers,
-            )
-            print(response.json())
-            assert response.status_code == 200
-
-            print("Executing kernel...")
-            self.await_kernel_execution(response.json()["kernelId"])
-            return self.get_output_remote(output_path)
-        else:
-            local_cmd = f"python3 run_agent.py {command_args}"
-            try:
-                result = os.system(local_cmd)
-                if result != 0:
-                    raise RuntimeError(f"Command failed with exit code {result}")
-                return self.get_output_local(output_path)
-            except Exception as e:
-                print(f"Error executing command: {e}")
-                raise
+        return command_args, output_path
 
     @staticmethod
     def get_output_local(output_path: str) -> Any:
@@ -241,6 +215,45 @@ class AgentKernel(Kernel):
         assert response.status_code == 204
 
         return output
+
+    def execute(
+        self,
+        user_prompt: str,
+        use_remote: bool = False,
+        custom_model_dir: str = "",
+        output_path: str = "",
+    ) -> Any:
+        command_args, output_path = self.validate_execute_args(
+            user_prompt, use_remote, custom_model_dir, output_path
+        )
+
+        if use_remote:
+            remote_cmd = {
+                "filePath": "/home/notebooks/storage/run_agent.py",
+                "commandType": "python",
+                "commandArgs": command_args,
+            }
+            response = requests.post(
+                f"{self.nbx_session_url}/{self.codespace_id}/scripts/execute/",
+                json=remote_cmd,
+                headers=self.headers,
+            )
+            print(response.json())
+            assert response.status_code == 200
+
+            print("Executing kernel...")
+            self.await_kernel_execution(response.json()["kernelId"])
+            return self.get_output_remote(output_path)
+        else:
+            local_cmd = f"python3 run_agent.py {command_args}"
+            try:
+                result = os.system(local_cmd)
+                if result != 0:
+                    raise RuntimeError(f"Command failed with exit code {result}")
+                return self.get_output_local(output_path)
+            except Exception as e:
+                print(f"Error executing command: {e}")
+                raise
 
     def deployment(self, deployment_id: str, user_prompt: str) -> ChatCompletion:
         chat_api_url = f"{self.base_url}/api/v2/deployments/{deployment_id}/"
