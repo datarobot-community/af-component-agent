@@ -1,21 +1,7 @@
-# Copyright 2025 DataRobot, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import json
 import logging
 from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import ANY, MagicMock, mock_open, patch
 
 import pytest
 
@@ -45,6 +31,75 @@ class TestRunAgentConsistency:
 
         # Assert contents are identical
         assert main_content == docker_content, "Files have different content"
+
+
+class TestArgparseArgs:
+    def test_argparse_args_default_values(self):
+        """Test that default values are returned when no arguments are provided."""
+        # Mock sys.argv to simulate no command line arguments
+        with patch("sys.argv", ["run_agent.py"]):
+            from run_agent import argparse_args
+
+            args = argparse_args()
+
+            # Check default values
+            assert args.chat_completion == "{}"
+            assert args.default_headers == "{}"
+            assert args.custom_model_dir == ""
+            assert args.output_path == ""
+
+    def test_argparse_args_custom_values(self):
+        """Test that custom values are correctly parsed from command line arguments."""
+        # Mock sys.argv to simulate passing command line arguments
+        with patch(
+            "sys.argv",
+            [
+                "run_agent.py",
+                "--chat_completion",
+                '{"messages": [{"role": "user", "content": "Hello"}]}',
+                "--default_headers",
+                '{"X-API-Key": "test-key"}',
+                "--custom_model_dir",
+                "/path/to/model",
+                "--output_path",
+                "/path/to/output",
+            ],
+        ):
+            from run_agent import argparse_args
+
+            args = argparse_args()
+
+            # Check custom values
+            assert (
+                args.chat_completion
+                == '{"messages": [{"role": "user", "content": "Hello"}]}'
+            )
+            assert args.default_headers == '{"X-API-Key": "test-key"}'
+            assert args.custom_model_dir == "/path/to/model"
+            assert args.output_path == "/path/to/output"
+
+    def test_argparse_args_partial_values(self):
+        """Test that partial arguments work correctly with others taking default values."""
+        # Mock sys.argv to simulate passing only some arguments
+        with patch(
+            "sys.argv",
+            [
+                "run_agent.py",
+                "--chat_completion",
+                '{"messages": []}',
+                "--output_path",
+                "/path/to/output",
+            ],
+        ):
+            from run_agent import argparse_args
+
+            args = argparse_args()
+
+            # Check mixture of custom and default values
+            assert args.chat_completion == '{"messages": []}'
+            assert args.default_headers == "{}"  # default
+            assert args.custom_model_dir == ""  # default
+            assert args.output_path == "/path/to/output"
 
 
 class TestSetupLogging:
@@ -319,3 +374,151 @@ class TestExecuteDrum:
         # Verify error logging - should only log text not JSON
         mock_root.error.assert_any_call("Server failed to start")
         mock_root.error.assert_any_call("Server error")
+
+
+class TestMain:
+    @patch("run_agent.argparse_args")
+    @patch("run_agent.execute_drum")
+    @patch("run_agent.setup_logging")
+    @patch("os.getcwd")
+    @patch("os.path.join")
+    def test_main_with_custom_model_dir(
+        self,
+        mock_join,
+        mock_getcwd,
+        mock_setup_logging,
+        mock_execute_drum,
+        mock_argparse_args,
+    ):
+        """Test main function when custom_model_dir is provided."""
+        # Setup mocks
+        mock_args = MagicMock()
+        mock_args.chat_completion = '{"messages": []}'
+        mock_args.default_headers = "{}"
+        mock_args.custom_model_dir = "/path/to/custom/model"
+        mock_args.output_path = "/path/to/output"
+        mock_argparse_args.return_value = mock_args
+
+        mock_completion = MagicMock()
+        mock_execute_drum.return_value = mock_completion
+
+        # Call function
+        from run_agent import main
+
+        result = main()
+
+        # Verify argparse_args was called
+        mock_argparse_args.assert_called_once()
+
+        # Verify setup_logging was called with correct parameters
+        mock_setup_logging.assert_called_once_with(
+            logger=ANY, output_path="/path/to/output", log_level=logging.INFO
+        )
+
+        # Verify execute_drum was called with correct parameters
+        mock_execute_drum.assert_called_once_with(
+            chat_completion='{"messages": []}',
+            default_headers="{}",
+            custom_model_dir="/path/to/custom/model",
+            output_path="/path/to/output",
+        )
+
+        # Verify result
+        assert result == mock_completion
+
+        # Verify getcwd and join were not called since custom_model_dir was provided
+        mock_getcwd.assert_not_called()
+        mock_join.assert_not_called()
+
+    @patch("run_agent.argparse_args")
+    @patch("run_agent.execute_drum")
+    @patch("run_agent.setup_logging")
+    @patch("os.getcwd")
+    @patch("os.path.join")
+    def test_main_with_default_custom_model_dir(
+        self,
+        mock_join,
+        mock_getcwd,
+        mock_setup_logging,
+        mock_execute_drum,
+        mock_argparse_args,
+    ):
+        """Test main function when custom_model_dir is not provided."""
+        # Setup mocks
+        mock_args = MagicMock()
+        mock_args.chat_completion = '{"messages": []}'
+        mock_args.default_headers = "{}"
+        mock_args.custom_model_dir = ""  # Empty to trigger default behavior
+        mock_args.output_path = "/path/to/output"
+        mock_argparse_args.return_value = mock_args
+
+        mock_getcwd.return_value = "/current/working/dir"
+        mock_join.return_value = "/current/working/dir/custom_model"
+
+        mock_completion = MagicMock()
+        mock_execute_drum.return_value = mock_completion
+
+        # Call function
+        from run_agent import main
+
+        result = main()
+
+        # Verify argparse_args was called
+        mock_argparse_args.assert_called_once()
+
+        # Verify getcwd and join were called to set default custom_model_dir
+        mock_getcwd.assert_called_once()
+        mock_join.assert_called_once_with("/current/working/dir", "custom_model")
+
+        # Verify setup_logging was called with correct parameters
+        mock_setup_logging.assert_called_once_with(
+            logger=ANY, output_path="/path/to/output", log_level=logging.INFO
+        )
+
+        # Verify execute_drum was called with correct parameters (using default custom_model_dir)
+        mock_execute_drum.assert_called_once_with(
+            chat_completion='{"messages": []}',
+            default_headers="{}",
+            custom_model_dir="/current/working/dir/custom_model",
+            output_path="/path/to/output",
+        )
+
+        # Verify result
+        assert result == mock_completion
+
+    @patch("run_agent.argparse_args")
+    @patch("run_agent.execute_drum")
+    @patch("run_agent.setup_logging")
+    def test_main_integration(
+        self, mock_setup_logging, mock_execute_drum, mock_argparse_args
+    ):
+        """Test main function with a more integrated approach."""
+        # Setup mocks
+        mock_args = MagicMock()
+        mock_args.chat_completion = (
+            '{"messages": [{"role": "user", "content": "Hello"}]}'
+        )
+        mock_args.default_headers = '{"X-Custom": "value"}'
+        mock_args.custom_model_dir = "/path/to/model"
+        mock_args.output_path = "/path/to/output"
+        mock_argparse_args.return_value = mock_args
+
+        mock_completion = MagicMock()
+        mock_completion.to_json.return_value = '{"id": "test-id", "choices": []}'
+        mock_execute_drum.return_value = mock_completion
+
+        # Call function
+        from run_agent import main
+
+        result = main()
+
+        # Verify execute_drum was called with correct parsed parameters
+        mock_execute_drum.assert_called_once_with(
+            chat_completion='{"messages": [{"role": "user", "content": "Hello"}]}',
+            default_headers='{"X-Custom": "value"}',
+            custom_model_dir="/path/to/model",
+            output_path="/path/to/output",
+        )
+
+        # Verify result
+        assert result == mock_completion
