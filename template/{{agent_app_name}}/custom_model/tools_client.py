@@ -38,17 +38,15 @@ class ToolClient:
     is required for retrieving access tokens to connect to external services.
     """
 
-    def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, api_endpoint: Optional[str] = None):
         """Initialize the ToolClient.
 
         Args:
             api_key (Optional[str]): API key for authentication. Defaults to environment variable `DATAROBOT_API_TOKEN`.
-            base_url (Optional[str]): Base URL for the DataRobot API. Defaults to environment variable `DATAROBOT_BASE_URL`.
+            api_endpoint (Optional[str]): Endpoint for the DataRobot API. Defaults to environment variable `DATAROBOT_ENDPOINT`.
         """
         self.api_key = api_key or os.getenv("DATAROBOT_API_TOKEN")
-        self.base_url = base_url or os.getenv(
-            "DATAROBOT_BASE_URL", "https://app.datarobot.com"
-        )
+        self.api_endpoint = api_endpoint or os.getenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2")
 
     def get_deployment(self, deployment_id: str) -> dr.Deployment:
         """Retrieve a deployment by its ID.
@@ -59,7 +57,7 @@ class ToolClient:
         Returns:
             dr.Deployment: The deployment object.
         """
-        dr.Client(self.api_key, self.base_url)
+        dr.Client(self.api_key, self.api_endpoint)
         return dr.Deployment.get(deployment_id=deployment_id)
 
     def _get_authorization_context(self) -> Dict[str, Any]:
