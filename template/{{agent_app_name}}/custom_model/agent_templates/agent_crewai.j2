@@ -1,8 +1,12 @@
 import os
 from typing import Any, Dict, Union
 
-from crewai import LLM, Agent, Crew, CrewOutput, Task
+from crewai import LLM, Agent, Crew, CrewOutput, Task, BaseTool
+from tools_client import ToolClient
 
+# How this will be imported after both af-component-agent and af-component-tool are installed
+# I cannot wrap my head around at the moment
+import ???create_google_drive_file???
 
 class MyAgent:
     def __init__(
@@ -14,6 +18,13 @@ class MyAgent:
             self.verbose = verbose.lower() == "true"
         elif isinstance(verbose, bool):
             self.verbose = verbose
+        self.tool_client = ToolClient(self.api_key, self.api_base)
+
+    @property
+    def google_drive_tools() -> List[BaseTool]
+        return [
+            create_google_drive_file.tool.create(self.tool_client, name="Create File in Google Drive"),
+        ]
 
     @property
     def llm_with_datarobot_llm_gateway(self) -> LLM:
@@ -125,11 +136,13 @@ class MyAgent:
                 "and a summarizing conclusion.\n"
                 "5. Proofread for grammatical errors and "
                 "alignment with the brand's voice.\n"
+                "6. Upload result to the google drive"
             ),
             expected_output="A well-written blog post "
             "in markdown format, ready for publication, "
             "each section should have 2 or 3 paragraphs.",
             agent=self.agent_writer,
+            tools=self.google_drive_tools,
         )
 
     @property
