@@ -4,6 +4,23 @@ version: '3'
 vars:
   CLI: uv run cli.py
 tasks:
+  default:
+    cmds:
+      - echo "Available task commands:"
+      - echo "  To run commands, use the following format:"
+      - echo "    task <command> [<args>]"
+      - echo ""
+      - echo "Commands:"
+      - echo "help                           - Show this help message"
+      - echo "req                            - Update dependencies for the agent"
+      - echo "cli                            - Run the CLI with the provided arguments or no arguments to see help."
+      - echo "lint                           - Lint the agent templates"
+      - echo "test                           - Run unit tests for the agent"
+      - echo "fix-licenses                   - Fix licenses for the agent files"
+    silent: true
+  help:
+    cmds:
+      - task: default
   req:
     cmds:
       - echo "Updating local dependencies"
@@ -20,9 +37,6 @@ tasks:
     silent: true
   test:
     cmds: [echo "Running pytest on tests", uv run pytest -vv ./tests/]
-    silent: true
-  dir:
-    cmds: [echo "Running pytest on tests", uv run pytest -vv tests/]
     silent: true
   fix-licenses:
     cmds:
