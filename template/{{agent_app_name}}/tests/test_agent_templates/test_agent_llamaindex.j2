@@ -112,8 +112,8 @@ class TestMyAgentLlamaIndex:
         agent = MyAgent(**additional_kwargs)
 
         # Assert - Additional kwargs should be accepted but not stored as attributes
-        assert agent.api_key is not None  # Should fallback to env var or None
-        assert agent.api_base is not None  # Should fallback to env var or None
+        assert agent.api_key is None  # Should fallback to env var or None
+        assert agent.api_base is None  # Should fallback to env var or None
         assert agent.model is None
         assert agent.verbose is True
 
