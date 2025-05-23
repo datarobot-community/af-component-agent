@@ -1,3 +1,4 @@
+import os
 from unittest.mock import ANY, Mock, patch
 
 import pytest
@@ -19,7 +20,9 @@ class TestMyAgentCrewAI:
         verbose = True
 
         # Execute
-        agent = MyAgent(api_key=api_key, api_base=api_base, model=model, verbose=verbose)
+        agent = MyAgent(
+            api_key=api_key, api_base=api_base, model=model, verbose=verbose
+        )
 
         # Assert
         assert agent.api_key == api_key
@@ -27,7 +30,13 @@ class TestMyAgentCrewAI:
         assert agent.model == model
         assert agent.verbose is True
 
-    @patch.dict(os.environ, {"DATAROBOT_API_TOKEN": "env-api-key", "DATAROBOT_ENDPOINT": "https://env-api-base.com"})
+    @patch.dict(
+        os.environ,
+        {
+            "DATAROBOT_API_TOKEN": "env-api-key",
+            "DATAROBOT_ENDPOINT": "https://env-api-base.com",
+        },
+    )
     def test_init_with_environment_variables(self):
         """Test initialization using environment variables when no explicit parameters."""
         # Execute
@@ -39,7 +48,13 @@ class TestMyAgentCrewAI:
         assert agent.model is None
         assert agent.verbose is True
 
-    @patch.dict(os.environ, {"DATAROBOT_API_TOKEN": "env-api-key", "DATAROBOT_ENDPOINT": "https://env-api-base.com"})
+    @patch.dict(
+        os.environ,
+        {
+            "DATAROBOT_API_TOKEN": "env-api-key",
+            "DATAROBOT_ENDPOINT": "https://env-api-base.com",
+        },
+    )
     def test_init_explicit_params_override_env_vars(self):
         """Test explicit parameters override environment variables."""
         # Setup
@@ -87,6 +102,7 @@ class TestMyAgentCrewAI:
         agent = MyAgent(verbose=False)
         assert agent.verbose is False
 
+    @patch.dict(os.environ, {}, clear=True)
     def test_init_with_additional_kwargs(self):
         """Test initialization with additional keyword arguments."""
         # Setup
@@ -96,8 +112,8 @@ class TestMyAgentCrewAI:
         agent = MyAgent(**additional_kwargs)
 
         # Assert - Additional kwargs should be accepted but not stored as attributes
-        assert agent.api_key is not None  # Should fallback to env var or None
-        assert agent.api_base is not None  # Should fallback to env var or None
+        assert agent.api_key is None  # Should fallback to env var or None
+        assert agent.api_base is None  # Should fallback to env var or None
         assert agent.model is None
         assert agent.verbose is True
 
@@ -229,5 +245,4 @@ class TestMyAgentCrewAI:
             # Verify kickoff was called with the right inputs
             mock_crew.kickoff.assert_called_once_with(inputs=inputs)
 
-            # Verify the returned result
             assert result == mock_result
