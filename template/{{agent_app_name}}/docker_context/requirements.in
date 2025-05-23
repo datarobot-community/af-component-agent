@@ -4,7 +4,7 @@ ecs-logging
 jupyter-client
 jupyter_kernel_gateway
 jupyter_core
-ipykernel
+ipykernel<6.29.0
 pandas
 numpy
 mistune
