@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 from langchain_community.chat_models import ChatLiteLLM
 from langchain_core.messages import HumanMessage
@@ -19,7 +19,7 @@ class MyAgent:
         verbose: Optional[Union[bool, str]] = True,
         **kwargs: Any,
     ):
-        self.api_key = api_key or os.environ.get("DATAROBOT_API_KEY")
+        self.api_key = api_key or os.environ.get("DATAROBOT_API_TOKEN")
         self.api_base = api_base or os.environ.get("DATAROBOT_ENDPOINT")
         self.model = model
         if isinstance(verbose, str):
@@ -29,8 +29,8 @@ class MyAgent:
 
     @property
     def llm_with_datarobot_llm_gateway(self) -> ChatLiteLLM:
-        os.environ["DATAROBOT_API_KEY"] = self.api_key
-        os.environ["DATAROBOT_API_BASE"] = self.api_base
+        os.environ["DATAROBOT_API_TOKEN"] = self.api_key  # type: ignore[assignment]
+        os.environ["DATAROBOT_ENDPOINT"] = self.api_base  # type: ignore[assignment]
         return ChatLiteLLM(
             model="datarobot/vertex_ai/gemini-1.5-flash-002",
             api_base=self.api_base,
@@ -45,8 +45,8 @@ class MyAgent:
         deployment_url = (
             f"{self.api_base}/api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/"
         )
-        os.environ["DATAROBOT_API_KEY"] = self.api_key
-        os.environ["DATAROBOT_API_BASE"] = deployment_url
+        os.environ["DATAROBOT_API_TOKEN"] = self.api_key  # type: ignore[assignment]
+        os.environ["DATAROBOT_ENDPOINT"] = deployment_url
         return ChatLiteLLM(
             model="datarobot/vertex_ai/gemini-1.5-flash-002",
             api_base=deployment_url,
