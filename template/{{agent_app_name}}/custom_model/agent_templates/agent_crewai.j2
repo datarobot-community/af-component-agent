@@ -1,15 +1,21 @@
 import os
-from typing import Any, Dict, Union
+from typing import Any, Dict, Optional, Union
 
 from crewai import LLM, Agent, Crew, CrewOutput, Task
 
 
 class MyAgent:
     def __init__(
-        self, api_key: str, api_base: str, verbose: Union[bool, str], **kwargs: Any
+        self,
+        api_key: Optional[str] = None,
+        api_base: Optional[str] = None,
+        model: Optional[str] = None,
+        verbose: Optional[Union[bool, str]] = True,
+        **kwargs: Any,
     ):
-        self.api_key = api_key
-        self.api_base = api_base
+        self.api_key = api_key or os.environ.get("DATAROBOT_API_TOKEN")
+        self.api_base = api_base or os.environ.get("DATAROBOT_ENDPOINT")
+        self.model = model
         if isinstance(verbose, str):
             self.verbose = verbose.lower() == "true"
         elif isinstance(verbose, bool):
