@@ -1,65 +1,9 @@
-import json
-import logging
 import os
-from typing import Any, Dict, Tuple, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from crewai import LLM, Agent, Crew, CrewOutput, Task
 
-from crewai.utilities.events import (
-    AgentExecutionCompletedEvent,
-    AgentExecutionStartedEvent,
-    CrewAIEventsBus,
-    ToolUsageFinishedEvent,
-    ToolUsageStartedEvent,
-)
-from crewai.utilities.events.base_event_listener import BaseEventListener
-from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
-
-
-class CrewAIEventListener(BaseEventListener):
-    def __init__(self):
-        super().__init__()
-        self.messages = []
-
-    def setup_listeners(self, crewai_event_bus: CrewAIEventsBus):
-        @crewai_event_bus.on(AgentExecutionStartedEvent)
-        def on_agent_execution_started(_, event):
-            self.messages.append(AIMessage(content=event.task_prompt, tool_calls=[]))
-
-        @crewai_event_bus.on(AgentExecutionCompletedEvent)
-        def on_agent_execution_completed(_, event):
-            self.messages.append(AIMessage(content=event.output, tool_calls=[]))
-
-        @crewai_event_bus.on(ToolUsageStartedEvent)
-        def on_tool_usage_started(_, event):
-            # Its a tool call - add tool call to last AIMessage
-            if len(self.messages) == 0:
-                logging.warning("Direct tool usage without agent invocation")
-                return
-            last_message = self.messages[-1]
-            if not isinstance(last_message, AIMessage):
-                logging.warning(
-                    "Tool call must be preceded by an AIMessage somewhere in the conversation."
-                )
-                return
-            tool_call = ToolCall(name=event.tool_name, args=json.loads(event.tool_args))
-            last_message.tool_calls.append(tool_call)
-
-        @crewai_event_bus.on(ToolUsageFinishedEvent)
-        def on_tool_usage_finished(_, event):
-            if len(self.messages) == 0:
-                logging.warning("Direct tool usage without agent invocation")
-                return
-            last_message = self.messages[-1]
-            if not isinstance(last_message, AIMessage):
-                logging.warning(
-                    "Tool call must be preceded by an AIMessage somewhere in the conversation."
-                )
-                return
-            if not last_message.tool_calls:
-                logging.warning("No previous tool calls found")
-                return
-            self.messages.append(ToolMessage(content=event.output))
+from custom_model.helpers import CrewAIEventListener
 
 
 class MyAgent:
@@ -217,14 +161,7 @@ class MyAgent:
             verbose=self.verbose,
         )
 
-    def run(self, inputs: Dict[str, str]) -> Tuple[list[Any], CrewOutput]:
+    def run(self, inputs: Dict[str, str]) -> CrewOutput:
         # This crew uses one input which is a dictionary with the topic
         # Example: {"topic": "Artificial Intelligence"}
-        crew_output = self.crew().kickoff(inputs=inputs)
-        response_text = str(crew_output.raw)
-        events = [HumanMessage(content=f"Write a blog post on topic {inputs['topic']}")]
-        events.extend(self.event_listener.messages)
-        last_message = events[-1].content
-        if last_message != response_text:
-            events.append(AIMessage(content=response_text))
-        return events, crew_output
+        return self.crew().kickoff(inputs=inputs)

@@ -16,6 +16,8 @@ from helpers_telemetry import *  # noqa # pylint: disable=unused-import
 # isort: on
 
 from agent import MyAgent
+from ragas.messages import HumanMessage, AIMessage
+
 from auth import initialize_authorization_context
 from helpers import (
     CustomModelChatResponse,
@@ -70,8 +72,12 @@ def chat(
     inputs = create_inputs_from_completion_params(completion_create_params)
 
     # Execute the agent with the inputs
-    agent_result = agent.run(inputs=inputs)
+    crew_output = agent.run(inputs=inputs)
+    response_text = str(crew_output.raw)
+    events = [HumanMessage(content=f"Write a blog post on topic {inputs['topic']}")]
+    events.extend(agent.event_listener.messages)
+    last_message = events[-1].content
+    if last_message != response_text:
+        events.append(AIMessage(content=response_text))
 
-    if isinstance(agent_result, tuple):
-        return to_custom_model_response(*agent_result)
-    return to_custom_model_response(agent_result)
+    return to_custom_model_response(events, crew_output)

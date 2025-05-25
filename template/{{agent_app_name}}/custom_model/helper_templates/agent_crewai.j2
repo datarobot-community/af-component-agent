@@ -12,12 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import json
+import logging
 import time
 import uuid
 from typing import Any, Dict, List, Union
 
 from crewai import CrewOutput
 from openai.types import CompletionUsage
+from crewai.utilities.events import (
+    AgentExecutionCompletedEvent,
+    AgentExecutionStartedEvent,
+    CrewAIEventsBus,
+    ToolUsageFinishedEvent,
+    ToolUsageStartedEvent,
+)
+from crewai.utilities.events.base_event_listener import BaseEventListener
 from openai.types.chat import (
     ChatCompletion,
     ChatCompletionMessage,
@@ -25,8 +34,56 @@ from openai.types.chat import (
 )
 from openai.types.chat.chat_completion import Choice
 from ragas import MultiTurnSample
-from ragas.messages import AIMessage, HumanMessage, ToolMessage
+from ragas.messages import AIMessage, HumanMessage, ToolMessage, ToolCall
 
+class CrewAIEventListener(BaseEventListener):  # type: ignore[misc]
+    def __init__(self) -> None:
+        super().__init__()
+        self.messages: list[Union[HumanMessage, AIMessage, ToolMessage]] = []
+
+    def setup_listeners(self, crewai_event_bus: CrewAIEventsBus) -> None:
+        @crewai_event_bus.on(AgentExecutionStartedEvent)  # type: ignore[misc]
+        def on_agent_execution_started(
+            _: Any, event: AgentExecutionStartedEvent
+        ) -> None:
+            self.messages.append(AIMessage(content=event.task_prompt, tool_calls=[]))
+
+        @crewai_event_bus.on(AgentExecutionCompletedEvent)  # type: ignore[misc]
+        def on_agent_execution_completed(
+            _: Any, event: AgentExecutionCompletedEvent
+        ) -> None:
+            self.messages.append(AIMessage(content=event.output, tool_calls=[]))
+
+        @crewai_event_bus.on(ToolUsageStartedEvent)  # type: ignore[misc]
+        def on_tool_usage_started(_: Any, event: ToolUsageStartedEvent) -> None:
+            # Its a tool call - add tool call to last AIMessage
+            if len(self.messages) == 0:
+                logging.warning("Direct tool usage without agent invocation")
+                return
+            last_message = self.messages[-1]
+            if not isinstance(last_message, AIMessage):
+                logging.warning(
+                    "Tool call must be preceded by an AIMessage somewhere in the conversation."
+                )
+                return
+            tool_call = ToolCall(name=event.tool_name, args=json.loads(event.tool_args))
+            last_message.tool_calls.append(tool_call)
+
+        @crewai_event_bus.on(ToolUsageFinishedEvent)  # type: ignore[misc]
+        def on_tool_usage_finished(_: Any, event: ToolUsageFinishedEvent) -> None:
+            if len(self.messages) == 0:
+                logging.warning("Direct tool usage without agent invocation")
+                return
+            last_message = self.messages[-1]
+            if not isinstance(last_message, AIMessage):
+                logging.warning(
+                    "Tool call must be preceded by an AIMessage somewhere in the conversation."
+                )
+                return
+            if not last_message.tool_calls:
+                logging.warning("No previous tool calls found")
+                return
+            self.messages.append(ToolMessage(content=event.output))
 
 {% include 'template/{{agent_app_name}}/custom_model/helper_templates/common.j2' %}
 
@@ -42,9 +99,10 @@ def to_custom_model_response(
         "total_tokens": crew_output.token_usage.total_tokens,
     }
 
+    pipeline_interactions = MultiTurnSample(user_input=events)
     response = create_completion_from_response_text(
         response_text=str(crew_output.raw),
         usage_metrics=usage_metrics,
-        pipeline_interactions=MultiTurnSample(user_input=events),
+        pipeline_interactions=pipeline_interactions,
     )
     return response
