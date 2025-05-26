@@ -15,8 +15,8 @@
 import argparse
 import json
 import logging
-import os
 import sys
+from pathlib import Path
 from typing import Any, cast
 
 import requests
@@ -24,8 +24,15 @@ from datarobot_drum.drum.enum import TargetType
 from datarobot_drum.drum.root_predictors.drum_server_utils import DrumServerRun
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
+from openai.types.chat.completion_create_params import (
+    CompletionCreateParamsNonStreaming,
+)
 
 root = logging.getLogger()
+
+CURRENT_DIR = Path(__file__).parent
+DEFAULT_OUTPUT_LOG_PATH = CURRENT_DIR / "output.log"
+DEFAULT_OUTPUT_JSON_PATH = CURRENT_DIR / "output.json"
 
 
 def argparse_args() -> argparse.Namespace:
@@ -33,7 +40,7 @@ def argparse_args() -> argparse.Namespace:
     parser.add_argument(
         "--chat_completion",
         type=str,
-        default="{}",
+        required=True,
         help="OpenAI ChatCompletion dict as json string",
     )
     parser.add_argument(
@@ -45,7 +52,7 @@ def argparse_args() -> argparse.Namespace:
     parser.add_argument(
         "--custom_model_dir",
         type=str,
-        default="",
+        required=True,
         help="directory containing custom.py location",
     )
     parser.add_argument(
@@ -55,33 +62,20 @@ def argparse_args() -> argparse.Namespace:
     return args
 
 
-def setup_logging(
-    logger: logging.Logger, output_path: str, log_level: int = logging.INFO
-) -> None:
-    if len(output_path) == 0:
-        output_path = "output.log"
-    else:
-        output_path = f"{output_path}.log"
-
+def setup_logging(logger: logging.Logger, log_level: int = logging.INFO) -> None:
     logger.setLevel(log_level)
     handler_stream = logging.StreamHandler(sys.stdout)
     handler_stream.setLevel(log_level)
     formatter = logging.Formatter("%(message)s")
     handler_stream.setFormatter(formatter)
 
-    if os.path.exists(output_path):
-        os.remove(output_path)
-    handler_file = logging.FileHandler(output_path)
-    handler_file.setLevel(log_level)
-    formatter_file = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-    handler_file.setFormatter(formatter_file)
-
     logger.addHandler(handler_stream)
-    logger.addHandler(handler_file)
 
 
 def execute_drum(
-    chat_completion: str, default_headers: str, custom_model_dir: str, output_path: str
+    chat_completion: CompletionCreateParamsNonStreaming,
+    default_headers: dict,
+    custom_model_dir: Path,
 ) -> ChatCompletion:
     root.info("Executing agent as [chat] endpoint. DRUM Executor.")
     root.info("Starting DRUM server.")
@@ -104,13 +98,8 @@ def execute_drum(
             root.error("Server failed to start")
             try:
                 root.error(response.text)
-                root.error(response.json())
             finally:
                 raise RuntimeError("Server failed to start")
-
-        root.info("Parsing OpenAI request")
-        completion_params = json.loads(chat_completion)
-        header_params = json.loads(default_headers)
 
         # Use a standard OpenAI client to call the DRUM server. This mirrors the behavior of a deployed agent.
         # Using the `chat.completions.create` method ensures the parameters are OpenAI compatible.
@@ -118,37 +107,74 @@ def execute_drum(
         client = OpenAI(
             base_url=drum_runner.url_server_address,
             api_key="not-required",
-            default_headers=header_params,
+            default_headers=default_headers,
             max_retries=0,
         )
-        completion = client.chat.completions.create(**completion_params)
-
+        completion = client.chat.completions.create(**chat_completion)
     # Continue outside the context manager to ensure the server is stopped and logs
     # are flushed before we write the output
-    root.info(f"Storing result: {output_path}")
-    if len(output_path) == 0:
-        output_path = os.path.join(custom_model_dir, "output.json")
-    with open(output_path, "w") as fp:
-        fp.write(completion.to_json())
-
-    root.info(completion.to_json())
     return cast(ChatCompletion, completion)
 
 
+def construct_prompt(chat_completion: str) -> CompletionCreateParamsNonStreaming:
+    chat_completion = json.loads(chat_completion)
+    completion_create_params = CompletionCreateParamsNonStreaming(**chat_completion)
+    return completion_create_params
+
+
+def store_result(result: ChatCompletion, output_path: str) -> None:
+    root.info(f"Storing result: {output_path}")
+    with open(output_path, "w") as fp:
+        fp.write(result.to_json())
+
+
 def main() -> Any:
-    args = argparse_args()
-    if len(args.custom_model_dir) == 0:
-        args.custom_model_dir = os.path.join(os.getcwd(), "custom_model")
-    setup_logging(logger=root, output_path=args.output_path, log_level=logging.INFO)
-    result = execute_drum(
-        chat_completion=args.chat_completion,
-        default_headers=args.default_headers,
-        custom_model_dir=args.custom_model_dir,
-        output_path=args.output_path,
-    )
-    return result
+    stdout = sys.stdout
+    stderr = sys.stderr
+    try:
+        with open(DEFAULT_OUTPUT_LOG_PATH, "a") as f:
+            sys.stdout = f
+            sys.stderr = f
+            print("Parsing args")
+            args = argparse_args()
+
+        output_log_path = (
+            args.output_path + ".log" if args.output_path else DEFAULT_OUTPUT_LOG_PATH
+        )
+        with open(output_log_path, "a") as f:
+            sys.stdout = f
+            sys.stderr = f
+
+            print("Setting up logging")
+            setup_logging(logger=root, log_level=logging.INFO)
+            # Agent execution
+            root.info(f"Executing agent at {args.custom_model_dir}")
+            try:
+                root.info("Parsing args")
+                # Parse input to fail early if it's not valid
+                chat_completion = construct_prompt(args.chat_completion)
+                default_headers = json.loads(args.default_headers)
+                root.info(f"Chat completion: {chat_completion}")
+                root.info(f"Default headers: {default_headers}")
+
+                root.info(f"Executing request in directory {args.custom_model_dir}")
+                result = execute_drum(
+                    chat_completion=chat_completion,
+                    default_headers=default_headers,
+                    custom_model_dir=args.custom_model_dir,
+                )
+                root.info(f"Result: {result}")
+                store_result(result, args.output_path or DEFAULT_OUTPUT_JSON_PATH)
+            except Exception as e:
+                root.exception(f"Error executing agent: {e}")
+    except Exception:
+        pass
+    finally:
+        # Return to original stdout and stderr otherwise the kernel will fail to flush and
+        # hang
+        sys.stdout = stdout
+        sys.stderr = stderr
 
 
-# Agent execution
 if __name__ == "__main__":
     main()
