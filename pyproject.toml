@@ -17,6 +17,5 @@ dev = [
 
 [tool.ruff]
 exclude = [
-    "*/jupyter_kernel_gateway_config.py",
-    "*/ipython_config.py",
+    "*/docker_context/*",
 ]
