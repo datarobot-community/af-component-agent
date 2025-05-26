@@ -13,6 +13,7 @@ class MyAgent:
         api_base: Optional[str] = None,
         model: Optional[str] = None,
         verbose: Optional[Union[bool, str]] = True,
+        event_listener: Optional[CrewAIEventListener] = None,
         **kwargs: Any,
     ):
         self.api_key = api_key or os.environ.get("DATAROBOT_API_TOKEN")
@@ -22,7 +23,7 @@ class MyAgent:
             self.verbose = verbose.lower() == "true"
         elif isinstance(verbose, bool):
             self.verbose = verbose
-        self.event_listener = CrewAIEventListener()
+        self.event_listener = event_listener
 
     @property
     def llm_with_datarobot_llm_gateway(self) -> LLM:

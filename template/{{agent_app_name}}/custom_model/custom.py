@@ -16,7 +16,8 @@ from helpers_telemetry import *  # noqa # pylint: disable=unused-import
 # isort: on
 
 from agent import MyAgent
-from ragas.messages import HumanMessage, AIMessage
+from ragas.messages import AIMessage
+from custom_model.helpers import CrewAIEventListener
 
 from auth import initialize_authorization_context
 from helpers import (
@@ -64,9 +65,12 @@ def chat(
     # access tokens for external services.
     initialize_authorization_context(completion_create_params)
 
+    # Initalize CrewAI Event listener
+    event_listener = CrewAIEventListener()
+
     # Instantiate the agent, all fields from the completion_create_params are passed to the agent
     # allowing environment variables to be passed during execution
-    agent = MyAgent(**completion_create_params)
+    agent = MyAgent(**completion_create_params, event_listener=event_listener)
 
     # Load the user prompt from the completion_create_params as JSON or a string
     inputs = create_inputs_from_completion_params(completion_create_params)
@@ -74,8 +78,7 @@ def chat(
     # Execute the agent with the inputs
     crew_output = agent.run(inputs=inputs)
     response_text = str(crew_output.raw)
-    events = [HumanMessage(content=f"Write a blog post on topic {inputs['topic']}")]
-    events.extend(agent.event_listener.messages)
+    events = agent.event_listener.messages
     last_message = events[-1].content
     if last_message != response_text:
         events.append(AIMessage(content=response_text))

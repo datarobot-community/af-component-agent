@@ -23,6 +23,7 @@ from crewai.utilities.events import (
     AgentExecutionCompletedEvent,
     AgentExecutionStartedEvent,
     CrewAIEventsBus,
+    CrewKickoffStartedEvent,
     ToolUsageFinishedEvent,
     ToolUsageStartedEvent,
 )
@@ -42,6 +43,12 @@ class CrewAIEventListener(BaseEventListener):  # type: ignore[misc]
         self.messages: list[Union[HumanMessage, AIMessage, ToolMessage]] = []
 
     def setup_listeners(self, crewai_event_bus: CrewAIEventsBus) -> None:
+        @crewai_event_bus.on(CrewKickoffStartedEvent)  # type: ignore[misc]
+        def on_crew_execution_started(_: Any, event: CrewKickoffStartedEvent) -> None:
+            self.messages.append(
+                HumanMessage(content=f"Working on input '{json.dumps(event.inputs)}'")
+            )
+
         @crewai_event_bus.on(AgentExecutionStartedEvent)  # type: ignore[misc]
         def on_agent_execution_started(
             _: Any, event: AgentExecutionStartedEvent
