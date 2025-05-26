@@ -60,7 +60,13 @@ class CGroupFileReader:
     def memory_usage_in_bytes(self) -> int:
         memory_stat_str = self._memory_usage_file.read_text()
         total_rss_str = next(
-            iter([stat for stat in memory_stat_str.split("\n") if stat.startswith("total_rss")]),
+            iter(
+                [
+                    stat
+                    for stat in memory_stat_str.split("\n")
+                    if stat.startswith("total_rss")
+                ]
+            ),
             "0",
         )
         total_rss = int(total_rss_str.split(" ")[-1])
@@ -114,7 +120,9 @@ class BaseWatcher:
 
 
 class CGroupWatcher(BaseWatcher):
-    def __init__(self, cgroup_file_reader: CGroupFileReader, system_watcher: SystemWatcher) -> None:
+    def __init__(
+        self, cgroup_file_reader: CGroupFileReader, system_watcher: SystemWatcher
+    ) -> None:
         self._cgroup_file_reader = cgroup_file_reader
         self._system_watcher = system_watcher
 
@@ -130,7 +138,9 @@ class CGroupWatcher(BaseWatcher):
         return min(cgroup_mem_limit, total_virtual_memory)
 
     def memory_usage_percentage(self) -> float:
-        return round(self.memory_usage_in_bytes() / self.memory_limit_in_bytes() * 100, 2)
+        return round(
+            self.memory_usage_in_bytes() / self.memory_limit_in_bytes() * 100, 2
+        )
 
     def cpu_usage_limit_in_cores(self) -> float:
         cpu_quota_micros = self._cgroup_file_reader.cpu_quota_micros()
@@ -151,7 +161,10 @@ class CGroupWatcher(BaseWatcher):
             usage_diff = cpu_cum_usage_nanos - self._last_cpu_cum_usage_nanos
             time_diff = current_timestamp_nanos - self._last_cpu_usage_ts_nanos
             current_usage = (
-                float(usage_diff) / float(time_diff) / self.cpu_usage_limit_in_cores() * 100.0
+                float(usage_diff)
+                / float(time_diff)
+                / self.cpu_usage_limit_in_cores()
+                * 100.0
             )
 
         self._last_cpu_usage_ts_nanos = current_timestamp_nanos
@@ -161,7 +174,10 @@ class CGroupWatcher(BaseWatcher):
         return round(self._limit(current_usage, lower_limit=0.0, upper_limit=100.0), 2)
 
     def _is_first_measurement(self) -> bool:
-        return self._last_cpu_usage_ts_nanos is None or self._last_cpu_cum_usage_nanos is None
+        return (
+            self._last_cpu_usage_ts_nanos is None
+            or self._last_cpu_cum_usage_nanos is None
+        )
 
     @staticmethod
     def _limit(value: float, lower_limit: float, upper_limit: float) -> float:

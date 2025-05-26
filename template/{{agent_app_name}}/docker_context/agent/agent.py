@@ -64,4 +64,6 @@ async def websocket_endpoint(websocket: WebSocket):
         )
     except ConnectionClosedOK:
         # https://github.com/encode/starlette/issues/759
-        logger.info("utilization consumer unconnected", extra={"connection": websocket.client})
+        logger.info(
+            "utilization consumer unconnected", extra={"connection": websocket.client}
+        )

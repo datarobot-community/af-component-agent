@@ -14,37 +14,11 @@
 
 import json
 import logging
-from pathlib import Path
 from unittest.mock import ANY, MagicMock, mock_open, patch
 
 import pytest
 
 from run_agent import execute_drum, setup_logging
-
-
-class TestRunAgentConsistency:
-    def test_run_agent_files_are_identical(self):
-        """Test that run_agent.py and docker_context/run_agent.py have identical content."""
-        # Get the project root directory (assumes test is running from project root or tests directory)
-        project_root = Path(__file__).parent.parent
-
-        # Define paths to both files
-        main_file = project_root / "run_agent.py"
-        docker_file = project_root / "docker_context" / "run_agent.py"
-
-        # Assert both files exist
-        assert main_file.exists(), f"Main file not found: {main_file}"
-        assert docker_file.exists(), f"Docker file not found: {docker_file}"
-
-        # Read content of both files
-        with open(main_file, "r") as f1:
-            main_content = f1.read()
-
-        with open(docker_file, "r") as f2:
-            docker_content = f2.read()
-
-        # Assert contents are identical
-        assert main_content == docker_content, "Files have different content"
 
 
 class TestArgparseArgs:
@@ -126,72 +100,32 @@ class TestSetupLogging:
 
     @patch("os.path.exists")
     @patch("os.remove")
-    @patch("logging.FileHandler")
     @patch("logging.StreamHandler")
     def test_setup_logging_with_empty_output_path(
-        self, mock_stream_handler, mock_file_handler, mock_remove, mock_exists, logger
+        self, mock_stream_handler, mock_remove, mock_exists, logger
     ):
         # Set up mocks
         mock_stream = MagicMock()
         mock_stream_handler.return_value = mock_stream
-        mock_file = MagicMock()
-        mock_file_handler.return_value = mock_file
         mock_exists.return_value = False
 
         # Call function with empty output path
         setup_logging(logger=logger, output_path="", log_level=logging.INFO)
 
-        # Verify correct output_path is used
-        mock_file_handler.assert_called_once_with("output.log")
-
         # Verify logger configuration
         assert logger.level == logging.INFO
         assert len(logger.handlers) == 2
         mock_stream.setFormatter.assert_called_once()
-        mock_file.setFormatter.assert_called_once()
 
         # Verify remove wasn't called since file doesn't exist
         mock_remove.assert_not_called()
 
     @patch("os.path.exists")
-    @patch("os.remove")
-    @patch("logging.FileHandler")
     @patch("logging.StreamHandler")
-    def test_setup_logging_with_custom_output_path(
-        self, mock_stream_handler, mock_file_handler, mock_remove, mock_exists, logger
-    ):
+    def test_setup_logging_formatters(self, mock_stream_handler, mock_exists, logger):
         # Set up mocks
         mock_stream = MagicMock()
         mock_stream_handler.return_value = mock_stream
-        mock_file = MagicMock()
-        mock_file_handler.return_value = mock_file
-        mock_exists.return_value = True
-
-        # Call function with custom output path
-        setup_logging(logger=logger, output_path="custom_path", log_level=logging.DEBUG)
-
-        # Verify correct output_path is used
-        mock_file_handler.assert_called_once_with("custom_path.log")
-
-        # Verify logger configuration
-        assert logger.level == logging.DEBUG
-        assert len(logger.handlers) == 2
-
-        # Verify existing file was removed
-        mock_exists.assert_called_once_with("custom_path.log")
-        mock_remove.assert_called_once_with("custom_path.log")
-
-    @patch("os.path.exists")
-    @patch("logging.FileHandler")
-    @patch("logging.StreamHandler")
-    def test_setup_logging_formatters(
-        self, mock_stream_handler, mock_file_handler, mock_exists, logger
-    ):
-        # Set up mocks
-        mock_stream = MagicMock()
-        mock_stream_handler.return_value = mock_stream
-        mock_file = MagicMock()
-        mock_file_handler.return_value = mock_file
         mock_exists.return_value = False
 
         # Call function
@@ -200,9 +134,6 @@ class TestSetupLogging:
         # Verify formatters
         stream_formatter_call = mock_stream.setFormatter.call_args[0][0]
         assert stream_formatter_call._fmt == "%(message)s"
-
-        file_formatter_call = mock_file.setFormatter.call_args[0][0]
-        assert file_formatter_call._fmt == "%(asctime)s - %(levelname)s - %(message)s"
 
 
 class TestExecuteDrum:

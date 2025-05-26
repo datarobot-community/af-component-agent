@@ -134,7 +134,9 @@ def _get_dataframe_columns(df: DataFrame) -> Columns:
 
 
 # DataFrame pagination if pagination attrs exist
-def _paginate_dataframe(df: DataFrame, pagination: DataframePaginationAttributes) -> DataFrame:
+def _paginate_dataframe(
+    df: DataFrame, pagination: DataframePaginationAttributes
+) -> DataFrame:
     start_row = pagination.offset
     end_row = start_row + pagination.limit
     return df[start_row:end_row]
@@ -171,15 +173,24 @@ def _transform_to_json(data: DataFrame) -> Any:
 
     if data.__class__.__name__ == "GeoDataFrame":
         return json.loads(data.to_json())["features"]
-    return json.loads(data.to_json(orient="table", index=True, default_handler=str))["data"]
+    return json.loads(data.to_json(orient="table", index=True, default_handler=str))[
+        "data"
+    ]
 
 
-def _prepare_df_for_chart_cell(val: DataFrame, columns: List[str]) -> Union[DataFrame, List[str]]:
+def _prepare_df_for_chart_cell(
+    val: DataFrame, columns: List[str]
+) -> Union[DataFrame, List[str]]:
     if len(columns) == 0:
         data = []
     elif len(columns) == 1:
         # Return counts if only one column was selected or selected count of records
-        data = val.groupby(columns)[columns[0]].count().reset_index(name="count").set_index("count")
+        data = (
+            val.groupby(columns)[columns[0]]
+            .count()
+            .reset_index(name="count")
+            .set_index("count")
+        )
     else:
         # Return only selected columns
         data = val[columns]
@@ -213,13 +224,17 @@ def formatter(  # noqa: C901,PLR0912
         # Validate what to return to UI
         if hasattr(val, "attrs") and "selected_columns" in val.attrs:
             selected_columns = list(
-                filter(lambda item: item is not index_key, val.attrs["selected_columns"])
+                filter(
+                    lambda item: item is not index_key, val.attrs["selected_columns"]
+                )
             )
             try:
                 data = _prepare_df_for_chart_cell(val=data, columns=selected_columns)
             except Exception as e:
                 error.append(
-                    _register_exception(e, DataframesProcessSteps.CHART_CELL_DATAFRAME.value)
+                    _register_exception(
+                        e, DataframesProcessSteps.CHART_CELL_DATAFRAME.value
+                    )
                 )
             if len(selected_columns) < 2:
                 # Reset `returnAll` attribute to prevent returning a whole DF on next formatter call
@@ -244,14 +259,18 @@ def formatter(  # noqa: C901,PLR0912
             try:
                 data = _aggregate_dataframe(data, aggregation)
             except Exception as e:
-                error.append(_register_exception(e, DataframesProcessSteps.AGGREGATION.value))
+                error.append(
+                    _register_exception(e, DataframesProcessSteps.AGGREGATION.value)
+                )
 
         if len(data.index) >= dataframe_limit:
             pagination = DataframePaginationAttributes(limit=dataframe_limit, offset=0)
             try:
                 data = _paginate_dataframe(data, pagination)
             except Exception as e:
-                error.append(_register_exception(e, DataframesProcessSteps.PAGINATION.value))
+                error.append(
+                    _register_exception(e, DataframesProcessSteps.PAGINATION.value)
+                )
 
         # Reset `returnAll` attribute to prevent returning a whole DF on next formatter call
         val.attrs.update({"returnAll": False})
@@ -275,7 +294,8 @@ def formatter(  # noqa: C901,PLR0912
     # Pagination step, gets attrs that have been set up in DataframeProcessor
     if hasattr(val, "attrs") and "pagination" in val.attrs:
         pagination = DataframePaginationAttributes(
-            limit=val.attrs["pagination"]["limit"], offset=val.attrs["pagination"]["offset"]
+            limit=val.attrs["pagination"]["limit"],
+            offset=val.attrs["pagination"]["offset"],
         )
 
     # If dataframe length is less than pagination limit no need to paginate it
@@ -283,7 +303,9 @@ def formatter(  # noqa: C901,PLR0912
         try:
             data = _paginate_dataframe(data, pagination)
         except Exception as e:
-            error.append(_register_exception(e, DataframesProcessSteps.PAGINATION.value))
+            error.append(
+                _register_exception(e, DataframesProcessSteps.PAGINATION.value)
+            )
 
     return {
         "data": _transform_to_json(data),
@@ -324,7 +346,9 @@ class DataFrameFormatter(BaseFormatter):  # type: ignore[misc]
             # unpack data, metadata tuple for type checking on first element
             r, md = r
 
-        assert not isinstance(r, str), "JSON-as-string has been deprecated since IPython < 3"
+        assert not isinstance(r, str), (
+            "JSON-as-string has been deprecated since IPython < 3"
+        )
 
         if md is not None:
             # put the tuple back together
@@ -336,9 +360,9 @@ class DataFrameFormatter(BaseFormatter):  # type: ignore[misc]
 def load_ipython_extension(ipython: Magics) -> None:
     if is_pandas_loaded:
         dataframe_json_formatter = DataFrameFormatter()
-        ipython.display_formatter.formatters[
-            "application/vnd.dataframe+json"
-        ] = dataframe_json_formatter
+        ipython.display_formatter.formatters["application/vnd.dataframe+json"] = (
+            dataframe_json_formatter
+        )
         dataframe_json_formatter.for_type(DataFrame, formatter)
 
         print("Pandas DataFrame MimeType Extension loaded")

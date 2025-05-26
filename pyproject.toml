@@ -1,0 +1,22 @@
+[project]
+
+name = "af-component-agent"
+version = "0.1.0"
+description = "Application Framework Agent Component"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "ruff>=0.3.0",
+    "mypy>=1.8.0",
+]
+
+[tool.ruff]
+exclude = [
+    "*/jupyter_kernel_gateway_config.py",
+    "*/ipython_config.py",
+]

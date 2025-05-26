@@ -1,0 +1,16 @@
+repos:
+  - repo: local
+    hooks:
+      - id: lint
+        name: Lint
+        entry: task lint
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: copyright
+        name: copyright
+        entry: task copyright
+        language: system
+        types: [python]
+        pass_filenames: false 
