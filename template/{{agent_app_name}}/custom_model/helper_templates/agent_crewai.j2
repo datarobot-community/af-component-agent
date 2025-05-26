@@ -18,7 +18,6 @@ import uuid
 from typing import Any, Dict, List, Union
 
 from crewai import CrewOutput
-from openai.types import CompletionUsage
 from crewai.utilities.events import (
     AgentExecutionCompletedEvent,
     AgentExecutionStartedEvent,
@@ -28,6 +27,7 @@ from crewai.utilities.events import (
     ToolUsageStartedEvent,
 )
 from crewai.utilities.events.base_event_listener import BaseEventListener
+from openai.types import CompletionUsage
 from openai.types.chat import (
     ChatCompletion,
     ChatCompletionMessage,
@@ -35,7 +35,8 @@ from openai.types.chat import (
 )
 from openai.types.chat.chat_completion import Choice
 from ragas import MultiTurnSample
-from ragas.messages import AIMessage, HumanMessage, ToolMessage, ToolCall
+from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
+
 
 class CrewAIEventListener(BaseEventListener):  # type: ignore[misc]
     def __init__(self) -> None:
@@ -91,6 +92,7 @@ class CrewAIEventListener(BaseEventListener):  # type: ignore[misc]
                 logging.warning("No previous tool calls found")
                 return
             self.messages.append(ToolMessage(content=event.output))
+
 
 {% include 'template/{{agent_app_name}}/custom_model/helper_templates/common.j2' %}
 

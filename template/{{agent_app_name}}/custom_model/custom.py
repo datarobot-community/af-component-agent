@@ -16,9 +16,6 @@ from helpers_telemetry import *  # noqa # pylint: disable=unused-import
 # isort: on
 
 from agent import MyAgent
-from ragas.messages import AIMessage
-from custom_model.helpers import CrewAIEventListener
-
 from auth import initialize_authorization_context
 from helpers import (
     CustomModelChatResponse,
@@ -26,6 +23,9 @@ from helpers import (
     to_custom_model_response,
 )
 from openai.types.chat import CompletionCreateParams
+from ragas.messages import AIMessage
+
+from custom_model.helpers import CrewAIEventListener
 
 
 def load_model(code_dir: str) -> str:
