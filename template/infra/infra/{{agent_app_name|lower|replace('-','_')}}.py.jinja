@@ -67,7 +67,7 @@ if "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT" in os.environ:
         "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT"
     ]
     pulumi.info(
-        f"Using existing execution environment " + {{agent_app_name}}_execution_environment_id
+        "Using existing execution environment " + {{agent_app_name}}_execution_environment_id
     )
     {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
         id={{agent_app_name}}_execution_environment_id,
@@ -105,7 +105,7 @@ else:
 pulumi.export("Use Case ID " + {{agent_app_name}}_resource_name, use_case.id)
 pulumi.export(
     "Execution Environment ID " + {{agent_app_name}}_resource_name,
-    {{agent_app_name}}_execution_environment.id
+    {{agent_app_name}}_execution_environment.id,
 )
 pulumi.export(
     "Custom Model ID " + {{agent_app_name}}_resource_name, {{agent_app_name}}_custom_model.id
@@ -150,7 +150,7 @@ if os.environ.get("DEPLOY", True):
 
     pulumi.export(
         "Agent Deployment ID " + {{agent_app_name}}_resource_name,
-        {{agent_app_name}}_agent_deployment.id
+        {{agent_app_name}}_agent_deployment.id,
     )
     pulumi.export(
         "Agent Chat Completion Endpoint " + {{agent_app_name}}_resource_name,
