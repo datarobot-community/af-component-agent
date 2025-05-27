@@ -18,14 +18,13 @@ from helpers_telemetry import *  # noqa # pylint: disable=unused-import
 from agent import MyAgent
 from auth import initialize_authorization_context
 from helpers import (
+    CrewAIEventListener,
     CustomModelChatResponse,
     create_inputs_from_completion_params,
     to_custom_model_response,
 )
 from openai.types.chat import CompletionCreateParams
 from ragas.messages import AIMessage
-
-from custom_model.helpers import CrewAIEventListener
 
 
 def load_model(code_dir: str) -> str:
@@ -70,7 +69,7 @@ def chat(
 
     # Instantiate the agent, all fields from the completion_create_params are passed to the agent
     # allowing environment variables to be passed during execution
-    agent = MyAgent(**completion_create_params, event_listener=event_listener)
+    agent = MyAgent(**completion_create_params)
 
     # Load the user prompt from the completion_create_params as JSON or a string
     inputs = create_inputs_from_completion_params(completion_create_params)
@@ -78,7 +77,7 @@ def chat(
     # Execute the agent with the inputs
     crew_output = agent.run(inputs=inputs)
     response_text = str(crew_output.raw)
-    events = agent.event_listener.messages
+    events = event_listener.messages
     last_message = events[-1].content
     if last_message != response_text:
         events.append(AIMessage(content=response_text))

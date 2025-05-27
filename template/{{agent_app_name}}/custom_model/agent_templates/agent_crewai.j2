@@ -3,8 +3,6 @@ from typing import Any, Dict, Optional, Union
 
 from crewai import LLM, Agent, Crew, CrewOutput, Task
 
-from custom_model.helpers import CrewAIEventListener
-
 
 class MyAgent:
     def __init__(
@@ -13,7 +11,6 @@ class MyAgent:
         api_base: Optional[str] = None,
         model: Optional[str] = None,
         verbose: Optional[Union[bool, str]] = True,
-        event_listener: Optional[CrewAIEventListener] = None,
         **kwargs: Any,
     ):
         self.api_key = api_key or os.environ.get("DATAROBOT_API_TOKEN")
@@ -23,7 +20,6 @@ class MyAgent:
             self.verbose = verbose.lower() == "true"
         elif isinstance(verbose, bool):
             self.verbose = verbose
-        self.event_listener = event_listener
 
     @property
     def llm_with_datarobot_llm_gateway(self) -> LLM:
