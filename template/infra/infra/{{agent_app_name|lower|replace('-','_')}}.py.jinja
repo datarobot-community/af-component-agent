@@ -63,8 +63,12 @@ __all__ = [
 
 # Start of Pulumi settings and application infrastructure
 if "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT" in os.environ:
-    {{agent_app_name}}_execution_environment_id = os.environ["DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT"]
-    pulumi.info(f"Using existing execution environment " + {{agent_app_name}}_execution_environment_id)
+    {{agent_app_name}}_execution_environment_id = os.environ[
+        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT"
+    ]
+    pulumi.info(
+        f"Using existing execution environment " + {{agent_app_name}}_execution_environment_id
+    )
     {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
         id={{agent_app_name}}_execution_environment_id,
         resource_name="Execution Environment [PRE-EXISTING] "
@@ -100,9 +104,12 @@ else:
 # Export the IDs of the created resources
 pulumi.export("Use Case ID " + {{agent_app_name}}_resource_name, use_case.id)
 pulumi.export(
-    "Execution Environment ID " + {{agent_app_name}}_resource_name, {{agent_app_name}}_execution_environment.id
+    "Execution Environment ID " + {{agent_app_name}}_resource_name,
+    {{agent_app_name}}_execution_environment.id
 )
-pulumi.export("Custom Model ID " + {{agent_app_name}}_resource_name, {{agent_app_name}}_custom_model.id)
+pulumi.export(
+    "Custom Model ID " + {{agent_app_name}}_resource_name, {{agent_app_name}}_custom_model.id
+)
 
 
 {{agent_app_name}}_agent_deployment_id = None
@@ -120,7 +127,9 @@ if os.environ.get("DEPLOY", True):
             required_in_prediction_requests=True,
         ),
         predictions_data_collection_settings=(
-            pulumi_datarobot.DeploymentPredictionsDataCollectionSettingsArgs(enabled=True)
+            pulumi_datarobot.DeploymentPredictionsDataCollectionSettingsArgs(
+                enabled=True
+            )
         ),
         predictions_settings=(
             pulumi_datarobot.DeploymentPredictionsSettingsArgs(
@@ -139,10 +148,13 @@ if os.environ.get("DEPLOY", True):
     )
     {{agent_app_name}}_agent_deployment_id = {{agent_app_name}}_agent_deployment.id
 
-    pulumi.export("Agent Deployment ID " + {{agent_app_name}}_resource_name, {{agent_app_name}}_agent_deployment.id)
+    pulumi.export(
+        "Agent Deployment ID " + {{agent_app_name}}_resource_name,
+        {{agent_app_name}}_agent_deployment.id
+    )
     pulumi.export(
         "Agent Chat Completion Endpoint " + {{agent_app_name}}_resource_name,
-        f"{os.getenv('DATAROBOT_ENDPOINT')}/genai/agents/fromCustomModel/[Agent Deployment ID]/chat/"
+        f"{os.getenv('DATAROBOT_ENDPOINT')}/genai/agents/fromCustomModel/[Agent Deployment ID]/chat/",
     )
 
 {{agent_app_name}}_app_runtime_parameters = [
