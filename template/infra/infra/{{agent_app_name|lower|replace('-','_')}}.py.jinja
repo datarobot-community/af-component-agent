@@ -113,7 +113,7 @@ pulumi.export(
 
 
 {{agent_app_name}}_agent_deployment_id = "None"
-if os.environ.get("DEPLOY", True):
+if os.environ.get("DEPLOY") != "0":
     {{agent_app_name}}_registered_model_args = RegisteredModelArgs(
         resource_name="Agent Registered Model " + {{agent_app_name}}_resource_name,
     )
