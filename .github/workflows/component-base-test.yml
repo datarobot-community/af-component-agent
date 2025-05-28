@@ -114,6 +114,7 @@ jobs:
           # Check if the log file was created
           if [ -s "output.log" ]; then
             echo "Log file created successfully and file not empty."
+            cat output.log
           else
             echo "Log file was not created."
             exit 1
