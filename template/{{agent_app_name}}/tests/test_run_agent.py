@@ -403,10 +403,12 @@ class TestMain:
     @patch("run_agent.execute_drum")
     @patch("run_agent.setup_logging")
     @patch("run_agent.store_result")
+    @patch("run_agent.setup_otlp_env_variables")
     @patch("builtins.open")
     def test_main_with_custom_model_dir(
         self,
         mock_file_open,
+        mock_setup_otlp_env_variables,
         mock_store_result,
         mock_setup_logging,
         mock_execute_drum,
@@ -420,6 +422,7 @@ class TestMain:
         mock_args.default_headers = "{}"
         mock_args.custom_model_dir = "/path/to/custom/model"
         mock_args.output_path = "/path/to/output"
+        mock_args.otlp_entity_id = "entity-id"
         mock_argparse_args.return_value = mock_args
 
         # GIVEN a mock completion
@@ -437,6 +440,9 @@ class TestMain:
 
         # THEN setup_logging was called with correct parameters
         mock_setup_logging.assert_called_once_with(logger=ANY, log_level=logging.INFO)
+
+        # THEN setup_otlp_env_variables was called with correct parameters
+        mock_setup_otlp_env_variables.assert_called_once_with(entity_id="entity-id")
 
         # THEN execute_drum was called with correct parameters
         mock_execute_drum.assert_called_once_with(

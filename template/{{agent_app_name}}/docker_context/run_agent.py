@@ -83,6 +83,9 @@ def setup_otlp_env_variables(entity_id: str | None = None) -> None:
     if os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") or os.environ.get(
         "OTEL_EXPORTER_OTLP_HEADERS"
     ):
+        root.info(
+            "OTEL_EXPORTER_OTLP_ENDPOINT or OTEL_EXPORTER_OTLP_HEADERS already set, skipping"
+        )
         return
 
     datarobot_endpoint = os.environ.get("DATAROBOT_ENDPOINT")
@@ -101,6 +104,7 @@ def setup_otlp_env_variables(entity_id: str | None = None) -> None:
         otlp_headers += f",X-DataRobot-Entity-Id={entity_id}"
     os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = otlp_endpoint
     os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = otlp_headers
+    root.info(f"Using OTEL_EXPORTER_OTLP_ENDPOINT: {otlp_endpoint}")
 
 
 def execute_drum(
@@ -183,11 +187,16 @@ def main() -> Any:
             print("Setting up logging")
             setup_logging(logger=root, log_level=logging.INFO)
             root.info("Parsing args")
+
             # Parse input to fail early if it's not valid
             chat_completion = construct_prompt(args.chat_completion)
             default_headers = json.loads(args.default_headers)
             root.info(f"Chat completion: {chat_completion}")
             root.info(f"Default headers: {default_headers}")
+
+            # Setup tracing
+            print("Setting up tracing")
+            setup_otlp_env_variables(args.otlp_entity_id)
 
             root.info(f"Executing request in directory {args.custom_model_dir}")
             result = execute_drum(
