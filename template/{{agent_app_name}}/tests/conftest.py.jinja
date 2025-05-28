@@ -57,14 +57,21 @@ def mock_langgraph_output():
     return (
         [
             {
-                "node": {
+                "agent1": {
                     "messages": [
-                        mock.Mock(
-                            content="agent result",
-                        )
+                        mock.Mock(content="Agent 1 initial message"),
+                        mock.Mock(content="Agent 1 follow-up"),
                     ]
                 }
-            }
+            },
+            {
+                "final_agent": {
+                    "messages": [
+                        mock.Mock(content="Intermediate message"),
+                        mock.Mock(content="Final response from the agent"),
+                    ]
+                }
+            },
         ],
         usage,
     )
@@ -88,4 +95,5 @@ def mock_agent_response(mock_crewai_output, mock_langgraph_output, mock_generic_
     """
     {% if agent_template_framework == "crewai" %}return mock_crewai_output
     {% elif agent_template_framework == "langgraph" %}return mock_langgraph_output
-    {% else %}return mock_generic_output{% endif %}
+    {% else %}return mock_generic_output
+    {% endif %}
