@@ -32,6 +32,29 @@ def mock_crewai_output():
 
 
 @pytest.fixture
+def mock_langgraph_output():
+    usage = {
+        "completion_tokens": 1,
+        "prompt_tokens": 2,
+        "total_tokens": 3,
+    }
+    return (
+        [
+            {
+                "node": {
+                    "messages": [
+                        mock.Mock(
+                            content="agent result",
+                        )
+                    ]
+                }
+            }
+        ],
+        usage,
+    )
+
+
+@pytest.fixture
 def mock_generic_output():
     usage = {
         "completion_tokens": 1,
@@ -47,10 +70,8 @@ def mock_agent_response(mock_crewai_output, mock_generic_output):
     """
     Fixture to return a mock agent response based on the agent template framework.
     """
-    {% if agent_template_framework == "crewai" %}
-    return mock_crewai_output
-    {% else %}
-    return mock_generic_output
+    {% if agent_template_framework == "crewai" %}return mock_crewai_output
+    {% else %}return mock_generic_output
     {% endif -%}
 
 
