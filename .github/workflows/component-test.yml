@@ -10,7 +10,7 @@ on:
 
 jobs:
   uvx-copier-test:
-    name: "UVX Copier Test"
+    name: "Base Copier Test"
     runs-on: "ubuntu-latest"
     defaults:
       run:
@@ -24,7 +24,7 @@ jobs:
         run: |
           uvx copier copy . ./copier_context --defaults
   uvx-copier-lint:
-    name: "UVX Copier Test"
+    name: "Base Linter"
     runs-on: "ubuntu-latest"
     defaults:
       run:
