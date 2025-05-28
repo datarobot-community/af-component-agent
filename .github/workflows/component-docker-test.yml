@@ -1,0 +1,22 @@
+---
+name: Docker
+
+on:
+  push:
+    branches: ["main"]
+
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  docker-build-test:
+    name: "Docker Build and Test"
+    runs-on: "ubuntu-latest"
+    defaults:
+      run:
+        working-directory: template/{{agent_app_name}}/docker_context
+    steps:
+      - name: Checkout
+        uses: "actions/checkout@v4"
+      - name: Build Docker Image
+        run: docker build . -t docker_context
