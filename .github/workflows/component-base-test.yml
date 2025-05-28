@@ -93,10 +93,31 @@ jobs:
       - name: Run cli test
         run: |
           cd ./copier_context/agent
+          
+          # Ensure the log file does not exist before running the CLI command
+          if ! [ -f "output.log" ]; then
+            echo "Log file not created yet. Proceeding with CLI test."
+          else
+            echo "Log file exists before test. CLI test cannot be run."
+            exit 1
+          fi
+          
+          # Run the CLI command with a sample user prompt
           task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
           if task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}' | grep -q '"content": "success"'; then
             echo "Test passed: cli.py returned success"
           else
             echo "Test failed: cli.py did not return success"
+            exit 1
+          fi
+          
+          # Check if the log file was created
+          if [ -s "output.log" ]; then
+            echo "Log file created successfully and file not empty."
+            echo ""
+            echo "Contents of output.log:"
+            cat output.log
+          else
+            echo "Log file was not created."
             exit 1
           fi
