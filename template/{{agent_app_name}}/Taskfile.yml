@@ -39,8 +39,8 @@ tasks:
   lint-check:
     cmds:
       - echo "Checking linting"
-      - uv run ruff format --check .
-      - uv run ruff check .
+      - uv run ruff format --check --diff .
+      - uv run ruff check --diff .
       - uv run mypy --pretty .
     silent: true
   test:
