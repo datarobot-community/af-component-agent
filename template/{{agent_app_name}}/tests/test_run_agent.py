@@ -442,7 +442,7 @@ class TestMain:
         mock_setup_logging.assert_called_once_with(logger=ANY, log_level=logging.INFO)
 
         # THEN setup_otlp_env_variables was called with correct parameters
-        mock_setup_otlp_env_variables.assert_called_once_with(entity_id="entity-id")
+        mock_setup_otlp_env_variables.assert_called_once_with("entity-id")
 
         # THEN execute_drum was called with correct parameters
         mock_execute_drum.assert_called_once_with(
