@@ -75,7 +75,6 @@ def mock_agent_response(mock_crewai_output, mock_langgraph_output, mock_generic_
     {% else +%}return mock_generic_output
     {% endif %}
 
-
 class TestCustomModel:
     @staticmethod
     def assert_dict_equal_ignore_key(dict1, dict2, keys_to_ignore):
