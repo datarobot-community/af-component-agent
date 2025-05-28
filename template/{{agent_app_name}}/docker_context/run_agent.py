@@ -69,7 +69,10 @@ def argparse_args() -> argparse.Namespace:
 
 
 def setup_logging(
-    logger: logging.Logger, output_path: str, log_level: int = logging.INFO, update=False
+    logger: logging.Logger,
+    output_path: str,
+    log_level: int = logging.INFO,
+    update: bool = False,
 ) -> None:
     logger.setLevel(log_level)
     handler_stream = logging.StreamHandler(sys.stdout)
@@ -184,7 +187,9 @@ def store_result(result: ChatCompletion, output_path: Path) -> None:
 
 def main() -> Any:
     # During failures logs will be dumped to the default output log path
-    setup_logging(logger=root, output_path=str(DEFAULT_OUTPUT_LOG_PATH), log_level=logging.INFO)
+    setup_logging(
+        logger=root, output_path=str(DEFAULT_OUTPUT_LOG_PATH), log_level=logging.INFO
+    )
     try:
         root.info("Parsing args")
         try:
@@ -193,9 +198,16 @@ def main() -> Any:
 
             root.info("Setting up logging")
             output_log_path = str(
-                Path(args.output_path + ".log") if args.output_path else DEFAULT_OUTPUT_LOG_PATH
+                Path(args.output_path + ".log")
+                if args.output_path
+                else DEFAULT_OUTPUT_LOG_PATH
             )
-            setup_logging(logger=root, output_path=output_log_path, log_level=logging.INFO, update=True)
+            setup_logging(
+                logger=root,
+                output_path=output_log_path,
+                log_level=logging.INFO,
+                update=True,
+            )
         except Exception as e:
             root.exception(f"Error parsing arguments: {e}")
             sys.exit(1)
@@ -219,9 +231,7 @@ def main() -> Any:
         root.info(f"Result: {result}")
         store_result(
             result,
-            Path(args.output_path)
-            if args.output_path
-            else DEFAULT_OUTPUT_JSON_PATH,
+            Path(args.output_path) if args.output_path else DEFAULT_OUTPUT_JSON_PATH,
         )
     except Exception as e:
         root.exception(f"Error executing agent: {e}")
