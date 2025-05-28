@@ -14,9 +14,8 @@
 from typing import Any, Optional
 
 import click
-from dotenv import load_dotenv
-
 from agent_cli.environment import Environment
+from dotenv import load_dotenv
 
 load_dotenv()
 

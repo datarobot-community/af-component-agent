@@ -15,22 +15,21 @@
 import json
 import logging
 import os
-from pathlib import Path
 import tempfile
+from pathlib import Path
 from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 from pydantic import ValidationError
-
 from run_agent import (
+    DEFAULT_OUTPUT_LOG_PATH,
     argparse_args,
     construct_prompt,
-    DEFAULT_OUTPUT_LOG_PATH,
     execute_drum,
     main,
     setup_logging,
     store_result,
-)  # noqa: I001
+)
 
 
 class TestArgparseArgs:
