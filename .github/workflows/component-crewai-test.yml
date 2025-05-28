@@ -29,7 +29,7 @@ jobs:
         run: |
           cd ./copier_context/agent_crewai
           task req
-          task lint
+          task lint-check
   crewai-copier-unit-test:
     name: "CrewAI Unit Tests"
     runs-on: "ubuntu-latest"

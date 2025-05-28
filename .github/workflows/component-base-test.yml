@@ -43,7 +43,7 @@ jobs:
         run: |
           cd ./copier_context/agent
           task req
-          task lint
+          task lint-check
   uvx-copier-unit-test:
     name: "Base Unit Tests"
     runs-on: "ubuntu-latest"

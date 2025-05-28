@@ -36,6 +36,13 @@ tasks:
       - uv run mypy --pretty .
       - uv run yamlfix custom_model
     silent: true
+  lint-check:
+    cmds:
+      - echo "Checking linting"
+      - uv run ruff format --check .
+      - uv run ruff check .
+      - uv run mypy --pretty .
+    silent: true
   test:
     cmds: [echo "Running pytest on tests", uv run pytest -vv ./tests/]
     silent: true
