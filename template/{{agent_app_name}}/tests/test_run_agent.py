@@ -21,7 +21,7 @@ from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 from pydantic import ValidationError
-from run_agent import (
+from run_agent import (  # noqa: I001
     DEFAULT_OUTPUT_LOG_PATH,
     argparse_args,
     construct_prompt,
