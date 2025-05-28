@@ -96,9 +96,9 @@ jobs:
           
           # Ensure the log file does not exist before running the CLI command
           if ! [ -f "output.log" ]; then
-            echo "Log file not created yet."
+            echo "Log file not created yet. Proceeding with CLI test."
           else
-            echo "Log file exists before test. CLI cannot be run."
+            echo "Log file exists before test. CLI test cannot be run."
             exit 1
           fi
           
@@ -113,7 +113,7 @@ jobs:
           
           # Check if the log file was created
           if [ -s "output.log" ]; then
-            echo "Log file created successfully."
+            echo "Log file created successfully and file not empty."
           else
             echo "Log file was not created."
             exit 1
