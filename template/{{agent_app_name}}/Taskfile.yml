@@ -26,7 +26,7 @@ tasks:
       - echo "Updating local dependencies"
       - uv sync --all-extras
       - uv pip install git+https://github.com/datarobot-forks/litellm@mattn/add-datarobot-support-to-litellm
-      - uv pip install -r custom_model/requirements.txt
+      - cd custom_model && uv pip install -r requirements.txt
     silent: true
   lint:
     cmds:

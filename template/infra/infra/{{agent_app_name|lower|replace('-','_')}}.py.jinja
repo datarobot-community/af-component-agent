@@ -146,7 +146,7 @@ if os.environ.get("DEPLOY") != "0":
         registered_model_args={{agent_app_name}}_registered_model_args,
         deployment_args={{agent_app_name}}_deployment_args,
     )
-    {{agent_app_name}}_agent_deployment_id = str({{agent_app_name}}_agent_deployment.id)
+    {{agent_app_name}}_agent_deployment_id = {{agent_app_name}}_agent_deployment_id.apply(lambda v: str(v.id))
 
     pulumi.export(
         "Agent Deployment ID " + {{agent_app_name}}_resource_name,
