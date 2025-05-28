@@ -66,11 +66,12 @@ def mock_generic_output():
 
 
 @pytest.fixture
-def mock_agent_response(mock_crewai_output, mock_generic_output):
+def mock_agent_response(mock_crewai_output, mock_langgraph_output, mock_generic_output):
     """
     Fixture to return a mock agent response based on the agent template framework.
     """
     {% if agent_template_framework == "crewai" %}return mock_crewai_output
+    {% if agent_template_framework == "langgraph" %}return mock_langgraph_output
     {% else %}return mock_generic_output
     {% endif -%}
 
