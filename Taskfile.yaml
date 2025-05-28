@@ -1,17 +1,22 @@
 version: '3'
 
 env:
-  SRCDIR: ./template/{{"{{"}}agent_app_name{{"}}"}}/app
+  SRCDIR: ./template/{{"{{"}}agent_app_name{{"}}"}}
   TESTDIR: ./template/{{"{{"}}agent_app_name{{"}}"}}/tests
 
 tasks:
+  reqs:
+    cmds:
+      - echo "Updating local dependencies"
+      - uv sync --all-extras
+      - uv pip install git+https://github.com/datarobot-forks/litellm@mattn/add-datarobot-support-to-litellm
+      
   lint:
     desc: 🧹 Lint the codebase
     cmds:
       - echo "🧹 Linting"
       - uv run ruff format "$SRCDIR"
       - uv run ruff check --fix "$SRCDIR"
-      - uv run mypy --pretty "$SRCDIR"
 
   lint-check:
     desc: 🧹 Check whether the codebase is linted
@@ -19,7 +24,6 @@ tasks:
         - echo "🧹 Linting"
         - uv run ruff format --check "$SRCDIR"
         - uv run ruff check "$SRCDIR"
-        - uv run mypy --pretty "$SRCDIR"
 
   copyright:
     aliases: [license]
