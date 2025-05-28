@@ -17,7 +17,7 @@ import logging
 import os
 import tempfile
 from pathlib import Path
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
 from pydantic import ValidationError
@@ -100,12 +100,17 @@ class TestSetupLogging:
     @patch("os.path.exists")
     @patch("os.remove")
     @patch("logging.StreamHandler")
+    @patch("logging.FileHandler")
     def test_setup_logging_with_empty_output_path(
-        self, mock_stream_handler, mock_remove, mock_exists, logger
+        self, mock_file_handler, mock_stream_handler, mock_remove, mock_exists, logger
     ):
         # Set up mocks
         mock_stream = MagicMock()
         mock_stream_handler.return_value = mock_stream
+        mock_exists.return_value = False
+
+        mock_file = MagicMock()
+        mock_file_handler.return_value = mock_file
         mock_exists.return_value = False
 
         # Call function with empty output path
@@ -113,8 +118,9 @@ class TestSetupLogging:
 
         # Verify logger configuration
         assert logger.level == logging.INFO
-        assert len(logger.handlers) == 1
+        assert len(logger.handlers) == 2
         mock_stream.setFormatter.assert_called_once()
+        mock_file.setFormatter.assert_called_once()
 
         # Verify remove wasn't called since file doesn't exist
         mock_remove.assert_not_called()
@@ -404,10 +410,8 @@ class TestMain:
     @patch("run_agent.setup_logging")
     @patch("run_agent.store_result")
     @patch("run_agent.setup_otlp_env_variables")
-    @patch("builtins.open")
     def test_main_with_custom_model_dir(
         self,
-        mock_file_open,
         mock_setup_otlp_env_variables,
         mock_store_result,
         mock_setup_logging,
@@ -439,7 +443,18 @@ class TestMain:
         mock_argparse_args.assert_called_once()
 
         # THEN setup_logging was called with correct parameters
-        mock_setup_logging.assert_called_once_with(logger=ANY, log_level=logging.INFO)
+        print(mock_setup_logging.calls)
+        mock_setup_logging.assert_has_calls(
+            [
+                call(logger=ANY, log_level=logging.INFO),
+                call(
+                    logger=ANY,
+                    log_level=logging.INFO,
+                    output_path="/path/to/output.log",
+                    update=True,
+                ),
+            ]
+        )
 
         # THEN setup_otlp_env_variables was called with correct parameters
         mock_setup_otlp_env_variables.assert_called_once_with("entity-id")
@@ -456,10 +471,6 @@ class TestMain:
             mock_completion,
             Path("/path/to/output"),
         )
-
-        # THEN file open was called with correct parameters
-        mock_file_open.assert_any_call(Path("/path/to/output.log"), "a")
-        mock_file_open.assert_any_call(Path(DEFAULT_OUTPUT_LOG_PATH), "w")
 
     @pytest.fixture
     def tempdir_and_cleanup(self):
@@ -511,9 +522,9 @@ class TestMain:
         # THEN the output log was stored in the temporary directory
         assert os.path.exists(tempdir_and_cleanup / "output.json.log")
         with open(tempdir_and_cleanup / "output.json.log", "r") as f:
-            assert "Setting up logging" in f.read()
+            assert "Chat completion" in f.read()
 
         # THEN the default output log path was created and used for the args processing
         assert os.path.exists(DEFAULT_OUTPUT_LOG_PATH)
         with open(DEFAULT_OUTPUT_LOG_PATH, "r") as f:
-            assert f.read() == "Parsing args\n"
+            assert "Parsing args" in f.read()

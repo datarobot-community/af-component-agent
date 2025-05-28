@@ -18,7 +18,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional, Union, cast
 from urllib.parse import urlparse, urlunparse
 
 import requests
@@ -70,10 +70,13 @@ def argparse_args() -> argparse.Namespace:
 
 def setup_logging(
     logger: logging.Logger,
-    output_path: str,
-    log_level: int = logging.INFO,
-    update: bool = False,
+    output_path: Optional[Union[Path, str]] = DEFAULT_OUTPUT_LOG_PATH,
+    log_level: Optional[int] = logging.INFO,
+    update: Optional[bool] = False,
 ) -> None:
+    log_level = cast(int, log_level)
+    output_path = str(output_path)
+
     logger.setLevel(log_level)
     handler_stream = logging.StreamHandler(sys.stdout)
     handler_stream.setLevel(log_level)
@@ -187,9 +190,7 @@ def store_result(result: ChatCompletion, output_path: Path) -> None:
 
 def main() -> Any:
     # During failures logs will be dumped to the default output log path
-    setup_logging(
-        logger=root, output_path=str(DEFAULT_OUTPUT_LOG_PATH), log_level=logging.INFO
-    )
+    setup_logging(logger=root, log_level=logging.INFO)
     try:
         root.info("Parsing args")
         try:
