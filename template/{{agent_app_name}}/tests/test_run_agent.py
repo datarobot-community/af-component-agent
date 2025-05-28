@@ -14,28 +14,26 @@
 
 import json
 import logging
-from unittest.mock import ANY, MagicMock, mock_open, patch
+import os
+from pathlib import Path
+import tempfile
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
+from pydantic import ValidationError
 
-from run_agent import execute_drum, setup_logging
+from run_agent import (
+    DEFAULT_OUTPUT_LOG_PATH,
+    execute_drum,
+    main,
+    setup_logging,
+    construct_prompt,
+    argparse_args,
+    store_result,
+)
 
 
 class TestArgparseArgs:
-    def test_argparse_args_default_values(self):
-        """Test that default values are returned when no arguments are provided."""
-        # Mock sys.argv to simulate no command line arguments
-        with patch("sys.argv", ["run_agent.py"]):
-            from run_agent import argparse_args
-
-            args = argparse_args()
-
-            # Check default values
-            assert args.chat_completion == "{}"
-            assert args.default_headers == "{}"
-            assert args.custom_model_dir == ""
-            assert args.output_path == ""
-
     def test_argparse_args_custom_values(self):
         """Test that custom values are correctly parsed from command line arguments."""
         # Mock sys.argv to simulate passing command line arguments
@@ -53,8 +51,6 @@ class TestArgparseArgs:
                 "/path/to/output",
             ],
         ):
-            from run_agent import argparse_args
-
             args = argparse_args()
 
             # Check custom values
@@ -75,19 +71,17 @@ class TestArgparseArgs:
                 "run_agent.py",
                 "--chat_completion",
                 '{"messages": []}',
-                "--output_path",
-                "/path/to/output",
+                "--custom_model_dir",
+                "/path/to/model",
             ],
         ):
-            from run_agent import argparse_args
-
             args = argparse_args()
 
             # Check mixture of custom and default values
             assert args.chat_completion == '{"messages": []}'
             assert args.default_headers == "{}"  # default
-            assert args.custom_model_dir == ""  # default
-            assert args.output_path == "/path/to/output"
+            assert args.custom_model_dir == "/path/to/model"
+            assert args.output_path is None
 
 
 class TestSetupLogging:
@@ -110,11 +104,11 @@ class TestSetupLogging:
         mock_exists.return_value = False
 
         # Call function with empty output path
-        setup_logging(logger=logger, output_path="", log_level=logging.INFO)
+        setup_logging(logger=logger, log_level=logging.INFO)
 
         # Verify logger configuration
         assert logger.level == logging.INFO
-        assert len(logger.handlers) == 2
+        assert len(logger.handlers) == 1
         mock_stream.setFormatter.assert_called_once()
 
         # Verify remove wasn't called since file doesn't exist
@@ -127,25 +121,73 @@ class TestSetupLogging:
         mock_stream = MagicMock()
         mock_stream_handler.return_value = mock_stream
         mock_exists.return_value = False
-
         # Call function
-        setup_logging(logger=logger, output_path="test", log_level=logging.INFO)
+        setup_logging(logger=logger, log_level=logging.INFO)
 
         # Verify formatters
         stream_formatter_call = mock_stream.setFormatter.call_args[0][0]
-        assert stream_formatter_call._fmt == "%(message)s"
+        assert stream_formatter_call._fmt == "%(asctime)s - %(levelname)s - %(message)s"
+
+
+class TestConstructPrompt:
+    def test_construct_prompt_valid_json(self):
+        """Test that a valid JSON string is correctly parsed."""
+        chat_completion = (
+            '{"messages": [{"role": "user", "content": "Hello"}], "model": "gpt-4o"}'
+        )
+        result = construct_prompt(chat_completion)
+        assert result["messages"] == [{"role": "user", "content": "Hello"}]
+        assert result["model"] == "gpt-4o"
+
+    def test_construct_prompt_adds_model_if_missing(self):
+        """Test that a valid JSON string is correctly parsed."""
+        chat_completion = '{"messages": [{"role": "user", "content": "Hello"}]}'
+        result = construct_prompt(chat_completion)
+        assert result["messages"] == [{"role": "user", "content": "Hello"}]
+        assert result["model"] == "unknown"
+
+    def test_construct_prompt_invalid_json(self):
+        """Test that an invalid JSON string raises an error."""
+        chat_completion = "invalid json"
+        with pytest.raises(json.JSONDecodeError):
+            construct_prompt(chat_completion)
+
+    def test_construct_prompt_empty_json(self):
+        """Test that an empty JSON string raises an error."""
+        chat_completion = "{}"
+        with pytest.raises(ValidationError):
+            construct_prompt(chat_completion)
+
+    def test_construct_prompt_unexpected_key(self):
+        """Test that an unexpected key raises an error."""
+        chat_completion = '{"messages": [{"role": "user", "content": "Hello"}], "unexpected_key": "value"}'
+
+        # OpenAI interface accepts extra keys and ignores them
+        prompt = construct_prompt(chat_completion)
+        assert prompt["unexpected_key"] == "value"
+
+
+class TestStoreResult:
+    @patch("builtins.open")
+    def test_store_result_success(self, mock_file_open):
+        """Test that a result is correctly stored."""
+        result = MagicMock()
+        result.to_json.return_value = '{"id": "test-id", "choices": []}'
+        store_result(result, "/path/to/output.json")
+        mock_file_open.assert_called_once_with("/path/to/output.json", "w")
+        mock_file_open.return_value.__enter__.return_value.write.assert_called_once_with(
+            '{"id": "test-id", "choices": []}'
+        )
 
 
 class TestExecuteDrum:
     @patch("run_agent.DrumServerRun")
     @patch("run_agent.requests.get")
     @patch("run_agent.OpenAI")
-    @patch("builtins.open", new_callable=mock_open)
     @patch("run_agent.root")
     def test_execute_drum_success(
         self,
         mock_root,
-        mock_file_open,
         mock_openai,
         mock_requests_get,
         mock_drum_server,
@@ -160,17 +202,14 @@ class TestExecuteDrum:
         mock_requests_get.return_value = mock_response
 
         mock_client = MagicMock()
-        mock_completion = MagicMock()
-        mock_completion.to_json.return_value = '{"id": "test-id", "choices": []}'
-        mock_client.chat.completions.create.return_value = mock_completion
+        mock_client.chat.completions.create.return_value = "result"
         mock_openai.return_value = mock_client
 
         # Call function
         result = execute_drum(
-            chat_completion='{"messages": [{"role": "user", "content": "Hello"}]}',
-            default_headers='{"X-Custom": "value"}',
+            chat_completion={"messages": [{"role": "user", "content": "Hello"}]},
+            default_headers={"X-Custom": "value"},
             custom_model_dir="/path/to/model",
-            output_path="/path/to/output.json",
         )
 
         # Verify DrumServerRun was called with correct parameters
@@ -204,26 +243,16 @@ class TestExecuteDrum:
             messages=[{"role": "user", "content": "Hello"}]
         )
 
-        # Verify file output
-        mock_file_open.assert_called_once_with("/path/to/output.json", "w")
-        mock_file_open().write.assert_called_once_with(
-            '{"id": "test-id", "choices": []}'
-        )
-
         # Verify result
-        assert result == mock_completion
+        assert result == "result"
 
     @patch("run_agent.DrumServerRun")
     @patch("run_agent.requests.get")
     @patch("run_agent.OpenAI")
-    @patch("builtins.open", new_callable=mock_open)
     @patch("run_agent.root")
-    @patch("os.path.join")
     def test_execute_drum_default_output_path(
         self,
-        mock_path_join,
         mock_root,
-        mock_file_open,
         mock_openai,
         mock_requests_get,
         mock_drum_server,
@@ -238,26 +267,15 @@ class TestExecuteDrum:
         mock_requests_get.return_value = mock_response
 
         mock_client = MagicMock()
-        mock_completion = MagicMock()
-        mock_completion.to_json.return_value = '{"id": "test-id", "choices": []}'
-        mock_client.chat.completions.create.return_value = mock_completion
+        mock_client.chat.completions.create.return_value = "return_value"
         mock_openai.return_value = mock_client
-
-        mock_path_join.return_value = "/path/to/model/output.json"
 
         # Call function with empty output_path
         execute_drum(
-            chat_completion="{}",
-            default_headers="{}",
+            chat_completion={},
+            default_headers={},
             custom_model_dir="/path/to/model",
-            output_path="",
         )
-
-        # Verify path joining for default output path
-        mock_path_join.assert_called_once_with("/path/to/model", "output.json")
-
-        # Verify file output used default path
-        mock_file_open.assert_called_once_with("/path/to/model/output.json", "w")
 
     @patch("run_agent.DrumServerRun")
     @patch("run_agent.requests.get")
@@ -273,7 +291,6 @@ class TestExecuteDrum:
         mock_response = MagicMock()
         mock_response.ok = False
         mock_response.text = "Server error"
-        mock_response.json.return_value = {"error": "Failed to start"}
         mock_requests_get.return_value = mock_response
 
         # Call function and expect exception
@@ -282,61 +299,31 @@ class TestExecuteDrum:
                 chat_completion="{}",
                 default_headers="{}",
                 custom_model_dir="/path/to/model",
-                output_path="/path/to/output.json",
             )
 
         # Verify error logging
-        mock_root.error.assert_any_call("Server failed to start")
-        mock_root.error.assert_any_call("Server error")
-        mock_root.error.assert_any_call({"error": "Failed to start"})
-
-    @patch("run_agent.DrumServerRun")
-    @patch("run_agent.requests.get")
-    @patch("run_agent.root")
-    def test_execute_drum_server_failure_json_error(
-        self, mock_root, mock_requests_get, mock_drum_server
-    ):
-        # Setup mocks
-        mock_drum_instance = MagicMock()
-        mock_drum_instance.url_server_address = "http://localhost:8191"
-        mock_drum_server.return_value.__enter__.return_value = mock_drum_instance
-
-        mock_response = MagicMock()
-        mock_response.ok = False
-        mock_response.text = "Server error"
-        mock_response.json.side_effect = json.JSONDecodeError("Invalid JSON", "", 0)
-        mock_requests_get.return_value = mock_response
-
-        # Call function and expect exception
-        with pytest.raises(RuntimeError, match="Server failed to start"):
-            execute_drum(
-                chat_completion="{}",
-                default_headers="{}",
-                custom_model_dir="/path/to/model",
-                output_path="/path/to/output.json",
-            )
-
-        # Verify error logging - should only log text not JSON
         mock_root.error.assert_any_call("Server failed to start")
         mock_root.error.assert_any_call("Server error")
 
 
 class TestMain:
     @patch("run_agent.argparse_args")
+    @patch("run_agent.construct_prompt")
     @patch("run_agent.execute_drum")
     @patch("run_agent.setup_logging")
-    @patch("os.getcwd")
-    @patch("os.path.join")
+    @patch("run_agent.store_result")
+    @patch("builtins.open")
     def test_main_with_custom_model_dir(
         self,
-        mock_join,
-        mock_getcwd,
+        mock_file_open,
+        mock_store_result,
         mock_setup_logging,
         mock_execute_drum,
+        mock_construct_prompt,
         mock_argparse_args,
     ):
         """Test main function when custom_model_dir is provided."""
-        # Setup mocks
+        # GIVEN simple input arguments
         mock_args = MagicMock()
         mock_args.chat_completion = '{"messages": []}'
         mock_args.default_headers = "{}"
@@ -344,126 +331,92 @@ class TestMain:
         mock_args.output_path = "/path/to/output"
         mock_argparse_args.return_value = mock_args
 
+        # GIVEN a mock completion
         mock_completion = MagicMock()
         mock_execute_drum.return_value = mock_completion
 
-        # Call function
-        from run_agent import main
+        # GIVEN mock_construct_prompt returns a dict
+        mock_construct_prompt.return_value = {"messages": []}
 
-        result = main()
+        # WHEN main is called
+        main()
 
-        # Verify argparse_args was called
+        # THEN argparse_args was called
         mock_argparse_args.assert_called_once()
 
-        # Verify setup_logging was called with correct parameters
-        mock_setup_logging.assert_called_once_with(
-            logger=ANY, output_path="/path/to/output", log_level=logging.INFO
-        )
+        # THEN setup_logging was called with correct parameters
+        mock_setup_logging.assert_called_once_with(logger=ANY, log_level=logging.INFO)
 
-        # Verify execute_drum was called with correct parameters
+        # THEN execute_drum was called with correct parameters
         mock_execute_drum.assert_called_once_with(
-            chat_completion='{"messages": []}',
-            default_headers="{}",
+            chat_completion={"messages": []},
+            default_headers={},
             custom_model_dir="/path/to/custom/model",
-            output_path="/path/to/output",
         )
 
-        # Verify result
-        assert result == mock_completion
+        # THEN store_result was called with correct parameters
+        mock_store_result.assert_called_once_with(
+            mock_completion,
+            "/path/to/output",
+        )
 
-        # Verify getcwd and join were not called since custom_model_dir was provided
-        mock_getcwd.assert_not_called()
-        mock_join.assert_not_called()
+        # THEN file open was called with correct parameters
+        mock_file_open.assert_any_call(Path("/path/to/output.log"), "a")
+        mock_file_open.assert_any_call(Path(DEFAULT_OUTPUT_LOG_PATH), "w")
+
+    @pytest.fixture
+    def tempdir_and_cleanup(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            yield Path(tempdir)
+        # Also remove the default output log path
+        os.remove(DEFAULT_OUTPUT_LOG_PATH)
 
     @patch("run_agent.argparse_args")
     @patch("run_agent.execute_drum")
-    @patch("run_agent.setup_logging")
-    @patch("os.getcwd")
-    @patch("os.path.join")
-    def test_main_with_default_custom_model_dir(
-        self,
-        mock_join,
-        mock_getcwd,
-        mock_setup_logging,
-        mock_execute_drum,
-        mock_argparse_args,
-    ):
-        """Test main function when custom_model_dir is not provided."""
-        # Setup mocks
-        mock_args = MagicMock()
-        mock_args.chat_completion = '{"messages": []}'
-        mock_args.default_headers = "{}"
-        mock_args.custom_model_dir = ""  # Empty to trigger default behavior
-        mock_args.output_path = "/path/to/output"
-        mock_argparse_args.return_value = mock_args
-
-        mock_getcwd.return_value = "/current/working/dir"
-        mock_join.return_value = "/current/working/dir/custom_model"
-
-        mock_completion = MagicMock()
-        mock_execute_drum.return_value = mock_completion
-
-        # Call function
-        from run_agent import main
-
-        result = main()
-
-        # Verify argparse_args was called
-        mock_argparse_args.assert_called_once()
-
-        # Verify getcwd and join were called to set default custom_model_dir
-        mock_getcwd.assert_called_once()
-        mock_join.assert_called_once_with("/current/working/dir", "custom_model")
-
-        # Verify setup_logging was called with correct parameters
-        mock_setup_logging.assert_called_once_with(
-            logger=ANY, output_path="/path/to/output", log_level=logging.INFO
-        )
-
-        # Verify execute_drum was called with correct parameters (using default custom_model_dir)
-        mock_execute_drum.assert_called_once_with(
-            chat_completion='{"messages": []}',
-            default_headers="{}",
-            custom_model_dir="/current/working/dir/custom_model",
-            output_path="/path/to/output",
-        )
-
-        # Verify result
-        assert result == mock_completion
-
-    @patch("run_agent.argparse_args")
-    @patch("run_agent.execute_drum")
-    @patch("run_agent.setup_logging")
     def test_main_integration(
-        self, mock_setup_logging, mock_execute_drum, mock_argparse_args
+        self, mock_execute_drum, mock_argparse_args, tempdir_and_cleanup
     ):
         """Test main function with a more integrated approach."""
-        # Setup mocks
+        # GIVEN valid input arguments
         mock_args = MagicMock()
         mock_args.chat_completion = (
             '{"messages": [{"role": "user", "content": "Hello"}]}'
         )
         mock_args.default_headers = '{"X-Custom": "value"}'
         mock_args.custom_model_dir = "/path/to/model"
-        mock_args.output_path = "/path/to/output"
+        # GIVEN a temporary directory for the output path
+        mock_args.output_path = str(tempdir_and_cleanup / "output.json")
         mock_argparse_args.return_value = mock_args
 
+        # GIVEN a mock completion returned from execute_drum
         mock_completion = MagicMock()
         mock_completion.to_json.return_value = '{"id": "test-id", "choices": []}'
         mock_execute_drum.return_value = mock_completion
 
-        # Call function
-        from run_agent import main
+        # WHEN main is called
+        main()
 
-        result = main()
-
-        # Verify execute_drum was called with correct parsed parameters
+        # THEN execute_drum was called with correct parsed parameters
         mock_execute_drum.assert_called_once_with(
-            chat_completion='{"messages": [{"role": "user", "content": "Hello"}]}',
-            default_headers='{"X-Custom": "value"}',
+            chat_completion={
+                "messages": [{"role": "user", "content": "Hello"}],
+                "model": "unknown",
+            },
+            default_headers={"X-Custom": "value"},
             custom_model_dir="/path/to/model",
-            output_path="/path/to/output",
         )
 
-        # Verify result
-        assert result == mock_completion
+        # THEN results were stored in the temporary directory
+        assert os.path.exists(tempdir_and_cleanup / "output.json")
+        with open(tempdir_and_cleanup / "output.json", "r") as f:
+            assert f.read() == mock_completion.to_json.return_value
+
+        # THEN the output log was stored in the temporary directory
+        assert os.path.exists(tempdir_and_cleanup / "output.json.log")
+        with open(tempdir_and_cleanup / "output.json.log", "r") as f:
+            assert "Setting up logging" in f.read()
+
+        # THEN the default output log path was created and used for the args processing
+        assert os.path.exists(DEFAULT_OUTPUT_LOG_PATH)
+        with open(DEFAULT_OUTPUT_LOG_PATH, "r") as f:
+            assert f.read() == "Parsing args\n"
