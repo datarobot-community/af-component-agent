@@ -1,5 +1,5 @@
 ---
-name: Test Docker Image
+name: Docker Tests
 
 on:
   push:
