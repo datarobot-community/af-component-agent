@@ -65,9 +65,8 @@ jobs:
           cd ./copier_context/agent
           task req
           task test
-
-  uvx-copier-unit-test:
-    name: "Base Unit Tests"
+  uvx-copier-cli-test:
+    name: "Base CLI Tests"
     runs-on: "ubuntu-latest"
     defaults:
       run:
