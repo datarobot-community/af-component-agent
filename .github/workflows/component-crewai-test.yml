@@ -22,14 +22,17 @@ jobs:
         uses: astral-sh/setup-uv@v5
       - name: Install Task
         uses: arduino/setup-task@v2
-      - name: Create Copier Template
+      - name: Install Dependencies
         run: |
-          uvx copier copy . ./copier_context --data agent_app_name=agent_crewai --data agent_template_framework=crewai --data base_answers_file=.datarobot/answers/base.yml
-      - name: Lint Template
-        run: |
+          uvx copier copy . ./copier_context \
+          --data agent_app_name=agent_crewai \
+          --data agent_template_framework=crewai \
+          --data base_answers_file=.datarobot/answers/base.yml
+          
           cd ./copier_context/agent_crewai
           task req
-          task lint-check
+      - name: Lint Template
+        run: task lint-check
   crewai-copier-unit-test:
     name: "CrewAI Unit Tests"
     runs-on: "ubuntu-latest"
@@ -43,11 +46,14 @@ jobs:
         uses: astral-sh/setup-uv@v5
       - name: Install Task
         uses: arduino/setup-task@v2
-      - name: Create Copier Template
+      - name: Install Dependencies
         run: |
-          uvx copier copy . ./copier_context --data agent_app_name=agent_crewai --data agent_template_framework=crewai --data base_answers_file=.datarobot/answers/base.yml
-      - name: Run unit tests
-        run: |
+          uvx copier copy . ./copier_context \
+          --data agent_app_name=agent_crewai \
+          --data agent_template_framework=crewai \
+          --data base_answers_file=.datarobot/answers/base.yml
+          
           cd ./copier_context/agent_crewai
           task req
-          task test
+      - name: Run unit tests
+        run: task test
