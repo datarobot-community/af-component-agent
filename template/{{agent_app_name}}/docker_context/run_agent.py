@@ -17,7 +17,7 @@ import json
 import logging
 import sys
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 
 import requests
 from datarobot_drum.drum.enum import TargetType
@@ -75,7 +75,7 @@ def setup_logging(logger: logging.Logger, log_level: int = logging.INFO) -> None
 
 def execute_drum(
     chat_completion: CompletionCreateParamsBase,
-    default_headers: dict,
+    default_headers: dict[str, str],
     custom_model_dir: Path,
 ) -> ChatCompletion:
     root.info("Executing agent as [chat] endpoint. DRUM Executor.")
@@ -114,20 +114,22 @@ def execute_drum(
         completion = client.chat.completions.create(**chat_completion)
     # Continue outside the context manager to ensure the server is stopped and logs
     # are flushed before we write the output
-    return cast(ChatCompletion, completion)
+    return completion
 
 
 def construct_prompt(chat_completion: str) -> CompletionCreateParamsBase:
-    chat_completion = json.loads(chat_completion)
-    if "model" not in chat_completion:
-        chat_completion["model"] = "unknown"
+    chat_completion_dict = json.loads(chat_completion)
+    if "model" not in chat_completion_dict:
+        chat_completion_dict["model"] = "unknown"
     validator = TypeAdapter(CompletionCreateParamsBase)
-    validator.validate_python(chat_completion)
-    completion_create_params = CompletionCreateParamsBase(**chat_completion)
+    validator.validate_python(chat_completion_dict)
+    completion_create_params: CompletionCreateParamsBase = CompletionCreateParamsBase(
+        **chat_completion_dict  # type: ignore[typeddict-item]
+    )
     return completion_create_params
 
 
-def store_result(result: ChatCompletion, output_path: str) -> None:
+def store_result(result: ChatCompletion, output_path: Path) -> None:
     root.info(f"Storing result: {output_path}")
     with open(output_path, "w") as fp:
         fp.write(result.to_json())
@@ -165,7 +167,12 @@ def main() -> Any:
                 custom_model_dir=args.custom_model_dir,
             )
             root.info(f"Result: {result}")
-            store_result(result, args.output_path or DEFAULT_OUTPUT_JSON_PATH)
+            store_result(
+                result,
+                Path(args.output_path)
+                if args.output_path
+                else DEFAULT_OUTPUT_JSON_PATH,
+            )
         except Exception as e:
             root.exception(f"Error executing agent: {e}")
 
