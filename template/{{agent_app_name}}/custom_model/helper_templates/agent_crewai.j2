@@ -91,7 +91,8 @@ class CrewAIEventListener(BaseEventListener):  # type: ignore[misc]
             if not last_message.tool_calls:
                 logging.warning("No previous tool calls found")
                 return
-            self.messages.append(ToolMessage(content=event.output))
+            metadata = {"args": event.tool_args}
+            self.messages.append(ToolMessage(content=event.output, metadata=metadata))
 
 
 {% include 'template/{{agent_app_name}}/custom_model/helper_templates/common.j2' %}

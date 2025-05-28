@@ -36,7 +36,7 @@ def _extract_pipeline_interactions(events: List[dict[str, Any]]) -> MultiTurnSam
     for e in events:
         for k, v in e.items():
             messages.extend(v["messages"])
-    ragas_trace = convert_to_ragas_messages(messages)
+    ragas_trace = convert_to_ragas_messages(messages, metadata=True)
     pipeline_interactions = MultiTurnSample(user_input=ragas_trace)
     return pipeline_interactions
 
