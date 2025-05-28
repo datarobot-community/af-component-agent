@@ -1,4 +1,5 @@
 import json
+from unittest import mock
 from unittest.mock import MagicMock, patch
 
 
@@ -37,7 +38,18 @@ class TestCustomModel:
         }
         mock_agent_instance = MagicMock()
         mock_agent.return_value = mock_agent_instance
+        {% if agent_template_framework == "crewai" %}
+        mock_agent_instance.run.return_value = mock.Mock(
+            raw="agent result",
+            token_usage=mock.Mock(
+                completion_tokens=1,
+                prompt_tokens=2,
+                total_tokens=3,
+            ),
+        )
+        {% else %}
         mock_agent_instance.run.return_value = ("agent result", usage)
+        {% endif %}
 
         completion_create_params = {
             "model": "test-model",
