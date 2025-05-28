@@ -112,8 +112,8 @@ jobs:
           fi
           
           # Check if the log file was created
-          if [[ $(wc -l <output.log) -ge 2 ]]
-            echo "Default Log file created successfully and file not empty."
+          if [ $(wc -l <output.log) -ge 2 ]; then
+            echo "Log file created successfully and file not empty."
             echo ""
             echo "Contents of output.log:"
             cat output.log
@@ -122,12 +122,12 @@ jobs:
             exit 1
           fi
           
-          # Check if the complete log file was created
-          if [[ $(wc -l <./custom_model/output.log) -ge 2 ]]
-            echo "Default Log file created successfully and file not empty."
+          # Check if the log file was created
+          if [ $(wc -l <./custom_model/output.json.log) -ge 2 ]; then
+            echo "Log file created successfully and file not empty."
             echo ""
-            echo "Contents of output.log:"
-            cat ./custom_model/output.log
+            echo "Contents of ./custom_model/output.json.log:"
+            cat ./custom_model/output.json.log
           else
             echo "Log file was not created."
             exit 1
