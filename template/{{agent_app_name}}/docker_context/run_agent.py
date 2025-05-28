@@ -15,9 +15,11 @@
 import argparse
 import json
 import logging
+import os
 import sys
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse, urlunparse
 
 import requests
 from datarobot_drum.drum.enum import TargetType
@@ -59,6 +61,9 @@ def argparse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output_path", type=str, default=None, help="json output file location"
     )
+    parser.add_argument(
+        "--otlp_entity_id", type=str, default=None, help="Entity ID for tracing"
+    )
     args = parser.parse_args()
     return args
 
@@ -71,6 +76,31 @@ def setup_logging(logger: logging.Logger, log_level: int = logging.INFO) -> None
     handler_stream.setFormatter(formatter)
 
     logger.addHandler(handler_stream)
+
+
+def setup_otlp_env_variables(entity_id: str | None = None) -> None:
+    # do not override if already set
+    if os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") or os.environ.get(
+        "OTEL_EXPORTER_OTLP_HEADERS"
+    ):
+        return
+
+    datarobot_endpoint = os.environ.get("DATAROBOT_ENDPOINT")
+    datarobot_api_token = os.environ.get("DATAROBOT_API_TOKEN")
+    if not datarobot_endpoint or not datarobot_api_token:
+        root.warning(
+            "DATAROBOT_ENDPOINT or DATAROBOT_API_TOKEN not set, tracing is disabled"
+        )
+        return
+
+    parsed_url = urlparse(datarobot_endpoint)
+    stripped_url = (parsed_url.scheme, parsed_url.netloc, "otel", "", "", "")
+    otlp_endpoint = urlunparse(stripped_url)
+    otlp_headers = f"X-DataRobot-Api-Key={datarobot_api_token}"
+    if entity_id:
+        otlp_headers += f",X-DataRobot-Entity-Id={entity_id}"
+    os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = otlp_endpoint
+    os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = otlp_headers
 
 
 def execute_drum(
@@ -152,7 +182,6 @@ def main() -> Any:
         try:
             print("Setting up logging")
             setup_logging(logger=root, log_level=logging.INFO)
-            # Agent execution
             root.info("Parsing args")
             # Parse input to fail early if it's not valid
             chat_completion = construct_prompt(args.chat_completion)

@@ -29,6 +29,7 @@ from run_agent import (
     execute_drum,
     main,
     setup_logging,
+    setup_otlp_env_variables,
     store_result,
 )
 
@@ -49,6 +50,8 @@ class TestArgparseArgs:
                 "/path/to/model",
                 "--output_path",
                 "/path/to/output",
+                "--otlp_entity_id",
+                "test-entity-id",
             ],
         ):
             args = argparse_args()
@@ -61,6 +64,7 @@ class TestArgparseArgs:
             assert args.default_headers == '{"X-API-Key": "test-key"}'
             assert args.custom_model_dir == "/path/to/model"
             assert args.output_path == "/path/to/output"
+            assert args.otlp_entity_id == "test-entity-id"
 
     def test_argparse_args_partial_values(self):
         """Test that partial arguments work correctly with others taking default values."""
@@ -82,6 +86,7 @@ class TestArgparseArgs:
             assert args.default_headers == "{}"  # default
             assert args.custom_model_dir == "/path/to/model"
             assert args.output_path is None
+            assert args.otlp_entity_id is None
 
 
 class TestSetupLogging:
@@ -127,6 +132,92 @@ class TestSetupLogging:
         # Verify formatters
         stream_formatter_call = mock_stream.setFormatter.call_args[0][0]
         assert stream_formatter_call._fmt == "%(asctime)s - %(levelname)s - %(message)s"
+
+
+class TestSetupOtlpEnvVariables:
+    @pytest.mark.parametrize(
+        "headers, endpoint",
+        [
+            ("some-headers", "some-endpoint"),
+            ("some-headers", None),
+            (None, "some-endpoint"),
+        ],
+    )
+    def test_setup_otlp_env_variables_does_not_override_existing_variables(
+        self, headers, endpoint
+    ):
+        # GIVEN Datarobot os environment variables
+        os_environ = {
+            "DATAROBOT_ENDPOINT": "https://app.datarobot.com/api/v2",
+            "DATAROBOT_API_TOKEN": "test-api-key",
+        }
+        # GIVEN existing otel config variables
+        if headers:
+            os_environ["OTEL_EXPORTER_OTLP_HEADERS"] = headers
+        if endpoint:
+            os_environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = endpoint
+        with patch.dict(os.environ, os_environ, clear=True):
+            # WHEN setup_otlp_env_variables is called
+            setup_otlp_env_variables()
+
+            # THEN the environment variables are not overridden
+            assert os.environ.get("OTEL_EXPORTER_OTLP_HEADERS") == headers
+            assert os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") == endpoint
+
+    @pytest.mark.parametrize(
+        "datarobot_endpoint, datarobot_api_token, expected_headers, expected_endpoint",
+        [
+            (None, None, None, None),
+            ("https://app.datarobot.com/api/v2", None, None, None),
+            (None, "test-api-key", None, None),
+            (
+                "https://app.datarobot.com/api/v2",
+                "test-api-key",
+                "X-DataRobot-Api-Key=test-api-key",
+                "https://app.datarobot.com/otel",
+            ),
+        ],
+    )
+    def test_setup_otlp_env_variables(
+        self,
+        datarobot_endpoint,
+        datarobot_api_token,
+        expected_headers,
+        expected_endpoint,
+    ):
+        # GIVEN os environment variables
+        os_environ = {}
+        if datarobot_endpoint:
+            os_environ["DATAROBOT_ENDPOINT"] = datarobot_endpoint
+        if datarobot_api_token:
+            os_environ["DATAROBOT_API_TOKEN"] = datarobot_api_token
+        with patch.dict(os.environ, os_environ, clear=True):
+            # WHEN setup_otlp_env_variables is called
+            setup_otlp_env_variables()
+
+            # THEN the environment variables are set
+            assert os.environ.get("OTEL_EXPORTER_OTLP_HEADERS") == expected_headers
+            assert os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") == expected_endpoint
+
+    def test_setup_otlp_env_variables_with_entity_id(self):
+        # GIVEN os environment variables
+        os_environ = {
+            "DATAROBOT_ENDPOINT": "https://app.datarobot.com/api/v2",
+            "DATAROBOT_API_TOKEN": "test-api-key",
+        }
+        with patch.dict(os.environ, os_environ, clear=True):
+            # WHEN setup_otlp_env_variables is called with an entity id
+            setup_otlp_env_variables(entity_id="test-entity-id")
+
+            # THEN the environment variables are set
+            assert (
+                os.environ["OTEL_EXPORTER_OTLP_HEADERS"]
+                == "X-DataRobot-Api-Key=test-api-key,X-DataRobot-Entity-Id=test-entity-id"
+            )
+            assert (
+                os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"]
+                == "https://app.datarobot.com/otel"
+            )
 
 
 class TestConstructPrompt:
@@ -274,7 +365,7 @@ class TestExecuteDrum:
         execute_drum(
             chat_completion={},
             default_headers={},
-            custom_model_dir="/path/to/model",
+            custom_model_dir=Path("/path/to/model"),
         )
 
     @patch("run_agent.DrumServerRun")
