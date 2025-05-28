@@ -30,7 +30,7 @@ from run_agent import (
     main,
     setup_logging,
     store_result,
-)
+)  # noqa: I001
 
 
 class TestArgparseArgs:
