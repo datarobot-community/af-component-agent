@@ -42,7 +42,9 @@ jobs:
           cd ./copier_context/agent
           task req
       - name: Lint Template
-        run: task lint-check
+        run: |
+          cd ./copier_context/agent
+          task lint-check
   uvx-copier-unit-test:
     name: "Base Unit Tests"
     runs-on: "ubuntu-latest"
@@ -62,13 +64,20 @@ jobs:
           cd ./copier_context/agent
           task req
       - name: Run unit tests
-        run: task test
+        run: |
+          cd ./copier_context/agent
+          task test
   uvx-copier-cli-test:
     name: "Base CLI Tests"
     runs-on: "ubuntu-latest"
     defaults:
       run:
         working-directory: .
+
+    strategy:
+      matrix:
+        python-version: [ "3.10", "3.11", "3.12" ]
+
     steps:
       - name: Checkout
         uses: "actions/checkout@v4"
@@ -83,6 +92,7 @@ jobs:
           task req
       - name: Run cli test
         run: |
+          cd ./copier_context/agent
           task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
           if task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}' | grep -q '"content": "success"'; then
             echo "Test passed: cli.py returned success"
