@@ -180,17 +180,16 @@ def store_result(result: ChatCompletion, output_path: Path) -> None:
 
 
 def main() -> Any:
-    print("Parsing args")
-    args = argparse_args()
-    output_log_path = str(
-        Path(args.output_path + ".log") if args.output_path else DEFAULT_OUTPUT_LOG_PATH
-    )
-    setup_logging(logger=root, output_path=output_log_path, log_level=logging.INFO)
-
     try:
+        setup_logging(logger=root, output_path=DEFAULT_OUTPUT_LOG_PATH, log_level=logging.INFO)
+        print("Parsing args")
+        args = argparse_args()
+
         print("Setting up logging")
-        # setup_logging(logger=root, log_level=logging.INFO)
-        root.info("Parsing args")
+        output_log_path = str(
+            Path(args.output_path + ".log") if args.output_path else DEFAULT_OUTPUT_LOG_PATH
+        )
+        setup_logging(logger=root, output_path=output_log_path, log_level=logging.INFO)
 
         # Parse input to fail early if it's not valid
         chat_completion = construct_prompt(args.chat_completion)
@@ -219,7 +218,6 @@ def main() -> Any:
         root.exception(f"Error executing agent: {e}")
 
 
-# Agent execution
 if __name__ == "__main__":
     stdout = sys.stdout
     stderr = sys.stderr
