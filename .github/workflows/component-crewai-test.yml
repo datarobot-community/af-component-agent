@@ -27,7 +27,7 @@ jobs:
           uvx copier copy . ./copier_context --data agent_app_name=agent_crewai --data agent_template_framework=crewai --data base_answers_file=.datarobot/answers/base.yml
       - name: Lint Template
         run: |
-          cd ./copier_context/agent
+          cd ./copier_context/agent_crewai
           task req
           task lint
   crewai-copier-unit-test:
@@ -48,6 +48,6 @@ jobs:
           uvx copier copy . ./copier_context --data agent_app_name=agent_crewai --data agent_template_framework=crewai --data base_answers_file=.datarobot/answers/base.yml
       - name: Run unit tests
         run: |
-          cd ./copier_context/agent
+          cd ./copier_context/agent_crewai
           task req
           task test
