@@ -21,6 +21,7 @@ class MyAgent:
 
     def run(self, inputs: Dict[str, str]) -> Tuple[str, Dict[str, int]]:
         _ = inputs, self.api_key
+        print("Running agent with inputs:", inputs)
         usage = {
             "completion_tokens": 0,
             "prompt_tokens": 0,
