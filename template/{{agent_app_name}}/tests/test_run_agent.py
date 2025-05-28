@@ -357,7 +357,7 @@ class TestMain:
         # THEN store_result was called with correct parameters
         mock_store_result.assert_called_once_with(
             mock_completion,
-            "/path/to/output",
+            Path("/path/to/output"),
         )
 
         # THEN file open was called with correct parameters
