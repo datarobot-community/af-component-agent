@@ -29,11 +29,8 @@ To update
 
 To update all templates that are copied:
 
-`uvx copier update -a .datarobot/answers/* -A`
+`uvx copier update -A`
 
-or just
-
-`uvx copier update -a .datarobot/*`
 
 ## Updating component
 
