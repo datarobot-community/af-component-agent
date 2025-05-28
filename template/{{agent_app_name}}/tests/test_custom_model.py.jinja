@@ -71,8 +71,8 @@ def mock_agent_response(mock_crewai_output, mock_langgraph_output, mock_generic_
     Fixture to return a mock agent response based on the agent template framework.
     """
     {% if agent_template_framework == "crewai" +%}return mock_crewai_output
-    {% elif agent_template_framework == "langgraph" %}return mock_langgraph_output
-    {% else %}return mock_generic_output
+    {% elif agent_template_framework == "langgraph" +%}return mock_langgraph_output
+    {% else +%}return mock_generic_output
     {% endif %}
 
 
