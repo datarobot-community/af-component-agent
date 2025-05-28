@@ -1,0 +1,53 @@
+---
+name: Component - Langgraph Tests
+
+on:
+  push:
+    branches: ["main"]
+
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  langgraph-copier-lint-test:
+    name: "Langgraph Linter"
+    runs-on: "ubuntu-latest"
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Checkout
+        uses: "actions/checkout@v4"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Install Task
+        uses: arduino/setup-task@v2
+      - name: Create Copier Template
+        run: |
+          uvx copier copy . ./copier_context --data agent_app_name=agent_langgraph --data agent_template_framework=langgraph --data base_answers_file=.datarobot/answers/base.yml
+      - name: Lint Template
+        run: |
+          cd ./copier_context/agent_langgraph
+          task req
+          task lint
+  langgraph-copier-unit-test:
+    name: "Langgraph Unit Tests"
+    runs-on: "ubuntu-latest"
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - name: Checkout
+        uses: "actions/checkout@v4"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Install Task
+        uses: arduino/setup-task@v2
+      - name: Create Copier Template
+        run: |
+          uvx copier copy . ./copier_context --data agent_app_name=agent_langgraph --data agent_template_framework=langgraph --data base_answers_file=.datarobot/answers/base.yml
+      - name: Run unit tests
+        run: |
+          cd ./copier_context/agent_langgraph
+          task req
+          task test
