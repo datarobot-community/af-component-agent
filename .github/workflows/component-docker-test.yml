@@ -1,5 +1,5 @@
 ---
-name: Test Component
+name: Test Docker Image
 
 on:
   push:
