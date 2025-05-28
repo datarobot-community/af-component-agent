@@ -1,5 +1,5 @@
 ---
-name: Component - Langgraph Tests
+name: Component - Langgraph
 
 on:
   push:

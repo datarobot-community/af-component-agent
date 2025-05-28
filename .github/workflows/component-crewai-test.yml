@@ -1,5 +1,5 @@
 ---
-name: Component - CrewAI Tests
+name: Component - CrewAI
 
 on:
   push:
