@@ -41,6 +41,6 @@ jobs:
           uvx copier copy . ./copier_context --defaults
       - name: Lint Template
         run: |
-          cd .copier_context
+          cd ./copier_context
           task req
           task lint
