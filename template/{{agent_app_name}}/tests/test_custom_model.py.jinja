@@ -47,8 +47,11 @@ def mock_agent_response(mock_crewai_output, mock_generic_output):
     """
     Fixture to return a mock agent response based on the agent template framework.
     """
-    {% if agent_template_framework == "crewai" %}return mock_crewai_output
-    {% else %}return mock_generic_output{% endif %}
+    {% if agent_template_framework == "crewai" %}
+    return mock_crewai_output
+    {% else %}
+    return mock_generic_output
+    {% endif -%}
 
 
 class TestCustomModel:
