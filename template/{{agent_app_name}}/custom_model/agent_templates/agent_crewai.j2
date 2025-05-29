@@ -167,7 +167,10 @@ class MyAgent:
         crew_output = self.crew().kickoff(inputs=inputs)
         response_text = str(crew_output.raw)
         events = self.event_listener.messages
-        last_message = events[-1].content
-        if last_message != response_text:
-            events.append(AIMessage(content=response_text))
+        if len(events) > 0:
+            last_message = events[-1].content
+            if last_message != response_text:
+                events.append(AIMessage(content=response_text))
+        else:
+            events = None
         return events, crew_output

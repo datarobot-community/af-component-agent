@@ -98,6 +98,7 @@ class CrewAIEventListener(BaseEventListener):  # type: ignore[misc]
 
 
 def to_custom_model_response(
+    events: List[Union[HumanMessage, AIMessage, ToolMessage]] | None,
     crew_output: CrewOutput,
 ) -> CustomModelChatResponse:
     """Convert the CrewAI agent output to a custom model response."""
@@ -107,9 +108,12 @@ def to_custom_model_response(
         "total_tokens": crew_output.token_usage.total_tokens,
     }
 
+    pipeline_interactions = None
+    if events:
+        pipeline_interactions = MultiTurnSample(user_input=events)
     response = create_completion_from_response_text(
         response_text=str(crew_output.raw),
         usage_metrics=usage_metrics,
-        pipeline_interactions=None,
+        pipeline_interactions=pipeline_interactions,
     )
     return response
