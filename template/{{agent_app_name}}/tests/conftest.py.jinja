@@ -36,6 +36,17 @@ def custom_model_environment(root_path):
 
 
 @pytest.fixture
+def mock_agent_response(mock_crewai_output, mock_langgraph_output, mock_generic_output):
+    """
+    Fixture to return a mock agent response based on the agent template framework.
+    """
+    # Return the agent
+    {% if agent_template_framework == "crewai" -%}return mock_crewai_output
+    {% elif agent_template_framework == "langgraph" -%}return mock_langgraph_output
+    {% else %}return mock_generic_output
+    {% endif %}
+
+@pytest.fixture
 def mock_crewai_output():
     return mock.Mock(
         raw="agent result",
@@ -87,14 +98,3 @@ def mock_generic_output():
 
     return ("agent result", usage)
 
-
-@pytest.fixture
-def mock_agent_response(mock_crewai_output, mock_langgraph_output, mock_generic_output):
-    """
-    Fixture to return a mock agent response based on the agent template framework.
-    """
-    # Return the agent
-    {% if agent_template_framework == "crewai" -%}return mock_crewai_output
-    {% elif agent_template_framework == "langgraph" -%}return mock_langgraph_output
-    {% else %}return mock_generic_output
-    {% endif %}
