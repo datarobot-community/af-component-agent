@@ -68,8 +68,8 @@ jobs:
       - name: Lint Template
         run: |
           cd ./copier_context/infra
-          uv run ruff format --check .
-          uv run ruff check .
+          uv run ruff format --check --diff .
+          uv run ruff check --diff .
           uv run mypy --pretty .
   uvx-copier-unit-test:
     name: "Base Unit Tests"
