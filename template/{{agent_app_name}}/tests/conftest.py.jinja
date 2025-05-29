@@ -49,7 +49,7 @@ def mock_agent_response(mock_crewai_output, mock_langgraph_output, mock_generic_
 
 @pytest.fixture
 def mock_crewai_output():
-    return mock.Mock(
+    return None, mock.Mock(
         raw="agent result",
         token_usage=mock.Mock(
             completion_tokens=1,
