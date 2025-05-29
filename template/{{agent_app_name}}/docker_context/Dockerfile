@@ -81,7 +81,7 @@ ENV PYTHONUNBUFFERED=1 \
 ENV PATH="$VENV_PATH/bin:$PATH" \
   PYTHONPATH="/home/notebooks/.ipython/extensions:/home/notebooks/storage"
 
-# hadolint ignore=DL3013
+# hadolint ignore=SC1091
 RUN uv venv ${VENV_PATH} && \
     source ${VENV_PATH}/bin/activate && \
     uv pip install -U pip setuptools
@@ -132,7 +132,7 @@ ARG VENV_PATH
 COPY ./requirements.txt ${WORKDIR}/
 COPY ./agent/requirements-agent.txt ${WORKDIR}/
 
-# hadolint ignore=DL3013
+# hadolint ignore=SC1091
 RUN source ${VENV_PATH}/bin/activate && \
     uv pip install --no-cache-dir -r ${WORKDIR}/requirements.txt && rm ${WORKDIR}/requirements.txt && \
     uv pip install --no-cache-dir -r ${WORKDIR}/requirements-agent.txt && rm ${WORKDIR}/requirements-agent.txt && \
