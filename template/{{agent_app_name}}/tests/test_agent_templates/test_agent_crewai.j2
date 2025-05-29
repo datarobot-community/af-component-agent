@@ -236,7 +236,7 @@ class TestMyAgentCrewAI:
         with patch.object(MyAgent, "crew", return_value=mock_crew):
             # Call the run method with test inputs
             inputs = {"topic": "Artificial Intelligence"}
-            result = agent.run(inputs)
+            events, crew_output = agent.run(inputs)
 
             # Verify crew() was called
             agent.crew.assert_called_once()
@@ -244,4 +244,5 @@ class TestMyAgentCrewAI:
             # Verify kickoff was called with the right inputs
             mock_crew.kickoff.assert_called_once_with(inputs=inputs)
 
-            assert result == mock_result
+            assert crew_output == mock_result
+            assert not events
