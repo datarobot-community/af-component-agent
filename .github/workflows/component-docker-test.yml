@@ -4,9 +4,13 @@ name: Docker
 on:
   push:
     branches: ["main"]
+    paths:
+      - 'template/{{agent_app_name}}/docker_context/*'
 
   pull_request:
     branches: ["main"]
+    paths:
+      - 'template/{{agent_app_name}}/docker_context/*'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -18,9 +22,18 @@ jobs:
     runs-on: "ubuntu-latest"
     defaults:
       run:
-        working-directory: template/{{agent_app_name}}/docker_context
+        working-directory: template/{{agent_app_name}}
     steps:
       - name: Checkout
         uses: "actions/checkout@v4"
       - name: Build Docker Image
-        run: docker build . -t docker_context
+        run: |
+          cd docker_context
+          docker build . -t docker_context
+#      - name: Create Base Agent
+#        run: |
+#          cd ../../
+#          uvx copier copy . ./copier_context --defaults
+#      - name: Run Docker Container
+#        run: |
+#          docker run --rm -v ./copier_context/agent:/home/notebooks/storage/ -w /home/notebooks/storage/ docker_context
