@@ -64,7 +64,7 @@ jobs:
         run: |
           uvx copier copy . ./copier_context --defaults
           cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
-          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+          cp ./fixtures/infra/__init__.py ./copier_context/infra/__init__.py
           cd ./copier_context/infra
           uv sync --all-extras --all-groups --dev
       - name: Lint Template
