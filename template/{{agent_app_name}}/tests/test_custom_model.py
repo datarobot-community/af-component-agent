@@ -39,7 +39,7 @@ class TestCustomModel:
         result = load_model("")
         assert result == "success"
 
-    @patch("custom_model.custom.MyAgent")
+    @patch("custom.MyAgent")
     def test_chat(self, mock_agent, mock_agent_response):
         from custom import chat
 
