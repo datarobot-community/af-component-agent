@@ -46,6 +46,7 @@ def mock_agent_response(mock_crewai_output, mock_langgraph_output, mock_generic_
     {%- else -%}return mock_generic_output{% endif -%}
     {# blank line #}
 
+
 @pytest.fixture
 def mock_crewai_output():
     return mock.Mock(
@@ -96,5 +97,4 @@ def mock_generic_output():
         "total_tokens": 3,
     }
 
-    return ("agent result", usage)
-
+    return "agent result", usage
