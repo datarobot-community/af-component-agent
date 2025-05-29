@@ -45,7 +45,7 @@ jobs:
         run: |
           cd ./copier_context/agent
           task lint-check
-  uvx-copier-lint-test:
+  uvx-copier-infra-lint-test:
     name: "Base Infra Linter"
     runs-on: "ubuntu-latest"
     defaults:
