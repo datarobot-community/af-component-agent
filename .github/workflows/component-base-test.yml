@@ -63,6 +63,7 @@ jobs:
       - name: Install Dependencies
         run: |
           uvx copier copy . ./copier_context --defaults
+          cp ./github/fixtures/__init__.py ./copier_context/infra/__init__.py
           cd ./copier_context/infra
           uv sync --all-extras --all-groups --dev
       - name: Lint Template
