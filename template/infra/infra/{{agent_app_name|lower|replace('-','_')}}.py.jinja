@@ -71,17 +71,14 @@ if "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT" in os.environ:
     )
     {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
         id={{agent_app_name}}_execution_environment_id,
-        resource_name="Execution Environment [PRE-EXISTING] "
-        + {{agent_app_name}}_resource_name,
+        resource_name="Execution Environment [PRE-EXISTING] " + {{agent_app_name}}_resource_name,
     )
 else:
     {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment(
         resource_name="Agent Python 3.11 " + {{agent_app_name}}_resource_name,
         programming_language="python",
         description="DataRobot Agent Execution Environment [Python 3.11]",
-        docker_context_path=os.path.join(
-            str({{agent_app_name}}_application_path), "docker_context"
-        ),
+        docker_context_path=os.path.join(str({{agent_app_name}}_application_path), "docker_context"),
         use_cases=["customModel", "notebook"],
     )
 
@@ -107,9 +104,7 @@ pulumi.export(
     "Execution Environment ID " + {{agent_app_name}}_resource_name,
     {{agent_app_name}}_execution_environment.id,
 )
-pulumi.export(
-    "Custom Model ID " + {{agent_app_name}}_resource_name, {{agent_app_name}}_custom_model.id
-)
+pulumi.export("Custom Model ID " + {{agent_app_name}}_resource_name, {{agent_app_name}}_custom_model.id)
 
 
 {{agent_app_name}}_agent_deployment_id = "None"
