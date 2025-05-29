@@ -8,6 +8,10 @@ on:
   pull_request:
     branches: ["main"]
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   uvx-copier-copy-test:
     name: "Base Copier Test"
