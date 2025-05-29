@@ -17,6 +17,18 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  hadolint:
+    name: "Lint Dockerfiles"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: template/{{agent_app_name}}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          recursive: true
   docker-build-test:
     name: "Docker Build and Test"
     runs-on: "ubuntu-latest"
