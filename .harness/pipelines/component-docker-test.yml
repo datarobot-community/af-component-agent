@@ -26,40 +26,17 @@ pipeline:
           execution:
             steps:
               - step:
-                  type: Background
-                  name: start docker in docker
-                  identifier: start_docker_in_docker
+                  type: Run
+                  name: Build Docker Prod
+                  identifier: Build_Docker_Prod
                   spec:
                     connectorRef: account.dockerhub_datarobot_read
                     image: docker:dind
                     shell: Sh
-              - step:
-                  type: Run
-                  name: wait for docker in docker
-                  identifier: wait_for_docker_in_docker
-                  spec:
-                    connectorRef: account.dockerhub_datarobot_read
-                    image: docker:24.0-cli
-                    shell: Sh
                     command: |-
-                      while ! docker ps ;do
-                          echo "Docker not available yet"
-                          sleep 1
-                      done
-                      echo "Docker Service Ready"
-                      docker ps
-              - step:
-                  type: GitClone
-                  name: Checkout af-component-agent
-                  identifier: Checkout_afcomponentagent
-                  spec:
-                    connectorRef: account.svc_harness_git1
-                    repoName: af-component-agent
-                    cloneDirectory: /harness/af-component-agent
-                    build:
-                      type: branch
-                      spec:
-                        branch: <+trigger.branch>
+                      ls -la
+                      docker date
+                    privileged: true
           infrastructure:
             type: KubernetesDirect
             spec:
