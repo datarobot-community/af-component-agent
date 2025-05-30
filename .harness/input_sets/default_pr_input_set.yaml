@@ -1,0 +1,14 @@
+inputSet:
+  name: default_pr_input_set
+  identifier: default_pr_input_set
+  orgIdentifier: No_Code_Apps
+  projectIdentifier: afcomponentagent
+  pipeline:
+    identifier: component_docker_test
+    properties:
+      ci:
+        codebase:
+          build:
+            type: PR
+            spec:
+              number: <+trigger.prNumber>
