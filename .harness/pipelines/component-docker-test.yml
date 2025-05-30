@@ -26,17 +26,33 @@ pipeline:
           execution:
             steps:
               - step:
-                  type: Run
-                  name: Build Docker Prod
-                  identifier: Build_Docker_Prod
+                  type: Background
+                  name: start docker in docker
+                  identifier: start_docker_in_docker
                   spec:
                     connectorRef: account.dockerhub_datarobot_read
                     image: docker:dind
                     shell: Sh
-                    command: |-
-                      cd template/{{agent_app_name}}/docker_context/
-                      docker build -f Dockerfile.prod . -t docker_context_prod
                     privileged: true
+                    resources:
+                      limits:
+                        memory: 4G
+              - step:
+                  type: Run
+                  name: wait for docker in docker
+                  identifier: wait_for_docker_in_docker
+                  spec:
+                    connectorRef: account.dockerhub_datarobot_read
+                    image: docker:24.0-cli
+                    shell: Sh
+                    command: |-
+                      while ! docker ps ;do
+                          echo "Docker not available yet"
+                          sleep 1
+                      done
+                      echo "Docker Service Ready"
+                      docker ps
+                  timeout: 1m
           infrastructure:
             type: KubernetesDirect
             spec:
