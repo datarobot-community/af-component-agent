@@ -45,4 +45,4 @@ pipeline:
 
                       docker build -f Dockerfile.prod . -t docker_context_prod
                     envVariables:
-                      DATAROBOT_DOCKERHUB_TOKEN: <+secrets.getValue("org.DOCKERHUB_TOKEN")>
+                      DOCKERHUB_TOKEN: <+secrets.getValue("account.dockerhub_datarobotdevinfra1")>
