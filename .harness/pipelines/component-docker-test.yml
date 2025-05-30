@@ -4,12 +4,6 @@ pipeline:
   projectIdentifier: afcomponentagent
   orgIdentifier: No_Code_Apps
   tags: {}
-  properties:
-    ci:
-      codebase:
-        connectorRef: account.svc_harness_git1
-        repoName: af-component-agent
-        build: <+input>
   stages:
     - stage:
         name: Docker Prod Build and Test
@@ -17,10 +11,11 @@ pipeline:
         description: ""
         type: CI
         spec:
-          cloneCodebase: true
+          cloneCodebase: false
           caching:
             enabled: true
             override: false
+            paths: []
           buildIntelligence:
             enabled: true
           execution:
@@ -61,3 +56,6 @@ pipeline:
               automountServiceAccountToken: true
               nodeSelector: {}
               os: Linux
+          sharedPaths:
+            - /var/run
+            - /var/lib/docker
