@@ -1,0 +1,42 @@
+pipeline:
+  name: Component Docker Test
+  identifier: component_docker_test
+  projectIdentifier: afcomponentagent
+  orgIdentifier: No_Code_Apps
+  tags: {}
+  properties:
+    ci:
+      codebase:
+        connectorRef: account.svc_harness_git1
+        repoName: af-component-agent
+        build: <+input>
+  stages:
+    - stage:
+        name: Docker Prod Build and Test
+        identifier: Docker_Prod_Build_and_Test
+        description: ""
+        type: CI
+        spec:
+          cloneCodebase: true
+          caching:
+            enabled: true
+            override: false
+          buildIntelligence:
+            enabled: true
+          platform:
+            os: Linux
+            arch: Amd64
+          runtime:
+            type: Cloud
+            spec: {}
+          execution:
+            steps:
+              - step:
+                  type: Run
+                  name: Build Dockerfile Prod
+                  identifier: Build_Dockerfile_Prod
+                  spec:
+                    shell: Bash
+                    command: |-
+                      cd template/{{agent_app_name}}/docker_context/
+                      docker build -f Dockerfile.prod . -t docker_context_prod
