@@ -100,6 +100,7 @@ RUN source ${VENV_PATH}/bin/activate && \
     uv pip uninstall litellm && \
     uv pip install --no-cache-dir git+https://github.com/datarobot-forks/litellm@mattn/add-datarobot-support-to-litellm
 
+# Install DataRobot Moderations
 # hadolint ignore=DL3013
 RUN source ${VENV_PATH}/bin/activate && \
     uv pip install --no-cache-dir datarobot-moderations \
