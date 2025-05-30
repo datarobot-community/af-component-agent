@@ -96,4 +96,10 @@ class TestCustomModel:
 
         # Verify mocks were called correctly
         mock_agent.assert_called_once_with(**completion_create_params)
-        mock_agent_instance.run.assert_called_once_with(inputs={"topic": "test"})
+        mock_agent_instance.run.assert_called_once_with(
+            completion_create_params={
+                "model": "test-model",
+                "messages": [{"role": "user", "content": '{"topic": "test"}'}],
+                "environment_var": True,
+            }
+        )

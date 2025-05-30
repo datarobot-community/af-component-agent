@@ -1,7 +1,21 @@
+# Copyright 2025 DataRobot, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 import asyncio
 import os
 from typing import Any, Dict, Optional, Tuple, Union
 
+from helpers import create_inputs_from_completion_params
 from llama_index.core.agent.workflow import (
     AgentInput,
     AgentOutput,
@@ -14,11 +28,22 @@ from llama_index.core.agent.workflow import (
 from llama_index.core.base.llms.types import LLMMetadata
 from llama_index.core.workflow import Context
 from llama_index.llms.litellm import LiteLLM
+from openai.types.chat import CompletionCreateParams
 
 
 class DataRobotLiteLLM(LiteLLM):  # type: ignore[misc]
+    """DataRobotLiteLLM is a small LiteLLM wrapper class that makes all LiteLLM endpoints compatible with the
+    LlamaIndex library."""
+
     @property
     def metadata(self) -> LLMMetadata:
+        """Returns the metadata for the LLM.
+
+        This is required to enable the is_chat_model and is_function_calling_model, which are
+        mandatory for LlamaIndex agents. By default, LlamaIndex assumes these are false unless each individual
+        model config in LiteLLM explicitly sets them to true. To use custom LLM endpoints with LlamaIndex agents,
+        you must override this method to return the appropriate metadata.
+        """
         return LLMMetadata(
             context_window=128000,
             num_output=self.max_tokens or -1,
@@ -29,6 +54,12 @@ class DataRobotLiteLLM(LiteLLM):  # type: ignore[misc]
 
 
 class MyAgent:
+    """MyAgent is a custom agent that uses LlamaIndex to plan, write, and edit content.
+    It utilizes DataRobot's LLM Gateway or a specific deployment for language model interactions.
+    This example illustrates 3 agents that handle content creation tasks, including planning, writing,
+    and editing blog posts.
+    """
+
     def __init__(
         self,
         api_key: Optional[str] = None,
@@ -37,6 +68,23 @@ class MyAgent:
         verbose: Optional[Union[bool, str]] = True,
         **kwargs: Any,
     ):
+        """Initializes the MyAgent class with API key, base URL, model, and verbosity settings.
+
+        Args:
+            api_key: Optional[str]: API key for authentication with DataRobot services.
+                Defaults to None, in which case it will use the DATAROBOT_API_TOKEN environment variable.
+            api_base: Optional[str]: Base URL for the DataRobot API.
+                Defaults to None, in which case it will use the DATAROBOT_ENDPOINT environment variable.
+            model: Optional[str]: The LLM model to use.
+                Defaults to None.
+            verbose: Optional[Union[bool, str]]: Whether to enable verbose logging.
+                Accepts boolean or string values ("true"/"false"). Defaults to True.
+            **kwargs: Any: Additional keyword arguments passed to the agent.
+                Contains any parameters received in the CompletionCreateParams.
+
+        Returns:
+            None
+        """
         self.api_key = api_key or os.environ.get("DATAROBOT_API_TOKEN")
         self.api_base = api_base or os.environ.get("DATAROBOT_ENDPOINT")
         self.model = model
@@ -46,11 +94,34 @@ class MyAgent:
             self.verbose = verbose
 
     @property
-    def llm(self) -> DataRobotLiteLLM:
+    def llm_with_datarobot_llm_gateway(self) -> DataRobotLiteLLM:
+        """Returns a LlamaIndex LiteLLM compatible LLM instance configured to use DataRobot's LLM Gateway.
+
+        This property can serve as a primary LLM backend for the agents. You can optionally
+        have multiple LLMs configured, such as one for DataRobot's LLM Gateway
+        and another for a specific DataRobot deployment, or even multiple deployments or
+        third-party LLMs.
+        """
         return DataRobotLiteLLM(
             model="datarobot/vertex_ai/gemini-1.5-flash-002",
             additional_kwargs={"clientId": "custom-model"},
             api_base=self.api_base,
+            api_key=self.api_key,
+        )
+
+    @property
+    def llm_with_datarobot_deployment(self) -> DataRobotLiteLLM:
+        """Returns a LlamaIndex LiteLLM compatible LLM instance configured to use DataRobot's LLM Deployments.
+
+        This property can serve as a primary LLM backend for the agents. You can optionally
+        have multiple LLMs configured, such as one for DataRobot's LLM Gateway
+        and another for a specific DataRobot deployment, or even multiple deployments or
+        third-party LLMs.
+        """
+        return DataRobotLiteLLM(
+            model="datarobot/vertex_ai/gemini-1.5-flash-002",
+            additional_kwargs={"clientId": "custom-model"},
+            api_base=f"{self.api_base}/api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/",
             api_key=self.api_key,
         )
 
@@ -92,7 +163,7 @@ class MyAgent:
                 "WriteAgent to write a report on the topic. You should have at least some notes on a topic "
                 "before handing off control to the WriteAgent."
             ),
-            llm=self.llm,
+            llm=self.llm_with_datarobot_llm_gateway,
             tools=[self.record_notes],
             can_handoff_to=["WriteAgent"],
         )
@@ -107,7 +178,7 @@ class MyAgent:
                 "Your report should be in a markdown format. The content should be grounded in the research notes. "
                 "Once the report is written, you should get feedback at least once from the ReviewAgent."
             ),
-            llm=self.llm,
+            llm=self.llm_with_datarobot_llm_gateway,
             tools=[self.write_report],
             can_handoff_to=["ReviewAgent", "ResearchAgent"],
         )
@@ -123,7 +194,7 @@ class MyAgent:
                 "WriteAgent to implement.  If you have feedback that requires changes, you should hand "
                 "off control to the WriteAgent to implement the changes after submitting the review."
             ),
-            llm=self.llm,
+            llm=self.llm_with_datarobot_llm_gateway,
             tools=[self.review_report],
             can_handoff_to=["WriteAgent"],
         )
@@ -174,7 +245,29 @@ class MyAgent:
 
         return await handler.ctx.get("state")  # type: ignore[union-attr]
 
-    def run(self, inputs: Dict[str, str]) -> Tuple[str, Dict[str, int]]:
+    def run(
+        self, completion_create_params: CompletionCreateParams
+    ) -> Tuple[str, Dict[str, int]]:
+        """Run the agent with the provided completion parameters.
+
+        [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
+
+        Inputs can be extracted from the completion_create_params in several ways. A helper function
+        `create_inputs_from_completion_params` is provided to extract the inputs as json or a string
+        from the 'user' portion of the input prompt. Alternatively you can extract and use one or
+        more inputs or messages from the completion_create_params["messages"] field.
+
+        Args:
+            completion_create_params (CompletionCreateParams): The parameters for
+                the completion request, which includes the input topic and other settings.
+        Returns:
+            Tuple[list[Any], CrewOutput]: A tuple containing a list of messages (events) and the crew output.
+
+        """
+        # Example helper for extracting inputs as a json from the completion_create_params["messages"]
+        # field with the 'user' role: (e.g. {"topic": "Artificial Intelligence"})
+        inputs = create_inputs_from_completion_params(completion_create_params)
+
         user_prompt = (
             f"Write me a report on the {inputs['topic']}. "
             f"Briefly describe the history of {inputs['topic']}, important developments, "
