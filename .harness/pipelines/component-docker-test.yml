@@ -11,7 +11,7 @@ pipeline:
         description: ""
         type: CI
         spec:
-          cloneCodebase: false
+          cloneCodebase: true
           caching:
             enabled: true
             override: false
@@ -47,30 +47,10 @@ pipeline:
                       done
                       echo "Docker Service Ready"
                       docker ps
-                  timeout: 1m
-              - step:
-                  type: GitClone
-                  name: clone codebase
-                  identifier: clone_codebase
-                  spec:
-                    connectorRef: account.svc_harness_git1
-                    repoName: af-component-agent
-                    cloneDirectory: /harness/af-component-agent
-                    build:
-                      type: tag
-                      spec:
-                        tag: <+trigger.branch>
-              - step:
-                  type: Run
-                  name: build image
-                  identifier: build_image
-                  spec:
-                    connectorRef: account.dockerhub_datarobot_read
-                    image: docker:24.0-cli
-                    shell: Sh
-                    command: |-
-                      cd af-component-agent
+
+                      echo "Checking files present"
                       ls -la
+                  timeout: 1m
           infrastructure:
             type: KubernetesDirect
             spec:
@@ -82,3 +62,10 @@ pipeline:
           sharedPaths:
             - /var/run
             - /var/lib/docker
+  properties:
+    ci:
+      codebase:
+        connectorRef: account.svc_harness_git1
+        repoName: af-component-agent
+        build: <+input>
+        sparseCheckout: []
