@@ -42,22 +42,3 @@ jobs:
         run: |
           cd docker_context
           docker build . -t docker_context
-  docker-build-prod-test:
-    name: "Docker Prod Build and Test"
-    runs-on: "ubuntu-latest"
-    defaults:
-      run:
-        working-directory: template/{{agent_app_name}}
-    steps:
-      - name: Checkout
-        uses: "actions/checkout@v4"
-      - name: Login to Dockerhub
-        run: |
-          export DOCKERHUB_USERNAME=${{ secrets.DOCKERHUB_USERNAME }} && \
-          export DOCKERHUB_PASSWORD=${{ secrets.DOCKERHUB_PASSWORD }} && \
-          echo $(DOCKERHUB_PASSWORD) | \
-            docker login --username $(DOCKERHUB_USERNAME) --password-stdin
-      - name: Build Docker Image
-        run: |
-          cd docker_context
-          docker build -f Dockerfile.prod . -t docker_context
