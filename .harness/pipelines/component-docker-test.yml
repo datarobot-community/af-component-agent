@@ -41,7 +41,7 @@ pipeline:
                       apt-get update && apt-get install -y docker
 
                       # DockerHub login
-                      docker login -u datarobotdevinfra1 --password $DOCKERHUB_TOKEN
+                      echo "${DOCKERHUB_TOKEN}" | docker login --username datarobotdevinfra1 --password-stdin
 
                       # Build Docker Context Production
                       cd template/{{agent_app_name}}/docker_context/
