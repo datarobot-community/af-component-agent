@@ -51,9 +51,14 @@ pipeline:
                       echo "Checking files present"
                       ls -la
 
+                      # DockerHub login
+                      echo "${DOCKERHUB_TOKEN}" | docker login --username datarobotread2 --password-stdin
+
                       # Building docker image
                       cd template/{{agent_app_name}}/docker_context/
                       docker build -f Dockerfile.prod . -t docker_context_prod
+                    envVariables:
+                      DOCKERHUB_TOKEN: <+secrets.getValue("account.dockerhubdatarobotread2orgread1")>
                   timeout: 1m
           infrastructure:
             type: KubernetesDirect
