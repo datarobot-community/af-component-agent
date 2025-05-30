@@ -38,5 +38,11 @@ pipeline:
                   spec:
                     shell: Bash
                     command: |-
+                      apt-get update && apt-get install -y docker maven
+                      echo "${DATAROBOT_DOCKERHUB_TOKEN}" | docker login --username "${DATAROBOT_DOCKERHUB_USERNAME}" --password-stdin
+
                       cd template/{{agent_app_name}}/docker_context/
                       docker build -f Dockerfile.prod . -t docker_context_prod
+                    envVariables:
+                      DATAROBOT_DOCKERHUB_USERNAME: datarobotdevinfra1
+                      DATAROBOT_DOCKERHUB_TOKEN: <+secrets.getValue("DataRobot_DevInfra_1")>
