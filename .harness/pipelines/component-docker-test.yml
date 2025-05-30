@@ -34,8 +34,8 @@ pipeline:
                     image: docker:dind
                     shell: Sh
                     command: |-
-                      ls -la
-                      docker date
+                      cd template/{{agent_app_name}}/docker_context/
+                      docker build -f Dockerfile.prod . -t docker_context_prod
                     privileged: true
           infrastructure:
             type: KubernetesDirect
