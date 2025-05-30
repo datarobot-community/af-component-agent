@@ -57,7 +57,9 @@ class MyAgent:
         elif isinstance(verbose, bool):
             self.verbose = verbose
 
-    def run(self, completion_create_params: CompletionCreateParams) -> Tuple[str, Dict[str, int]]:
+    def run(
+        self, completion_create_params: CompletionCreateParams
+    ) -> Tuple[str, Dict[str, int]]:
         """Run the agent with the provided completion parameters.
 
         [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
