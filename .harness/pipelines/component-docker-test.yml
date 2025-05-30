@@ -48,6 +48,29 @@ pipeline:
                       echo "Docker Service Ready"
                       docker ps
                   timeout: 1m
+              - step:
+                  type: GitClone
+                  name: clone codebase
+                  identifier: clone_codebase
+                  spec:
+                    connectorRef: account.svc_harness_git1
+                    repoName: af-component-agent
+                    cloneDirectory: /harness/af-component-agent
+                    build:
+                      type: tag
+                      spec:
+                        tag: <+trigger.branch>
+              - step:
+                  type: Run
+                  name: build image
+                  identifier: build_image
+                  spec:
+                    connectorRef: account.dockerhub_datarobot_read
+                    image: docker:24.0-cli
+                    shell: Sh
+                    command: |-
+                      cd af-component-agent
+                      ls -la
           infrastructure:
             type: KubernetesDirect
             spec:
