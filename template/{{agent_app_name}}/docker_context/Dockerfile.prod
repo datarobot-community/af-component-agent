@@ -103,7 +103,7 @@ RUN source ${VENV_PATH}/bin/activate && \
 # hadolint ignore=DL3013
 RUN source ${VENV_PATH}/bin/activate && \
 pip3 install --no-cache-dir datarobot-moderations \
-  --extra-index-url https://artifactory.devinfra.drdev.io/artifactory/api/pypi/datarobot-python-dev/simple
+  --index-url=https://artifactory.devinfra.drdev.io/artifactory/api/pypi/datarobot-python-dev/simple
 
 # Copy agent runtime into work directory
 COPY ./run_agent.py ${WORKDIR}/
