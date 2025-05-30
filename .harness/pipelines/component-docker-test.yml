@@ -23,28 +23,48 @@ pipeline:
             override: false
           buildIntelligence:
             enabled: true
-          platform:
-            os: Linux
-            arch: Amd64
-          runtime:
-            type: Cloud
-            spec: {}
           execution:
             steps:
               - step:
-                  type: Run
-                  name: Build Dockerfile Prod
-                  identifier: Build_Dockerfile_Prod
+                  type: Background
+                  name: start docker in docker
+                  identifier: start_docker_in_docker
                   spec:
-                    shell: Bash
+                    connectorRef: account.dockerhub_datarobot_read
+                    image: docker:dind
+                    shell: Sh
+              - step:
+                  type: Run
+                  name: wait for docker in docker
+                  identifier: wait_for_docker_in_docker
+                  spec:
+                    connectorRef: account.dockerhub_datarobot_read
+                    image: docker:24.0-cli
+                    shell: Sh
                     command: |-
-                      apt-get update && apt-get install -y docker
-
-                      # DockerHub login
-                      echo "${DOCKERHUB_TOKEN}" | docker login --username datarobotread2 --password-stdin
-
-                      # Build Docker Context Production
-                      cd template/{{agent_app_name}}/docker_context/
-                      docker build -f Dockerfile.prod . -t docker_context_prod
-                    envVariables:
-                      DOCKERHUB_TOKEN: <+secrets.getValue("account.dockerhubdatarobotread2orgread1")>
+                      while ! docker ps ;do
+                          echo "Docker not available yet"
+                          sleep 1
+                      done
+                      echo "Docker Service Ready"
+                      docker ps
+              - step:
+                  type: GitClone
+                  name: Checkout af-component-agent
+                  identifier: Checkout_afcomponentagent
+                  spec:
+                    connectorRef: account.svc_harness_git1
+                    repoName: af-component-agent
+                    cloneDirectory: /harness/af-component-agent
+                    build:
+                      type: branch
+                      spec:
+                        branch: <+trigger.branch>
+          infrastructure:
+            type: KubernetesDirect
+            spec:
+              connectorRef: account.cigeneral
+              namespace: harness-delegate-ng
+              automountServiceAccountToken: true
+              nodeSelector: {}
+              os: Linux
