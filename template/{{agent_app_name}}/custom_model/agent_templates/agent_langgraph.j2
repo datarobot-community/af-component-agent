@@ -212,9 +212,21 @@ class MyAgent:
         execution_graph = workflow.compile()
         return execution_graph
 
-    def run(self, inputs: Dict[str, str]) -> Tuple[list[Any], Dict[str, int]]:
-        # This crew uses one input which is a dictionary with the topic
+    def run(self, completion_create_params: CompletionCreateParams) -> Tuple[list[Any], Dict[str, int]]:
+        """ Run the agent with the provided parameters.
+
+        Args:
+            completion_create_params: Parameters for the completion request, including messages.
+        Returns:
+            A tuple containing a list of events and usage metrics.
+        """
+        # This example parses a single input by unpacking a json string passed in the completion_create_params.
         # Example: {"topic": "Artificial Intelligence"}
+        # Alternatively you can use a different method to parse inputs or accept the entire message as input.
+        # e.g.
+
+        inputs = create_inputs_from_completion_params(completion_create_params)
+
         input_message = {
             "messages": [
                 (

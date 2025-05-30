@@ -19,7 +19,6 @@ from agent import MyAgent
 from auth import initialize_authorization_context
 from helpers import (
     CustomModelChatResponse,
-    create_inputs_from_completion_params,
     to_custom_model_response,
 )
 from openai.types.chat import CompletionCreateParams
@@ -66,11 +65,8 @@ def chat(
     # allowing environment variables to be passed during execution
     agent = MyAgent(**completion_create_params)
 
-    # Load the user prompt from the completion_create_params as JSON or a string
-    inputs = create_inputs_from_completion_params(completion_create_params)
-
     # Execute the agent with the inputs
-    agent_result = agent.run(inputs=inputs)
+    agent_result = agent.run(completion_create_params=completion_create_params)
 
     if isinstance(agent_result, tuple):
         return to_custom_model_response(*agent_result)

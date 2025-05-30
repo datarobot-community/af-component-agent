@@ -174,7 +174,7 @@ class MyAgent:
 
         return await handler.ctx.get("state")  # type: ignore[union-attr]
 
-    def run(self, inputs: Dict[str, str]) -> Tuple[str, Dict[str, int]]:
+    def run(self, completion_create_params: CompletionCreateParams) -> Tuple[str, Dict[str, int]]:
         user_prompt = (
             f"Write me a report on the {inputs['topic']}. "
             f"Briefly describe the history of {inputs['topic']}, important developments, "
