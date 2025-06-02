@@ -4,11 +4,11 @@ on:
   push:
     branches: ["main"]
     paths:
-      - '{{ agent_app_name }}/**.py'
+      - '{{ agent_app_name }}'
   pull_request:
     branches: ["main"]
     paths:
-      - '{{ agent_app_name }}/**.py'
+      - '{{ agent_app_name }}'
 concurrency:
   group: {% raw %}${{ github.workflow }}-${{ github.ref }}{% endraw %}
   cancel-in-progress: true
