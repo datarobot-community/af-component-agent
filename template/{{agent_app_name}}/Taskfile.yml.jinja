@@ -32,7 +32,7 @@ tasks:
     cmds: [echo "Running pytest on tests", uv run pytest -vv ./tests/]
     silent: true
   cli:
-    desc: 🖥️ Run the CLI with provided arguments
+    desc: 🖥️ [{{ agent_app_name }}] Run the CLI with provided arguments
     cmds:
       - echo "Running CLI {% raw %}{{.CLI_ARGS}}{% endraw %}"
       - uv run cli.py {% raw %}{{.CLI_ARGS}}{% endraw %}
