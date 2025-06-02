@@ -1,28 +1,21 @@
 ---
 name: Docker
-
 on:
   push:
-    branches: ["main"]
-    paths:
-      - 'template/{{agent_app_name}}/docker_context/*'
-
+    branches: [main]
+    paths: ['template/{{agent_app_name}}/docker_context/*']
   pull_request:
-    branches: ["main"]
-    paths:
-      - 'template/{{agent_app_name}}/docker_context/*'
-
+    branches: [main]
+    paths: ['template/{{agent_app_name}}/docker_context/*']
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
-
 defaults:
   run:
     working-directory: template/{{agent_app_name}}
-
 jobs:
   hadolint:
-    name: "Lint Dockerfiles"
+    name: Lint Dockerfiles
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -31,12 +24,12 @@ jobs:
         with:
           recursive: true
   docker-build-test:
-    name: "Docker Public Build and Test"
-    runs-on: "ubuntu-latest"
+    name: Docker Public Build and Test
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: "actions/checkout@v4"
+        uses: actions/checkout@v4
       - name: Build Docker Image
-        run: |
+        run: |-
           cd docker_context
           docker build . -t docker_context
