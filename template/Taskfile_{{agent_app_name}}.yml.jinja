@@ -1,0 +1,42 @@
+---
+# https://taskfile.dev
+version: '3'
+includes:
+  {{ agent_app_name }}:
+    taskfile: ./{{ agent_app_name }}/Taskfile.yml
+    dir: ./{{ agent_app_name }}
+tasks:
+  req:
+    desc: 🛠️ Update local dependencies
+    cmds:
+      - echo "Updating agent dependencies"
+      - task: {{ agent_app_name }}:req
+      - echo "Updating infra dependencies"
+      - cd ./infra && uv sync --all-extras
+    silent: true
+  lint:
+    desc: 🧹 Lint the codebase
+    cmds:
+      - echo "Updating agent dependencies"
+      - task: {{ agent_app_name }}:req
+      - echo "Updating infra dependencies"
+      - cd ./infra && uv sync --all-extras
+    silent: true
+  build:
+    desc: "🔵 Run Pulumi up in [BUILD] mode"
+    cmds:
+      - echo "Running pulumi up with [BUILD] mode"
+      - export DEPLOY=0 && set -o allexport && source .env && cd ./infra && pulumi up
+    silent: true
+  deploy:
+    desc: "🟢 Run Pulumi up in [DEPLOY] mode"
+    cmds:
+      - echo "Running pulumi up with [DEPLOY] mode"
+      - export DEPLOY=1 && set -o allexport && source .env && cd ./infra && pulumi up
+    silent: true
+  destroy:
+    desc: "🔴 Run Pulumi destroy"
+    cmds:
+      - echo "Running pulumi destroy"
+      - set -o allexport && source .env && cd ./infra && pulumi destroy
+    silent: true

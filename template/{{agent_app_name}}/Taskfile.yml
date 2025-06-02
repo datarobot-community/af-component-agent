@@ -1,8 +1,6 @@
 ---
 # https://taskfile.dev
 version: '3'
-vars:
-  CLI: uv run cli.py
 tasks:
   req:
     desc: 🛠️ Update local dependencies
@@ -43,7 +41,7 @@ tasks:
       - rm ./.licenserc.yaml
     silent: true
   cli:
-    desc: Run the CLI with provided arguments
+    desc: 🖥️ Run the CLI with provided arguments
     cmds:
       - echo "Running CLI {{.CLI_ARGS}}"
       - uv run cli.py {{.CLI_ARGS}}
