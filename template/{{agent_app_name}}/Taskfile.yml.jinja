@@ -34,6 +34,6 @@ tasks:
   cli:
     desc: 🖥️ Run the CLI with provided arguments
     cmds:
-      - echo "Running CLI {{.CLI_ARGS}}"
-      - uv run cli.py {{.CLI_ARGS}}
+      - echo "Running CLI {% raw %}{{.CLI_ARGS}}{% endraw %}"
+      - uv run cli.py {% raw %}{{.CLI_ARGS}}{% endraw %}
     silent: true
