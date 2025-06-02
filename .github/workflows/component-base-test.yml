@@ -38,12 +38,12 @@ jobs:
       - name: Install Dependencies
         run: |
           uvx copier copy . ./copier_context --defaults
-          cd ./copier_context/agent
-          task req
+          cd ./copier_context
+          task agent:req
       - name: Lint Template
         run: |
-          cd ./copier_context/agent
-          task lint-check
+          cd ./copier_context
+          task agent:lint-check
   uvx-copier-infra-lint-test:
     name: Base Infra Linter
     runs-on: ubuntu-latest
@@ -81,12 +81,12 @@ jobs:
       - name: Install Dependencies
         run: |
           uvx copier copy . ./copier_context --defaults
-          cd ./copier_context/agent
-          task req
+          cd ./copier_context
+          task agent:req
       - name: Run unit tests
         run: |
-          cd ./copier_context/agent
-          task test
+          cd ./copier_context
+          task agent:test
   uvx-copier-cli-test:
     name: Base CLI Tests
     runs-on: ubuntu-latest
@@ -100,11 +100,11 @@ jobs:
       - name: Install Dependencies
         run: |
           uvx copier copy . ./copier_context --defaults
-          cd ./copier_context/agent
-          task req
+          cd ./copier_context
+          task agent:req
       - name: Run cli test
         run: |-
-          cd ./copier_context/agent
+          cd ./copier_context
 
           # Ensure the log file does not exist before running the CLI command
           if ! [ -f "output.log" ]; then
@@ -115,8 +115,8 @@ jobs:
           fi
 
           # Run the CLI command with a sample user prompt
-          task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
-          if task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}' | grep -q '"content": "success"'; then
+          task agent:cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
+          if task agent:cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}' | grep -q '"content": "success"'; then
             echo "Test passed: cli.py returned success"
           else
             echo "Test failed: cli.py did not return success"
@@ -124,22 +124,22 @@ jobs:
           fi
 
           # Check if the log file was created
-          if [ $(wc -l <output.log) -ge 2 ]; then
+          if [ $(wc -l <./agent/output.log) -ge 2 ]; then
             echo "Log file created successfully and file not empty."
             echo ""
             echo "Contents of output.log:"
-            cat output.log
+            cat ./agent/output.log
           else
             echo "Log file was not created."
             exit 1
           fi
 
           # Check if the log file was created
-          if [ $(wc -l <./custom_model/output.json.log) -ge 13 ]; then
+          if [ $(wc -l <./agent/custom_model/output.json.log) -ge 13 ]; then
             echo "Log file created successfully and file not empty."
             echo ""
-            echo "Contents of ./custom_model/output.json.log:"
-            cat ./custom_model/output.json.log
+            echo "Contents of custom_model/output.json.log:"
+            cat ./agent/custom_model/output.json.log
           else
             echo "Log file was not created."
             exit 1
