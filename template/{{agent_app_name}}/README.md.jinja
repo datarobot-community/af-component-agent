@@ -1,72 +1,70 @@
 # {{ _external_data.base.template_name }}: Agent {{ agent_app_name }}
 
-The agent template provides a set of utilities for constructing a single or multi-agent flow using platforms such
-as CrewAI, LangGraph, LlamaIndex, and others. The template is designed to be flexible and extensible, allowing you
-to create a wide range of agent-based applications.
+The DataRobot Agent Template provides a starting point for building custom agents that can be deployed in DataRobot.
+This template can be modified to support various frameworks, including CrewAI, LangGraph, Llama-Index, or
+a generic base framework that can be customized to use any other agentic framework.
 
-## Requirements
-These requirements need to be installed before using the templates. You can install them with `brew` or the package
-mangager of your choice.
-- uv (https://docs.astral.sh/uv/getting-started/installation/)
-- pulumi (https://www.pulumi.com/docs/iac/download-install/)
-- taskfile (https://taskfile.dev/#/installation)
+This README provides an overview of how to set up, develop, test, and deploy your agent using this template.
 
-## Getting Started
-### Environment files
-It is recommended to use a `.env` file to store your environment variables. The `.env` file should be placed in the
-root of the project directory. A sample `.env` file is provided as .env.sample. You can copy it to `.env` and modify it
-to suit your needs. The `.env` file is used to store sensitive information such as API keys and secrets.
+## Prerequisites
 
-The default `.env` file should contain the following:
+Before getting started, ensure you have the following tools installed on your system. You can use `brew` (on macOS) or your preferred package manager:
+
+| Tool | Description | Installation Guide |
+|------|-------------|-------------------|
+| **uv** | Python package manager | [uv installation guide](https://docs.astral.sh/uv/getting-started/installation/) |
+| **Pulumi** | Infrastructure as Code tool | [Pulumi installation guide](https://www.pulumi.com/docs/iac/download-install/) |
+| **Taskfile** | Task runner | [Taskfile installation guide](https://taskfile.dev/#/installation) |
+
+## Developing Your Agent
+
+### Updating Dependencies
+To update dependencies for your agent, run the following command in the agent directory:
+
 ```bash
-# DataRobot API keys and endpoint
-DATAROBOT_API_TOKEN=<Your API Token>
-DATAROBOT_ENDPOINT=https://app.datarobot.com/api/v2
-
-# Required, unless logged in to pulumi cloud.
-PULUMI_CONFIG_PASSPHRASE=
-
-# If empty, a new use case will be created
-DATAROBOT_DEFAULT_USE_CASE=
-
-# If empty, a new execution environment will be created
-DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT=
+task task {{ agent_app_name }}:agent:req
 ```
 
-### Agent CLI Commands
-To start local development, you should first navigate to the directory of the agent you want to work on. For example,
-if you want to work on the CrewAI agent, you would run:
+### Available Task Commands
+
+The repository uses Taskfile to simplify common operations. View available commands in the root directory by running:
+
 ```bash
-   cd agent_crewai
+task
 ```
 
-A CLI interface is provided through Taskfile. The CLI is designed to be used for local development and testing of the
-agent. It allows you to execute the agent code and interact with the agent in a local or remote environment. It can
-also be used to help you clean up the agent code and correct formatting or setup the environment.
+This will display a list of available commands (the prefix will change based on the agent framework you selected):
 
-You can see the task commands available by running `task` or `task help` in the agent directory.
-
-```bash
-> task
-Available task commands:
-  To run commands, use the following format:
-    task <command> [<args>]
-
-Commands:
-help                           - Show this help message
-req                            - Update dependencies for the agent
-cli                            - Run the CLI with the provided arguments or no arguments to see help.
-lint                           - Lint the agent templates
-test                           - Run unit tests for the agent
-fix-licenses                   - Fix licenses for the agent files
+```
+❯ task
+task: Available tasks for this project:
+* default:                                   Show all available tasks
+* lint:                                      Lint all agent components and infra
+* req:                                       Install dependencies for all agent components and infra
+* {{ agent_app_name }}:agent:cli:              🖥️ [agent_generic_base] Run the CLI with provided arguments
+* {{ agent_app_name }}:agent:lint:             🧹 [agent_generic_base] Lint the codebase
+* {{ agent_app_name }}:agent:lint-check:       🧹 [agent_generic_base] Check whether the codebase is linted
+* {{ agent_app_name }}:agent:req:              🛠️ [agent_generic_base] Update local dependencies
+* {{ agent_app_name }}:agent:test:             🧪 [agent_generic_base] Run tests
+* {{ agent_app_name }}:build:                  🔵 [agent_generic_base] Run Pulumi up in [BUILD] mode
+* {{ agent_app_name }}:deploy:                 🟢 [agent_generic_base] Run Pulumi up in [DEPLOY] mode
+* {{ agent_app_name }}:destroy:                🔴 [agent_generic_base] Run Pulumi destroy
 ```
 
-To execute the agent via `Taskfile` there is a `task cli` command provided. This command accepts several options
-for helping you test and debug agents. You can see the cli commands available by running `task cli` or
-`task cli --help` in the agent directory.
+You can also run `task` commands from various directories. Please note that the task command may change
+based on the agent framework you selected and the current directory you are in.
+
+### Using the Agent CLI
+
+The `cli` command provides a convenient interface for testing your agent:
 
 ```bash
-> task cli
+task task {{ agent_app_name }}:agent:cli
+```
+
+This will display CLI usage information:
+
+```
 Running CLI
 Usage: cli.py [OPTIONS] COMMAND [ARGS]...
 
@@ -89,87 +87,119 @@ Options:
 
 Commands:
   execute             Execute agent code using OpenAI completions.
-  execute-deployment  Query a deployed model using the command line for...
+  execute-deployment  Query a deployed model using the command line.
 ```
 
-### Setup Agent Environment
-You can get started with the agent by running the `task req` command. This will install all the dependencies for the agent
-and set up local `uv` environment in the `.venv` directory. If you make changes to the agent code, you may need
-to re-run this command to synchronize the dependencies.
+### Modifying the Agent Code
 
-### Developing Your Agent
-The agent code is located in the `agent_*/custom_model` directory. The code is organized into several files and folders
-to help you get started. The main file that is edited is the `agent.py` file. This file contains the main logic for the
-agent.
+The main agent code is located in the `custom_model` directory:
 
-By default and agent implements the following standard:
-```python
-class MyAgent:
-    def __init__(
-        self, api_key: str, api_base: str, verbose: Union[bool, str], **kwargs: Any
-    ):
-        self.api_key = api_key
-        self.api_base = api_base
-        if isinstance(verbose, str):
-            self.verbose = verbose.lower() == "true"
-        elif isinstance(verbose, bool):
-            self.verbose = verbose
+| File | Purpose |
+|------|---------|
+| `agent.py` | The main agent implementation file |
+| `custom.py` | Handles execution of the agent in DataRobot |
+| `helpers.py` | Helper functions for the agent |
+| `tools_client.py` | Tool definitions for the agent |
 
-    def run(self, inputs: Dict[str, str]) -> Tuple[str, Dict[str, int]]:
-        _ = inputs, self.api_key
-        usage = {
-            "completion_tokens": 0,
-            "prompt_tokens": 0,
-            "total_tokens": 0,
-        }
-        return "success", usage
-```
+The main class you'll need to modify is in `agent.py`. Please see this class for details of the implementation
+based on the framework you are developing for.
 
-Individual framework examples may support returning a slightly different type from the `def run()` function,
-but an agent must implement a compatible `__init__` and `run` function.
+> **Note:** If you rename the `MyAgent` class, you'll need to update the reference in `custom.py`.
 
-> **_NOTE:_** The `agent.py` file is called by `custom.py` to execute the agent inside DataRobot. In many cases,
-> the users may not need to edit `custom.py` at all for it to be compatible with their agent. If you rename the
-> class `MyAgent` to another name, you will need to update the `custom.py` file to use the new name.
+## Testing Your Agent
 
-### Testing Your Agent
-The agent code can be tested using `pytest` or through the CLI. The CLI is the recommended way to test the agent
-code for execution purposes and to understand how the agentic workflow will operate. An example of testing an agent
-is to navigate to the agent directory and run the following command:
+There are two primary methods for testing your agent:
+
+### Method 1: Using the CLI (Recommended)
+
+Test your agent using the CLI interface with a sample prompt:
+
 ```bash
-   task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
+task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
 ```
 
-In this case the `user_prompt` is actually a JSON object that is passed to the agent. The agent will then select the inputs
-from the JSON object and execute the agent code. Alternatively an agent can be made to accept a string as the input
-if that is a preferable start to the workflow. If you wish to send more complex commands these can be done
-using uv to directly interact with the agent execution code, although often the `task cli` flow is preferable and more
-straightforward to use.
+The JSON object is passed directly to your agent's `run` method as the `inputs` parameter.
+
+### Method 2: Using Direct Execution
+
+For more advanced testing scenarios, you can use the `run_agent.py` script directly:
+
 ```bash
-   uv run run_agent.py --chat_completion {"complete ChatCompletion": "Dictionary"} --custom_model_dir "./custom_model"
+uv run run_agent.py --chat_completion '{"your": "parameters"}' --custom_model_dir "./custom_model"
 ```
 
-There are additional options available through the `uv run run_agent.py` command. You can explore this executor and
-adjust it to suit your needs if so desired.
+### Method 3: Using DataRobot User Models (DRUM)
 
-## Deploying Your Agent
-The agent can be deployed using the `pulumi` framework. The `pulumi` framework is used to create and manage
-all of the remote resources.
+To test your agent using DataRobot's User Model (DRUM) framework, you can find more information about
+running your agent in a self contained local in the repo and readme documentation:
+- [datarobot-user-models repository](https://github.com/datarobot/datarobot-user-models)
+- [DRUM CLI documentation](https://docs.datarobot.com/en/docs/modeling/special-workflows/cml/cml-drum.html/).
 
-> **_NOTE:_** Before running pulumi please ensure that your `.env` file is populated with the correct API and
-> endpoint values.
+## Building and Deploying Your Agent
 
-> **_NOTE:_** You can define a default `PULUMI_CONFIG_PASSPHRASE` in the `.env` file. This will be used to encrypt
-> the pulumi stack. You can leave this blank if you do not want to use a passphrase, or do not need local encryption.
+When you're ready to move your agent to DataRobot, you have two options depending on your needs:
 
-You can initiate a full pulumi run through a `task` command by running
+### Step 1: Ensure Environment Variables Are Set
+
+Make sure your `.env` file contains the required DataRobot credentials and configuration:
+
 ```bash
-   task deploy
+DATAROBOT_API_TOKEN=<Your API Token>
+DATAROBOT_ENDPOINT=https://app.datarobot.com/api/v2
+PULUMI_CONFIG_PASSPHRASE=<Optional passphrase>
 ```
 
-You can also manually run pulumi by running the following command:
+### Step 2: Choose Your Deployment Option
+
+#### Option A: Build a Custom Model for Testing and Refinement
+
+To create a custom model that can be refined using the DataRobot LLM Playground:
+
 ```bash
-   set -o allexport && source .env
-   cd ./infra
-   pulumi up
+task build
 ```
+
+This command runs the Pulumi infrastructure to create a custom model in DataRobot but does not create a full production deployment. This is significantly faster and is ideal for iterative development and testing.
+
+#### Option B: Deploy to Production
+
+To create a full production-grade deployment:
+
+```bash
+task deploy
+```
+
+This command builds the custom model and creates a production deployment with the necessary infrastructure, which takes longer but provides a complete production environment.
+
+### Step 3: Manual Deployment (Alternative)
+
+If needed, you can manually run the Pulumi commands:
+
+```bash
+# Load environment variables
+set -o allexport && source .env
+
+# For build mode only (custom model without deployment)
+export DEPLOY=0
+
+# Or for full deployment mode (default)
+# export DEPLOY=1
+
+# Navigate to the infrastructure directory
+cd ./infra
+
+# Run Pulumi deployment
+pulumi up
+```
+
+The `DEPLOY` environment variable controls whether Pulumi creates only the custom model (`DEPLOY=0`) or both the custom model and a production deployment (`DEPLOY=1`). If not set, Pulumi defaults to full deployment mode.
+
+Pulumi will prompt you to confirm the resources to be created or updated.
+
+## Next Steps
+
+After deployment, your agent will be available in your DataRobot environment. You can:
+
+1. Test your deployed agent using `task cli -- execute-deployment`
+2. Integrate your agent with other DataRobot services
+3. Monitor usage and performance in the DataRobot dashboard
