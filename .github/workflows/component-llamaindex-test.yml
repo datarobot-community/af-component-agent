@@ -28,12 +28,12 @@ jobs:
           --data agent_app_name=agent_llamaindex \
           --data agent_template_framework=llamaindex \
           --data base_answers_file=.datarobot/answers/base.yml
-          cd ./copier_context/agent_llamaindex
-          task req
+          cd ./copier_context
+          task agent:req
       - name: Lint Template
         run: |
-          cd ./copier_context/agent_llamaindex
-          task lint-check
+          cd ./copier_context
+          task agent:lint-check
   llamaindex-copier-unit-test:
     name: LlamaIndex Unit Tests
     runs-on: ubuntu-latest
@@ -53,9 +53,9 @@ jobs:
           --data agent_app_name=agent_llamaindex \
           --data agent_template_framework=llamaindex \
           --data base_answers_file=.datarobot/answers/base.yml
-          cd ./copier_context/agent_llamaindex
-          task req
+          cd ./copier_context
+          task agent:req
       - name: Run unit tests
         run: |-
-          cd ./copier_context/agent_llamaindex
-          task test
+          cd ./copier_context
+          task agent:test

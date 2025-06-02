@@ -28,12 +28,12 @@ jobs:
           --data agent_app_name=agent_crewai \
           --data agent_template_framework=crewai \
           --data base_answers_file=.datarobot/answers/base.yml
-          cd ./copier_context/agent_crewai
-          task req
+          cd ./copier_context
+          task agent:req
       - name: Lint Template
         run: |
-          cd ./copier_context/agent_crewai
-          task lint-check
+          cd ./copier_context
+          task agent:lint-check
   crewai-copier-unit-test:
     name: CrewAI Unit Tests
     runs-on: ubuntu-latest
@@ -53,9 +53,9 @@ jobs:
           --data agent_app_name=agent_crewai \
           --data agent_template_framework=crewai \
           --data base_answers_file=.datarobot/answers/base.yml
-          cd ./copier_context/agent_crewai
-          task req
+          cd ./copier_context
+          task agent:req
       - name: Run unit tests
         run: |-
-          cd ./copier_context/agent_crewai
-          task test
+          cd ./copier_context
+          task agent:test

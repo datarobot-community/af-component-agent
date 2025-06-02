@@ -28,12 +28,12 @@ jobs:
           --data agent_app_name=agent_langgraph \
           --data agent_template_framework=langgraph \
           --data base_answers_file=.datarobot/answers/base.yml
-          cd ./copier_context/agent_langgraph
-          task req
+          cd ./copier_context
+          task agent:req
       - name: Lint Template
         run: |
-          cd ./copier_context/agent_langgraph
-          task lint-check
+          cd ./copier_context
+          task agent:lint-check
   langgraph-copier-unit-test:
     name: Langgraph Unit Tests
     runs-on: ubuntu-latest
@@ -53,9 +53,9 @@ jobs:
           --data agent_app_name=agent_langgraph \
           --data agent_template_framework=langgraph \
           --data base_answers_file=.datarobot/answers/base.yml
-          cd ./copier_context/agent_langgraph
-          task req
+          cd ./copier_context
+          task agent:req
       - name: Run unit tests
         run: |-
-          cd ./copier_context/agent_langgraph
-          task test
+          cd ./copier_context
+          task agent:test
