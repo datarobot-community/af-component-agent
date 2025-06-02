@@ -12,13 +12,15 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+
+defaults:
+  run:
+    working-directory: .
+
 jobs:
   uvx-copier-copy-test:
     name: "Base Copier Test"
     runs-on: "ubuntu-latest"
-    defaults:
-      run:
-        working-directory: .
     steps:
       - name: Checkout
         uses: "actions/checkout@v4"
@@ -30,9 +32,6 @@ jobs:
   uvx-copier-lint-test:
     name: "Base Linter"
     runs-on: "ubuntu-latest"
-    defaults:
-      run:
-        working-directory: .
     steps:
       - name: Checkout
         uses: "actions/checkout@v4"
@@ -52,9 +51,6 @@ jobs:
   uvx-copier-infra-lint-test:
     name: "Base Infra Linter"
     runs-on: "ubuntu-latest"
-    defaults:
-      run:
-        working-directory: .
     steps:
       - name: Checkout
         uses: "actions/checkout@v4"
@@ -76,9 +72,6 @@ jobs:
   uvx-copier-unit-test:
     name: "Base Unit Tests"
     runs-on: "ubuntu-latest"
-    defaults:
-      run:
-        working-directory: .
 
     strategy:
       matrix:
@@ -103,9 +96,6 @@ jobs:
   uvx-copier-cli-test:
     name: "Base CLI Tests"
     runs-on: "ubuntu-latest"
-    defaults:
-      run:
-        working-directory: .
     steps:
       - name: Checkout
         uses: "actions/checkout@v4"

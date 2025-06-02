@@ -16,13 +16,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+defaults:
+  run:
+    working-directory: template/{{agent_app_name}}
+
 jobs:
   hadolint:
     name: "Lint Dockerfiles"
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: template/{{agent_app_name}}
     steps:
       - uses: actions/checkout@v4
       - name: Run Hadolint
@@ -32,9 +33,6 @@ jobs:
   docker-build-test:
     name: "Docker Public Build and Test"
     runs-on: "ubuntu-latest"
-    defaults:
-      run:
-        working-directory: template/{{agent_app_name}}
     steps:
       - name: Checkout
         uses: "actions/checkout@v4"
