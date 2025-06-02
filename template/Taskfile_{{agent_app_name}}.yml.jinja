@@ -2,7 +2,7 @@
 # https://taskfile.dev
 version: '3'
 includes:
-  {{ agent_app_name }}:
+  agent:
     taskfile: ./{{ agent_app_name }}/Taskfile.yml
     dir: ./{{ agent_app_name }}
 tasks:
