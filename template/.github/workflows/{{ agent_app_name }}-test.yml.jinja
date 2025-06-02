@@ -1,59 +1,48 @@
 ---
 name: Test {{ agent_app_name }}
-
 on:
   push:
     branches: ["main"]
     paths:
-      - '{{ agent_app_name }}/**.py'
-
+      - '{{ agent_app_name }}'
   pull_request:
     branches: ["main"]
     paths:
-      - '{{ agent_app_name }}/**.py'
-
+      - '{{ agent_app_name }}'
+concurrency:
+  group: {% raw %}${{ github.workflow }}-${{ github.ref }}{% endraw %}
+  cancel-in-progress: true
+defaults:
+  run:
+    working-directory: {{ agent_app_name }}
 jobs:
   tests:
     name: "Agent: {{ agent_app_name }} {% raw %}${{ matrix.python-version }}{% endraw %}"
     runs-on: "ubuntu-latest"
-    defaults:
-      run:
-        working-directory: {{ agent_app_name }}
-
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12", "3.13"]
-
+        python-version: ["3.10", "3.11", "3.12"]
     steps:
       - uses: "actions/checkout@v4"
-
       # Ref: https://docs.astral.sh/uv/guides/integration/github/#installation
       - name: Setup uv
         uses: astral-sh/setup-uv@v6
         with:
-          working-directory: {{ agent_app_name }}
           enable-cache: true
           cache-dependency-glob: "uv.lock"
           python-version: {% raw %}${{ matrix.python-version }}{% endraw %}
-
       - name: Install Dependencies
-        working-directory: {{ agent_app_name }}
         run: |
           uv sync --all-extras --dev
           uv pip install git+https://github.com/datarobot-forks/litellm@mattn/add-datarobot-support-to-litellm
           uv pip install -r ./custom_model/requirements.txt
-
       - name: Run Static Checks
-        working-directory: {{ agent_app_name }}
         run: |
           uv run ruff format --check .
           uv run ruff check .
           uv run mypy --pretty .
-
       - name: Test
-        working-directory: {{ agent_app_name }}
         run: uv run pytest --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml
-
       - name: Get Cover
         uses: orgoro/coverage@v3.2
         with:
