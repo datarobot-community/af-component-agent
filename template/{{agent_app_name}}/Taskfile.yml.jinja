@@ -3,7 +3,7 @@
 version: '3'
 tasks:
   req:
-    desc: 🛠️ Update local dependencies
+    desc: 🛠️ [{{ agent_app_name }}] Update local dependencies
     cmds:
       - echo "Updating local dependencies"
       - uv sync --all-extras
@@ -11,7 +11,7 @@ tasks:
       - cd custom_model && uv pip install -r requirements.txt
     silent: true
   lint:
-    desc: 🧹 Lint the codebase
+    desc: 🧹 [{{ agent_app_name }}] Lint the codebase
     cmds:
       - echo "Linting the codebase"
       - uv run ruff check . --fix
@@ -20,7 +20,7 @@ tasks:
       - uv run yamlfix custom_model
     silent: true
   lint-check:
-    desc: 🧹 Check whether the codebase is linted
+    desc: 🧹 [{{ agent_app_name }}] Check whether the codebase is linted
     cmds:
       - echo "Checking linting"
       - uv run ruff format --check --diff .
@@ -28,17 +28,8 @@ tasks:
       - uv run mypy --pretty .
     silent: true
   test:
-    desc: 🧪 Run tests
+    desc: 🧪 [{{ agent_app_name }}] Run tests
     cmds: [echo "Running pytest on tests", uv run pytest -vv ./tests/]
-    silent: true
-  fix-licenses:
-    desc: 📜 Fix license headers
-    cmds:
-      - echo "Fixing licenses"
-      - cp ../.github/.licenserc.yaml ./
-      - docker run  --rm -v {{.TASKFILE_DIR}}:/github/workspace ghcr.io/apache/skywalking-eyes/license-eye:785bb7f3810572d6912666b4f64bad28e4360799
-        -v info -c .licenserc.yaml header fix
-      - rm ./.licenserc.yaml
     silent: true
   cli:
     desc: 🖥️ Run the CLI with provided arguments
