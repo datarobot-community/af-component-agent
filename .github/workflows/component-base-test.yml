@@ -23,6 +23,10 @@ jobs:
       - name: Install Dependencies
         run: |
           uvx copier copy . ./copier_context --defaults
+          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
+          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+          cd ./copier_context
   uvx-copier-lint-test:
     name: Base Linter
     runs-on: ubuntu-latest
@@ -36,12 +40,16 @@ jobs:
       - name: Install Dependencies
         run: |
           uvx copier copy . ./copier_context --defaults
-          cd ./copier_context/agent
-          task req
+          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
+          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+          
+          cd ./copier_context
+          task agent_test:agent:req
       - name: Lint Template
         run: |
-          cd ./copier_context/agent
-          task lint-check
+          cd ./copier_context
+          task agent_test:agent:lint-check
   uvx-copier-infra-lint-test:
     name: Base Infra Linter
     runs-on: ubuntu-latest
@@ -50,19 +58,21 @@ jobs:
         uses: actions/checkout@v4
       - name: Install uv
         uses: astral-sh/setup-uv@v5
+      - name: Install Task
+        uses: arduino/setup-task@v2
       - name: Install Dependencies
         run: |
           uvx copier copy . ./copier_context --defaults
+          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
           cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
           cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
-          cd ./copier_context/infra
-          uv sync --all-extras --all-groups --dev
+          
+          cd ./copier_context
+          task req_infra
       - name: Lint Template
         run: |
-          cd ./copier_context/infra
-          uv run ruff format --check --diff .
-          uv run ruff check --diff .
-          uv run mypy --pretty .
+          cd ./copier_context
+          task lint_infra
   uvx-copier-unit-test:
     name: Base Unit Tests
     runs-on: ubuntu-latest
@@ -79,12 +89,16 @@ jobs:
       - name: Install Dependencies
         run: |
           uvx copier copy . ./copier_context --defaults
-          cd ./copier_context/agent
-          task req
-      - name: Run unit tests
+          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
+          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+          
+          cd ./copier_context
+          task agent_test:agent:req
+      - name: Lint Template
         run: |
-          cd ./copier_context/agent
-          task test
+          cd ./copier_context
+          task agent_test:agent:test-coverage
   uvx-copier-cli-test:
     name: Base CLI Tests
     runs-on: ubuntu-latest
@@ -98,11 +112,15 @@ jobs:
       - name: Install Dependencies
         run: |
           uvx copier copy . ./copier_context --defaults
-          cd ./copier_context/agent
-          task req
+          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
+          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+          
+          cd ./copier_context
+          task agent_test:agent:req
       - name: Run cli test
         run: |-
-          cd ./copier_context/agent
+          cd ./copier_context
 
           # Ensure the log file does not exist before running the CLI command
           if ! [ -f "output.log" ]; then
@@ -113,8 +131,8 @@ jobs:
           fi
 
           # Run the CLI command with a sample user prompt
-          task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
-          if task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}' | grep -q '"content": "success"'; then
+          task agent_test:agent:cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
+          if task agent_test:agent:cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}' | grep -q '"content": "success"'; then
             echo "Test passed: cli.py returned success"
           else
             echo "Test failed: cli.py did not return success"
@@ -122,22 +140,22 @@ jobs:
           fi
 
           # Check if the log file was created
-          if [ $(wc -l <output.log) -ge 2 ]; then
+          if [ $(wc -l <./agent/output.log) -ge 2 ]; then
             echo "Log file created successfully and file not empty."
             echo ""
             echo "Contents of output.log:"
-            cat output.log
+            cat ./agent/output.log
           else
             echo "Log file was not created."
             exit 1
           fi
 
           # Check if the log file was created
-          if [ $(wc -l <./custom_model/output.json.log) -ge 13 ]; then
+          if [ $(wc -l <./agent/custom_model/output.json.log) -ge 13 ]; then
             echo "Log file created successfully and file not empty."
             echo ""
-            echo "Contents of ./custom_model/output.json.log:"
-            cat ./custom_model/output.json.log
+            echo "Contents of custom_model/output.json.log:"
+            cat ./agent/custom_model/output.json.log
           else
             echo "Log file was not created."
             exit 1
