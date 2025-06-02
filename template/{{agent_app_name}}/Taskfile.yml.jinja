@@ -1,0 +1,39 @@
+---
+# https://taskfile.dev
+version: '3'
+tasks:
+  req:
+    desc: 🛠️ [{{ agent_app_name }}] Update local dependencies
+    cmds:
+      - echo "Updating local dependencies"
+      - uv sync --all-extras
+      - uv pip install git+https://github.com/datarobot-forks/litellm@mattn/add-datarobot-support-to-litellm
+      - cd custom_model && uv pip install -r requirements.txt
+    silent: true
+  lint:
+    desc: 🧹 [{{ agent_app_name }}] Lint the codebase
+    cmds:
+      - echo "Linting the codebase"
+      - uv run ruff check . --fix
+      - uv run ruff format .
+      - uv run mypy --pretty .
+      - uv run yamlfix custom_model
+    silent: true
+  lint-check:
+    desc: 🧹 [{{ agent_app_name }}] Check whether the codebase is linted
+    cmds:
+      - echo "Checking linting"
+      - uv run ruff format --check --diff .
+      - uv run ruff check --diff .
+      - uv run mypy --pretty .
+    silent: true
+  test:
+    desc: 🧪 [{{ agent_app_name }}] Run tests
+    cmds: [echo "Running pytest on tests", uv run pytest -vv ./tests/]
+    silent: true
+  cli:
+    desc: 🖥️ [{{ agent_app_name }}] Run the CLI with provided arguments
+    cmds:
+      - echo "Running CLI {% raw %}{{.CLI_ARGS}}{% endraw %}"
+      - uv run cli.py {% raw %}{{.CLI_ARGS}}{% endraw %}
+    silent: true

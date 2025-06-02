@@ -1,0 +1,26 @@
+---
+# https://taskfile.dev
+version: '3'
+includes:
+  agent:
+    taskfile: ./{{ agent_app_name }}/Taskfile.yml
+    dir: ./{{ agent_app_name }}
+tasks:
+  build:
+    desc: "🔵 [{{ agent_app_name }}] Run Pulumi up in [BUILD] mode"
+    cmds:
+      - echo "Running pulumi up with [BUILD] mode"
+      - export DEPLOY=0 && set -o allexport && source .env && cd ./infra && pulumi up
+    silent: true
+  deploy:
+    desc: "🟢 [{{ agent_app_name }}] Run Pulumi up in [DEPLOY] mode"
+    cmds:
+      - echo "Running pulumi up with [DEPLOY] mode"
+      - export DEPLOY=1 && set -o allexport && source .env && cd ./infra && pulumi up
+    silent: true
+  destroy:
+    desc: "🔴 [{{ agent_app_name }}] Run Pulumi destroy"
+    cmds:
+      - echo "Running pulumi destroy"
+      - set -o allexport && source .env && cd ./infra && pulumi destroy
+    silent: true
