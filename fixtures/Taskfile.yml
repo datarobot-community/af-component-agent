@@ -1,0 +1,7 @@
+---
+# https://taskfile.dev
+version: '3'
+includes:
+  agent_base:
+    taskfile: ./Taskfile_agent.yml
+    dir: .

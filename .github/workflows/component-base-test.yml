@@ -38,6 +38,7 @@ jobs:
       - name: Install Dependencies
         run: |
           uvx copier copy . ./copier_context --defaults
+          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
           cd ./copier_context
           task agent:req
       - name: Lint Template
