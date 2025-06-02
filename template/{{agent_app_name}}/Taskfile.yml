@@ -13,7 +13,8 @@ tasks:
       - echo "Commands:"
       - echo "help                           - Show this help message"
       - echo "req                            - Update dependencies for the agent"
-      - echo "cli                            - Run the CLI with the provided arguments or no arguments to see help."
+      - echo "cli                            - Run the CLI with the provided arguments
+        or no arguments to see help."
       - echo "lint                           - Lint the agent templates"
       - echo "test                           - Run unit tests for the agent"
       - echo "fix-licenses                   - Fix licenses for the agent files"
@@ -55,7 +56,5 @@ tasks:
       - rm ./.licenserc.yaml
     silent: true
   cli:
-    cmds:
-      - echo "Running CLI {{.CLI_ARGS}}"
-      - uv run cli.py {{.CLI_ARGS}}
+    cmds: ['echo "Running CLI {{.CLI_ARGS}}"', 'uv run cli.py {{.CLI_ARGS}}']
     silent: true
