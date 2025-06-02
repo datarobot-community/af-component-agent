@@ -24,7 +24,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
       - name: Install Dependencies
         run: |
-          uvx copier copy . ./copier_context --defaults --vcs-ref $BRANCH_NAME
+          uvx copier copy . ./copier_context --defaults
   uvx-copier-lint-test:
     name: Base Linter
     runs-on: ubuntu-latest
