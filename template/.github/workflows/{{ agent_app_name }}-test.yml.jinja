@@ -16,20 +16,6 @@ defaults:
   run:
     working-directory: {{ agent_app_name }}
 jobs:
-  lint:
-    name: "Agent: {{ agent_app_name }} Lint"
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-      - name: Install Task
-        uses: arduino/setup-task@v2
-      - name: Install Dependencies
-        run: task req
-      - name: Lint Template
-        run: task lint-check
   tests:
     name: "Agent: {{ agent_app_name }} {% raw %}${{ matrix.python-version }}{% endraw %}"
     runs-on: "ubuntu-latest"

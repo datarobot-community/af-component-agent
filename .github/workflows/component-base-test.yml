@@ -15,8 +15,6 @@ jobs:
   uvx-copier-copy-test:
     name: Base Copier Test
     runs-on: ubuntu-latest
-    env:
-      BRANCH_NAME: ${{ github.head_ref || github.ref_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
