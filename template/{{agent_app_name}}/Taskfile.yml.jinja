@@ -29,7 +29,15 @@ tasks:
     silent: true
   test:
     desc: 🧪 [{{ agent_app_name }}] Run tests
-    cmds: [echo "Running pytest on tests", uv run pytest -vv ./tests/]
+    cmds:
+      - echo "Running pytest on tests"
+      - uv run pytest -vv ./tests/
+    silent: true
+  test-coverage:
+    desc: 🧪 [{{ agent_app_name }}] Run tests with coverage
+    cmds:
+      - echo "Running pytest on tests"
+      - uv run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/
     silent: true
   cli:
     desc: 🖥️ [{{ agent_app_name }}] Run the CLI with provided arguments
