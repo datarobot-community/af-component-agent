@@ -68,11 +68,15 @@ jobs:
           cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
           
           cd ./copier_context
-          task req_infra
+          cd ./infra
+          uv sync --all-extras --all-groups --dev
       - name: Lint Infra Template
         run: |
           cd ./copier_context
-          task lint_infra
+          cd ./infra
+          uv run ruff format --check --diff .
+          uv run ruff check --diff .
+          uv run mypy --pretty .
   uvx-copier-unit-test:
     name: Base Unit Tests
     runs-on: ubuntu-latest
