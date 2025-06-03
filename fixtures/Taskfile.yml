@@ -5,12 +5,3 @@ includes:
   agent_test:
     taskfile: ./Taskfile_agent.yml
     dir: .
-tasks:
-  req_infra:
-    cmds:
-      - cd ./infra && uv sync --all-extras --all-groups --dev
-    silent: true
-  lint_infra:
-    cmds:
-      - cd ./infra && uv run ruff format --check --diff . && uv run ruff check --diff . && uv run mypy --pretty .
-    silent: true
