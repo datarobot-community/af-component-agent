@@ -67,7 +67,9 @@ def chat(
     # These can also be passed to the model. If a DataRobot LLM deployment is used,
     # the deployment ID can be set as an environment variable and used inside the agent
     # in the llm_with_datarobot_deployment property.
-    os.environ["LLM_DATAROBOT_DEPLOYMENT_ID"] = RuntimeParameters.get("LLM_DATAROBOT_DEPLOYMENT_ID")
+    os.environ["LLM_DATAROBOT_DEPLOYMENT_ID"] = RuntimeParameters.get(
+        "LLM_DATAROBOT_DEPLOYMENT_ID"
+    )
 
     # Instantiate the agent, all fields from the completion_create_params are passed to the agent
     # allowing environment variables to be passed during execution
