@@ -17,10 +17,12 @@ from helpers_telemetry import *  # noqa # pylint: disable=unused-import
 
 from agent import MyAgent
 from auth import initialize_authorization_context
+from datarobot_drum import RuntimeParameters
 from helpers import (
     CustomModelChatResponse,
     to_custom_model_response,
 )
+import os
 from openai.types.chat import CompletionCreateParams
 
 
@@ -60,6 +62,12 @@ def chat(
     # Initialize the authorization context for downstream agents and tools to retrieve
     # access tokens for external services.
     initialize_authorization_context(completion_create_params)
+
+    # This is an example of how to set environment variables from RuntimeParameters
+    # These can also be passed to the model. If a DataRobot LLM deployment is used,
+    # the deployment ID can be set as an environment variable and used inside the agent
+    # in the llm_with_datarobot_deployment property.
+    os.environ["LLM_DATAROBOT_DEPLOYMENT_ID"] = RuntimeParameters.get("LLM_DATAROBOT_DEPLOYMENT_ID")
 
     # Instantiate the agent, all fields from the completion_create_params are passed to the agent
     # allowing environment variables to be passed during execution

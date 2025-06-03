@@ -26,6 +26,9 @@ from datarobot_pulumi_utils.schema.custom_models import (
 
 from . import project_dir, use_case
 
+# To use the LLM DataRobot Deployment in your Agent, uncomment the line below
+# from .llm_datarobot import app_runtime_parameters as llm_datarobot_app_runtime_parameters
+
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
     for pattern in [
@@ -94,6 +97,8 @@ else:
     target_name="response",
     language="python",
     runtime_parameter_values=[],
+    # To use the LLM DataRobot Deployment in your Agent, uncomment the line below
+    # runtime_parameter_values=llm_datarobot_app_runtime_parameters,
     use_case_ids=[use_case.id],
     folder_path=os.path.join(str({{agent_app_name}}_application_path), "custom_model"),
 )
