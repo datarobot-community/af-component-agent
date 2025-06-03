@@ -116,7 +116,7 @@ pulumi.export(
 )
 
 
-{{agent_app_name}}_agent_deployment_id = "None"
+{{agent_app_name}}_agent_deployment_id: pulumi.Output[str] = "None"
 if os.environ.get("AGENT_DEPLOY") != "0":
     {{agent_app_name}}_prediction_environment = pulumi_datarobot.PredictionEnvironment(
         resource_name="Agent Prediction Environment " + {{agent_app_name}}_resource_name,
