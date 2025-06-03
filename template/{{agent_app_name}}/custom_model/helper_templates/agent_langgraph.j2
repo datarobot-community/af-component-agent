@@ -42,7 +42,9 @@ def _extract_pipeline_interactions(events: List[dict[str, Any]]) -> MultiTurnSam
 
 
 def to_custom_model_response(
-    events: List[dict[str, Any]], usage_metrics: Dict[str, int]
+    events: List[dict[str, Any]],
+    usage_metrics: Dict[str, int],
+    model: str,
 ) -> CustomModelChatResponse:
     """Convert the Langgraph agent output to a custom model response."""
     last_event = events[-1]
@@ -52,6 +54,7 @@ def to_custom_model_response(
     response = create_completion_from_response_text(
         response_text=output,
         usage_metrics=usage_metrics,
+        model=model,
         # Disable until tests can be fixed
         # pipeline_interactions=_extract_pipeline_interactions(events),
         pipeline_interactions=None,

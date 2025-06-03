@@ -13,6 +13,7 @@ tasks:
   lint:
     desc: 🧹 [{{ agent_app_name }}] Lint the codebase
     cmds:
+      - task: req
       - echo "Linting the codebase"
       - uv run ruff check . --fix
       - uv run ruff format .
@@ -22,6 +23,7 @@ tasks:
   lint-check:
     desc: 🧹 [{{ agent_app_name }}] Check whether the codebase is linted
     cmds:
+      - task: req
       - echo "Checking linting"
       - uv run ruff format --check --diff .
       - uv run ruff check --diff .

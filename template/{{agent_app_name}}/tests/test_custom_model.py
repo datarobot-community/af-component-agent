@@ -80,7 +80,7 @@ class TestCustomModel:
                     }
                 ],
                 "created": 1748464162,
-                "model": "MODEL_NAME",
+                "model": "test-model",
                 "object": "chat.completion",
                 "service_tier": None,
                 "system_fingerprint": None,
