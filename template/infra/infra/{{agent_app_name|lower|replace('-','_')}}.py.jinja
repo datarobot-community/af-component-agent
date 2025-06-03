@@ -166,7 +166,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         {{agent_app_name}}_agent_deployment.id,
     )
     pulumi.export(
-        "Agent Chat Completion Endpoint " + {{agent_app_name}}_resource_name,
+        "Agent Deployment Chat Endpoint " + {{agent_app_name}}_resource_name,
         {{agent_app_name}}_deployment_endpoint,
     )
 
