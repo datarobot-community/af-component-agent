@@ -15,6 +15,8 @@
 from helpers_telemetry import *  # noqa # pylint: disable=unused-import
 # isort: on
 
+import os
+
 from agent import MyAgent
 from auth import initialize_authorization_context
 from datarobot_drum import RuntimeParameters
@@ -22,7 +24,6 @@ from helpers import (
     CustomModelChatResponse,
     to_custom_model_response,
 )
-import os
 from openai.types.chat import CompletionCreateParams
 
 
