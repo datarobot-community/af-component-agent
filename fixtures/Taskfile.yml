@@ -12,5 +12,5 @@ tasks:
     silent: true
   lint_infra:
     cmds:
-      - cd ./infra && uv run ruff check . --fix && uv run ruff format -diff . &&  uv run mypy --pretty -diff .
+      - cd ./infra && uv run ruff format --check --diff . && uv run ruff check --diff . && uv run mypy --pretty .
     silent: true
