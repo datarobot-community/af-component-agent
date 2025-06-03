@@ -69,7 +69,7 @@ jobs:
           
           cd ./copier_context
           task req_infra
-      - name: Lint Template
+      - name: Lint Infra Template
         run: |
           cd ./copier_context
           task lint_infra
@@ -95,7 +95,7 @@ jobs:
           
           cd ./copier_context
           task agent_test:agent:req
-      - name: Lint Template
+      - name: Run unit tests
         run: |
           cd ./copier_context
           task agent_test:agent:test-coverage

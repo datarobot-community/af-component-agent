@@ -15,10 +15,9 @@
 from helpers_telemetry import *  # noqa # pylint: disable=unused-import
 # isort: on
 
-# import os
-
 from agent import MyAgent
 from auth import initialize_authorization_context
+
 # from datarobot_drum import RuntimeParameters
 from helpers import (
     CustomModelChatResponse,
@@ -69,9 +68,10 @@ def chat(
     # the deployment ID can be set as an environment variable and used inside the agent
     # in the llm_with_datarobot_deployment property.
 
-    # os.environ["LLM_DATAROBOT_DEPLOYMENT_ID"] = RuntimeParameters.get(
+    # llm_datarobot_deployment_id_from_runtime RuntimeParameters.get(
     #     "LLM_DATAROBOT_DEPLOYMENT_ID"
     # )
+    # os.environ["LLM_DATAROBOT_DEPLOYMENT_ID"] = llm_datarobot_deployment_id_from_runtime
 
     # Instantiate the agent, all fields from the completion_create_params are passed to the agent
     # allowing environment variables to be passed during execution
