@@ -6,21 +6,38 @@ includes:
     taskfile: ./{{ agent_app_name }}/Taskfile.yml
     dir: ./{{ agent_app_name }}
 tasks:
+  default:
+    desc: "🗒️ Show all available tasks"
+    cmds:
+      - task --list
+    silent: true
+  setup:
+    desc: "🏗️ Setup the agent and infra environments"
+    cmds:
+      - echo "Updating agent environment"
+      - task: agent:req
+      - echo "Updating infra environment"
+      - cd ./infra && uv sync --all-extras
+    silent: true
   build:
     desc: "🔵 [{{ agent_app_name }}] Run Pulumi up in [BUILD] mode"
+    env:
+      AGENT_DEPLOY: 0
     cmds:
       - echo "Running pulumi up with [BUILD] mode"
-      - export DEPLOY=0 && set -o allexport && source .env && cd ./infra && pulumi up
+      - cd ./infra && pulumi up
     silent: true
   deploy:
     desc: "🟢 [{{ agent_app_name }}] Run Pulumi up in [DEPLOY] mode"
+    env:
+      AGENT_DEPLOY: 1
     cmds:
       - echo "Running pulumi up with [DEPLOY] mode"
-      - export DEPLOY=1 && set -o allexport && source .env && cd ./infra && pulumi up
+      - cd ./infra && pulumi up
     silent: true
   destroy:
     desc: "🔴 [{{ agent_app_name }}] Run Pulumi destroy"
     cmds:
       - echo "Running pulumi destroy"
-      - set -o allexport && source .env && cd ./infra && pulumi destroy
+      - cd ./infra && pulumi destroy
     silent: true
