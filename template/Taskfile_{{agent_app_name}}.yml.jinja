@@ -1,9 +1,6 @@
 ---
 # https://taskfile.dev
 version: '3'
-env:
-  ENV: testing
-dotenv: ['.env', '.env.{% raw %}{{.ENV}}{% endraw %}']
 includes:
   agent:
     taskfile: ./{{ agent_app_name }}/Taskfile.yml
