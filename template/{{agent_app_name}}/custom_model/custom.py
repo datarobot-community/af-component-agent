@@ -81,5 +81,11 @@ def chat(
     agent_result = agent.run(completion_create_params=completion_create_params)
 
     if isinstance(agent_result, tuple):
-        return to_custom_model_response(*agent_result)
-    return to_custom_model_response(agent_result)
+        return to_custom_model_response(
+            *agent_result,
+            model=completion_create_params["model"]
+        )
+    return to_custom_model_response(
+        agent_result,
+        model=completion_create_params["model"]
+    )

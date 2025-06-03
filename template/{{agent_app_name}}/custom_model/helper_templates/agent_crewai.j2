@@ -100,6 +100,7 @@ class CrewAIEventListener(BaseEventListener):  # type: ignore[misc]
 def to_custom_model_response(
     events: List[Union[HumanMessage, AIMessage, ToolMessage]] | None,
     crew_output: CrewOutput,
+    model: str,
 ) -> CustomModelChatResponse:
     """Convert the CrewAI agent output to a custom model response."""
     usage_metrics: Dict[str, int] = {
@@ -114,6 +115,7 @@ def to_custom_model_response(
     response = create_completion_from_response_text(
         response_text=str(crew_output.raw),
         usage_metrics=usage_metrics,
+        model=model,
         pipeline_interactions=pipeline_interactions,
     )
     return response

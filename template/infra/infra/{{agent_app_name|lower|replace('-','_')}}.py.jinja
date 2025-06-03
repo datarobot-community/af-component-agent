@@ -85,11 +85,6 @@ else:
         use_cases=["customModel", "notebook"],
     )
 
-{{agent_app_name}}_prediction_environment = pulumi_datarobot.PredictionEnvironment(
-    resource_name="Agent Prediction Environment " + {{agent_app_name}}_resource_name,
-    platform=dr.enums.PredictionEnvironmentPlatform.DATAROBOT_SERVERLESS,
-)
-
 {{agent_app_name}}_custom_model = pulumi_datarobot.CustomModel(
     resource_name="Agent Custom Model " + {{agent_app_name}}_resource_name,
     base_environment_id={{agent_app_name}}_execution_environment.id,
@@ -114,6 +109,11 @@ pulumi.export("Custom Model ID " + {{agent_app_name}}_resource_name, {{agent_app
 
 {{agent_app_name}}_agent_deployment_id = "None"
 if os.environ.get("AGENT_DEPLOY") != "0":
+    {{agent_app_name}}_prediction_environment = pulumi_datarobot.PredictionEnvironment(
+        resource_name="Agent Prediction Environment " + {{agent_app_name}}_resource_name,
+        platform=dr.enums.PredictionEnvironmentPlatform.DATAROBOT_SERVERLESS,
+    )
+
     {{agent_app_name}}_registered_model_args = RegisteredModelArgs(
         resource_name="Agent Registered Model " + {{agent_app_name}}_resource_name,
     )
