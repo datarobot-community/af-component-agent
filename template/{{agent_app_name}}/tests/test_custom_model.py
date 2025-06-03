@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import json
+import os
 from unittest.mock import MagicMock, patch
 
 
@@ -40,7 +41,7 @@ class TestCustomModel:
         assert result == "success"
 
     @patch("custom.MyAgent")
-    @patch.dict("os.environ", {"LLM_DATAROBOT_DEPLOYMENT_ID": "TEST_VALUE"})
+    @patch.dict(os.environ, {"LLM_DATAROBOT_DEPLOYMENT_ID": "TEST_VALUE"}, clear=True)
     def test_chat(self, mock_agent, mock_agent_response):
         from custom import chat
 
