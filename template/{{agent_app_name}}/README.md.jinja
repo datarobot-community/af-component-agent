@@ -180,10 +180,10 @@ If needed, you can manually run the Pulumi commands:
 set -o allexport && source .env
 
 # For build mode only (custom model without deployment)
-export DEPLOY=0
+export AGENT_DEPLOY=0
 
 # Or for full deployment mode (default)
-# export DEPLOY=1
+# export AGENT_DEPLOY=1
 
 # Navigate to the infrastructure directory
 cd ./infra
@@ -192,7 +192,7 @@ cd ./infra
 pulumi up
 ```
 
-The `DEPLOY` environment variable controls whether Pulumi creates only the custom model (`DEPLOY=0`) or both the custom model and a production deployment (`DEPLOY=1`). If not set, Pulumi defaults to full deployment mode.
+The `AGENT_DEPLOY` environment variable controls whether Pulumi creates only the custom model (`DEPLOY=0`) or both the custom model and a production deployment (`DEPLOY=1`). If not set, Pulumi defaults to full deployment mode.
 
 Pulumi will prompt you to confirm the resources to be created or updated.
 
