@@ -173,7 +173,7 @@ def execute_drum(
 def construct_prompt(chat_completion: str) -> CompletionCreateParamsBase:
     chat_completion_dict = json.loads(chat_completion)
     model = chat_completion_dict.get("model")
-    if "model" is None or len(str(model)) == 0:
+    if "model" == None or len(str(model)) == 0:
         chat_completion_dict["model"] = "unknown"
     validator = TypeAdapter(CompletionCreateParamsBase)
     validator.validate_python(chat_completion_dict)
