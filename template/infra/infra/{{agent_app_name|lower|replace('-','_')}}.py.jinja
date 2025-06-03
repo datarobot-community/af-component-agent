@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 import re
+from typing import cast
 
 import datarobot as dr
 import pulumi
@@ -116,7 +117,7 @@ pulumi.export(
 )
 
 
-{{agent_app_name}}_agent_deployment_id: pulumi.Output[str] = "None"
+{{agent_app_name}}_agent_deployment_id: pulumi.Output[str] = cast(pulumi.Output[str], "None")
 if os.environ.get("AGENT_DEPLOY") != "0":
     {{agent_app_name}}_prediction_environment = pulumi_datarobot.PredictionEnvironment(
         resource_name="Agent Prediction Environment " + {{agent_app_name}}_resource_name,
