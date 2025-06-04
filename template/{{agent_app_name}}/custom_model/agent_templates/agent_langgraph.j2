@@ -66,6 +66,23 @@ class MyAgent:
             self.verbose = verbose
 
     @property
+    def api_base_litellm(self) -> str:
+        """Returns a modified version of the API base URL suitable for LiteLLM.
+
+        Strips 'api/v2/' or 'api/v2' from the end of the URL if present.
+
+        Returns:
+            str: The modified API base URL.
+        """
+        if self.api_base:
+            if self.api_base.endswith("api/v2/"):
+                return self.api_base[:-7]  # Remove 'api/v2/'
+            elif self.api_base.endswith("api/v2"):
+                return self.api_base[:-6]  # Remove 'api/v2'
+            return self.api_base
+        return "https://api.datarobot.com"
+
+    @property
     def llm_with_datarobot_llm_gateway(self) -> ChatLiteLLM:
         """Returns a ChatLiteLLM instance configured to use DataRobot's LLM Gateway.
 
@@ -74,11 +91,9 @@ class MyAgent:
         and another for a specific DataRobot deployment, or even multiple deployments or
         third-party LLMs.
         """
-        os.environ["DATAROBOT_API_TOKEN"] = self.api_key  # type: ignore[assignment]
-        os.environ["DATAROBOT_ENDPOINT"] = self.api_base  # type: ignore[assignment]
         return ChatLiteLLM(
             model="datarobot/vertex_ai/gemini-1.5-flash-002",
-            api_base=self.api_base,
+            api_base=self.api_base_litellm,
             api_key=self.api_key,
             model_kwargs={
                 "clientId": "custom-model",
@@ -94,11 +109,7 @@ class MyAgent:
         and another for a specific DataRobot deployment, or even multiple deployments or
         third-party LLMs.
         """
-        deployment_url = (
-            f"{self.api_base}/api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/"
-        )
-        os.environ["DATAROBOT_API_TOKEN"] = self.api_key  # type: ignore[assignment]
-        os.environ["DATAROBOT_ENDPOINT"] = deployment_url
+        deployment_url = f"{self.api_base_litellm}/api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/"
         return ChatLiteLLM(
             model="datarobot/vertex_ai/gemini-1.5-flash-002",
             api_base=deployment_url,
