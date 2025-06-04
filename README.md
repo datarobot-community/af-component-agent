@@ -19,7 +19,7 @@ installed. To do that first, run:
 # Using HTTPS
 uvx copier copy https://github.com/datarobot/af-component-base .
 # OR using SSH
-uvx copier copy git@github.com/datarobot/af-component-base .
+uvx copier copy git@github.com:datarobot/af-component-base.git .
 ```
 
 To add the agent component to your project, you can use the `uvx copier` command to copy the template from this repository:
