@@ -1,0 +1,14 @@
+inputSet:
+  name: docker_input_set
+  identifier: docker_input_set
+  orgIdentifier: No_Code_Apps
+  projectIdentifier: afcomponentagent
+  pipeline:
+    identifier: Docker
+    properties:
+      ci:
+        codebase:
+          build:
+            type: PR
+            spec:
+              number: <+trigger.prNumber>
