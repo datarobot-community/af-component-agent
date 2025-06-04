@@ -16,6 +16,16 @@ defaults:
   run:
     working-directory: {{ agent_app_name }}
 jobs:
+  docker-build-test:
+    name: "Agent: {{ agent_app_name }} Docker build and test"
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Checkout
+        uses: "actions/checkout@v4"
+      - name: Build Docker Image
+        run: |
+          cd docker_context
+          docker build . -t {{ agent_app_name }}
   tests:
     name: "Agent: {{ agent_app_name }} {% raw %}${{ matrix.python-version }}{% endraw %}"
     runs-on: "ubuntu-latest"
@@ -34,7 +44,7 @@ jobs:
       - name: Install Dependencies
         run: |
           uv sync --all-extras --dev
-          uv pip install git+https://github.com/datarobot-forks/litellm@mattn/add-datarobot-support-to-litellm
+          uv pip install --no-cache-dir git+https://github.com/BerriAI/litellm@v1.72.1.dev1
           uv pip install -r ./custom_model/requirements.txt
       - name: Run Static Checks
         run: |
