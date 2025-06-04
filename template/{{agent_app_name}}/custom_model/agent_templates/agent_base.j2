@@ -56,6 +56,22 @@ class MyAgent:
         elif isinstance(verbose, bool):
             self.verbose = verbose
 
+    @property
+    def api_base_litellm(self) -> str:
+        """Returns a modified version of the API base URL suitable for LiteLLM.
+
+        Strips 'api/v2/' or 'api/v2' from the end of the URL if present.
+
+        Returns:
+            str: The modified API base URL.
+        """
+        if self.api_base:
+            if self.api_base.endswith("api/v2/"):
+                return self.api_base[:-7]  # Remove 'api/v2/'
+            elif self.api_base.endswith("api/v2"):
+                return self.api_base[:-6]  # Remove 'api/v2'
+        return "https://api.datarobot.com"
+
     def run(
         self, completion_create_params: CompletionCreateParams
     ) -> Tuple[str, Dict[str, int]]:
