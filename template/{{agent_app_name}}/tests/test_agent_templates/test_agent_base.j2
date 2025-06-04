@@ -133,7 +133,8 @@ class TestMyAgentBase:
         with pytest.raises(AttributeError):
             _ = agent.extra_param1
 
-    def test_run_method(self, agent):
+    @patch("builtins.print")
+    def test_run_method_with_json_input(self, mock_print, agent):
         # Create a mock result with a raw attribute
         completion_create_params = {
             "model": "test-model",
@@ -145,6 +146,30 @@ class TestMyAgentBase:
         assert agent.run(completion_create_params) == (
             "success",
             {"completion_tokens": 0, "prompt_tokens": 0, "total_tokens": 0},
+        )
+
+        # Assert that print was called with "Has inputs"
+        mock_print.assert_called_with(
+            "Running agent with inputs:", {"topic": "Artificial Intelligence"}
+        )
+
+    @patch("builtins.print")
+    def test_run_method_with_string_input(self, mock_print, agent):
+        # Create a mock result with a raw attribute
+        completion_create_params = {
+            "model": "test-model",
+            "messages": [{"role": "user", "content": "Artificial Intelligence"}],
+            "environment_var": True,
+        }
+        result = agent.run(completion_create_params)
+        assert result == (
+            "success",
+            {"completion_tokens": 0, "prompt_tokens": 0, "total_tokens": 0},
+        )
+
+        # Assert that print was called with "Has inputs"
+        mock_print.assert_called_with(
+            "Running agent with inputs:", {"topic": "Artificial Intelligence"}
         )
 
     @pytest.mark.parametrize(
