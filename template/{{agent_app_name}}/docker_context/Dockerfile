@@ -138,7 +138,7 @@ RUN source ${VENV_PATH}/bin/activate && \
     uv pip install --no-cache-dir -r ${WORKDIR}/requirements-agent.txt && rm ${WORKDIR}/requirements-agent.txt && \
     # Generative AI Agents
     uv pip uninstall litellm && \
-    uv pip install --no-cache-dir git+https://github.com/BerriAI/litellm@v1.72.0.rc1
+    uv pip install --no-cache-dir git+https://github.com/BerriAI/litellm@v1.72.1.dev1
 
 # Copy agent runtime into work directory
 COPY ./run_agent.py ${WORKDIR}/
