@@ -298,6 +298,12 @@ class MyAgent:
         # field with the 'user' role: (e.g. {"topic": "Artificial Intelligence"})
         inputs = create_inputs_from_completion_params(completion_create_params)
 
+        # If inputs are a string, convert to a dictionary with 'topic' key for this example.
+        if isinstance(inputs, str):
+            inputs = {"topic": inputs}
+
+        print("Running agent with inputs:", inputs)
+
         # Construct the input message for the langgraph graph.
         input_message = {
             "messages": [
