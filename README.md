@@ -28,7 +28,7 @@ To add the agent component to your project, you can use the `uvx copier` command
 # Using HTTPS
 uvx copier copy https://github.com/datarobot/af-component-agent .
 # OR using SSH
-uvx copier copy git@github.com/datarobot/af-component-agent .
+uvx copier copy git@github.com:datarobot/af-component-agent.git .
 ```
 
 If a template requires multiple agents, it can be used multiple times with a different answer to the 
