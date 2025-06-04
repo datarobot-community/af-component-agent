@@ -135,6 +135,42 @@ class TestMyAgentCrewAI:
         with pytest.raises(AttributeError):
             _ = agent.extra_param1
 
+    @pytest.mark.parametrize(
+        "api_base,expected_result",
+        [
+            ("https://example.com/api/v2/", "https://example.com/"),
+            ("https://example.com/api/v2", "https://example.com/"),
+            ("https://example.com/other-path", "https://example.com/other-path"),
+            (
+                "https://custom.example.com:8080/path/to/api/v2/",
+                "https://custom.example.com:8080/path/to/",
+            ),
+            (
+                "https://example.com/api/v2/deployment/",
+                "https://example.com/api/v2/deployment/",
+            ),
+            (
+                "https://example.com/api/v2/deployment",
+                "https://example.com/api/v2/deployment",
+            ),
+            (
+                "https://example.com/api/v2/genai/llmgw/chat/completions",
+                "https://example.com/api/v2/genai/llmgw/chat/completions",
+            ),
+            (
+                "https://example.com/api/v2/genai/llmgw/chat/completions/",
+                "https://example.com/api/v2/genai/llmgw/chat/completions/",
+            ),
+            (None, "https://api.datarobot.com"),
+        ],
+    )
+    def test_api_base_litellm_variations(self, api_base, expected_result):
+        """Test api_base_litellm property with various URL formats."""
+        with patch.dict(os.environ, {}, clear=True):
+            agent = MyAgent(api_base=api_base)
+            result = agent.api_base_litellm
+            assert result == expected_result
+
     @patch("agent.LLM")
     def test_llm_property(self, mock_llm, agent):
         # Test that LLM is created with correct parameters
@@ -145,6 +181,19 @@ class TestMyAgentCrewAI:
             api_base="test_base",
             api_key="test_key",
         )
+
+    @patch("agent.LLM")
+    def test_llm_property_with_no_api_base(self, mock_llm, agent):
+        # Test that LLM is created with correct parameters
+        with patch.dict(os.environ, {}, clear=True):
+            agent = MyAgent(api_key="test_key", verbose=True)
+            agent.llm_with_datarobot_llm_gateway
+            mock_llm.assert_called_once_with(
+                model="datarobot/vertex_ai/gemini-1.5-flash-002",
+                clientId="custom-model",
+                api_base="https://api.datarobot.com",
+                api_key="test_key",
+            )
 
     @patch("agent.Agent")
     def test_agent_planner_property(self, mock_agent, agent):

@@ -79,6 +79,7 @@ class MyAgent:
                 return self.api_base[:-7]  # Remove 'api/v2/'
             elif self.api_base.endswith("api/v2"):
                 return self.api_base[:-6]  # Remove 'api/v2'
+            return self.api_base
         return "https://api.datarobot.com"
 
     @property
