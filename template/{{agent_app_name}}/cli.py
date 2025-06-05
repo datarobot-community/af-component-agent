@@ -83,6 +83,9 @@ def execute_deployment(
 
     > task cli -- execute-deployment --user_prompt '{"topic": "Artificial Intelligence"}' --deployment_id 680a77a9a3
     """
+    if len(str(deployment_id)) == 0:
+        raise click.UsageError("Deployment ID must be provided.")
+
     click.echo("Querying deployment...")
     response = environment.interface.deployment(
         deployment_id=deployment_id, user_prompt=user_prompt
