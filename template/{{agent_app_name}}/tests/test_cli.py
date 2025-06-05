@@ -2,7 +2,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 import click
 from click.testing import CliRunner
-from ..cli import execute, execute_deployment, cli
+from cli import execute, execute_deployment, cli
 
 
 @pytest.fixture
