@@ -35,6 +35,14 @@ tasks:
       - echo "Running pulumi up with [DEPLOY] mode"
       - cd ./infra && pulumi up
     silent: true
+  silent-deploy:
+    desc: "⭕️ [{{ agent_app_name }}] Run Pulumi up in Silent/Integration [DEPLOY] mode"
+    env:
+      AGENT_DEPLOY: 1
+    cmds:
+      - echo "Running pulumi up with [DEPLOY] mode"
+      - cd ./infra && pulumi up --yes --skip-preview
+    silent: true
   refresh:
     desc: "⚪️ [{{ agent_app_name }}] Run Pulumi refresh"
     cmds:
