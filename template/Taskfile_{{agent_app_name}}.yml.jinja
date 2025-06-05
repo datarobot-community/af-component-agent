@@ -35,6 +35,12 @@ tasks:
       - echo "Running pulumi up with [DEPLOY] mode"
       - cd ./infra && pulumi up
     silent: true
+  refresh:
+    desc: "🔴 [{{ agent_app_name }}] Run Pulumi refresh"
+    cmds:
+      - echo "Running pulumi refresh"
+      - cd ./infra && pulumi refresh
+    silent: true
   destroy:
     desc: "🔴 [{{ agent_app_name }}] Run Pulumi destroy"
     cmds:
