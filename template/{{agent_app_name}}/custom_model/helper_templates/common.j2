@@ -4,7 +4,7 @@ class CustomModelChatResponse(ChatCompletion):
 
 def create_inputs_from_completion_params(
     completion_create_params: CompletionCreateParams,
-) -> Union[Dict[str, Any], str]:
+) -> Union[dict[str, Any], str]:
     """Load the user prompt from a JSON string or file."""
     input_prompt: Any = next(
         (
@@ -28,7 +28,7 @@ def create_inputs_from_completion_params(
 
 def create_completion_from_response_text(
     response_text: str,
-    usage_metrics: Dict[str, int],
+    usage_metrics: dict[str, int],
     model: str,
     pipeline_interactions: MultiTurnSample | None = None,
 ) -> CustomModelChatResponse:

@@ -13,7 +13,7 @@
 # limitations under the License.
 import json
 import os
-from typing import Any, Dict, Iterator, Optional, Union, cast
+from typing import Any, Iterator, Optional, Union, cast
 
 import datarobot as dr
 import openai
@@ -62,23 +62,23 @@ class ToolClient:
         dr.Client(self.api_key, self.base_url)
         return dr.Deployment.get(deployment_id=deployment_id)
 
-    def _get_authorization_context(self) -> Dict[str, Any]:
+    def _get_authorization_context(self) -> dict[str, Any]:
         """Retrieve the authorization context.
 
         Returns:
-            Dict[str, Any]: The authorization context.
+            dict[str, Any]: The authorization context.
         """
         authorization_context = get_authorization_context()
-        return cast(Dict[str, Any], authorization_context)
+        return cast(dict[str, Any], authorization_context)
 
     def call(
-        self, deployment_id: str, payload: Dict[str, Any], **kwargs: Any
+        self, deployment_id: str, payload: dict[str, Any], **kwargs: Any
     ) -> UnstructuredPredictionResult:
         """Run the custom model tool using score_unstructured hook.
 
         Args:
             deployment_id (str): The ID of the deployment.
-            payload (Dict[str, Any]): The input payload.
+            payload (dict[str, Any]): The input payload.
             **kwargs: Additional keyword arguments.
 
         Returns:

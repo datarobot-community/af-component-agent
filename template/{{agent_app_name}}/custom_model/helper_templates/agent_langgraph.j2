@@ -14,7 +14,7 @@
 import json
 import time
 import uuid
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 from openai.types import CompletionUsage
 from openai.types.chat import (
@@ -30,7 +30,7 @@ from ragas.integrations.langgraph import convert_to_ragas_messages
 {% include 'template/{{agent_app_name}}/custom_model/helper_templates/common.j2' %}
 
 
-def _extract_pipeline_interactions(events: List[dict[str, Any]]) -> MultiTurnSample:
+def _extract_pipeline_interactions(events: list[dict[str, Any]]) -> MultiTurnSample:
     """Extract the pipeline interactions from the events."""
     messages = []
     for e in events:
@@ -42,8 +42,8 @@ def _extract_pipeline_interactions(events: List[dict[str, Any]]) -> MultiTurnSam
 
 
 def to_custom_model_response(
-    events: List[dict[str, Any]],
-    usage_metrics: Dict[str, int],
+    events: list[dict[str, Any]],
+    usage_metrics: dict[str, int],
     model: str,
 ) -> CustomModelChatResponse:
     """Convert the Langgraph agent output to a custom model response."""
