@@ -44,6 +44,7 @@ jobs:
       - name: Install Dependencies
         run: |
           uv sync --all-extras --dev
+          uv pip uninstall litellm
           uv pip install --no-cache-dir litellm>=1.72.1
           uv pip install -r ./custom_model/requirements.txt
       - name: Run Static Checks

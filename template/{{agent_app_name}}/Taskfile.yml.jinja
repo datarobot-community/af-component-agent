@@ -7,6 +7,7 @@ tasks:
     cmds:
       - echo "Updating local dependencies"
       - uv sync --all-extras
+      - uv pip uninstall litellm
       - uv pip install --no-cache-dir litellm>=1.72.1
       - cd custom_model && uv pip install -r requirements.txt
     silent: true
