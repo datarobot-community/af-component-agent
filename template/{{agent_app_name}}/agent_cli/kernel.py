@@ -14,7 +14,7 @@
 import json
 import os
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import requests
 from openai import OpenAI
@@ -40,7 +40,7 @@ class Kernel:
         self.api_token = api_token
 
     @property
-    def headers(self) -> Dict[str, str]:
+    def headers(self) -> dict[str, str]:
         return {
             "Authorization": f"Token {self.api_token}",
         }

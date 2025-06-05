@@ -14,7 +14,7 @@
 import json
 import time
 import uuid
-from typing import Any, Dict, Union
+from typing import Any, Union
 
 from openai.types import CompletionUsage
 from openai.types.chat import (
@@ -31,7 +31,7 @@ from ragas import MultiTurnSample
 
 def to_custom_model_response(
     agent_result: str,
-    usage_metrics: Dict[str, int],
+    usage_metrics: dict[str, int],
     model: str,
 ) -> CustomModelChatResponse:
     """Convert the LLamaIndex agent output to a custom model response."""
