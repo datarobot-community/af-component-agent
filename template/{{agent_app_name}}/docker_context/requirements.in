@@ -26,7 +26,6 @@ llama-index-llms-langchain
 llama-index-llms-litellm
 openai
 ragas
-datarobot-moderations
 
 # Generative AI Telemetry
 traceloop-sdk
