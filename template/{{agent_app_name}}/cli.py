@@ -61,6 +61,9 @@ def execute(environment: Any, user_prompt: Optional[str], use_remote: bool) -> N
 
     > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}' --use_remote
     """
+    if len(str(user_prompt)) == 0:
+        raise click.UsageError("User prompt message provided.")
+    
     click.echo("Running agent...")
     response = environment.interface.execute(
         user_prompt=user_prompt,
@@ -83,6 +86,8 @@ def execute_deployment(
 
     > task cli -- execute-deployment --user_prompt '{"topic": "Artificial Intelligence"}' --deployment_id 680a77a9a3
     """
+    if len(str(user_prompt)) == 0:
+        raise click.UsageError("User prompt message provided.")
     if len(str(deployment_id)) == 0:
         raise click.UsageError("Deployment ID must be provided.")
 
