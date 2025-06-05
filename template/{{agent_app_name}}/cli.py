@@ -57,10 +57,18 @@ def execute(environment: Any, user_prompt: Optional[str], use_remote: bool) -> N
 
     Examples:
 
+    # Run the agent with a string user prompt
+    > task cli -- execute --user_prompt "Artificial Intelligence"
+
+    # Run the agent with a JSON user prompt
     > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
 
+    # Run the agent with a JSON user prompt and use remote codespace
     > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}' --use_remote
     """
+    if len(str(user_prompt)) == 0:
+        raise click.UsageError("User prompt message provided.")
+
     click.echo("Running agent...")
     response = environment.interface.execute(
         user_prompt=user_prompt,
@@ -81,8 +89,17 @@ def execute_deployment(
 
     Example:
 
+    # Run the agent with a string user prompt
+    > task cli -- execute-deployment --user_prompt "Artificial Intelligence" --deployment_id 680a77a9a3
+
+    # Run the agent with a JSON user prompt
     > task cli -- execute-deployment --user_prompt '{"topic": "Artificial Intelligence"}' --deployment_id 680a77a9a3
     """
+    if len(str(user_prompt)) == 0:
+        raise click.UsageError("User prompt message provided.")
+    if len(str(deployment_id)) == 0:
+        raise click.UsageError("Deployment ID must be provided.")
+
     click.echo("Querying deployment...")
     response = environment.interface.deployment(
         deployment_id=deployment_id, user_prompt=user_prompt
