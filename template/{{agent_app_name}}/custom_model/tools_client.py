@@ -46,7 +46,6 @@ class ToolClient:
             base_url (Optional[str]): Base URL for the DataRobot API. Defaults to environment variable `DATAROBOT_ENDPOINT`.
         """
         self.api_key = api_key or os.getenv("DATAROBOT_API_TOKEN")
-
         base_url = (
             (base_url or os.getenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com"))
             .rstrip("/")
