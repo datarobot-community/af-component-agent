@@ -67,6 +67,8 @@ def mock_crewai_output():
 
 @pytest.fixture
 def mock_langgraph_output():
+    from langchain_core.messages import AIMessage
+
     usage = {
         "completion_tokens": 1,
         "prompt_tokens": 2,
@@ -75,18 +77,10 @@ def mock_langgraph_output():
     return (
         [
             {
-                "agent1": {
-                    "messages": [
-                        mock.Mock(content="Agent 1 initial message"),
-                        mock.Mock(content="Agent 1 follow-up"),
-                    ]
-                }
-            },
-            {
                 "final_agent": {
                     "messages": [
-                        mock.Mock(content="Intermediate message"),
-                        mock.Mock(content="agent result"),
+                        AIMessage(content="Intermediate message"),
+                        AIMessage(content="agent result"),
                     ]
                 }
             },
