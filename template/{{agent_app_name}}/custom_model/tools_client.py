@@ -43,12 +43,20 @@ class ToolClient:
 
         Args:
             api_key (Optional[str]): API key for authentication. Defaults to environment variable `DATAROBOT_API_TOKEN`.
-            base_url (Optional[str]): Base URL for the DataRobot API. Defaults to environment variable `DATAROBOT_BASE_URL`.
+            base_url (Optional[str]): Base URL for the DataRobot API. Defaults to environment variable `DATAROBOT_ENDPOINT`.
         """
         self.api_key = api_key or os.getenv("DATAROBOT_API_TOKEN")
-        self.base_url = base_url or os.getenv(
-            "DATAROBOT_BASE_URL", "https://app.datarobot.com"
+
+        base_url = (
+            (base_url or os.getenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com"))
+            .rstrip("/")
+            .removesuffix("/api/v2")
         )
+        self.base_url = base_url
+
+    @property
+    def datarobot_api_endpoint(self) -> str:
+        return self.base_url + "/api/v2"
 
     def get_deployment(self, deployment_id: str) -> dr.Deployment:
         """Retrieve a deployment by its ID.
@@ -59,7 +67,7 @@ class ToolClient:
         Returns:
             dr.Deployment: The deployment object.
         """
-        dr.Client(self.api_key, self.base_url)
+        dr.Client(self.api_key, self.datarobot_api_endpoint)
         return dr.Deployment.get(deployment_id=deployment_id)
 
     def _get_authorization_context(self) -> dict[str, Any]:
