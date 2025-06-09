@@ -83,7 +83,7 @@ def setup_logging(
     log_level = cast(int, log_level)
 
     logger.setLevel(log_level)
-    handler_stream = logging.StreamHandler(sys.stdout)
+    handler_stream = logging.StreamHandler()
     handler_stream.setLevel(log_level)
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     handler_stream.setFormatter(formatter)
@@ -253,7 +253,7 @@ def main() -> Any:
         )
     except Exception as e:
         root.exception(f"Error parsing arguments: {e}")
-        sys.exit(1)
+        return
 
     try:
         if ENABLE_STDOUT_REDIRECT:
