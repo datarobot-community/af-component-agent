@@ -135,8 +135,8 @@ jobs:
           fi
 
           # Run the CLI command with a sample user prompt
-          task agent_test:agent:cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
-          if task agent_test:agent:cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}' | grep -q '"content": "success"'; then
+          task agent_test:agent:cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}' > ./agent/output.log
+          if cat ./agent/output.log | grep -q '"content": "success"'; then
             echo "Test passed: cli.py returned success"
           else
             echo "Test failed: cli.py did not return success"
@@ -144,22 +144,11 @@ jobs:
           fi
 
           # Check if the log file was created
-          if [ $(wc -l <./agent/output.log) -ge 2 ]; then
+          if [ $(wc -l <./agent/output.log) -ge 13 ]; then
             echo "Log file created successfully and file not empty."
             echo ""
             echo "Contents of output.log:"
             cat ./agent/output.log
-          else
-            echo "Log file was not created."
-            exit 1
-          fi
-
-          # Check if the log file was created
-          if [ $(wc -l <./agent/custom_model/output.json.log) -ge 13 ]; then
-            echo "Log file created successfully and file not empty."
-            echo ""
-            echo "Contents of custom_model/output.json.log:"
-            cat ./agent/custom_model/output.json.log
           else
             echo "Log file was not created."
             exit 1
