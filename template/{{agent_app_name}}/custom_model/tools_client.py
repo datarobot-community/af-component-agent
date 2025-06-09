@@ -47,7 +47,7 @@ class ToolClient:
         """
         self.api_key = api_key or os.getenv("DATAROBOT_API_TOKEN")
         base_url = (
-            (base_url or os.getenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com"))
+            cast(str, (base_url or os.getenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com")))
             .rstrip("/")
             .removesuffix("/api/v2")
         )
