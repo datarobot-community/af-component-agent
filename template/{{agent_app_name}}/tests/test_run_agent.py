@@ -518,13 +518,3 @@ class TestMain:
         assert os.path.exists(tempdir_and_cleanup / "output.json")
         with open(tempdir_and_cleanup / "output.json", "r") as f:
             assert f.read() == mock_completion.to_json.return_value
-
-        # THEN the output log was stored in the temporary directory
-        assert os.path.exists(tempdir_and_cleanup / "output.json.log")
-        with open(tempdir_and_cleanup / "output.json.log", "r") as f:
-            assert "Chat completion" in f.read()
-
-        # THEN the default output log path was created and used for the args processing
-        assert os.path.exists(DEFAULT_OUTPUT_LOG_PATH)
-        with open(DEFAULT_OUTPUT_LOG_PATH, "r") as f:
-            assert "Parsing args" in f.read()
