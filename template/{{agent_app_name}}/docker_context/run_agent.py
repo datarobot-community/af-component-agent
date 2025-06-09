@@ -18,7 +18,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any, Optional, Union, cast
+from typing import Any, Optional, cast
 from urllib.parse import urlparse, urlunparse
 
 import requests
