@@ -150,7 +150,9 @@ class TestMyAgentBase:
 
         # Assert that print was called with "Has inputs"
         mock_print.assert_called_with(
-            "Running agent with inputs:", {"topic": "Artificial Intelligence"}
+            "Running agent with inputs:",
+            {"topic": "Artificial Intelligence"},
+            flush=True,
         )
 
     @patch("builtins.print")
@@ -169,7 +171,9 @@ class TestMyAgentBase:
 
         # Assert that print was called with "Has inputs"
         mock_print.assert_called_with(
-            "Running agent with inputs:", {"topic": "Artificial Intelligence"}
+            "Running agent with inputs:",
+            {"topic": "Artificial Intelligence"},
+            flush=True,
         )
 
     @pytest.mark.parametrize(
