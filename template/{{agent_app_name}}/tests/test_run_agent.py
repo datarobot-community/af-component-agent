@@ -455,7 +455,8 @@ class TestMain:
         with tempfile.TemporaryDirectory() as tempdir:
             yield Path(tempdir)
         # Also remove the default output log path
-        os.remove(DEFAULT_OUTPUT_LOG_PATH)
+        if os.path.exists(DEFAULT_OUTPUT_LOG_PATH):
+            os.remove(DEFAULT_OUTPUT_LOG_PATH)
 
     @patch("run_agent.argparse_args")
     @patch("run_agent.execute_drum")
