@@ -3,7 +3,7 @@ setuptools
 ecs-logging
 jupyter-client
 jupyter_kernel_gateway
-jupyter_core
+jupyter_core>=5.8.1
 ipykernel<6.29.0
 pandas
 numpy
