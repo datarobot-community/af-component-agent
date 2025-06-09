@@ -212,7 +212,7 @@ def main() -> Any:
                 sys.stdout = f
                 sys.stderr = f
 
-                print("Parsing args")
+                print("Parsing args", flush=True)
                 args = argparse_args()
                 output_log_path = str(
                     Path(args.output_path + ".log")
