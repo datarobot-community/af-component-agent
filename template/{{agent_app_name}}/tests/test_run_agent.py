@@ -431,10 +431,6 @@ class TestMain:
         mock_setup_logging.assert_has_calls(
             [
                 call(logger=ANY, log_level=logging.INFO),
-                call(
-                    logger=ANY,
-                    log_level=logging.INFO,
-                ),
             ]
         )
 
