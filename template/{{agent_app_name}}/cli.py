@@ -46,8 +46,8 @@ def cli(
 @cli.command()
 @pass_environment
 @click.option("--user_prompt", help="Input to use for chat.")
-def execute_local(environment: Any, user_prompt: str) -> None:
-    """Execute agent code using OpenAI completions.
+def execute(environment: Any, user_prompt: str) -> None:
+    """Execute agent code locally using OpenAI completions.
 
     Examples:
 
@@ -56,9 +56,6 @@ def execute_local(environment: Any, user_prompt: str) -> None:
 
     # Run the agent with a JSON user prompt
     > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
-
-    # Run the agent with a JSON user prompt and use remote codespace
-    > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}' --use_remote
     """
     if len(user_prompt) == 0:
         raise click.UsageError("User prompt message provided.")

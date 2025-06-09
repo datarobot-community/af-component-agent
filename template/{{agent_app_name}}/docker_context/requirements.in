@@ -8,7 +8,7 @@ ipykernel<6.29.0
 pandas
 numpy
 mistune
-datarobot-drum>=1.16.14
+datarobot-drum>=1.16.16
 datarobot
 numpy
 uwsgi
