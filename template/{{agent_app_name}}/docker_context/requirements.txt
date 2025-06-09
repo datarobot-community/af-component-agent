@@ -150,7 +150,7 @@ jsonschema==4.23.0
 jsonschema-specifications==2025.4.1
 julia==0.5.7
 jupyter-client==8.6.3
-jupyter-core==5.7.2
+jupyter-core==5.8.1
 jupyter-events==0.12.0
 jupyter-kernel-gateway==3.0.1
 jupyter-server==2.15.0
