@@ -451,7 +451,7 @@ class TestMain:
                     logger=ANY,
                     log_level=logging.INFO,
                     output_path="/path/to/output.log",
-                    update=True,
+                    enable_file_logging=True,
                 ),
             ]
         )
