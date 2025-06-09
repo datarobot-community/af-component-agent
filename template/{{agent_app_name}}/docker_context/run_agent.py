@@ -194,7 +194,7 @@ def store_result(result: ChatCompletion, output_path: Path) -> None:
         fp.write(result.to_json())
 
 
-def run_agent(args) -> None:
+def run_agent(args: Any) -> None:
     # Parse input to fail early if it's not valid
     chat_completion = construct_prompt(args.chat_completion)
     default_headers = json.loads(args.default_headers)
