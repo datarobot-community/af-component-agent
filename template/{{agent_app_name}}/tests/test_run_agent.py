@@ -97,21 +97,13 @@ class TestSetupLogging:
         logger.handlers = []
         return logger
 
-    @patch("os.path.exists")
-    @patch("os.remove")
     @patch("logging.StreamHandler")
-    @patch("logging.FileHandler")
     def test_setup_logging_with_empty_output_path(
-        self, mock_file_handler, mock_stream_handler, mock_remove, mock_exists, logger
+        self, mock_stream_handler, logger
     ):
         # Set up mocks
         mock_stream = MagicMock()
         mock_stream_handler.return_value = mock_stream
-        mock_exists.return_value = False
-
-        mock_file = MagicMock()
-        mock_file_handler.return_value = mock_file
-        mock_exists.return_value = False
 
         # Call function with empty output path
         setup_logging(logger=logger, log_level=logging.INFO)
@@ -120,18 +112,12 @@ class TestSetupLogging:
         assert logger.level == logging.INFO
         assert len(logger.handlers) == 2
         mock_stream.setFormatter.assert_called_once()
-        mock_file.setFormatter.assert_called_once()
 
-        # Verify remove wasn't called since file doesn't exist
-        mock_remove.assert_not_called()
-
-    @patch("os.path.exists")
     @patch("logging.StreamHandler")
-    def test_setup_logging_formatters(self, mock_stream_handler, mock_exists, logger):
+    def test_setup_logging_formatters(self, mock_stream_handler, logger):
         # Set up mocks
         mock_stream = MagicMock()
         mock_stream_handler.return_value = mock_stream
-        mock_exists.return_value = False
         # Call function
         setup_logging(logger=logger, log_level=logging.INFO)
 
@@ -450,8 +436,6 @@ class TestMain:
                 call(
                     logger=ANY,
                     log_level=logging.INFO,
-                    output_path="/path/to/output.log",
-                    enable_file_logging=True,
                 ),
             ]
         )
