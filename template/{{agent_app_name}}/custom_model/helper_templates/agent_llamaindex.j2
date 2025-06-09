@@ -14,7 +14,8 @@
 import json
 import time
 import uuid
-from typing import Any, Union
+from asyncio import Event
+from typing import Any, Sequence, Union
 
 from openai.types import CompletionUsage
 from openai.types.chat import (
@@ -24,6 +25,7 @@ from openai.types.chat import (
 )
 from openai.types.chat.chat_completion import Choice
 from ragas import MultiTurnSample
+from ragas.integrations.llama_index import convert_to_ragas_messages
 
 
 {% include 'template/{{agent_app_name}}/custom_model/helper_templates/common.j2' %}
@@ -31,14 +33,18 @@ from ragas import MultiTurnSample
 
 def to_custom_model_response(
     agent_result: str,
+    events: Sequence[Event],
     usage_metrics: dict[str, int],
     model: str,
 ) -> CustomModelChatResponse:
     """Convert the LLamaIndex agent output to a custom model response."""
+    ragas_trace = convert_to_ragas_messages(events)
+    pipeline_interactions = MultiTurnSample(user_input=ragas_trace)
+
     response = create_completion_from_response_text(
         response_text=agent_result,
         usage_metrics=usage_metrics,
         model=model,
-        pipeline_interactions=None,
+        pipeline_interactions=pipeline_interactions,
     )
     return response

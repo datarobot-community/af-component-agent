@@ -55,8 +55,6 @@ def to_custom_model_response(
         response_text=output,
         usage_metrics=usage_metrics,
         model=model,
-        # Disable until tests can be fixed
-        # pipeline_interactions=_extract_pipeline_interactions(events),
-        pipeline_interactions=None,
+        pipeline_interactions=_extract_pipeline_interactions(events),
     )
     return response

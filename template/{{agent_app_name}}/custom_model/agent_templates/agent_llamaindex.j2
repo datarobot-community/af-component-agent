@@ -13,7 +13,7 @@
 # limitations under the License.
 import asyncio
 import os
-from typing import Any, Optional, Union
+from typing import Any, Optional, Sequence, Tuple, Union
 
 from helpers import create_inputs_from_completion_params
 from llama_index.core.agent.workflow import (
@@ -26,7 +26,7 @@ from llama_index.core.agent.workflow import (
     ToolCallResult,
 )
 from llama_index.core.base.llms.types import LLMMetadata
-from llama_index.core.workflow import Context
+from llama_index.core.workflow import Context, Event
 from llama_index.llms.litellm import LiteLLM
 from openai.types.chat import CompletionCreateParams
 
@@ -230,7 +230,9 @@ class MyAgent:
         handler = agent_workflow.run(user_msg=user_prompt)
 
         current_agent = None
+        events = []
         async for event in handler.stream_events():
+            events.append(event)
             if (
                 hasattr(event, "current_agent_name")
                 and event.current_agent_name != current_agent
@@ -260,11 +262,11 @@ class MyAgent:
                 print(f"🔨 Calling Tool: {event.tool_name}")
                 print(f"  With arguments: {event.tool_kwargs}")
 
-        return await handler.ctx.get("state")  # type: ignore[union-attr]
+        return await handler.ctx.get("state"), events  # type: ignore[union-attr]
 
     def run(
         self, completion_create_params: CompletionCreateParams
-    ) -> tuple[str, dict[str, int]]:
+    ) -> Tuple[str, Sequence[Event], dict[str, int]]:
         """Run the agent with the provided completion parameters.
 
         [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
@@ -296,11 +298,11 @@ class MyAgent:
             f"Briefly describe the history of {inputs['topic']}, important developments, "
             f"and the current state in the 21st century."
         )
-        result = asyncio.run(self.run_async(user_prompt))
+        result, events = asyncio.run(self.run_async(user_prompt))
 
         usage_metrics: dict[str, int] = {
             "completion_tokens": 0,
             "prompt_tokens": 0,
             "total_tokens": 0,
         }
-        return str(result["report_content"]), usage_metrics
+        return str(result["report_content"]), events, usage_metrics
