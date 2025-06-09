@@ -238,29 +238,30 @@ class MyAgent:
                 and event.current_agent_name != current_agent
             ):
                 current_agent = event.current_agent_name
-                print(f"\n{'=' * 50}")
-                print(f"🤖 Agent: {current_agent}")
-                print(f"{'=' * 50}\n")
+                print(f"\n{'=' * 50}", flush=True)
+                print(f"🤖 Agent: {current_agent}", flush=True)
+                print(f"{'=' * 50}\n", flush=True)
             if isinstance(event, AgentStream):
                 if event.delta:
                     print(event.delta, end="", flush=True)
             elif isinstance(event, AgentInput):
-                print("📥 Input:", event.input)
+                print("📥 Input:", event.input, flush=True)
             elif isinstance(event, AgentOutput):
                 if event.response.content:
-                    print("📤 Output:", event.response.content)
+                    print("📤 Output:", event.response.content, flush=True)
                 if event.tool_calls:
                     print(
                         "🛠️  Planning to use tools:",
                         [call.tool_name for call in event.tool_calls],
+                        flush=True
                     )
             elif isinstance(event, ToolCallResult):
-                print(f"🔧 Tool Result ({event.tool_name}):")
-                print(f"  Arguments: {event.tool_kwargs}")
-                print(f"  Output: {event.tool_output}")
+                print(f"🔧 Tool Result ({event.tool_name}):", flush=True)
+                print(f"  Arguments: {event.tool_kwargs}", flush=True)
+                print(f"  Output: {event.tool_output}", flush=True)
             elif isinstance(event, ToolCall):
-                print(f"🔨 Calling Tool: {event.tool_name}")
-                print(f"  With arguments: {event.tool_kwargs}")
+                print(f"🔨 Calling Tool: {event.tool_name}", flush=True)
+                print(f"  With arguments: {event.tool_kwargs}", flush=True)
 
         return await handler.ctx.get("state"), events  # type: ignore[union-attr]
 
@@ -291,7 +292,8 @@ class MyAgent:
         if isinstance(inputs, str):
             inputs = {"topic": inputs}
 
-        print("Running agent with inputs:", inputs)
+        # Print commands may need flush=True to ensure they are displayed in real-time.
+        print("Running agent with inputs:", inputs, flush=True)
 
         user_prompt = (
             f"Write me a report on the {inputs['topic']}. "
