@@ -152,7 +152,7 @@ class TestMyAgentBase:
         mock_print.assert_called_with(
             "Running agent with inputs:",
             {"topic": "Artificial Intelligence"},
-            flush=True
+            flush=True,
         )
 
     @patch("builtins.print")
@@ -173,7 +173,7 @@ class TestMyAgentBase:
         mock_print.assert_called_with(
             "Running agent with inputs:",
             {"topic": "Artificial Intelligence"},
-            flush=True
+            flush=True,
         )
 
     @pytest.mark.parametrize(

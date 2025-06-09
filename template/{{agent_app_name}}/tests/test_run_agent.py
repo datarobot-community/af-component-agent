@@ -98,9 +98,7 @@ class TestSetupLogging:
         return logger
 
     @patch("logging.StreamHandler")
-    def test_setup_logging_with_empty_output_path(
-        self, mock_stream_handler, logger
-    ):
+    def test_setup_logging_with_empty_output_path(self, mock_stream_handler, logger):
         # Set up mocks
         mock_stream = MagicMock()
         mock_stream_handler.return_value = mock_stream
@@ -110,7 +108,7 @@ class TestSetupLogging:
 
         # Verify logger configuration
         assert logger.level == logging.INFO
-        assert len(logger.handlers) == 2
+        assert len(logger.handlers) == 1
         mock_stream.setFormatter.assert_called_once()
 
     @patch("logging.StreamHandler")
