@@ -302,7 +302,8 @@ class MyAgent:
         if isinstance(inputs, str):
             inputs = {"topic": inputs}
 
-        print("Running agent with inputs:", inputs)
+        # Print commands may need flush=True to ensure they are displayed in real-time.
+        print("Running agent with inputs:", inputs, flush=True)
 
         # Construct the input message for the langgraph graph.
         input_message = {
