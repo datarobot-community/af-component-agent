@@ -253,7 +253,7 @@ def main() -> Any:
         )
     except Exception as e:
         root.exception(f"Error parsing arguments: {e}")
-        return
+        raise e
 
     try:
         if ENABLE_STDOUT_REDIRECT:
