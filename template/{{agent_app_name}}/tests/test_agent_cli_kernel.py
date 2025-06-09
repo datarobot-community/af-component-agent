@@ -19,13 +19,13 @@ from unittest.mock import Mock, mock_open, patch
 import pytest
 from openai.types.chat import ChatCompletion
 
-from agent_cli.kernel import AgentKernel, Kernel
+from agent_cli.kernel import Kernel
 
 
 class TestKernel:
     def test_headers_property(self):
         """Test headers property returns correct authorization header."""
-        kernel = Kernel(api_token="api-123456")
+        kernel = Kernel(api_token="api-123456", base_url="https://test.example.com")
 
         headers = kernel.headers
 
@@ -44,7 +44,7 @@ class TestKernel:
         )
 
         # Execute
-        result = AgentKernel.construct_prompt(user_prompt, extra_body)
+        result = Kernel.construct_prompt(user_prompt, extra_body)
 
         # Parse the result to verify structure
         result_dict = json.loads(result)
@@ -69,7 +69,7 @@ class TestKernel:
         extra_body = ""
 
         # Execute
-        result = AgentKernel.construct_prompt(user_prompt, extra_body)
+        result = Kernel.construct_prompt(user_prompt, extra_body)
 
         # Parse the result to verify structure
         result_dict = json.loads(result)
@@ -93,7 +93,7 @@ class TestKernel:
         output_path = "/test/output/path.json"
 
         # Execute
-        result = AgentKernel.get_output_local(output_path)
+        result = Kernel.get_output(output_path)
 
         # Assert
         mock_file.assert_called_once_with(output_path, "r")
@@ -113,7 +113,7 @@ class TestKernel:
         output_path = "/test/output/path.json"
 
         # Execute
-        result = AgentKernel.get_output_local(output_path)
+        result = Kernel.get_output(output_path)
 
         # Assert
         mock_file.assert_called_once_with(output_path, "r")
@@ -144,13 +144,12 @@ class TestKernel:
         with pytest.raises(ValueError, match="user_prompt must be provided."):
             kernel.validate_and_create_execute_args(user_prompt="")
 
-    @patch.object(AgentKernel, "construct_prompt")
+    @patch.object(Kernel, "construct_prompt")
     def test_validate_execute_args_basic(self, mock_construct_prompt):
         """Test validate_execute_args with minimal parameters."""
         # Setup
-        kernel = AgentKernel(
+        kernel = Kernel(
             api_token="test-token",
-            codespace_id="test-codespace",
             base_url="https://test.example.com",
         )
         user_prompt = "Hello, assistant!"
@@ -180,33 +179,6 @@ class TestKernel:
             f"--custom_model_dir '{os.path.join(os.getcwd(), 'custom_model')}'"
             in command_args
         )
-        assert f"--output_path '{expected_output_path}'" in command_args
-
-    @patch.object(Kernel, "construct_prompt")
-    def test_validate_execute_args_remote(self, mock_construct_prompt):
-        """Test validate_execute_args with remote execution."""
-        # Setup
-        kernel = Kernel(
-            api_token="test-token",
-            base_url="https://test.example.com",
-        )
-        user_prompt = "Hello, assistant!"
-        expected_chat_completion = '{"content": "test completion"}'
-        mock_construct_prompt.return_value = expected_chat_completion
-
-        # Execute
-        command_args, output_path = kernel.validate_and_create_execute_args(
-            user_prompt
-        )
-
-        # Assert
-        # Verify remote paths are used
-        expected_model_dir = "/home/notebooks/storage/custom_model"
-        expected_output_path = "/home/notebooks/storage/custom_model/output.json"
-        assert output_path == expected_output_path
-
-        # Verify command_args contains all parameters with remote paths
-        assert f"--custom_model_dir '{expected_model_dir}'" in command_args
         assert f"--output_path '{expected_output_path}'" in command_args
 
     @patch.object(Kernel, "construct_prompt")
@@ -364,8 +336,8 @@ class TestKernel:
         with pytest.raises(ValueError, match="Test error"):
             kernel.deployment(deployment_id, user_prompt)
 
-    @patch.object(Kernel, "validate_execute_args")
-    @patch.object(Kernel, "get_output_local")
+    @patch.object(Kernel, "validate_and_create_execute_args")
+    @patch.object(Kernel, "get_output")
     @patch("os.system")
     def test_local_success(self, mock_system, mock_get_output, mock_validate):
         """Test successful local execution path."""
@@ -386,10 +358,10 @@ class TestKernel:
         mock_get_output.return_value = expected_output
 
         # Execute
-        result = kernel.local("Test prompt", use_remote=False)
+        result = kernel.local("Test prompt")
 
         # Assert
-        mock_validate.assert_called_once_with("Test prompt", False, "", "")
+        mock_validate.assert_called_once_with("Test prompt", "", "")
 
         # Verify system command was executed correctly
         mock_system.assert_called_once_with("python3 run_agent.py --test-args")
@@ -400,7 +372,7 @@ class TestKernel:
         # Verify correct result returned
         assert result == expected_output
 
-    @patch.object(Kernel, "validate_execute_args")
+    @patch.object(Kernel, "validate_and_create_execute_args")
     @patch("os.system")
     def test_local_command_error(self, mock_system, mock_validate):
         """Test local execution with command error."""
@@ -418,9 +390,9 @@ class TestKernel:
 
         # Execute and Assert
         with pytest.raises(RuntimeError, match="Command failed with exit code 1"):
-            kernel.local("Test prompt", use_remote=False)
+            kernel.local("Test prompt")
 
-    @patch.object(Kernel, "validate_execute_args")
+    @patch.object(Kernel, "validate_and_create_execute_args")
     @patch("os.system")
     @patch("builtins.print")
     def test_local_other_exception(
@@ -441,7 +413,7 @@ class TestKernel:
 
         # Execute and Assert
         with pytest.raises(FileNotFoundError, match="Command not found"):
-            kernel.local("Test prompt", use_remote=False)
+            kernel.local("Test prompt")
 
         # Verify error message was printed
         mock_print.assert_called_with("Error executing command: Command not found")

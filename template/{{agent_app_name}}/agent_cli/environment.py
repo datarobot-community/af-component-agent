@@ -14,7 +14,7 @@
 import os
 from typing import Optional
 
-from .kernel import AgentKernel
+from .kernel import Kernel
 
 
 class Environment:
@@ -32,8 +32,8 @@ class Environment:
         self.base_url = self.base_url.replace("/api/v2", "")
 
     @property
-    def interface(self) -> AgentKernel:
-        return AgentKernel(
+    def interface(self) -> Kernel:
+        return Kernel(
             api_token=str(self.api_token),
             base_url=str(self.base_url),
         )
