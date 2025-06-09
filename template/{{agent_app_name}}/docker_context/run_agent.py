@@ -62,7 +62,10 @@ def argparse_args() -> argparse.Namespace:
         "--output_path", type=str, default=None, help="json output file location"
     )
     parser.add_argument(
-        "--otlp_entity_id", type=str, default=None, help="Entity ID for tracing"
+        "--otel_entity_id", type=str, default=None, help="Entity ID, necessary for OpenTelemetry tracing authorization in DataRobot. Format: <entity_type>-<entity_id>"
+    )
+    parser.add_argument(
+        "--otel_attributes", type=str, default=None, help="Custom attributes for tracing. Should a comma separated list of key=value pairs."
     )
     args = parser.parse_args()
     return args
@@ -97,7 +100,7 @@ def setup_logging(
     logger.addHandler(handler_file)
 
 
-def setup_otlp_env_variables(entity_id: str | None = None) -> None:
+def setup_otlp_endpoint_env_variables(entity_id: str) -> None:
     # do not override if already set
     if os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") or os.environ.get(
         "OTEL_EXPORTER_OTLP_HEADERS"
@@ -118,13 +121,18 @@ def setup_otlp_env_variables(entity_id: str | None = None) -> None:
     parsed_url = urlparse(datarobot_endpoint)
     stripped_url = (parsed_url.scheme, parsed_url.netloc, "otel", "", "", "")
     otlp_endpoint = urlunparse(stripped_url)
-    otlp_headers = f"X-DataRobot-Api-Key={datarobot_api_token}"
-    if entity_id:
-        otlp_headers += f",X-DataRobot-Entity-Id={entity_id}"
+    otlp_headers = f"X-DataRobot-Api-Key={datarobot_api_token},X-DataRobot-Entity-Id={entity_id}"
     os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = otlp_endpoint
     os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = otlp_headers
     root.info(f"Using OTEL_EXPORTER_OTLP_ENDPOINT: {otlp_endpoint}")
 
+
+def setup_otlp_attributes_env_variables(attributes: str) -> None:
+    if os.environ.get("OTEL_RESOURCE_ATTRIBUTES"):
+        root.info("OTEL_RESOURCE_ATTRIBUTES already set, skipping")
+        return
+
+    os.environ["OTEL_RESOURCE_ATTRIBUTES"] = attributes
 
 def execute_drum(
     chat_completion: CompletionCreateParamsBase,
@@ -221,8 +229,15 @@ def main() -> Any:
         root.info(f"Default headers: {default_headers}")
 
         # Setup tracing
-        root.info("Setting up tracing")
-        setup_otlp_env_variables(args.otlp_entity_id)
+        if args.otel_entity_id:
+            root.info("Setting up tracing")
+            setup_otlp_endpoint_env_variables(args.otel_entity_id)
+        else:
+            root.info("No OTEL entity ID provided, skipping tracing setup")
+
+        if args.otel_attributes:
+            root.info("Setting up custom OTEL attributes")
+            setup_otlp_attributes_env_variables(args.otel_attributes)
 
         root.info(f"Executing request in directory {args.custom_model_dir}")
         result = execute_drum(

@@ -11,28 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, Optional
+from typing import Any
 
 import click
-from dotenv import load_dotenv
 
 from agent_cli.environment import Environment
-
-load_dotenv()
 
 pass_environment = click.make_pass_decorator(Environment)
 
 
 @click.group()
-@click.option("--codespace_id", default=None, help="Codespace ID for the session.")
 @click.option("--api_token", default=None, help="API token for authentication.")
 @click.option("--base_url", default=None, help="Base URL for the API.")
 @click.pass_context
 def cli(
     ctx: Any,
-    codespace_id: Optional[str],
-    api_token: Optional[str],
-    base_url: Optional[str],
+    api_token: str | None,
+    base_url: str | None,
 ) -> None:
     """A CLI for interacting executing agent custom models using the chat endpoint and OpenAI completions.
 
@@ -45,14 +40,13 @@ def cli(
     > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
 
     """
-    ctx.obj = Environment(codespace_id, api_token, base_url)
+    ctx.obj = Environment(api_token, base_url)
 
 
 @cli.command()
 @pass_environment
-@click.option("--user_prompt", default=None, help="Input to use for chat.")
-@click.option("--use_remote", is_flag=True, help="Use remote codespace.")
-def execute(environment: Any, user_prompt: Optional[str], use_remote: bool) -> None:
+@click.option("--user_prompt", help="Input to use for chat.")
+def execute_local(environment: Any, user_prompt: str) -> None:
     """Execute agent code using OpenAI completions.
 
     Examples:
@@ -66,13 +60,12 @@ def execute(environment: Any, user_prompt: Optional[str], use_remote: bool) -> N
     # Run the agent with a JSON user prompt and use remote codespace
     > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}' --use_remote
     """
-    if len(str(user_prompt)) == 0:
+    if len(user_prompt) == 0:
         raise click.UsageError("User prompt message provided.")
 
     click.echo("Running agent...")
-    response = environment.interface.execute(
+    response = environment.interface.local(
         user_prompt=user_prompt,
-        use_remote=use_remote,
     )
     click.echo("\nStored Execution Result:")
     click.echo(response)
@@ -80,10 +73,10 @@ def execute(environment: Any, user_prompt: Optional[str], use_remote: bool) -> N
 
 @cli.command()
 @pass_environment
-@click.option("--user_prompt", default=None, help="Input to use for predict.")
-@click.option("--deployment_id", default=None, help="ID for the deployment.")
+@click.option("--user_prompt", help="Input to use for predict.")
+@click.option("--deployment_id", help="ID for the deployment.")
 def execute_deployment(
-    environment: Any, user_prompt: Optional[str], deployment_id: Optional[str]
+    environment: Any, user_prompt: str, deployment_id: str
 ) -> None:
     """Query a deployed model using the command line for OpenAI completions.
 
@@ -95,9 +88,9 @@ def execute_deployment(
     # Run the agent with a JSON user prompt
     > task cli -- execute-deployment --user_prompt '{"topic": "Artificial Intelligence"}' --deployment_id 680a77a9a3
     """
-    if len(str(user_prompt)) == 0:
+    if len(user_prompt) == 0:
         raise click.UsageError("User prompt message provided.")
-    if len(str(deployment_id)) == 0:
+    if len(deployment_id) == 0:
         raise click.UsageError("Deployment ID must be provided.")
 
     click.echo("Querying deployment...")
