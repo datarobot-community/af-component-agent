@@ -74,7 +74,6 @@ def setup_logging(
     output_path: Optional[Union[Path, str]] = DEFAULT_OUTPUT_LOG_PATH,
     log_level: Optional[int] = logging.INFO,
     enable_file_logging: Optional[bool] = True,
-    update: Optional[bool] = False,
 ) -> None:
     log_level = cast(int, log_level)
 
@@ -85,6 +84,7 @@ def setup_logging(
     handler_stream.setFormatter(formatter)
 
     if enable_file_logging:
+        logger.handlers.clear()
         output_path = str(output_path)
         if os.path.exists(output_path):
             os.remove(output_path)
@@ -92,12 +92,9 @@ def setup_logging(
         handler_file.setLevel(log_level)
         formatter_file = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
         handler_file.setFormatter(formatter_file)
-
-    if update:
-        logger.handlers.clear()
+        logger.addHandler(handler_file)
 
     logger.addHandler(handler_stream)
-    # logger.addHandler(handler_file)
 
 
 def setup_otlp_env_variables(entity_id: str | None = None) -> None:
@@ -248,7 +245,6 @@ def main() -> Any:
             output_path=output_log_path,
             log_level=logging.INFO,
             enable_file_logging=not ENABLE_STDOUT_REDIRECT,
-            update=not ENABLE_STDOUT_REDIRECT,
         )
     except Exception as e:
         root.exception(f"Error parsing arguments: {e}")
