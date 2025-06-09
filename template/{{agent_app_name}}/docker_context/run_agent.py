@@ -76,29 +76,15 @@ def argparse_args() -> argparse.Namespace:
 
 def setup_logging(
     logger: logging.Logger,
-    output_path: Optional[Union[Path, str]] = DEFAULT_OUTPUT_LOG_PATH,
     log_level: Optional[int] = logging.INFO,
-    enable_file_logging: Optional[bool] = True,
 ) -> None:
     log_level = cast(int, log_level)
-
     logger.setLevel(log_level)
+
     handler_stream = logging.StreamHandler()
     handler_stream.setLevel(log_level)
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     handler_stream.setFormatter(formatter)
-
-    if enable_file_logging:
-        logger.handlers.clear()
-        output_path = str(output_path)
-        if os.path.exists(output_path):
-            os.remove(output_path)
-        handler_file = logging.FileHandler(output_path)
-        handler_file.setLevel(log_level)
-        formatter_file = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-        handler_file.setFormatter(formatter_file)
-        logger.addHandler(handler_file)
-
     logger.addHandler(handler_stream)
 
 
@@ -238,19 +224,6 @@ def main() -> Any:
 
             root.info("Parsing args")
             args = argparse_args()
-            output_log_path = str(
-                Path(args.output_path + ".log")
-                if args.output_path
-                else DEFAULT_OUTPUT_LOG_PATH
-            )
-
-        root.info("Setting up logging")
-        setup_logging(
-            logger=root,
-            output_path=output_log_path,
-            log_level=logging.INFO,
-            enable_file_logging=not ENABLE_STDOUT_REDIRECT,
-        )
     except Exception as e:
         root.exception(f"Error parsing arguments: {e}")
         raise e
