@@ -76,6 +76,7 @@ def setup_logging(
 ) -> None:
     log_level = cast(int, log_level)
     output_path = str(output_path)
+    _ = output_path
 
     logger.setLevel(log_level)
     handler_stream = logging.StreamHandler(sys.stdout)
@@ -83,18 +84,18 @@ def setup_logging(
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     handler_stream.setFormatter(formatter)
 
-    if os.path.exists(output_path):
-        os.remove(output_path)
-    handler_file = logging.FileHandler(output_path)
-    handler_file.setLevel(log_level)
-    formatter_file = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-    handler_file.setFormatter(formatter_file)
+    # if os.path.exists(output_path):
+    #     os.remove(output_path)
+    # handler_file = logging.FileHandler(output_path)
+    # handler_file.setLevel(log_level)
+    # formatter_file = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+    # handler_file.setFormatter(formatter_file)
 
     if update:
         logger.handlers.clear()
 
     logger.addHandler(handler_stream)
-    logger.addHandler(handler_file)
+    # logger.addHandler(handler_file)
 
 
 def setup_otlp_env_variables(entity_id: str | None = None) -> None:
@@ -191,50 +192,55 @@ def store_result(result: ChatCompletion, output_path: Path) -> None:
 
 def main() -> Any:
     # During failures logs will be dumped to the default output log path
-    setup_logging(logger=root, log_level=logging.INFO)
+    # setup_logging(logger=root, log_level=logging.INFO)
+    with open(DEFAULT_OUTPUT_LOG_PATH, "w") as f:
+        sys.stdout = f
+        sys.stderr = f
+        print("Parsing args")
+        args = argparse_args()
+        output_log_path = str(
+            Path(args.output_path + ".log")
+            if args.output_path
+            else DEFAULT_OUTPUT_LOG_PATH
+        )
+
     try:
-        root.info("Parsing args")
-        try:
-            # Attempt to parse arguments and setup logging
-            args = argparse_args()
+        with open(output_log_path, "a") as f:
+            sys.stdout = f
+            sys.stderr = f
+            try:
+                root.info("Setting up logging")
+                setup_logging(
+                    logger=root,
+                    output_path=output_log_path,
+                    log_level=logging.INFO,
+                    update=True,
+                )
+            except Exception as e:
+                root.exception(f"Error parsing arguments: {e}")
+                sys.exit(1)
 
-            root.info("Setting up logging")
-            output_log_path = str(
-                Path(args.output_path + ".log")
-                if args.output_path
-                else DEFAULT_OUTPUT_LOG_PATH
+            # Parse input to fail early if it's not valid
+            chat_completion = construct_prompt(args.chat_completion)
+            default_headers = json.loads(args.default_headers)
+            root.info(f"Chat completion: {chat_completion}")
+            root.info(f"Default headers: {default_headers}")
+
+            # Setup tracing
+            root.info("Setting up tracing")
+            setup_otlp_env_variables(args.otlp_entity_id)
+
+            root.info(f"Executing request in directory {args.custom_model_dir}")
+            result = execute_drum(
+                chat_completion=chat_completion,
+                default_headers=default_headers,
+                custom_model_dir=args.custom_model_dir,
             )
-            setup_logging(
-                logger=root,
-                output_path=output_log_path,
-                log_level=logging.INFO,
-                update=True,
+            root.info(f"Result: {result}")
+            store_result(
+                result,
+                Path(args.output_path) if args.output_path else DEFAULT_OUTPUT_JSON_PATH,
             )
-        except Exception as e:
-            root.exception(f"Error parsing arguments: {e}")
-            sys.exit(1)
-
-        # Parse input to fail early if it's not valid
-        chat_completion = construct_prompt(args.chat_completion)
-        default_headers = json.loads(args.default_headers)
-        root.info(f"Chat completion: {chat_completion}")
-        root.info(f"Default headers: {default_headers}")
-
-        # Setup tracing
-        root.info("Setting up tracing")
-        setup_otlp_env_variables(args.otlp_entity_id)
-
-        root.info(f"Executing request in directory {args.custom_model_dir}")
-        result = execute_drum(
-            chat_completion=chat_completion,
-            default_headers=default_headers,
-            custom_model_dir=args.custom_model_dir,
-        )
-        root.info(f"Result: {result}")
-        store_result(
-            result,
-            Path(args.output_path) if args.output_path else DEFAULT_OUTPUT_JSON_PATH,
-        )
     except Exception as e:
         root.exception(f"Error executing agent: {e}")
 
