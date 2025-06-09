@@ -253,7 +253,7 @@ class MyAgent:
                     print(
                         "🛠️  Planning to use tools:",
                         [call.tool_name for call in event.tool_calls],
-                        flush=True
+                        flush=True,
                     )
             elif isinstance(event, ToolCallResult):
                 print(f"🔧 Tool Result ({event.tool_name}):", flush=True)
