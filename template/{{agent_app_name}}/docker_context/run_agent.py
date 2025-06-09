@@ -36,7 +36,7 @@ root = logging.getLogger()
 CURRENT_DIR = Path(__file__).parent
 DEFAULT_OUTPUT_LOG_PATH = CURRENT_DIR / "output.log"
 DEFAULT_OUTPUT_JSON_PATH = CURRENT_DIR / "output.json"
-ENABLE_STDOUT_REDIRECT = os.environ.get("ENABLE_STDOUT_REDIRECT", 0).lower() in [1, "1", "true", "True"]
+ENABLE_STDOUT_REDIRECT = str(os.environ.get("ENABLE_STDOUT_REDIRECT", 0)).lower() in [1, "1", "true", "True"]
 
 
 def argparse_args() -> argparse.Namespace:
