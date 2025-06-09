@@ -236,7 +236,7 @@ def main() -> Any:
         else:
             setup_logging(logger=root, log_level=logging.INFO)
 
-            print("Parsing args")
+            root.info("Parsing args")
             args = argparse_args()
             output_log_path = str(
                 Path(args.output_path + ".log")
