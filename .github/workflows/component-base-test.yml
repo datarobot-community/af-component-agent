@@ -135,7 +135,11 @@ jobs:
           fi
 
           # Run the CLI command with a sample user prompt
-          task agent_test:agent:cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}' > ./agent/output.log
+          task agent_test:agent:cli -- \
+            execute \
+            --user_prompt '{"topic": "Artificial Intelligence"}' \
+            > ./agent/output.log 2>&1
+          
           if cat ./agent/output.log | grep -q '"content": "success"'; then
             echo "Test passed: cli.py returned success"
           else
