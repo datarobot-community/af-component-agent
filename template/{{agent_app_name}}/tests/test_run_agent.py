@@ -763,7 +763,12 @@ class TestMainStdoutRedirect:
     @patch("builtins.open")
     @patch("run_agent.root")
     def test_main_stdout_redirect(
-        self, mock_root, mock_open, mock_setup_logging, mock_run_agent_procedure, mock_argparse_args
+        self,
+        mock_root,
+        mock_open,
+        mock_setup_logging,
+        mock_run_agent_procedure,
+        mock_argparse_args,
     ):
         # GIVEN valid input arguments
         mock_args = MagicMock()
@@ -780,10 +785,12 @@ class TestMainStdoutRedirect:
         mock_argparse_args.assert_called_once()
 
         # THEN setup_logging was called twice
-        mock_setup_logging.assert_has_calls([
-            call(logger=mock_root, log_level=logging.INFO),
-            call(logger=mock_root, log_level=logging.INFO),
-        ])
+        mock_setup_logging.assert_has_calls(
+            [
+                call(logger=mock_root, log_level=logging.INFO),
+                call(logger=mock_root, log_level=logging.INFO),
+            ]
+        )
 
         # THEN run_agent_procedure was called with the parsed arguments
         mock_run_agent_procedure.assert_called_once_with(mock_args)
@@ -801,7 +808,12 @@ class TestMainStdoutRedirect:
     @patch("builtins.open")
     @patch("run_agent.root")
     def test_main_stdout_redirect_output_path_not_set(
-        self, mock_root, mock_open, mock_setup_logging, mock_run_agent_procedure, mock_argparse_args
+        self,
+        mock_root,
+        mock_open,
+        mock_setup_logging,
+        mock_run_agent_procedure,
+        mock_argparse_args,
     ):
         # GIVEN valid input arguments
         mock_args = MagicMock()
@@ -818,10 +830,12 @@ class TestMainStdoutRedirect:
         mock_argparse_args.assert_called_once()
 
         # THEN setup_logging was called twice
-        mock_setup_logging.assert_has_calls([
-            call(logger=mock_root, log_level=logging.INFO),
-            call(logger=mock_root, log_level=logging.INFO),
-        ])
+        mock_setup_logging.assert_has_calls(
+            [
+                call(logger=mock_root, log_level=logging.INFO),
+                call(logger=mock_root, log_level=logging.INFO),
+            ]
+        )
 
         # THEN run_agent_procedure was called with the parsed arguments
         mock_run_agent_procedure.assert_called_once_with(mock_args)
@@ -839,7 +853,12 @@ class TestMainStdoutRedirect:
     @patch("builtins.open")
     @patch("run_agent.root")
     def test_main_stdout_redirect_argparse_exception(
-        self, mock_root, mock_open, mock_setup_logging, mock_run_agent_procedure, mock_argparse_args
+        self,
+        mock_root,
+        mock_open,
+        mock_setup_logging,
+        mock_run_agent_procedure,
+        mock_argparse_args,
     ):
         # GIVEN argparse_args raises an exception
         mock_argparse_args.side_effect = Exception("Test exception 1")
@@ -855,7 +874,9 @@ class TestMainStdoutRedirect:
         mock_argparse_args.assert_called_once()
 
         # THEN setup_logging was called once
-        mock_setup_logging.assert_called_once_with(logger=mock_root, log_level=logging.INFO)
+        mock_setup_logging.assert_called_once_with(
+            logger=mock_root, log_level=logging.INFO
+        )
 
         # THEN run_agent_procedure was not called
         mock_run_agent_procedure.assert_not_called()
@@ -877,7 +898,12 @@ class TestMainStdoutRedirect:
     @patch("builtins.open")
     @patch("run_agent.root")
     def test_main_stdout_redirect_run_agent_procedure_exception(
-        self, mock_root, mock_open, mock_setup_logging, mock_run_agent_procedure, mock_argparse_args
+        self,
+        mock_root,
+        mock_open,
+        mock_setup_logging,
+        mock_run_agent_procedure,
+        mock_argparse_args,
     ):
         # GIVEN valid input arguments
         mock_args = MagicMock()
@@ -898,10 +924,12 @@ class TestMainStdoutRedirect:
         mock_argparse_args.assert_called_once()
 
         # THEN setup_logging was called twice
-        mock_setup_logging.assert_has_calls([
-            call(logger=mock_root, log_level=logging.INFO),
-            call(logger=mock_root, log_level=logging.INFO),
-        ])
+        mock_setup_logging.assert_has_calls(
+            [
+                call(logger=mock_root, log_level=logging.INFO),
+                call(logger=mock_root, log_level=logging.INFO),
+            ]
+        )
 
         # THEN run_agent_procedure was called with the parsed arguments
         mock_run_agent_procedure.assert_called_once_with(mock_args)
