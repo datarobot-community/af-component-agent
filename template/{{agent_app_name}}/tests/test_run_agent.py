@@ -598,7 +598,6 @@ class TestExecuteDrum:
 
 
 class TestRunAgentProcedure:
-    @patch("run_agent.setup_logging")
     @patch("run_agent.construct_prompt")
     @patch("run_agent.execute_drum")
     @patch("run_agent.store_result")
@@ -609,7 +608,6 @@ class TestRunAgentProcedure:
         mock_store_result,
         mock_execute_drum,
         mock_construct_prompt,
-        mock_setup_logging,
     ):
         # GIVEN simple input arguments
         mock_args = MagicMock()
@@ -635,9 +633,6 @@ class TestRunAgentProcedure:
         # WHEN main is called
         run_agent_procedure(mock_args)
 
-        # THEN setup_logging was called with correct parameters
-        mock_setup_logging.assert_called_once_with(logger=root, log_level=logging.INFO)
-
         # THEN setup_otel was called with args
         mock_setup_otel.assert_called_once_with(mock_args)
 
@@ -658,10 +653,8 @@ class TestRunAgentProcedure:
     @patch("run_agent.execute_drum")
     @patch("run_agent.store_result")
     @patch("run_agent.setup_otel")
-    @patch("run_agent.setup_logging")
     def test_run_agent_without_custom_model_dir(
         self,
-        mock_setup_logging,
         mock_setup_otel,
         mock_store_result,
         mock_execute_drum,
@@ -690,9 +683,6 @@ class TestRunAgentProcedure:
 
         # WHEN main is called
         run_agent_procedure(mock_args)
-
-        # THEN setup_logging was called with correct parameters
-        mock_setup_logging.assert_called_once_with(logger=root, log_level=logging.INFO)
 
         # THEN setup_otel was called with args
         mock_setup_otel.assert_called_once_with(mock_args)
