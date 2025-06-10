@@ -247,7 +247,6 @@ def store_result(result: ChatCompletion, output_path: Path) -> None:
 
 
 def run_agent_procedure(args: Any) -> None:
-    setup_logging(logger=root, log_level=logging.INFO)
     # Parse input to fail early if it's not valid
     chat_completion = construct_prompt(args.chat_completion)
     default_headers = json.loads(args.default_headers)
@@ -277,6 +276,7 @@ def main_stdout_redirect() -> Any:
     This is used to ensure that logs are written to a file even if the process fails.
     Mainly used in when running the agent in a codespace.
     """
+    setup_logging(logger=root, log_level=logging.INFO)
     with open(DEFAULT_OUTPUT_LOG_PATH, "w") as f:
         sys.stdout = f
         sys.stderr = f
@@ -309,6 +309,7 @@ def main_stdout_redirect() -> Any:
 
 
 def main() -> Any:
+    setup_logging(logger=root, log_level=logging.INFO)
     root.info("Parsing args")
     args = argparse_args()
     run_agent_procedure(args)
