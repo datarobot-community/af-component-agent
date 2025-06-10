@@ -53,6 +53,7 @@ tasks:
     desc: 🔨[{{ agent_app_name }}] Run the development server
     env:
       TARGET_NAME: response
+      FLASK_DEBUG: 1
     cmds:
       - echo "Running development server on http://localhost:8842"
       - uv run drum server -cd custom_model --address localhost:8842 --target-type textgeneration
