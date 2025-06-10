@@ -72,9 +72,7 @@ def execute(environment: Any, user_prompt: str) -> None:
 @pass_environment
 @click.option("--user_prompt", help="Input to use for predict.")
 @click.option("--deployment_id", help="ID for the deployment.")
-def execute_deployment(
-    environment: Any, user_prompt: str, deployment_id: str
-) -> None:
+def execute_deployment(environment: Any, user_prompt: str, deployment_id: str) -> None:
     """Query a deployed model using the command line for OpenAI completions.
 
     Example:

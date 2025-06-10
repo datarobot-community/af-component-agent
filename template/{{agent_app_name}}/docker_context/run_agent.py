@@ -18,7 +18,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any, cast
+from typing import Any
 from urllib.parse import urlparse, urlunparse
 
 import requests
@@ -29,15 +29,15 @@ from openai.types.chat import ChatCompletion
 from openai.types.chat.completion_create_params import (
     CompletionCreateParamsBase,
 )
-from pydantic import TypeAdapter
 from opentelemetry import trace
-from opentelemetry.trace import Span
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import SimpleSpanProcessor
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from opentelemetry.propagate import inject
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.trace import Span, use_span
+from pydantic import TypeAdapter
 
-# Set up tracer provider and exporter
+# Set up tracer provider
 trace.set_tracer_provider(TracerProvider())
 tracer = trace.get_tracer(__name__)
 
@@ -78,10 +78,16 @@ def argparse_args() -> argparse.Namespace:
         "--output_path", type=str, default=None, help="json output file location"
     )
     parser.add_argument(
-        "--otel_entity_id", type=str, default=None, help="Entity ID, necessary for OpenTelemetry tracing authorization in DataRobot. Format: <entity_type>-<entity_id>"
+        "--otel_entity_id",
+        type=str,
+        default=None,
+        help="Entity ID, necessary for OpenTelemetry tracing authorization in DataRobot. Format: <entity_type>-<entity_id>",
     )
     parser.add_argument(
-        "--otel_attributes", type=str, default=None, help="Custom attributes for tracing. Should be a JSON dictionary."
+        "--otel_attributes",
+        type=str,
+        default=None,
+        help="Custom attributes for tracing. Should be a JSON dictionary.",
     )
     args = parser.parse_args()
     return args
@@ -91,7 +97,6 @@ def setup_logging(
     logger: logging.Logger,
     log_level: int = logging.INFO,
 ) -> None:
-    log_level = cast(int, log_level)
     logger.setLevel(log_level)
 
     handler_stream = logging.StreamHandler()
@@ -101,7 +106,7 @@ def setup_logging(
     logger.addHandler(handler_stream)
 
 
-def setup_otlp_endpoint_env_variables(entity_id: str) -> None:
+def setup_otel_env_variables(entity_id: str) -> None:
     # do not override if already set
     if os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") or os.environ.get(
         "OTEL_EXPORTER_OTLP_HEADERS"
@@ -122,14 +127,55 @@ def setup_otlp_endpoint_env_variables(entity_id: str) -> None:
     parsed_url = urlparse(datarobot_endpoint)
     stripped_url = (parsed_url.scheme, parsed_url.netloc, "otel", "", "", "")
     otlp_endpoint = urlunparse(stripped_url)
-    otlp_headers = f"X-DataRobot-Api-Key={datarobot_api_token},X-DataRobot-Entity-Id={entity_id}"
+    otlp_headers = (
+        f"X-DataRobot-Api-Key={datarobot_api_token},X-DataRobot-Entity-Id={entity_id}"
+    )
     os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = otlp_endpoint
     os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = otlp_headers
-    root.info(f"Using OTEL_EXPORTER_OTLP_ENDPOINT: {otlp_endpoint} with X-DataRobot-Entity-Id {entity_id}")
+    root.info(
+        f"Using OTEL_EXPORTER_OTLP_ENDPOINT: {otlp_endpoint} with X-DataRobot-Entity-Id {entity_id}"
+    )
 
+
+def setup_otel_exporter() -> None:
     otlp_exporter = OTLPSpanExporter()
-    span_processor = SimpleSpanProcessor(otlp_exporter)
-    trace.get_tracer_provider().add_span_processor(span_processor)
+    span_processor = SimpleSpanProcessor(otlp_exporter)  # Do not use batch processor
+    trace.get_tracer_provider().add_span_processor(span_processor)  # type: ignore[attr-defined]
+
+
+def set_otel_attributes(span: Span, attributes: str) -> None:
+    try:
+        attributes_dict = json.loads(attributes)
+    except Exception as e:
+        root.error(f"Error parsing OTEL attributes: {e}")
+        return
+
+    for key, value in attributes_dict.items():
+        span.set_attribute(key, value)
+
+
+def setup_otel(args: Any) -> Span:
+    """
+    Setup OTEL tracing and return a span to be parent for the agent run.
+    """
+    # Setup tracing
+    if args.otel_entity_id:
+        root.info("Setting up tracing")
+        setup_otel_env_variables(args.otel_entity_id)
+    else:
+        root.info("No OTEL entity ID provided, skipping tracing setup")
+
+    if "OTEL_EXPORTER_OTLP_ENDPOINT" in os.environ:
+        root.info("Setting up OTEL exporter")
+        setup_otel_exporter()
+
+    span = tracer.start_span("run_agent")
+
+    if args.otel_attributes:
+        root.info("Setting up custom OTEL attributes")
+        set_otel_attributes(span, args.otel_attributes)
+
+    return span
 
 
 def execute_drum(
@@ -181,17 +227,6 @@ def execute_drum(
     return completion
 
 
-def set_otel_attributes(span: Span, attributes: str) -> None:
-    try:
-        attributes_dict = json.loads(attributes)
-    except Exception as e:
-        root.error(f"Error parsing OTEL attributes: {e}")
-        return
-
-    for key, value in attributes_dict.items():
-        span.set_attribute(key, value)
-
-
 def construct_prompt(chat_completion: str) -> CompletionCreateParamsBase:
     chat_completion_dict = json.loads(chat_completion)
     model = chat_completion_dict.get("model")
@@ -211,26 +246,17 @@ def store_result(result: ChatCompletion, output_path: Path) -> None:
         fp.write(result.to_json())
 
 
-def run_agent(args: Any) -> None:
+def run_agent_procedure(args: Any) -> None:
+    setup_logging(logger=root, log_level=logging.INFO)
     # Parse input to fail early if it's not valid
     chat_completion = construct_prompt(args.chat_completion)
     default_headers = json.loads(args.default_headers)
     root.info(f"Chat completion: {chat_completion}")
-    root.info(f"Default headers: {default_headers}")
+    root.info(f"Default headers keys: {default_headers.keys()}")
 
-    # Setup tracing
-    if args.otel_entity_id:
-        root.info("Setting up tracing")
-        setup_otlp_endpoint_env_variables(args.otel_entity_id)
-    else:
-        root.info("No OTEL entity ID provided, skipping tracing setup")
-
-    with tracer.start_as_current_span("run_agent") as span:
-        root.info(f"Trace id: {span.context.trace_id:32x}")
-
-        if args.otel_attributes:
-            root.info("Setting up custom OTEL attributes")
-            set_otel_attributes(span, args.otel_attributes)
+    span = setup_otel(args)
+    with use_span(span, end_on_exit=True):
+        root.info(f"Trace id: {span.context.trace_id:32x}")  # type: ignore[attr-defined]
 
         root.info(f"Executing request in directory {args.custom_model_dir}")
         result = execute_drum(
@@ -245,39 +271,50 @@ def run_agent(args: Any) -> None:
         )
 
 
-def main() -> Any:
-    # During failures logs will be dumped to the default output log path
-    try:
-        if ENABLE_STDOUT_REDIRECT:
-            with open(DEFAULT_OUTPUT_LOG_PATH, "w") as f:
-                sys.stdout = f
-                sys.stderr = f
+def main_stdout_redirect() -> Any:
+    """
+    This is a wrapper around the main function that redirects stdout and stderr to a file.
+    This is used to ensure that logs are written to a file even if the process fails.
+    Mainly used in when running the agent in a codespace.
+    """
+    with open(DEFAULT_OUTPUT_LOG_PATH, "w") as f:
+        sys.stdout = f
+        sys.stderr = f
 
-                print("Parsing args", flush=True)
-                args = argparse_args()
-                output_log_path = str(
-                    Path(args.output_path + ".log")
-                    if args.output_path
-                    else DEFAULT_OUTPUT_LOG_PATH
-                )
-        else:
-            setup_logging(logger=root, log_level=logging.INFO)
-
-            root.info("Parsing args")
+        print("Parsing args")
+        try:
             args = argparse_args()
-    except Exception as e:
-        root.exception(f"Error parsing arguments: {e}")
-        raise
+        except Exception as e:
+            root.exception(f"Error parsing arguments: {e}")
+            raise
+        finally:
+            # flush stdout and stderr to ensure all logs are written
+            f.flush()
 
-    try:
-        if ENABLE_STDOUT_REDIRECT:
-            with open(output_log_path, "a") as f:
-                sys.stdout = f
-                sys.stderr = f
-        run_agent(args)
-    except Exception as e:
-        root.exception(f"Error executing agent: {e}")
-        raise
+    output_log_path = str(
+        Path(args.output_path + ".log") if args.output_path else DEFAULT_OUTPUT_LOG_PATH
+    )
+    with open(output_log_path, "a") as f:
+        sys.stdout = f
+        sys.stderr = f
+
+        try:
+            run_agent_procedure(args)
+        except Exception as e:
+            root.exception(f"Error executing agent: {e}")
+            raise
+        finally:
+            # flush stdout and stderr to ensure all logs are written
+            f.flush()
+
+
+def main() -> Any:
+    root.info("Parsing args")
+    args = argparse_args()
+    run_agent_procedure(args)
+    # flush stdout and stderr to ensure all output is returned to the caller
+    sys.stdout.flush()
+    sys.stderr.flush()
 
 
 # Agent execution
@@ -285,13 +322,13 @@ if __name__ == "__main__":
     stdout = sys.stdout
     stderr = sys.stderr
     try:
-        main()
+        if ENABLE_STDOUT_REDIRECT:
+            main_stdout_redirect()
+        else:
+            main()
     except Exception:
         pass
     finally:
-        # flush stdout and stderr to ensure all logs are written
-        sys.stdout.flush()
-        sys.stderr.flush()
         # Return to original stdout and stderr otherwise the kernel will fail to flush and
         # hang
         sys.stdout = stdout

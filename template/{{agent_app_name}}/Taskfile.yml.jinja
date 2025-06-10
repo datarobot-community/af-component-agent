@@ -7,7 +7,7 @@ tasks:
     cmds:
       - echo "Updating local dependencies"
       - uv sync --all-extras
-      - uv pip uninstall litellm && uv pip install litellm>=1.72.1
+      - uv pip uninstall litellm && uv pip install "litellm>=1.72.1"
       - cd custom_model && uv pip install -r requirements.txt
     silent: true
     aliases:
@@ -15,7 +15,6 @@ tasks:
   lint:
     desc: 🧹 [{{ agent_app_name }}] Lint the codebase
     cmds:
-      - task: req
       - echo "Linting the codebase"
       - uv run ruff check . --fix
       - uv run ruff format .
@@ -25,7 +24,6 @@ tasks:
   lint-check:
     desc: 🧹 [{{ agent_app_name }}] Check whether the codebase is linted
     cmds:
-      - task: req
       - echo "Checking linting"
       - uv run ruff format --check --diff .
       - uv run ruff check --diff .

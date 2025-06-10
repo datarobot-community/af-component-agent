@@ -17,21 +17,40 @@ import logging
 import os
 import tempfile
 from pathlib import Path
-from unittest.mock import ANY, MagicMock, call, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.trace import Span
 from pydantic import ValidationError
 
 from run_agent import (
+    DEFAULT_OUTPUT_JSON_PATH,
     DEFAULT_OUTPUT_LOG_PATH,
     argparse_args,
     construct_prompt,
     execute_drum,
     main,
+    main_stdout_redirect,
+    root,
+    run_agent_procedure,
+    set_otel_attributes,
     setup_logging,
-    setup_otlp_env_variables,
+    setup_otel,
+    setup_otel_env_variables,
+    setup_otel_exporter,
     store_result,
+    tracer,
 )
+
+
+@pytest.fixture
+def tempdir_and_cleanup():
+    with tempfile.TemporaryDirectory() as tempdir:
+        yield Path(tempdir)
+    # Also remove the default output log path
+    if os.path.exists(DEFAULT_OUTPUT_LOG_PATH):
+        os.remove(DEFAULT_OUTPUT_LOG_PATH)
 
 
 class TestArgparseArgs:
@@ -50,8 +69,10 @@ class TestArgparseArgs:
                 "/path/to/model",
                 "--output_path",
                 "/path/to/output",
-                "--otlp_entity_id",
+                "--otel_entity_id",
                 "test-entity-id",
+                "--otel_attributes",
+                '{"key": "value"}',
             ],
         ):
             args = argparse_args()
@@ -64,7 +85,8 @@ class TestArgparseArgs:
             assert args.default_headers == '{"X-API-Key": "test-key"}'
             assert args.custom_model_dir == "/path/to/model"
             assert args.output_path == "/path/to/output"
-            assert args.otlp_entity_id == "test-entity-id"
+            assert args.otel_entity_id == "test-entity-id"
+            assert args.otel_attributes == '{"key": "value"}'
 
     def test_argparse_args_partial_values(self):
         """Test that partial arguments work correctly with others taking default values."""
@@ -86,7 +108,8 @@ class TestArgparseArgs:
             assert args.default_headers == "{}"  # default
             assert args.custom_model_dir == "/path/to/model"
             assert args.output_path is None
-            assert args.otlp_entity_id is None
+            assert args.otel_entity_id is None
+            assert args.otel_attributes is None
 
 
 class TestSetupLogging:
@@ -124,7 +147,11 @@ class TestSetupLogging:
         assert stream_formatter_call._fmt == "%(asctime)s - %(levelname)s - %(message)s"
 
 
-class TestSetupOtlpEnvVariables:
+class TestSetupOtelEnvVariables:
+    @pytest.fixture
+    def entity_id(self):
+        return "test-entity-id"
+
     @pytest.mark.parametrize(
         "headers, endpoint",
         [
@@ -133,8 +160,8 @@ class TestSetupOtlpEnvVariables:
             (None, "some-endpoint"),
         ],
     )
-    def test_setup_otlp_env_variables_does_not_override_existing_variables(
-        self, headers, endpoint
+    def test_setup_otel_env_variables_does_not_override_existing_variables(
+        self, headers, endpoint, entity_id
     ):
         # GIVEN Datarobot os environment variables
         os_environ = {
@@ -147,8 +174,8 @@ class TestSetupOtlpEnvVariables:
         if endpoint:
             os_environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = endpoint
         with patch.dict(os.environ, os_environ, clear=True):
-            # WHEN setup_otlp_env_variables is called
-            setup_otlp_env_variables()
+            # WHEN setup_otel_env_variables is called
+            setup_otel_env_variables(entity_id)
 
             # THEN the environment variables are not overridden
             assert os.environ.get("OTEL_EXPORTER_OTLP_HEADERS") == headers
@@ -163,17 +190,18 @@ class TestSetupOtlpEnvVariables:
             (
                 "https://app.datarobot.com/api/v2",
                 "test-api-key",
-                "X-DataRobot-Api-Key=test-api-key",
+                "X-DataRobot-Api-Key=test-api-key,X-DataRobot-Entity-Id=test-entity-id",
                 "https://app.datarobot.com/otel",
             ),
         ],
     )
-    def test_setup_otlp_env_variables(
+    def test_setup_otel_env_variables(
         self,
         datarobot_endpoint,
         datarobot_api_token,
         expected_headers,
         expected_endpoint,
+        entity_id,
     ):
         # GIVEN os environment variables
         os_environ = {}
@@ -182,32 +210,203 @@ class TestSetupOtlpEnvVariables:
         if datarobot_api_token:
             os_environ["DATAROBOT_API_TOKEN"] = datarobot_api_token
         with patch.dict(os.environ, os_environ, clear=True):
-            # WHEN setup_otlp_env_variables is called
-            setup_otlp_env_variables()
+            # WHEN setup_otel_env_variables is called
+            setup_otel_env_variables(entity_id)
 
             # THEN the environment variables are set
             assert os.environ.get("OTEL_EXPORTER_OTLP_HEADERS") == expected_headers
             assert os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") == expected_endpoint
 
-    def test_setup_otlp_env_variables_with_entity_id(self):
-        # GIVEN os environment variables
-        os_environ = {
-            "DATAROBOT_ENDPOINT": "https://app.datarobot.com/api/v2",
-            "DATAROBOT_API_TOKEN": "test-api-key",
-        }
-        with patch.dict(os.environ, os_environ, clear=True):
-            # WHEN setup_otlp_env_variables is called with an entity id
-            setup_otlp_env_variables(entity_id="test-entity-id")
 
-            # THEN the environment variables are set
-            assert (
-                os.environ["OTEL_EXPORTER_OTLP_HEADERS"]
-                == "X-DataRobot-Api-Key=test-api-key,X-DataRobot-Entity-Id=test-entity-id"
-            )
-            assert (
-                os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"]
-                == "https://app.datarobot.com/otel"
-            )
+class TestSetupOtelExporter:
+    def test_setup_otel_exporter(self):
+        # WHEN setup_otel_exporter is called
+        setup_otel_exporter()
+
+        # THEN the tracer provider has a simple span processor
+        # The first is still the batch processor but it does not matter
+        assert len(tracer.span_processor._span_processors) == 2
+        assert isinstance(
+            tracer.span_processor._span_processors[1], SimpleSpanProcessor
+        )
+
+
+class TestSetOtelAttributes:
+    def test_set_otel_attributes(self):
+        # GIVEN a span and a string of attributes
+        attributes = '{"key": "value"}'
+        # WHEN set_otel_attributes is called
+        span = Mock()
+        set_otel_attributes(span, attributes)
+
+        # THEN the span has the attribute
+        span.set_attribute.assert_called_once_with("key", "value")
+
+    def test_set_otel_attributes_invalid_json(self):
+        # GIVEN a span and an invalid JSON string
+        attributes = "invalid json"
+        span = Mock()
+
+        # WHEN set_otel_attributes is called
+        set_otel_attributes(span, attributes)
+
+        # THEN no exception is raised
+
+        # THEN the span does not have the attribute
+        span.set_attribute.assert_not_called()
+
+
+class TestSetupOtel:
+    @patch("run_agent.setup_otel_env_variables")
+    @patch("run_agent.setup_otel_exporter")
+    @patch("run_agent.set_otel_attributes")
+    def test_setup_otel_all_values(
+        self,
+        mock_set_otel_attributes,
+        mock_setup_otel_exporter,
+        mock_setup_otel_env_variables,
+    ):
+        # GIVEN a mock args with otel_entity_id and otel_attributes
+        mock_args = MagicMock()
+        mock_args.otel_entity_id = "test-entity-id"
+        mock_args.otel_attributes = '{"key": "value"}'
+
+        # GIVEN the environment variables are set
+        with patch.dict(
+            os.environ,
+            {"OTEL_EXPORTER_OTLP_ENDPOINT": "http://localhost:4317"},
+            clear=True,
+        ):
+            # WHEN setup_otel is called
+            span = setup_otel(mock_args)
+
+        # THEN the span is Span
+        assert isinstance(span, Span)
+
+        # THEN setup_otel_env_variables was called with the correct parameters
+        mock_setup_otel_env_variables.assert_called_once_with("test-entity-id")
+        mock_setup_otel_exporter.assert_called_once()
+        mock_set_otel_attributes.assert_called_once_with(span, '{"key": "value"}')
+
+    @patch("run_agent.setup_otel_env_variables")
+    @patch("run_agent.setup_otel_exporter")
+    @patch("run_agent.set_otel_attributes")
+    def test_setup_otel_no_otel_context(
+        self,
+        mock_set_otel_attributes,
+        mock_setup_otel_exporter,
+        mock_setup_otel_env_variables,
+    ):
+        # GIVEN a mock args with no otel_entity_id and no otel_attributes
+        mock_args = MagicMock()
+        mock_args.otel_entity_id = None
+        mock_args.otel_attributes = None
+
+        # GIVEN the environment variables are not set
+        with patch.dict(os.environ, {}, clear=True):
+            # WHEN setup_otel is called
+            span = setup_otel(mock_args)
+
+        # THEN the span is Span
+        assert isinstance(span, Span)
+
+        # THEN setup_otel_env_variables was not called
+        mock_setup_otel_env_variables.assert_not_called()
+        # THEN setup_otel_exporter was not called
+        mock_setup_otel_exporter.assert_not_called()
+        # THEN set_otel_attributes was not called
+        mock_set_otel_attributes.assert_not_called()
+
+    @patch("run_agent.setup_otel_env_variables")
+    @patch("run_agent.setup_otel_exporter")
+    @patch("run_agent.set_otel_attributes")
+    def test_setup_otel_otlp_endpoint_set(
+        self,
+        mock_set_otel_attributes,
+        mock_setup_otel_exporter,
+        mock_setup_otel_env_variables,
+    ):
+        # GIVEN a mock args with no otel_entity_id and no otel_attributes
+        mock_args = MagicMock()
+        mock_args.otel_entity_id = None
+        mock_args.otel_attributes = None
+
+        # GIVEN the environment variables are set
+        with patch.dict(
+            os.environ,
+            {"OTEL_EXPORTER_OTLP_ENDPOINT": "http://localhost:4317"},
+            clear=True,
+        ):
+            # WHEN setup_otel is called
+            span = setup_otel(mock_args)
+
+        # THEN the span is Span
+        assert isinstance(span, Span)
+
+        # THEN setup_otel_env_variables was not called
+        mock_setup_otel_env_variables.assert_not_called()
+        # THEN setup_otel_exporter was called
+        mock_setup_otel_exporter.assert_called_once()
+        # THEN set_otel_attributes was not called
+        mock_set_otel_attributes.assert_not_called()
+
+    @patch("run_agent.setup_otel_env_variables")
+    @patch("run_agent.setup_otel_exporter")
+    @patch("run_agent.set_otel_attributes")
+    def test_setup_otel_otlp_endpoint_not_set(
+        self,
+        mock_set_otel_attributes,
+        mock_setup_otel_exporter,
+        mock_setup_otel_env_variables,
+    ):
+        # GIVEN a mock args with otel_entity_id and no otel_attributes
+        mock_args = MagicMock()
+        mock_args.otel_entity_id = "test-entity-id"
+        mock_args.otel_attributes = None
+
+        # GIVEN the environment variables are set
+        with patch.dict(os.environ, {}, clear=True):
+            # WHEN setup_otel is called
+            span = setup_otel(mock_args)
+
+        # THEN the span is Span
+        assert isinstance(span, Span)
+
+        # THEN setup_otel_env_variables was called
+        mock_setup_otel_env_variables.assert_called_once_with("test-entity-id")
+        # THEN setup_otel_exporter was not called
+        mock_setup_otel_exporter.assert_not_called()
+        # THEN set_otel_attributes was not called
+        mock_set_otel_attributes.assert_not_called()
+
+    @patch("run_agent.setup_otel_env_variables")
+    @patch("run_agent.setup_otel_exporter")
+    @patch("run_agent.set_otel_attributes")
+    def test_setup_otel_otlp_endpoint_otel_attributes_set(
+        self,
+        mock_set_otel_attributes,
+        mock_setup_otel_exporter,
+        mock_setup_otel_env_variables,
+    ):
+        # GIVEN a mock args with no otel_entity_id and otel_attributes
+        mock_args = MagicMock()
+        mock_args.otel_entity_id = None
+        mock_args.otel_attributes = '{"key": "value"}'
+
+        # GIVEN the environment variables are set
+        with patch.dict(os.environ, {}, clear=True):
+            # WHEN setup_otel is called
+            span = setup_otel(mock_args)
+
+        # THEN the span is Span
+        assert isinstance(span, Span)
+
+        # THEN setup_otel_env_variables was called
+        mock_setup_otel_env_variables.assert_not_called()
+        # THEN setup_otel_exporter was not called
+        mock_setup_otel_exporter.assert_not_called()
+        # THEN set_otel_attributes was called
+        mock_set_otel_attributes.assert_called_once_with(span, '{"key": "value"}')
 
 
 class TestConstructPrompt:
@@ -265,10 +464,10 @@ class TestExecuteDrum:
     @patch("run_agent.DrumServerRun")
     @patch("run_agent.requests.get")
     @patch("run_agent.OpenAI")
-    @patch("run_agent.root")
+    @patch("run_agent.inject")
     def test_execute_drum_success(
         self,
-        mock_root,
+        mock_inject,
         mock_openai,
         mock_requests_get,
         mock_drum_server,
@@ -306,6 +505,7 @@ class TestExecuteDrum:
             wait_for_server_timeout=360,
             port=8191,
             stream_output=True,
+            max_workers=2,
         )
 
         # Verify server verification was performed
@@ -324,16 +524,19 @@ class TestExecuteDrum:
             messages=[{"role": "user", "content": "Hello"}]
         )
 
+        # Verify inject was called with correct parameters
+        mock_inject.assert_called_once_with({"X-Custom": "value"})
+
         # Verify result
         assert result == "result"
 
     @patch("run_agent.DrumServerRun")
     @patch("run_agent.requests.get")
     @patch("run_agent.OpenAI")
-    @patch("run_agent.root")
+    @patch("run_agent.inject")
     def test_execute_drum_default_output_path(
         self,
-        mock_root,
+        mock_inject,
         mock_openai,
         mock_requests_get,
         mock_drum_server,
@@ -358,11 +561,15 @@ class TestExecuteDrum:
             custom_model_dir=Path("/path/to/model"),
         )
 
+        # Verify inject was called with correct parameters
+        mock_inject.assert_called_once_with({})
+
     @patch("run_agent.DrumServerRun")
     @patch("run_agent.requests.get")
     @patch("run_agent.root")
+    @patch("run_agent.inject")
     def test_execute_drum_server_failure(
-        self, mock_root, mock_requests_get, mock_drum_server
+        self, mock_inject, mock_root, mock_requests_get, mock_drum_server
     ):
         # Setup mocks
         mock_drum_instance = MagicMock()
@@ -386,56 +593,53 @@ class TestExecuteDrum:
         mock_root.error.assert_any_call("Server failed to start")
         mock_root.error.assert_any_call("Server error")
 
+        # Verify inject was not called
+        mock_inject.assert_not_called()
 
-class TestMain:
-    @patch("run_agent.argparse_args")
+
+class TestRunAgentProcedure:
+    @patch("run_agent.setup_logging")
     @patch("run_agent.construct_prompt")
     @patch("run_agent.execute_drum")
-    @patch("run_agent.setup_logging")
     @patch("run_agent.store_result")
-    @patch("run_agent.setup_otlp_env_variables")
-    def test_main_with_custom_model_dir(
+    @patch("run_agent.setup_otel")
+    def test_run_agent_with_custom_model_dir(
         self,
-        mock_setup_otlp_env_variables,
+        mock_setup_otel,
         mock_store_result,
-        mock_setup_logging,
         mock_execute_drum,
         mock_construct_prompt,
-        mock_argparse_args,
+        mock_setup_logging,
     ):
-        """Test main function when custom_model_dir is provided."""
         # GIVEN simple input arguments
         mock_args = MagicMock()
         mock_args.chat_completion = '{"messages": []}'
         mock_args.default_headers = "{}"
         mock_args.custom_model_dir = "/path/to/custom/model"
+
+        # GIVEN output_path is set
         mock_args.output_path = "/path/to/output"
-        mock_args.otlp_entity_id = "entity-id"
-        mock_argparse_args.return_value = mock_args
 
         # GIVEN a mock completion
         mock_completion = MagicMock()
         mock_execute_drum.return_value = mock_completion
 
+        # GIVEN mock_setup_otel returns a span with a trace_id
+        mock_span = MagicMock()
+        mock_span.context.trace_id = 384039094093439430
+        mock_setup_otel.return_value = mock_span
+
         # GIVEN mock_construct_prompt returns a dict
         mock_construct_prompt.return_value = {"messages": []}
 
         # WHEN main is called
-        main()
-
-        # THEN argparse_args was called
-        mock_argparse_args.assert_called_once()
+        run_agent_procedure(mock_args)
 
         # THEN setup_logging was called with correct parameters
-        print(mock_setup_logging.calls)
-        mock_setup_logging.assert_has_calls(
-            [
-                call(logger=ANY, log_level=logging.INFO),
-            ]
-        )
+        mock_setup_logging.assert_called_once_with(logger=root, log_level=logging.INFO)
 
-        # THEN setup_otlp_env_variables was called with correct parameters
-        mock_setup_otlp_env_variables.assert_called_once_with("entity-id")
+        # THEN setup_otel was called with args
+        mock_setup_otel.assert_called_once_with(mock_args)
 
         # THEN execute_drum was called with correct parameters
         mock_execute_drum.assert_called_once_with(
@@ -450,13 +654,66 @@ class TestMain:
             Path("/path/to/output"),
         )
 
-    @pytest.fixture
-    def tempdir_and_cleanup(self):
-        with tempfile.TemporaryDirectory() as tempdir:
-            yield Path(tempdir)
-        # Also remove the default output log path
-        if os.path.exists(DEFAULT_OUTPUT_LOG_PATH):
-            os.remove(DEFAULT_OUTPUT_LOG_PATH)
+    @patch("run_agent.construct_prompt")
+    @patch("run_agent.execute_drum")
+    @patch("run_agent.store_result")
+    @patch("run_agent.setup_otel")
+    @patch("run_agent.setup_logging")
+    def test_run_agent_without_custom_model_dir(
+        self,
+        mock_setup_logging,
+        mock_setup_otel,
+        mock_store_result,
+        mock_execute_drum,
+        mock_construct_prompt,
+    ):
+        # GIVEN simple input arguments
+        mock_args = MagicMock()
+        mock_args.chat_completion = '{"messages": []}'
+        mock_args.default_headers = "{}"
+        mock_args.custom_model_dir = "/path/to/custom/model"
+
+        # GIVEN output_path is not set
+        mock_args.output_path = None
+
+        # GIVEN a mock completion
+        mock_completion = MagicMock()
+        mock_execute_drum.return_value = mock_completion
+
+        # GIVEN mock_setup_otel returns a span with a trace_id
+        mock_span = MagicMock()
+        mock_span.context.trace_id = 384039094093439430
+        mock_setup_otel.return_value = mock_span
+
+        # GIVEN mock_construct_prompt returns a dict
+        mock_construct_prompt.return_value = {"messages": []}
+
+        # WHEN main is called
+        run_agent_procedure(mock_args)
+
+        # THEN setup_logging was called with correct parameters
+        mock_setup_logging.assert_called_once_with(logger=root, log_level=logging.INFO)
+
+        # THEN setup_otel was called with args
+        mock_setup_otel.assert_called_once_with(mock_args)
+
+        # THEN execute_drum was called with correct parameters
+        mock_execute_drum.assert_called_once_with(
+            chat_completion={"messages": []},
+            default_headers={},
+            custom_model_dir="/path/to/custom/model",
+        )
+
+        # THEN store_result was called with correct parameters
+        mock_store_result.assert_called_once_with(
+            mock_completion,
+            DEFAULT_OUTPUT_JSON_PATH,
+        )
+
+
+class TestMain:
+    """This procedure alone is trivial, and does not require unit tests. Therefore we
+    use it to test the integration of the other procedures."""
 
     @patch("run_agent.argparse_args")
     @patch("run_agent.execute_drum")
@@ -482,6 +739,182 @@ class TestMain:
 
         # WHEN main is called
         main()
+
+        # THEN execute_drum was called with correct parsed parameters
+        mock_execute_drum.assert_called_once_with(
+            chat_completion={
+                "messages": [{"role": "user", "content": "Hello"}],
+                "model": "unknown",
+            },
+            default_headers={"X-Custom": "value"},
+            custom_model_dir="/path/to/model",
+        )
+
+        # THEN results were stored in the temporary directory
+        assert os.path.exists(tempdir_and_cleanup / "output.json")
+        with open(tempdir_and_cleanup / "output.json", "r") as f:
+            assert f.read() == mock_completion.to_json.return_value
+
+
+class TestMainStdoutRedirect:
+    @patch("run_agent.argparse_args")
+    @patch("run_agent.run_agent_procedure")
+    @patch("builtins.open")
+    def test_main_stdout_redirect(
+        self, mock_open, mock_run_agent_procedure, mock_argparse_args
+    ):
+        # GIVEN valid input arguments
+        mock_args = MagicMock()
+        mock_args.output_path = "/path/to/output"
+        mock_argparse_args.return_value = mock_args
+
+        # GIVEN files opened
+        f = mock_open.return_value.__enter__.return_value
+
+        # WHEN main_stdout_redirect is called
+        main_stdout_redirect()
+
+        # THEN argparse_args was called
+        mock_argparse_args.assert_called_once()
+
+        # THEN run_agent_procedure was called with the parsed arguments
+        mock_run_agent_procedure.assert_called_once_with(mock_args)
+
+        # THEN mock_open was called twice: for default output log path and for the output path
+        mock_open.assert_any_call(DEFAULT_OUTPUT_LOG_PATH, "w")
+        mock_open.assert_any_call(mock_args.output_path + ".log", "a")
+
+        # THEN f.flush was called 2 times
+        assert f.flush.call_count == 2
+
+    @patch("run_agent.argparse_args")
+    @patch("run_agent.run_agent_procedure")
+    @patch("builtins.open")
+    def test_main_stdout_redirect_output_path_not_set(
+        self, mock_open, mock_run_agent_procedure, mock_argparse_args
+    ):
+        # GIVEN valid input arguments
+        mock_args = MagicMock()
+        mock_args.output_path = None
+        mock_argparse_args.return_value = mock_args
+
+        # GIVEN files opened
+        f = mock_open.return_value.__enter__.return_value
+
+        # WHEN main_stdout_redirect is called
+        main_stdout_redirect()
+
+        # THEN argparse_args was called
+        mock_argparse_args.assert_called_once()
+
+        # THEN run_agent_procedure was called with the parsed arguments
+        mock_run_agent_procedure.assert_called_once_with(mock_args)
+
+        # THEN mock_open was called twice for default output log
+        mock_open.assert_any_call(DEFAULT_OUTPUT_LOG_PATH, "w")
+        mock_open.assert_any_call(str(DEFAULT_OUTPUT_LOG_PATH), "a")
+
+        # THEN f.flush was called 2 times
+        assert f.flush.call_count == 2
+
+    @patch("run_agent.argparse_args")
+    @patch("run_agent.run_agent_procedure")
+    @patch("builtins.open")
+    @patch("run_agent.root")
+    def test_main_stdout_redirect_argparse_exception(
+        self, mock_root, mock_open, mock_run_agent_procedure, mock_argparse_args
+    ):
+        # GIVEN argparse_args raises an exception
+        mock_argparse_args.side_effect = Exception("Test exception 1")
+
+        # GIVEN files opened
+        f = mock_open.return_value.__enter__.return_value
+
+        # WHEN main_stdout_redirect is called
+        with pytest.raises(Exception, match="Test exception 1"):
+            main_stdout_redirect()
+
+        # THEN argparse_args was called
+        mock_argparse_args.assert_called_once()
+
+        # THEN run_agent_procedure was not called
+        mock_run_agent_procedure.assert_not_called()
+
+        # THEN mock_open was called once
+        mock_open.assert_called_once_with(DEFAULT_OUTPUT_LOG_PATH, "w")
+
+        # THEN f.flush was called 1 time
+        assert f.flush.call_count == 1
+
+        # THEN root.exception was called with the exception
+        mock_root.exception.assert_called_once_with(
+            "Error parsing arguments: Test exception 1"
+        )
+
+    @patch("run_agent.argparse_args")
+    @patch("run_agent.run_agent_procedure")
+    @patch("builtins.open")
+    @patch("run_agent.root")
+    def test_main_stdout_redirect_run_agent_procedure_exception(
+        self, mock_root, mock_open, mock_run_agent_procedure, mock_argparse_args
+    ):
+        # GIVEN valid input arguments
+        mock_args = MagicMock()
+        mock_args.output_path = "/path/to/output"
+        mock_argparse_args.return_value = mock_args
+
+        # GIVEN files opened
+        f = mock_open.return_value.__enter__.return_value
+
+        # GIVEN run_agent_procedure raises an exception
+        mock_run_agent_procedure.side_effect = Exception("Test exception 2")
+
+        # WHEN main_stdout_redirect is called
+        with pytest.raises(Exception, match="Test exception 2"):
+            main_stdout_redirect()
+
+        # THEN argparse_args was called
+        mock_argparse_args.assert_called_once()
+
+        # THEN run_agent_procedure was called with the parsed arguments
+        mock_run_agent_procedure.assert_called_once_with(mock_args)
+
+        # THEN mock_open was called twice: for default output log path and for the output path
+        mock_open.assert_any_call(DEFAULT_OUTPUT_LOG_PATH, "w")
+        mock_open.assert_any_call(mock_args.output_path + ".log", "a")
+
+        # THEN root.exception was called with the exception
+        mock_root.exception.assert_called_once_with(
+            "Error executing agent: Test exception 2"
+        )
+
+        # THEN f.flush was called 2 times
+        assert f.flush.call_count == 2
+
+    @patch("run_agent.argparse_args")
+    @patch("run_agent.execute_drum")
+    def test_main_stdout_redirect_integration(
+        self, mock_execute_drum, mock_argparse_args, tempdir_and_cleanup
+    ):
+        """Test main function with a more integrated approach."""
+        # GIVEN valid input arguments
+        mock_args = MagicMock()
+        mock_args.chat_completion = (
+            '{"messages": [{"role": "user", "content": "Hello"}]}'
+        )
+        mock_args.default_headers = '{"X-Custom": "value"}'
+        mock_args.custom_model_dir = "/path/to/model"
+        # GIVEN a temporary directory for the output path
+        mock_args.output_path = str(tempdir_and_cleanup / "output.json")
+        mock_argparse_args.return_value = mock_args
+
+        # GIVEN a mock completion returned from execute_drum
+        mock_completion = MagicMock()
+        mock_completion.to_json.return_value = '{"id": "test-id", "choices": []}'
+        mock_execute_drum.return_value = mock_completion
+
+        # WHEN main is called
+        main_stdout_redirect()
 
         # THEN execute_drum was called with correct parsed parameters
         mock_execute_drum.assert_called_once_with(

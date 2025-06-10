@@ -25,6 +25,7 @@ from openai.types.chat.completion_create_params import (
     CompletionCreateParamsNonStreaming,
 )
 
+
 class Kernel:
     def __init__(
         self,
