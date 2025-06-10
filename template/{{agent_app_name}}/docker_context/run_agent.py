@@ -18,6 +18,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+import time
 from typing import Any, Optional, Union, cast
 from urllib.parse import urlparse, urlunparse
 
@@ -30,6 +31,16 @@ from openai.types.chat.completion_create_params import (
     CompletionCreateParamsBase,
 )
 from pydantic import TypeAdapter
+from opentelemetry import trace
+from opentelemetry.trace import Span
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+from opentelemetry.propagate import inject
+
+# Set up tracer provider and exporter
+trace.set_tracer_provider(TracerProvider())
+tracer = trace.get_tracer(__name__)
 
 root = logging.getLogger()
 
@@ -65,7 +76,7 @@ def argparse_args() -> argparse.Namespace:
         "--otel_entity_id", type=str, default=None, help="Entity ID, necessary for OpenTelemetry tracing authorization in DataRobot. Format: <entity_type>-<entity_id>"
     )
     parser.add_argument(
-        "--otel_attributes", type=str, default=None, help="Custom attributes for tracing. Should a comma separated list of key=value pairs."
+        "--otel_attributes", type=str, default=None, help="Custom attributes for tracing. Should be a JSON dictionary."
     )
     args = parser.parse_args()
     return args
@@ -124,15 +135,12 @@ def setup_otlp_endpoint_env_variables(entity_id: str) -> None:
     otlp_headers = f"X-DataRobot-Api-Key={datarobot_api_token},X-DataRobot-Entity-Id={entity_id}"
     os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = otlp_endpoint
     os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = otlp_headers
-    root.info(f"Using OTEL_EXPORTER_OTLP_ENDPOINT: {otlp_endpoint}")
+    root.info(f"Using OTEL_EXPORTER_OTLP_ENDPOINT: {otlp_endpoint} with X-DataRobot-Entity-Id {entity_id}")
 
+    otlp_exporter = OTLPSpanExporter()
+    span_processor = SimpleSpanProcessor(otlp_exporter)
+    trace.get_tracer_provider().add_span_processor(span_processor)
 
-def setup_otlp_attributes_env_variables(attributes: str) -> None:
-    if os.environ.get("OTEL_RESOURCE_ATTRIBUTES"):
-        root.info("OTEL_RESOURCE_ATTRIBUTES already set, skipping")
-        return
-
-    os.environ["OTEL_RESOURCE_ATTRIBUTES"] = attributes
 
 def execute_drum(
     chat_completion: CompletionCreateParamsBase,
@@ -153,6 +161,7 @@ def execute_drum(
         wait_for_server_timeout=360,
         port=8191,
         stream_output=True,
+        max_workers=2,  # this will force drum tracing to not use batchprocessor
     ) as drum_runner:
         root.info("Verifying DRUM server")
         response = requests.get(drum_runner.url_server_address)
@@ -162,6 +171,9 @@ def execute_drum(
                 root.error(response.text)
             finally:
                 raise RuntimeError("Server failed to start")
+
+        # inject OTEL headers into default_headers
+        inject(default_headers)
 
         # Use a standard OpenAI client to call the DRUM server. This mirrors the behavior of a deployed agent.
         # Using the `chat.completions.create` method ensures the parameters are OpenAI compatible.
@@ -173,9 +185,21 @@ def execute_drum(
             max_retries=0,
         )
         completion = client.chat.completions.create(**chat_completion)
+
     # Continue outside the context manager to ensure the server is stopped and logs
     # are flushed before we write the output
     return completion
+
+
+def set_otel_attributes(span: Span, attributes: str) -> None:
+    try:
+        attributes_dict = json.loads(attributes)
+    except Exception as e:
+        root.error(f"Error parsing OTEL attributes: {e}")
+        return
+
+    for key, value in attributes_dict.items():
+        span.set_attribute(key, value)
 
 
 def construct_prompt(chat_completion: str) -> CompletionCreateParamsBase:
@@ -235,18 +259,21 @@ def main() -> Any:
         else:
             root.info("No OTEL entity ID provided, skipping tracing setup")
 
-        if args.otel_attributes:
-            root.info("Setting up custom OTEL attributes")
-            setup_otlp_attributes_env_variables(args.otel_attributes)
+        with tracer.start_as_current_span("run_agent") as span:
+            root.info(f"Trace id: {span.context.trace_id:32x}")
 
-        root.info(f"Executing request in directory {args.custom_model_dir}")
-        result = execute_drum(
-            chat_completion=chat_completion,
-            default_headers=default_headers,
-            custom_model_dir=args.custom_model_dir,
-        )
-        root.info(f"Result: {result}")
-        store_result(
+            if args.otel_attributes:
+                root.info("Setting up custom OTEL attributes")
+                set_otel_attributes(span, args.otel_attributes)
+
+            root.info(f"Executing request in directory {args.custom_model_dir}")
+            result = execute_drum(
+                chat_completion=chat_completion,
+                default_headers=default_headers,
+                custom_model_dir=args.custom_model_dir,
+            )
+            root.info(f"Result: {result}")
+            store_result(
             result,
             Path(args.output_path) if args.output_path else DEFAULT_OUTPUT_JSON_PATH,
         )
@@ -263,6 +290,9 @@ if __name__ == "__main__":
     except Exception:
         pass
     finally:
+        # flush stdout and stderr to ensure all logs are written
+        sys.stdout.flush()
+        sys.stderr.flush()
         # Return to original stdout and stderr otherwise the kernel will fail to flush and
         # hang
         sys.stdout = stdout
