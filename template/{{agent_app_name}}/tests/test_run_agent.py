@@ -17,7 +17,7 @@ import logging
 import os
 import tempfile
 from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, Mock, call, patch
 
 import pytest
 from opentelemetry.sdk.trace.export import SimpleSpanProcessor
@@ -120,30 +120,41 @@ class TestSetupLogging:
         return logger
 
     @patch("logging.StreamHandler")
-    def test_setup_logging_with_empty_output_path(self, mock_stream_handler, logger):
-        # Set up mocks
+    def test_setup_logging(self, mock_stream_handler, logger):
+        # GIVEN mock stream handler
         mock_stream = MagicMock()
         mock_stream_handler.return_value = mock_stream
 
-        # Call function with empty output path
+        # WHEN setup_logging is called
         setup_logging(logger=logger, log_level=logging.INFO)
 
-        # Verify logger configuration
+        # THEN logger configuration is set
         assert logger.level == logging.INFO
+
+        # THEN logger has a single handler
         assert len(logger.handlers) == 1
         mock_stream.setFormatter.assert_called_once()
-
-    @patch("logging.StreamHandler")
-    def test_setup_logging_formatters(self, mock_stream_handler, logger):
-        # Set up mocks
-        mock_stream = MagicMock()
-        mock_stream_handler.return_value = mock_stream
-        # Call function
-        setup_logging(logger=logger, log_level=logging.INFO)
-
-        # Verify formatters
         stream_formatter_call = mock_stream.setFormatter.call_args[0][0]
         assert stream_formatter_call._fmt == "%(asctime)s - %(levelname)s - %(message)s"
+
+    @patch("logging.StreamHandler")
+    def test_setup_logging_removes_existing_handlers(self, mock_stream_handler, logger):
+        # GIVEN mock stream handler with two different handlers
+        mock_stream1 = MagicMock()
+        mock_stream2 = MagicMock()
+        mock_stream_handler.side_effect = [mock_stream1, mock_stream2]
+
+        # GIVEN setup_logging already called
+        setup_logging(logger=logger, log_level=logging.INFO)
+
+        # WHEN setup_logging is called again
+        setup_logging(logger=logger, log_level=logging.INFO)
+
+        # THEN the logger has only one handler
+        assert len(logger.handlers) == 1
+
+        # THEN this handler is the second one
+        assert logger.handlers[0] == mock_stream2
 
 
 class TestSetupOtelEnvVariables:
@@ -748,9 +759,11 @@ class TestMain:
 class TestMainStdoutRedirect:
     @patch("run_agent.argparse_args")
     @patch("run_agent.run_agent_procedure")
+    @patch("run_agent.setup_logging")
     @patch("builtins.open")
+    @patch("run_agent.root")
     def test_main_stdout_redirect(
-        self, mock_open, mock_run_agent_procedure, mock_argparse_args
+        self, mock_root, mock_open, mock_setup_logging, mock_run_agent_procedure, mock_argparse_args
     ):
         # GIVEN valid input arguments
         mock_args = MagicMock()
@@ -766,6 +779,12 @@ class TestMainStdoutRedirect:
         # THEN argparse_args was called
         mock_argparse_args.assert_called_once()
 
+        # THEN setup_logging was called twice
+        mock_setup_logging.assert_has_calls([
+            call(logger=mock_root, log_level=logging.INFO),
+            call(logger=mock_root, log_level=logging.INFO),
+        ])
+
         # THEN run_agent_procedure was called with the parsed arguments
         mock_run_agent_procedure.assert_called_once_with(mock_args)
 
@@ -778,9 +797,11 @@ class TestMainStdoutRedirect:
 
     @patch("run_agent.argparse_args")
     @patch("run_agent.run_agent_procedure")
+    @patch("run_agent.setup_logging")
     @patch("builtins.open")
+    @patch("run_agent.root")
     def test_main_stdout_redirect_output_path_not_set(
-        self, mock_open, mock_run_agent_procedure, mock_argparse_args
+        self, mock_root, mock_open, mock_setup_logging, mock_run_agent_procedure, mock_argparse_args
     ):
         # GIVEN valid input arguments
         mock_args = MagicMock()
@@ -796,6 +817,12 @@ class TestMainStdoutRedirect:
         # THEN argparse_args was called
         mock_argparse_args.assert_called_once()
 
+        # THEN setup_logging was called twice
+        mock_setup_logging.assert_has_calls([
+            call(logger=mock_root, log_level=logging.INFO),
+            call(logger=mock_root, log_level=logging.INFO),
+        ])
+
         # THEN run_agent_procedure was called with the parsed arguments
         mock_run_agent_procedure.assert_called_once_with(mock_args)
 
@@ -808,10 +835,11 @@ class TestMainStdoutRedirect:
 
     @patch("run_agent.argparse_args")
     @patch("run_agent.run_agent_procedure")
+    @patch("run_agent.setup_logging")
     @patch("builtins.open")
     @patch("run_agent.root")
     def test_main_stdout_redirect_argparse_exception(
-        self, mock_root, mock_open, mock_run_agent_procedure, mock_argparse_args
+        self, mock_root, mock_open, mock_setup_logging, mock_run_agent_procedure, mock_argparse_args
     ):
         # GIVEN argparse_args raises an exception
         mock_argparse_args.side_effect = Exception("Test exception 1")
@@ -825,6 +853,9 @@ class TestMainStdoutRedirect:
 
         # THEN argparse_args was called
         mock_argparse_args.assert_called_once()
+
+        # THEN setup_logging was called once
+        mock_setup_logging.assert_called_once_with(logger=mock_root, log_level=logging.INFO)
 
         # THEN run_agent_procedure was not called
         mock_run_agent_procedure.assert_not_called()
@@ -842,10 +873,11 @@ class TestMainStdoutRedirect:
 
     @patch("run_agent.argparse_args")
     @patch("run_agent.run_agent_procedure")
+    @patch("run_agent.setup_logging")
     @patch("builtins.open")
     @patch("run_agent.root")
     def test_main_stdout_redirect_run_agent_procedure_exception(
-        self, mock_root, mock_open, mock_run_agent_procedure, mock_argparse_args
+        self, mock_root, mock_open, mock_setup_logging, mock_run_agent_procedure, mock_argparse_args
     ):
         # GIVEN valid input arguments
         mock_args = MagicMock()
@@ -864,6 +896,12 @@ class TestMainStdoutRedirect:
 
         # THEN argparse_args was called
         mock_argparse_args.assert_called_once()
+
+        # THEN setup_logging was called twice
+        mock_setup_logging.assert_has_calls([
+            call(logger=mock_root, log_level=logging.INFO),
+            call(logger=mock_root, log_level=logging.INFO),
+        ])
 
         # THEN run_agent_procedure was called with the parsed arguments
         mock_run_agent_procedure.assert_called_once_with(mock_args)

@@ -103,6 +103,10 @@ def setup_logging(
     handler_stream.setLevel(log_level)
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     handler_stream.setFormatter(formatter)
+
+    while len(logger.handlers) > 0:
+        logger.removeHandler(logger.handlers[0])
+
     logger.addHandler(handler_stream)
 
 
@@ -276,8 +280,8 @@ def main_stdout_redirect() -> Any:
     This is used to ensure that logs are written to a file even if the process fails.
     Mainly used in when running the agent in a codespace.
     """
-    setup_logging(logger=root, log_level=logging.INFO)
     with open(DEFAULT_OUTPUT_LOG_PATH, "w") as f:
+        setup_logging(logger=root, log_level=logging.INFO)
         sys.stdout = f
         sys.stderr = f
 
@@ -295,6 +299,8 @@ def main_stdout_redirect() -> Any:
         Path(args.output_path + ".log") if args.output_path else DEFAULT_OUTPUT_LOG_PATH
     )
     with open(output_log_path, "a") as f:
+        # setup logging again: we have a new stream in stderr, so we need a new handler
+        setup_logging(logger=root, log_level=logging.INFO)
         sys.stdout = f
         sys.stderr = f
 
