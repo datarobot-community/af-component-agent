@@ -32,7 +32,6 @@ from run_agent import (
     execute_drum,
     main,
     main_stdout_redirect,
-    root,
     run_agent_procedure,
     set_otel_attributes,
     setup_logging,
