@@ -97,41 +97,25 @@ class TestSetupLogging:
         logger.handlers = []
         return logger
 
-    @patch("os.path.exists")
-    @patch("os.remove")
     @patch("logging.StreamHandler")
-    @patch("logging.FileHandler")
-    def test_setup_logging_with_empty_output_path(
-        self, mock_file_handler, mock_stream_handler, mock_remove, mock_exists, logger
-    ):
+    def test_setup_logging_with_empty_output_path(self, mock_stream_handler, logger):
         # Set up mocks
         mock_stream = MagicMock()
         mock_stream_handler.return_value = mock_stream
-        mock_exists.return_value = False
-
-        mock_file = MagicMock()
-        mock_file_handler.return_value = mock_file
-        mock_exists.return_value = False
 
         # Call function with empty output path
         setup_logging(logger=logger, log_level=logging.INFO)
 
         # Verify logger configuration
         assert logger.level == logging.INFO
-        assert len(logger.handlers) == 2
+        assert len(logger.handlers) == 1
         mock_stream.setFormatter.assert_called_once()
-        mock_file.setFormatter.assert_called_once()
 
-        # Verify remove wasn't called since file doesn't exist
-        mock_remove.assert_not_called()
-
-    @patch("os.path.exists")
     @patch("logging.StreamHandler")
-    def test_setup_logging_formatters(self, mock_stream_handler, mock_exists, logger):
+    def test_setup_logging_formatters(self, mock_stream_handler, logger):
         # Set up mocks
         mock_stream = MagicMock()
         mock_stream_handler.return_value = mock_stream
-        mock_exists.return_value = False
         # Call function
         setup_logging(logger=logger, log_level=logging.INFO)
 
@@ -447,12 +431,6 @@ class TestMain:
         mock_setup_logging.assert_has_calls(
             [
                 call(logger=ANY, log_level=logging.INFO),
-                call(
-                    logger=ANY,
-                    log_level=logging.INFO,
-                    output_path="/path/to/output.log",
-                    update=True,
-                ),
             ]
         )
 
@@ -477,7 +455,8 @@ class TestMain:
         with tempfile.TemporaryDirectory() as tempdir:
             yield Path(tempdir)
         # Also remove the default output log path
-        os.remove(DEFAULT_OUTPUT_LOG_PATH)
+        if os.path.exists(DEFAULT_OUTPUT_LOG_PATH):
+            os.remove(DEFAULT_OUTPUT_LOG_PATH)
 
     @patch("run_agent.argparse_args")
     @patch("run_agent.execute_drum")
@@ -518,13 +497,3 @@ class TestMain:
         assert os.path.exists(tempdir_and_cleanup / "output.json")
         with open(tempdir_and_cleanup / "output.json", "r") as f:
             assert f.read() == mock_completion.to_json.return_value
-
-        # THEN the output log was stored in the temporary directory
-        assert os.path.exists(tempdir_and_cleanup / "output.json.log")
-        with open(tempdir_and_cleanup / "output.json.log", "r") as f:
-            assert "Chat completion" in f.read()
-
-        # THEN the default output log path was created and used for the args processing
-        assert os.path.exists(DEFAULT_OUTPUT_LOG_PATH)
-        with open(DEFAULT_OUTPUT_LOG_PATH, "r") as f:
-            assert "Parsing args" in f.read()

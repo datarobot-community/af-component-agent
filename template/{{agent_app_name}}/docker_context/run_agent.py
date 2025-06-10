@@ -18,8 +18,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-import time
-from typing import Any, Optional, Union, cast
+from typing import Any, cast
 from urllib.parse import urlparse, urlunparse
 
 import requests
@@ -47,6 +46,12 @@ root = logging.getLogger()
 CURRENT_DIR = Path(__file__).parent
 DEFAULT_OUTPUT_LOG_PATH = CURRENT_DIR / "output.log"
 DEFAULT_OUTPUT_JSON_PATH = CURRENT_DIR / "output.json"
+ENABLE_STDOUT_REDIRECT = str(os.environ.get("ENABLE_STDOUT_REDIRECT", 0)).lower() in [
+    1,
+    "1",
+    "true",
+    "True",
+]
 
 
 def argparse_args() -> argparse.Namespace:
@@ -84,31 +89,16 @@ def argparse_args() -> argparse.Namespace:
 
 def setup_logging(
     logger: logging.Logger,
-    output_path: Optional[Union[Path, str]] = DEFAULT_OUTPUT_LOG_PATH,
-    log_level: Optional[int] = logging.INFO,
-    update: Optional[bool] = False,
+    log_level: int = logging.INFO,
 ) -> None:
     log_level = cast(int, log_level)
-    output_path = str(output_path)
-
     logger.setLevel(log_level)
-    handler_stream = logging.StreamHandler(sys.stdout)
+
+    handler_stream = logging.StreamHandler()
     handler_stream.setLevel(log_level)
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     handler_stream.setFormatter(formatter)
-
-    if os.path.exists(output_path):
-        os.remove(output_path)
-    handler_file = logging.FileHandler(output_path)
-    handler_file.setLevel(log_level)
-    formatter_file = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-    handler_file.setFormatter(formatter_file)
-
-    if update:
-        logger.handlers.clear()
-
     logger.addHandler(handler_stream)
-    logger.addHandler(handler_file)
 
 
 def setup_otlp_endpoint_env_variables(entity_id: str) -> None:
@@ -221,64 +211,73 @@ def store_result(result: ChatCompletion, output_path: Path) -> None:
         fp.write(result.to_json())
 
 
-def main() -> Any:
-    # During failures logs will be dumped to the default output log path
-    setup_logging(logger=root, log_level=logging.INFO)
-    try:
-        root.info("Parsing args")
-        try:
-            # Attempt to parse arguments and setup logging
-            args = argparse_args()
+def run_agent(args: Any) -> None:
+    # Parse input to fail early if it's not valid
+    chat_completion = construct_prompt(args.chat_completion)
+    default_headers = json.loads(args.default_headers)
+    root.info(f"Chat completion: {chat_completion}")
+    root.info(f"Default headers: {default_headers}")
 
-            root.info("Setting up logging")
-            output_log_path = str(
-                Path(args.output_path + ".log")
-                if args.output_path
-                else DEFAULT_OUTPUT_LOG_PATH
-            )
-            setup_logging(
-                logger=root,
-                output_path=output_log_path,
-                log_level=logging.INFO,
-                update=True,
-            )
-        except Exception as e:
-            root.exception(f"Error parsing arguments: {e}")
-            sys.exit(1)
+    # Setup tracing
+    if args.otel_entity_id:
+        root.info("Setting up tracing")
+        setup_otlp_endpoint_env_variables(args.otel_entity_id)
+    else:
+        root.info("No OTEL entity ID provided, skipping tracing setup")
 
-        # Parse input to fail early if it's not valid
-        chat_completion = construct_prompt(args.chat_completion)
-        default_headers = json.loads(args.default_headers)
-        root.info(f"Chat completion: {chat_completion}")
-        root.info(f"Default headers: {default_headers}")
+    with tracer.start_as_current_span("run_agent") as span:
+        root.info(f"Trace id: {span.context.trace_id:32x}")
 
-        # Setup tracing
-        if args.otel_entity_id:
-            root.info("Setting up tracing")
-            setup_otlp_endpoint_env_variables(args.otel_entity_id)
-        else:
-            root.info("No OTEL entity ID provided, skipping tracing setup")
+        if args.otel_attributes:
+            root.info("Setting up custom OTEL attributes")
+            set_otel_attributes(span, args.otel_attributes)
 
-        with tracer.start_as_current_span("run_agent") as span:
-            root.info(f"Trace id: {span.context.trace_id:32x}")
-
-            if args.otel_attributes:
-                root.info("Setting up custom OTEL attributes")
-                set_otel_attributes(span, args.otel_attributes)
-
-            root.info(f"Executing request in directory {args.custom_model_dir}")
-            result = execute_drum(
-                chat_completion=chat_completion,
-                default_headers=default_headers,
-                custom_model_dir=args.custom_model_dir,
-            )
-            root.info(f"Result: {result}")
-            store_result(
+        root.info(f"Executing request in directory {args.custom_model_dir}")
+        result = execute_drum(
+            chat_completion=chat_completion,
+            default_headers=default_headers,
+            custom_model_dir=args.custom_model_dir,
+        )
+        root.info(f"Result: {result}")
+        store_result(
             result,
             Path(args.output_path) if args.output_path else DEFAULT_OUTPUT_JSON_PATH,
         )
+
+
+def main() -> Any:
+    # During failures logs will be dumped to the default output log path
+    try:
+        if ENABLE_STDOUT_REDIRECT:
+            with open(DEFAULT_OUTPUT_LOG_PATH, "w") as f:
+                sys.stdout = f
+                sys.stderr = f
+
+                print("Parsing args", flush=True)
+                args = argparse_args()
+                output_log_path = str(
+                    Path(args.output_path + ".log")
+                    if args.output_path
+                    else DEFAULT_OUTPUT_LOG_PATH
+                )
+        else:
+            setup_logging(logger=root, log_level=logging.INFO)
+
+            root.info("Parsing args")
+            args = argparse_args()
+    except Exception as e:
+        root.exception(f"Error parsing arguments: {e}")
+        raise
+
+    try:
+        if ENABLE_STDOUT_REDIRECT:
+            with open(output_log_path, "a") as f:
+                sys.stdout = f
+                sys.stderr = f
+        run_agent(args)
     except Exception as e:
         root.exception(f"Error executing agent: {e}")
+        raise
 
 
 # Agent execution
