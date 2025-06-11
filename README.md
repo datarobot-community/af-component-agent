@@ -66,8 +66,8 @@ To co-develop a PR in the `recipe` and the `template` use the following developm
 4. Once all tests are green, merge the PR in the `af-component-agent` repository.
 5. Create a new release in the `af-component-agent` repository to bump the version of the component.
 6. Start a new PR to `recipe-datarobot-agent-templates`.
-7.  Run `task update-all` to update the templates in the `recipe-datarobot-agent-templates` repository with the latest version of `af-component-agent`.
-8.  Once everything is green and reviewed, merge the PR in the `recipe-datarobot-agent-templates` repository.
+7. Run `task update-all` to update the templates in the `recipe-datarobot-agent-templates` repository with the latest version of `af-component-agent`.
+8. Once everything is green and reviewed, merge the PR in the `recipe-datarobot-agent-templates` repository.
 
 > You can also run `task` in the `recipe-datarobot-agent-templates` repository to see additional developer commands and their descriptions.
 > These provide alternative ways to develop and test the templates inside the recipe repository.
