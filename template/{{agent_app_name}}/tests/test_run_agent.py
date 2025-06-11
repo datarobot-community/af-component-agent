@@ -36,7 +36,8 @@ from run_agent import (
     set_otel_attributes,
     setup_logging,
     setup_otel,
-    setup_otel_env_variables,
+    setup_otel_endpoint,
+    setup_otel_headers,
     setup_otel_exporter,
     store_result,
     tracer,
@@ -157,75 +158,81 @@ class TestSetupLogging:
         assert logger.handlers[0] == mock_stream2
 
 
-class TestSetupOtelEnvVariables:
-    @pytest.fixture
-    def entity_id(self):
-        return "test-entity-id"
-
-    @pytest.mark.parametrize(
-        "headers, endpoint",
-        [
-            ("some-headers", "some-endpoint"),
-            ("some-headers", None),
-            (None, "some-endpoint"),
-        ],
-    )
-    def test_setup_otel_env_variables_does_not_override_existing_variables(
-        self, headers, endpoint, entity_id
-    ):
+class TestSetupOtelEndpoint:
+    def test_setup_otel_endpoint_does_not_override_existing_variables(self):
         # GIVEN Datarobot os environment variables
         os_environ = {
             "DATAROBOT_ENDPOINT": "https://app.datarobot.com/api/v2",
             "DATAROBOT_API_TOKEN": "test-api-key",
         }
-        # GIVEN existing otel config variables
-        if headers:
-            os_environ["OTEL_EXPORTER_OTLP_HEADERS"] = headers
-        if endpoint:
-            os_environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = endpoint
+        os_environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = "http://localhost:4317"
         with patch.dict(os.environ, os_environ, clear=True):
-            # WHEN setup_otel_env_variables is called
-            setup_otel_env_variables(entity_id)
+            # WHEN setup_otel_endpoint is called
+            setup_otel_endpoint()
 
             # THEN the environment variables are not overridden
-            assert os.environ.get("OTEL_EXPORTER_OTLP_HEADERS") == headers
-            assert os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") == endpoint
+            assert os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") == "http://localhost:4317"
 
-    @pytest.mark.parametrize(
-        "datarobot_endpoint, datarobot_api_token, expected_headers, expected_endpoint",
-        [
-            (None, None, None, None),
-            ("https://app.datarobot.com/api/v2", None, None, None),
-            (None, "test-api-key", None, None),
-            (
-                "https://app.datarobot.com/api/v2",
-                "test-api-key",
-                "X-DataRobot-Api-Key=test-api-key,X-DataRobot-Entity-Id=test-entity-id",
-                "https://app.datarobot.com/otel",
-            ),
-        ],
-    )
-    def test_setup_otel_env_variables(
-        self,
-        datarobot_endpoint,
-        datarobot_api_token,
-        expected_headers,
-        expected_endpoint,
-        entity_id,
-    ):
-        # GIVEN os environment variables
+    def test_setup_otel_endpoint_no_datarobot_endpoint(self):
+        # GIVEN no DATAROBOT_ENDPOINT in os environment
         os_environ = {}
-        if datarobot_endpoint:
-            os_environ["DATAROBOT_ENDPOINT"] = datarobot_endpoint
-        if datarobot_api_token:
-            os_environ["DATAROBOT_API_TOKEN"] = datarobot_api_token
         with patch.dict(os.environ, os_environ, clear=True):
-            # WHEN setup_otel_env_variables is called
-            setup_otel_env_variables(entity_id)
+            # WHEN setup_otel_endpoint is called
+            setup_otel_endpoint()
+            # THEN the environment variables are not overridden
+            assert os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") is None
+
+    def test_setup_otel_endpoint_datarobot_endpoint(self):
+        # GIVEN DATAROBOT_ENDPOINT in os environment
+        os_environ = {
+            "DATAROBOT_ENDPOINT": "https://app.datarobot.com/api/v2",
+        }
+        with patch.dict(os.environ, os_environ, clear=True):
+            # WHEN setup_otel_endpoint is called
+            setup_otel_endpoint()
+            # THEN the environment variables are not overridden
+            assert os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") == "https://app.datarobot.com/otel"
+
+class TestSetupOtelHeaders:
+    @pytest.fixture
+    def entity_id(self):
+        return "test-entity-id"
+
+    def test_setup_otel_headers_does_not_override_existing_variables(self, entity_id):
+        # GIVEN Datarobot os environment variables
+        os_environ = {
+            "DATAROBOT_ENDPOINT": "https://app.datarobot.com/api/v2",
+            "DATAROBOT_API_TOKEN": "test-api-key",
+        }
+        # GIVEN existing otel headers in env
+        os_environ["OTEL_EXPORTER_OTLP_HEADERS"] = "some-headers"
+        with patch.dict(os.environ, os_environ, clear=True):
+            # WHEN setup_otel_headers is called
+            setup_otel_headers(entity_id)
+
+            # THEN the environment variables are not overridden
+            assert os.environ.get("OTEL_EXPORTER_OTLP_HEADERS") == "some-headers"
+
+    def test_setup_otel_headers_no_datarobot_api_token(self, entity_id):
+        # GIVEN no DATAROBOT_API_TOKEN in os environment
+        os_environ = {}
+        with patch.dict(os.environ, os_environ, clear=True):
+            # WHEN setup_otel_headers is called
+            setup_otel_headers(entity_id)
+            # THEN the environment variables are not overridden
+            assert os.environ.get("OTEL_EXPORTER_OTLP_HEADERS") is None
+
+    def test_setup_otel_headers_datarobot_api_token(self, entity_id):
+        # GIVEN DATAROBOT_API_TOKEN in os environment
+        os_environ = {
+            "DATAROBOT_API_TOKEN": "test-api-key",
+        }
+        with patch.dict(os.environ, os_environ, clear=True):
+            # WHEN setup_otel_headers is called
+            setup_otel_headers(entity_id)
 
             # THEN the environment variables are set
-            assert os.environ.get("OTEL_EXPORTER_OTLP_HEADERS") == expected_headers
-            assert os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") == expected_endpoint
+            assert os.environ.get("OTEL_EXPORTER_OTLP_HEADERS") == "X-DataRobot-Api-Key=test-api-key,X-DataRobot-Entity-Id=test-entity-id"
 
 
 class TestSetupOtelExporter:
@@ -267,14 +274,16 @@ class TestSetOtelAttributes:
 
 
 class TestSetupOtel:
-    @patch("run_agent.setup_otel_env_variables")
+    @patch("run_agent.setup_otel_endpoint")
+    @patch("run_agent.setup_otel_headers")
     @patch("run_agent.setup_otel_exporter")
     @patch("run_agent.set_otel_attributes")
     def test_setup_otel_all_values(
         self,
         mock_set_otel_attributes,
         mock_setup_otel_exporter,
-        mock_setup_otel_env_variables,
+        mock_setup_otel_headers,
+        mock_setup_otel_endpoint,
     ):
         # GIVEN a mock args with otel_entity_id and otel_attributes
         mock_args = MagicMock()
@@ -293,19 +302,25 @@ class TestSetupOtel:
         # THEN the span is Span
         assert isinstance(span, Span)
 
-        # THEN setup_otel_env_variables was called with the correct parameters
-        mock_setup_otel_env_variables.assert_called_once_with("test-entity-id")
+        # THEN mock_setup_otel_endpoint was called
+        mock_setup_otel_endpoint.assert_called_once()
+        # THEN mock_setup_otel_headers was called with the entity id
+        mock_setup_otel_headers.assert_called_once_with("test-entity-id")
+        # THEN mock_setup_otel_exporter was called
         mock_setup_otel_exporter.assert_called_once()
+        # THEN set_otel_attributes was called with the span and the attributes
         mock_set_otel_attributes.assert_called_once_with(span, '{"key": "value"}')
 
-    @patch("run_agent.setup_otel_env_variables")
+    @patch("run_agent.setup_otel_endpoint")
+    @patch("run_agent.setup_otel_headers")
     @patch("run_agent.setup_otel_exporter")
     @patch("run_agent.set_otel_attributes")
     def test_setup_otel_no_otel_context(
         self,
         mock_set_otel_attributes,
         mock_setup_otel_exporter,
-        mock_setup_otel_env_variables,
+        mock_setup_otel_headers,
+        mock_setup_otel_endpoint,
     ):
         # GIVEN a mock args with no otel_entity_id and no otel_attributes
         mock_args = MagicMock()
@@ -320,21 +335,25 @@ class TestSetupOtel:
         # THEN the span is Span
         assert isinstance(span, Span)
 
-        # THEN setup_otel_env_variables was not called
-        mock_setup_otel_env_variables.assert_not_called()
-        # THEN setup_otel_exporter was not called
+        # THEN mock_setup_otel_endpoint was called
+        mock_setup_otel_endpoint.assert_called_once()
+        # THEN mock_setup_otel_headers was not called
+        mock_setup_otel_headers.assert_not_called()
+        # THEN mock_setup_otel_exporter was not called
         mock_setup_otel_exporter.assert_not_called()
         # THEN set_otel_attributes was not called
         mock_set_otel_attributes.assert_not_called()
 
-    @patch("run_agent.setup_otel_env_variables")
+    @patch("run_agent.setup_otel_endpoint")
+    @patch("run_agent.setup_otel_headers")
     @patch("run_agent.setup_otel_exporter")
     @patch("run_agent.set_otel_attributes")
     def test_setup_otel_otlp_endpoint_set(
         self,
         mock_set_otel_attributes,
         mock_setup_otel_exporter,
-        mock_setup_otel_env_variables,
+        mock_setup_otel_headers,
+        mock_setup_otel_endpoint,
     ):
         # GIVEN a mock args with no otel_entity_id and no otel_attributes
         mock_args = MagicMock()
@@ -353,28 +372,32 @@ class TestSetupOtel:
         # THEN the span is Span
         assert isinstance(span, Span)
 
-        # THEN setup_otel_env_variables was not called
-        mock_setup_otel_env_variables.assert_not_called()
-        # THEN setup_otel_exporter was called
+        # THEN mock_setup_otel_endpoint was called
+        mock_setup_otel_endpoint.assert_called_once()
+        # THEN mock_setup_otel_headers was not called
+        mock_setup_otel_headers.assert_not_called()
+        # THEN mock_setup_otel_exporter was called
         mock_setup_otel_exporter.assert_called_once()
         # THEN set_otel_attributes was not called
         mock_set_otel_attributes.assert_not_called()
 
-    @patch("run_agent.setup_otel_env_variables")
+    @patch("run_agent.setup_otel_endpoint")
+    @patch("run_agent.setup_otel_headers")
     @patch("run_agent.setup_otel_exporter")
     @patch("run_agent.set_otel_attributes")
     def test_setup_otel_otlp_endpoint_not_set(
         self,
         mock_set_otel_attributes,
         mock_setup_otel_exporter,
-        mock_setup_otel_env_variables,
+        mock_setup_otel_headers,
+        mock_setup_otel_endpoint,
     ):
         # GIVEN a mock args with otel_entity_id and no otel_attributes
         mock_args = MagicMock()
         mock_args.otel_entity_id = "test-entity-id"
         mock_args.otel_attributes = None
 
-        # GIVEN the environment variables are set
+        # GIVEN the environment variables are not set
         with patch.dict(os.environ, {}, clear=True):
             # WHEN setup_otel is called
             span = setup_otel(mock_args)
@@ -382,21 +405,25 @@ class TestSetupOtel:
         # THEN the span is Span
         assert isinstance(span, Span)
 
-        # THEN setup_otel_env_variables was called
-        mock_setup_otel_env_variables.assert_called_once_with("test-entity-id")
-        # THEN setup_otel_exporter was not called
+        # THEN mock_setup_otel_endpoint was called
+        mock_setup_otel_endpoint.assert_called_once()
+        # THEN mock_setup_otel_headers was not called
+        mock_setup_otel_headers.assert_called_once_with("test-entity-id")
+        # THEN mock_setup_otel_exporter was not called
         mock_setup_otel_exporter.assert_not_called()
         # THEN set_otel_attributes was not called
         mock_set_otel_attributes.assert_not_called()
 
-    @patch("run_agent.setup_otel_env_variables")
+    @patch("run_agent.setup_otel_endpoint")
+    @patch("run_agent.setup_otel_headers")
     @patch("run_agent.setup_otel_exporter")
     @patch("run_agent.set_otel_attributes")
     def test_setup_otel_otlp_endpoint_otel_attributes_set(
         self,
         mock_set_otel_attributes,
         mock_setup_otel_exporter,
-        mock_setup_otel_env_variables,
+        mock_setup_otel_headers,
+        mock_setup_otel_endpoint,
     ):
         # GIVEN a mock args with no otel_entity_id and otel_attributes
         mock_args = MagicMock()
@@ -411,9 +438,11 @@ class TestSetupOtel:
         # THEN the span is Span
         assert isinstance(span, Span)
 
-        # THEN setup_otel_env_variables was called
-        mock_setup_otel_env_variables.assert_not_called()
-        # THEN setup_otel_exporter was not called
+        # THEN mock_setup_otel_endpoint was called
+        mock_setup_otel_endpoint.assert_called_once()
+        # THEN mock_setup_otel_headers was not called
+        mock_setup_otel_headers.assert_not_called()
+        # THEN mock_setup_otel_exporter was not called
         mock_setup_otel_exporter.assert_not_called()
         # THEN set_otel_attributes was called
         mock_set_otel_attributes.assert_called_once_with(span, '{"key": "value"}')

@@ -110,34 +110,53 @@ def setup_logging(
     logger.addHandler(handler_stream)
 
 
-def setup_otel_env_variables(entity_id: str) -> None:
+def setup_otel_endpoint() -> None:
     # do not override if already set
-    if os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") or os.environ.get(
-        "OTEL_EXPORTER_OTLP_HEADERS"
-    ):
+    if os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT"):
         root.info(
-            "OTEL_EXPORTER_OTLP_ENDPOINT or OTEL_EXPORTER_OTLP_HEADERS already set, skipping"
+            "OTEL_EXPORTER_OTLP_ENDPOINT already set, skipping"
         )
         return
 
     datarobot_endpoint = os.environ.get("DATAROBOT_ENDPOINT")
-    datarobot_api_token = os.environ.get("DATAROBOT_API_TOKEN")
-    if not datarobot_endpoint or not datarobot_api_token:
+    if not datarobot_endpoint:
         root.warning(
-            "DATAROBOT_ENDPOINT or DATAROBOT_API_TOKEN not set, tracing is disabled"
+            "DATAROBOT_ENDPOINT not set, tracing is disabled"
         )
         return
 
     parsed_url = urlparse(datarobot_endpoint)
     stripped_url = (parsed_url.scheme, parsed_url.netloc, "otel", "", "", "")
     otlp_endpoint = urlunparse(stripped_url)
-    otlp_headers = (
+    os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = otlp_endpoint
+    root.info(
+        f"Using OTEL_EXPORTER_OTLP_ENDPOINT: {otlp_endpoint}"
+    )
+
+
+def setup_otel_headers(entity_id: str) -> None:
+    # do not override if already set
+    if os.environ.get(
+        "OTEL_EXPORTER_OTLP_HEADERS"
+    ):
+        root.info(
+            "OTEL_EXPORTER_OTLP_HEADERS already set, skipping"
+        )
+        return
+
+    datarobot_api_token = os.environ.get("DATAROBOT_API_TOKEN")
+    if not datarobot_api_token:
+        root.warning(
+            "DATAROBOT_API_TOKEN not set, skipping OTEL_EXPORTER_OTLP_HEADERS"
+        )
+        return
+
+    otel_headers = (
         f"X-DataRobot-Api-Key={datarobot_api_token},X-DataRobot-Entity-Id={entity_id}"
     )
-    os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = otlp_endpoint
-    os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = otlp_headers
+    os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = otel_headers
     root.info(
-        f"Using OTEL_EXPORTER_OTLP_ENDPOINT: {otlp_endpoint} with X-DataRobot-Entity-Id {entity_id}"
+        f"Using OTEL_EXPORTER_OTLP_HEADERS: {otel_headers}"
     )
 
 
@@ -163,11 +182,13 @@ def setup_otel(args: Any) -> Span:
     Setup OTEL tracing and return a span to be parent for the agent run.
     """
     # Setup tracing
+    root.info("Setting up OTEL endpoint")
+    setup_otel_endpoint()
     if args.otel_entity_id:
-        root.info("Setting up tracing")
-        setup_otel_env_variables(args.otel_entity_id)
+        root.info("Setting up OTEL headers")
+        setup_otel_headers(args.otel_entity_id)
     else:
-        root.info("No OTEL entity ID provided, skipping tracing setup")
+        root.info("No OTEL entity ID provided")
 
     if "OTEL_EXPORTER_OTLP_ENDPOINT" in os.environ:
         root.info("Setting up OTEL exporter")
