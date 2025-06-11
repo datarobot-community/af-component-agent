@@ -18,7 +18,7 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, TextIO
 from urllib.parse import urlparse, urlunparse
 
 import requests
@@ -95,11 +95,12 @@ def argparse_args() -> argparse.Namespace:
 
 def setup_logging(
     logger: logging.Logger,
+    stream: TextIO = sys.stderr,
     log_level: int = logging.INFO,
 ) -> None:
     logger.setLevel(log_level)
 
-    handler_stream = logging.StreamHandler()
+    handler_stream = logging.StreamHandler(stream)
     handler_stream.setLevel(log_level)
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     handler_stream.setFormatter(formatter)
@@ -110,53 +111,34 @@ def setup_logging(
     logger.addHandler(handler_stream)
 
 
-def setup_otel_endpoint() -> None:
+def setup_otel_env_variables(entity_id: str) -> None:
     # do not override if already set
-    if os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT"):
+    if os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") or os.environ.get(
+        "OTEL_EXPORTER_OTLP_HEADERS"
+    ):
         root.info(
-            "OTEL_EXPORTER_OTLP_ENDPOINT already set, skipping"
+            "OTEL_EXPORTER_OTLP_ENDPOINT or OTEL_EXPORTER_OTLP_HEADERS already set, skipping"
         )
         return
 
     datarobot_endpoint = os.environ.get("DATAROBOT_ENDPOINT")
-    if not datarobot_endpoint:
+    datarobot_api_token = os.environ.get("DATAROBOT_API_TOKEN")
+    if not datarobot_endpoint or not datarobot_api_token:
         root.warning(
-            "DATAROBOT_ENDPOINT not set, tracing is disabled"
+            "DATAROBOT_ENDPOINT or DATAROBOT_API_TOKEN not set, tracing is disabled"
         )
         return
 
     parsed_url = urlparse(datarobot_endpoint)
     stripped_url = (parsed_url.scheme, parsed_url.netloc, "otel", "", "", "")
     otlp_endpoint = urlunparse(stripped_url)
-    os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = otlp_endpoint
-    root.info(
-        f"Using OTEL_EXPORTER_OTLP_ENDPOINT: {otlp_endpoint}"
-    )
-
-
-def setup_otel_headers(entity_id: str) -> None:
-    # do not override if already set
-    if os.environ.get(
-        "OTEL_EXPORTER_OTLP_HEADERS"
-    ):
-        root.info(
-            "OTEL_EXPORTER_OTLP_HEADERS already set, skipping"
-        )
-        return
-
-    datarobot_api_token = os.environ.get("DATAROBOT_API_TOKEN")
-    if not datarobot_api_token:
-        root.warning(
-            "DATAROBOT_API_TOKEN not set, skipping OTEL_EXPORTER_OTLP_HEADERS"
-        )
-        return
-
-    otel_headers = (
+    otlp_headers = (
         f"X-DataRobot-Api-Key={datarobot_api_token},X-DataRobot-Entity-Id={entity_id}"
     )
-    os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = otel_headers
+    os.environ["OTEL_EXPORTER_OTLP_ENDPOINT"] = otlp_endpoint
+    os.environ["OTEL_EXPORTER_OTLP_HEADERS"] = otlp_headers
     root.info(
-        f"Using OTEL_EXPORTER_OTLP_HEADERS: {otel_headers}"
+        f"Using OTEL_EXPORTER_OTLP_ENDPOINT: {otlp_endpoint} with X-DataRobot-Entity-Id {entity_id}"
     )
 
 
@@ -182,13 +164,11 @@ def setup_otel(args: Any) -> Span:
     Setup OTEL tracing and return a span to be parent for the agent run.
     """
     # Setup tracing
-    root.info("Setting up OTEL endpoint")
-    setup_otel_endpoint()
     if args.otel_entity_id:
-        root.info("Setting up OTEL headers")
-        setup_otel_headers(args.otel_entity_id)
+        root.info("Setting up tracing")
+        setup_otel_env_variables(args.otel_entity_id)
     else:
-        root.info("No OTEL entity ID provided")
+        root.info("No OTEL entity ID provided, skipping tracing setup")
 
     if "OTEL_EXPORTER_OTLP_ENDPOINT" in os.environ:
         root.info("Setting up OTEL exporter")
@@ -265,10 +245,12 @@ def construct_prompt(chat_completion: str) -> CompletionCreateParamsBase:
     return completion_create_params
 
 
-def store_result(result: ChatCompletion, output_path: Path) -> None:
+def store_result(result: ChatCompletion, trace_id: str, output_path: Path) -> None:
     root.info(f"Storing result: {output_path}")
     with open(output_path, "w") as fp:
-        fp.write(result.to_json())
+        result_dict = result.model_dump()
+        result_dict["trace_id"] = trace_id
+        fp.write(json.dumps(result_dict))
 
 
 def run_agent_procedure(args: Any) -> None:
@@ -280,7 +262,8 @@ def run_agent_procedure(args: Any) -> None:
 
     span = setup_otel(args)
     with use_span(span, end_on_exit=True):
-        root.info(f"Trace id: {span.context.trace_id:32x}")  # type: ignore[attr-defined]
+        trace_id = f"{span.context.trace_id:32x}".strip()  # type: ignore[attr-defined]
+        root.info(f"Trace id: {trace_id}")
 
         root.info(f"Executing request in directory {args.custom_model_dir}")
         result = execute_drum(
@@ -288,9 +271,9 @@ def run_agent_procedure(args: Any) -> None:
             default_headers=default_headers,
             custom_model_dir=args.custom_model_dir,
         )
-        root.info(f"Result: {result}")
         store_result(
             result,
+            trace_id,
             Path(args.output_path) if args.output_path else DEFAULT_OUTPUT_JSON_PATH,
         )
 
@@ -302,7 +285,7 @@ def main_stdout_redirect() -> Any:
     Mainly used in when running the agent in a codespace.
     """
     with open(DEFAULT_OUTPUT_LOG_PATH, "w") as f:
-        setup_logging(logger=root, log_level=logging.INFO)
+        setup_logging(logger=root, stream=f, log_level=logging.INFO)
         sys.stdout = f
         sys.stderr = f
 
@@ -321,7 +304,7 @@ def main_stdout_redirect() -> Any:
     )
     with open(output_log_path, "a") as f:
         # setup logging again: we have a new stream in stderr, so we need a new handler
-        setup_logging(logger=root, log_level=logging.INFO)
+        setup_logging(logger=root, stream=f, log_level=logging.INFO)
         sys.stdout = f
         sys.stderr = f
 
