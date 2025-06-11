@@ -532,7 +532,7 @@ class TestExecuteDrum:
 
         # Verify DrumServerRun was called with correct parameters
         mock_drum_server.assert_called_once_with(
-            target_type="textgeneration",
+            target_type="agenticworkflow",
             labels=None,
             custom_model_dir="/path/to/model",
             with_error_server=True,
