@@ -90,7 +90,7 @@ else:
     resource_name="Agent Custom Model " + {{agent_app_name}}_resource_name,
     base_environment_id={{agent_app_name}}_execution_environment.id,
     base_environment_version_id={{agent_app_name}}_execution_environment.version_id,
-    target_type=dr.TARGET_TYPE.TEXT_GENERATION,
+    target_type="agenticworkflow",
     target_name="response",
     language="python",
     runtime_parameter_values=[],
