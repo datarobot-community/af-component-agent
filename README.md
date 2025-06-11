@@ -12,7 +12,7 @@ The Agent Framework is component from [App Framework Studio](https://github.com/
 
 ## Getting Started
 
-To use this template, it expects the base component https://github.com/datarobot/af-component-base has already been 
+To use this template, it expects the base component https://github.com/datarobot/af-component-base has already been
 installed. To do that first, run:
 
 ```bash
@@ -31,7 +31,7 @@ uvx copier copy https://github.com/datarobot/af-component-agent .
 uvx copier copy git@github.com:datarobot/af-component-agent.git .
 ```
 
-If a template requires multiple agents, it can be used multiple times with a different answer to the 
+If a template requires multiple agents, it can be used multiple times with a different answer to the
 `agent_app_name` question.
 
 To update an existing agent template, you can use the `uvx copier update` command. This will update the template files
@@ -45,7 +45,7 @@ uvx copier update -a .datarobot/answers/agent-{{ agent_app }}.yml -A
 
 ### af-component-agent
 
-This is a template repo, and as such it is not easy to run tests and linters locally. To run tests and linters, 
+This is a template repo, and as such it is not easy to run tests and linters locally. To run tests and linters,
 you should open a PR against your branch. Tests will be run through github actions, and you can see the results
 in the PR. If you are making large changes that may have significant impacts to the template installation
 and usage, you should additionally open a branch in [recipe-datarobot-agent-templates](https://github.com/datarobot/recipe-datarobot-agent-templates).
@@ -55,23 +55,19 @@ and usage, you should additionally open a branch in [recipe-datarobot-agent-temp
 > downstream repositories.
 
 ### recipe-datarobot-agent-templates
-This repository is used to generate the customer facing recipe repository and provides an alternative way to test the 
-templates. This can also be used to verify that changes to the template do not produce unexpected results in the 
+This repository is used to generate the customer facing recipe repository and provides an alternative way to test the
+templates. This can also be used to verify that changes to the template do not produce unexpected results in the
 generated code.
 
 To co-develop a PR in the `recipe` and the `template` use the following development flow:
 1. Create a new branch in the `af-component-agent` repository.
 2. Make your changes to the template files.
 3. Open a PR against the `af-component-agent` repository and ensure tests are green.
-4. Create a new branch in the `recipe-datarobot-agent-templates` repository using the same name as the branch in the `af-component-agent` repository.
-5. Run `task update-all-branch BRANCH=<your-branch-name>` in the `recipe-datarobot-agent-templates` repository to update the templates.
-6. Open a PR against the `recipe-datarobot-agent-templates` repository and ensure tests are green.
-7. Once all tests are green, merge the PR in the `af-component-agent` repository.
-8. Create a new release in the `af-component-agent` repository to bump the version of the component.
-9. Reset the state of `recipe-datarobot-agent-templates` by running `git reset --hard origin/main`.
-10. Run `task update-all` to update the templates in the `recipe-datarobot-agent-templates` repository.
-11. Force push the branch in the `recipe-datarobot-agent-templates` repository to update the templates and ensure tests are green.
-12. Once everything is green and reviewed, merge the PR in the `recipe-datarobot-agent-templates` repository.
+4. Once all tests are green, merge the PR in the `af-component-agent` repository.
+5. Create a new release in the `af-component-agent` repository to bump the version of the component.
+6. Start a new PR to `recipe-datarobot-agent-templates`.
+7. Run `task update-all` to update the templates in the `recipe-datarobot-agent-templates` repository with the latest version of `af-component-agent`.
+8. Once everything is green and reviewed, merge the PR in the `recipe-datarobot-agent-templates` repository.
 
 > You can also run `task` in the `recipe-datarobot-agent-templates` repository to see additional developer commands and their descriptions.
 > These provide alternative ways to develop and test the templates inside the recipe repository.

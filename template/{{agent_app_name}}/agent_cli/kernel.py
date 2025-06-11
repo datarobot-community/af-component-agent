@@ -13,10 +13,8 @@
 # limitations under the License.
 import json
 import os
-import time
-from typing import Any, Optional
+from typing import Any
 
-import requests
 from openai import OpenAI
 from openai.types.chat import (
     ChatCompletion,
@@ -32,11 +30,9 @@ class Kernel:
     def __init__(
         self,
         api_token: str,
-        codespace_id: str,
-        base_url: Optional[str] = "https://staging.datarobot.com",
+        base_url: str,
     ):
         self.base_url = base_url
-        self.codespace_id = codespace_id
         self.api_token = api_token
 
     @property
@@ -44,80 +40,6 @@ class Kernel:
         return {
             "Authorization": f"Token {self.api_token}",
         }
-
-    @property
-    def nbx_session_url(self) -> str:
-        return f"{self.base_url}/api-gw/nbx/session"
-
-    @property
-    def nbx_orchestrator_url(self) -> str:
-        return f"{self.base_url}/api-gw/nbx/orchestrator/notebooks"
-
-    def start_codespace(self) -> None:
-        """
-        Starts a codespace in DataRobot.
-        """
-        print("Starting codespace...")
-        url = f"{self.nbx_orchestrator_url}/{self.codespace_id}/start/"
-        response = requests.post(url, headers=self.headers)
-        assert response.status_code == 200
-        print("Waiting for codespace to start...")
-        for _ in range(2 * 60):  # Waiting 2 minutes
-            resp = requests.get(
-                f"{self.nbx_orchestrator_url}/{self.codespace_id}/",
-                headers=self.headers,
-            )
-            assert resp.status_code == 200, (resp.status_code, resp.text)
-            data = resp.json()
-            if data.get("status") == "running":
-                break
-            time.sleep(1)
-        print("Codespace started!")
-
-    def stop_codespace(self) -> None:
-        """
-        Starts a codespace in DataRobot.
-        """
-        print("Stopping codespace...")
-        url = f"{self.nbx_orchestrator_url}/{self.codespace_id}/stop/"
-        response = requests.post(url, headers=self.headers)
-        assert response.status_code == 200
-        print("Waiting for codespace to stop...")
-        for _ in range(2 * 60):  # Waiting 2 minutes
-            resp = requests.get(
-                f"{self.nbx_orchestrator_url}/{self.codespace_id}/",
-                headers=self.headers,
-            )
-            assert resp.status_code == 200, (resp.status_code, resp.text)
-            data = resp.json()
-            if data.get("status") == "stopped":
-                break
-            time.sleep(1)
-        print("Codespace stopped!")
-
-    def await_kernel_execution(self, kernel_id: str, max_wait: int = 120) -> None:
-        for _ in range(max_wait):
-            resp = requests.get(
-                f"{self.nbx_session_url}/{self.codespace_id}/kernels/{kernel_id}",
-                headers=self.headers,
-            )
-            if resp.status_code == 404:
-                break
-
-            assert resp.status_code == 200
-            time.sleep(1)
-
-
-class AgentKernel(Kernel):
-    def __init__(
-        self,
-        api_token: str,
-        codespace_id: str,
-        base_url: str,
-    ):
-        super().__init__(
-            api_token=api_token, codespace_id=codespace_id, base_url=base_url
-        )
 
     @staticmethod
     def construct_prompt(user_prompt: str, extra_body: str) -> str:
@@ -141,10 +63,9 @@ class AgentKernel(Kernel):
         completion = json.dumps(completion_create_params)
         return completion
 
-    def validate_execute_args(
+    def validate_and_create_execute_args(
         self,
         user_prompt: str,
-        use_remote: bool = False,
         custom_model_dir: str = "",
         output_path: str = "",
     ) -> tuple[str, str]:
@@ -163,16 +84,10 @@ class AgentKernel(Kernel):
         default_headers = "{}"
 
         if len(custom_model_dir) == 0:
-            if use_remote:
-                custom_model_dir = "/home/notebooks/storage/custom_model"
-            else:
-                custom_model_dir = os.path.join(os.getcwd(), "custom_model")
+            custom_model_dir = os.path.join(os.getcwd(), "custom_model")
 
         if len(output_path) == 0:
-            if use_remote:
-                output_path = "/home/notebooks/storage/custom_model/output.json"
-            else:
-                output_path = os.path.join(os.getcwd(), "custom_model", "output.json")
+            output_path = os.path.join(os.getcwd(), "custom_model", "output.json")
 
         command_args = (
             f"--chat_completion '{chat_completion}' "
@@ -184,7 +99,7 @@ class AgentKernel(Kernel):
         return command_args, output_path
 
     @staticmethod
-    def get_output_local(output_path: str) -> Any:
+    def get_output(output_path: str) -> Any:
         """Read the local output file and remove it."""
         with open(output_path, "r") as f:
             output = f.read()
@@ -193,67 +108,25 @@ class AgentKernel(Kernel):
             os.remove(output_path)
         return output
 
-    def get_output_remote(self, output_path: str) -> Any:
-        """Download the output file from the remote and remove it."""
-        data = {"paths": [output_path]}
-        response = requests.post(
-            f"{self.nbx_session_url}/{self.codespace_id}/filesystem/objects/download/",
-            json=data,
-            headers=self.headers,
-        )
-        assert response.status_code == 200
-        output = response.json()
-
-        # Delete the output file after downloading
-        response = requests.delete(
-            f"{self.nbx_session_url}/{self.codespace_id}/filesystem/objects/delete/",
-            headers=self.headers,
-            json={
-                "paths": [output_path],
-            },
-        )
-        assert response.status_code == 204
-
-        return output
-
-    def execute(
+    def local(
         self,
         user_prompt: str,
-        use_remote: bool = False,
         custom_model_dir: str = "",
         output_path: str = "",
     ) -> Any:
-        command_args, output_path = self.validate_execute_args(
-            user_prompt, use_remote, custom_model_dir, output_path
+        command_args, output_path = self.validate_and_create_execute_args(
+            user_prompt, custom_model_dir, output_path
         )
 
-        if use_remote:
-            remote_cmd = {
-                "filePath": "/home/notebooks/storage/run_agent.py",
-                "commandType": "python",
-                "commandArgs": command_args,
-            }
-            response = requests.post(
-                f"{self.nbx_session_url}/{self.codespace_id}/scripts/execute/",
-                json=remote_cmd,
-                headers=self.headers,
-            )
-            print(response.json())
-            assert response.status_code == 200
-
-            print("Executing kernel...")
-            self.await_kernel_execution(response.json()["kernelId"])
-            return self.get_output_remote(output_path)
-        else:
-            local_cmd = f"python3 run_agent.py {command_args}"
-            try:
-                result = os.system(local_cmd)
-                if result != 0:
-                    raise RuntimeError(f"Command failed with exit code {result}")
-                return self.get_output_local(output_path)
-            except Exception as e:
-                print(f"Error executing command: {e}")
-                raise
+        local_cmd = f"python3 run_agent.py {command_args}"
+        try:
+            result = os.system(local_cmd)
+            if result != 0:
+                raise RuntimeError(f"Command failed with exit code {result}")
+            return self.get_output(output_path)
+        except Exception as e:
+            print(f"Error executing command: {e}")
+            raise
 
     def deployment(self, deployment_id: str, user_prompt: str) -> ChatCompletion:
         chat_api_url = f"{self.base_url}/api/v2/deployments/{deployment_id}/"
