@@ -174,3 +174,7 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module = "datarobot.*"
 implicit_reexport = true
+
+[tool.uv]
+# Always install a litellm version that is compatible with datarobot
+override-dependencies = ["litellm>=1.72.1"]
