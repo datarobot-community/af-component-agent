@@ -89,7 +89,6 @@ class MyAgent:
         """
         return LLM(
             model="datarobot/vertex_ai/gemini-1.5-flash-002",
-            clientId="custom-model",
             api_base=self.api_base_litellm,
             api_key=self.api_key,
         )

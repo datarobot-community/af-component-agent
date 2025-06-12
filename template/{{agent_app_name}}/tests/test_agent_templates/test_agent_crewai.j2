@@ -177,7 +177,6 @@ class TestMyAgentCrewAI:
         agent.llm_with_datarobot_llm_gateway
         mock_llm.assert_called_once_with(
             model="datarobot/vertex_ai/gemini-1.5-flash-002",
-            clientId="custom-model",
             api_base="test_base",
             api_key="test_key",
         )
@@ -190,7 +189,6 @@ class TestMyAgentCrewAI:
             agent.llm_with_datarobot_llm_gateway
             mock_llm.assert_called_once_with(
                 model="datarobot/vertex_ai/gemini-1.5-flash-002",
-                clientId="custom-model",
                 api_base="https://api.datarobot.com",
                 api_key="test_key",
             )

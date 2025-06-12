@@ -95,9 +95,6 @@ class MyAgent:
             model="datarobot/vertex_ai/gemini-1.5-flash-002",
             api_base=self.api_base_litellm,
             api_key=self.api_key,
-            model_kwargs={
-                "clientId": "custom-model",
-            },
         )
 
     @property
