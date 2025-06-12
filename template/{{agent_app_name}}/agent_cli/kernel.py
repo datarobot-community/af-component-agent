@@ -13,7 +13,7 @@
 # limitations under the License.
 import json
 import os
-from typing import Any
+from typing import Any, cast
 
 from openai import OpenAI
 from openai.types.chat import (
@@ -41,9 +41,14 @@ class Kernel:
             "Authorization": f"Token {self.api_token}",
         }
 
-    @staticmethod
-    def construct_prompt(user_prompt: str, extra_body: str) -> str:
-        extra_body_params = json.loads(extra_body) if extra_body else {}
+    def construct_prompt(
+        self, user_prompt: str, verbose: bool
+    ) -> CompletionCreateParamsNonStreaming:
+        extra_body = {
+            "api_key": self.api_token,
+            "api_base": self.base_url,
+            "verbose": verbose,
+        }
         completion_create_params = CompletionCreateParamsNonStreaming(
             model="datarobot-deployed-llm",
             messages=[
@@ -58,29 +63,43 @@ class Kernel:
             ],
             n=1,
             temperature=0.01,
-            extra_body=extra_body_params,  # type: ignore[typeddict-unknown-key]
+            extra_body=extra_body,  # type: ignore[typeddict-unknown-key]
         )
-        completion = json.dumps(completion_create_params)
-        return completion
+        return completion_create_params
+
+    def load_completion_json(
+        self, completion_json: str
+    ) -> CompletionCreateParamsNonStreaming:
+        """Load the completion JSON from a file or return an empty prompt."""
+        if not os.path.exists(completion_json):
+            raise FileNotFoundError(
+                f"Completion JSON file not found: {completion_json}"
+            )
+
+        with open(completion_json, "r") as f:
+            completion_data = json.load(f)
+
+        completion_create_params = CompletionCreateParamsNonStreaming(
+            **completion_data,  # type: ignore[typeddict-item]
+        )
+        return cast(CompletionCreateParamsNonStreaming, completion_create_params)
 
     def validate_and_create_execute_args(
         self,
         user_prompt: str,
+        completion_json: str = "",
         custom_model_dir: str = "",
         output_path: str = "",
     ) -> tuple[str, str]:
-        if len(user_prompt) == 0:
-            raise ValueError("user_prompt must be provided.")
+        if len(user_prompt) == 0 and len(completion_json) == 0:
+            raise ValueError("user_prompt or completion_json must provided.")
 
         # Construct the raw prompt and headers
-        extra_body = json.dumps(
-            {
-                "api_key": self.api_token,
-                "api_base": self.base_url,
-                "verbose": True,
-            }
-        )
-        chat_completion = self.construct_prompt(user_prompt, extra_body)
+        if len(user_prompt) > 0:
+            completion_create_params = self.construct_prompt(user_prompt, verbose=True)
+        else:
+            completion_create_params = self.load_completion_json(completion_json)
+        chat_completion = json.dumps(completion_create_params)
         default_headers = "{}"
 
         if len(custom_model_dir) == 0:
@@ -91,9 +110,9 @@ class Kernel:
 
         command_args = (
             f"--chat_completion '{chat_completion}' "
-            f"--default_headers '{default_headers}'"
-            f" --custom_model_dir '{custom_model_dir}'"
-            f" --output_path '{output_path}'"
+            f"--default_headers '{default_headers}' "
+            f"--custom_model_dir '{custom_model_dir}' "
+            f"--output_path '{output_path}'"
         )
 
         return command_args, output_path
@@ -111,11 +130,12 @@ class Kernel:
     def local(
         self,
         user_prompt: str,
+        completion_json: str = "",
         custom_model_dir: str = "",
         output_path: str = "",
     ) -> Any:
         command_args, output_path = self.validate_and_create_execute_args(
-            user_prompt, custom_model_dir, output_path
+            user_prompt, completion_json, custom_model_dir, output_path
         )
 
         local_cmd = f"python3 run_agent.py {command_args}"
@@ -128,30 +148,23 @@ class Kernel:
             print(f"Error executing command: {e}")
             raise
 
-    def deployment(self, deployment_id: str, user_prompt: str) -> ChatCompletion:
+    def deployment(
+        self, deployment_id: str, user_prompt: str, completion_json: str = ""
+    ) -> ChatCompletion:
         chat_api_url = f"{self.base_url}/api/v2/deployments/{deployment_id}/"
         print(chat_api_url)
+
+        if len(user_prompt) > 0:
+            completion_create_params = self.construct_prompt(user_prompt, verbose=True)
+        else:
+            completion_create_params = self.load_completion_json(completion_json)
+
         openai_client = OpenAI(
             base_url=chat_api_url,
             api_key=self.api_token,
             _strict_response_validation=False,
         )
 
-        print(f'Querying deployment with prompt: "{user_prompt}"')
-        completion = openai_client.chat.completions.create(
-            model="datarobot-deployed-agent",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "Explain your thoughts using at least 100 words.",
-                },
-                {"role": "user", "content": user_prompt},
-            ],
-            max_tokens=512,  # omit if you want to use the model's default max
-            extra_body={
-                "api_key": self.api_token,
-                "api_base": self.base_url,
-                "verbose": False,
-            },
-        )
+        print(f'Querying deployment with prompt: "{completion_create_params}"')
+        completion = openai_client.chat.completions.create(**completion_create_params)
         return completion
