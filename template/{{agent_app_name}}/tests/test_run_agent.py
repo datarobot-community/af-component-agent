@@ -499,6 +499,7 @@ class TestStoreResult:
 
 
 class TestExecuteDrum:
+    @patch("run_agent.get_open_port")
     @patch("run_agent.DrumServerRun")
     @patch("run_agent.requests.get")
     @patch("run_agent.OpenAI")
@@ -509,8 +510,12 @@ class TestExecuteDrum:
         mock_openai,
         mock_requests_get,
         mock_drum_server,
+        mock_get_open_port,
     ):
         # Setup mocks
+        mock_get_open_port = MagicMock()
+        mock_get_open_port.return_value = 8191
+
         mock_drum_instance = MagicMock()
         mock_drum_instance.url_server_address = "http://localhost:8191"
         mock_drum_server.return_value.__enter__.return_value = mock_drum_instance
