@@ -38,20 +38,20 @@ class TestKernel:
         user_prompt = "Hello, how are you?"
 
         # Execute
-        result = kernel.construct_prompt(user_prompt, verbose=True)
+        result_dict = kernel.construct_prompt(user_prompt, verbose=True)
 
         # Assert
-        assert result["model"] == "datarobot-deployed-llm"
-        assert len(result["messages"]) == 2
-        assert result["messages"][0]["content"] == "You are a helpful assistant"
-        assert result["messages"][0]["role"] == "system"
-        assert result["messages"][1]["content"] == "Hello, how are you?"
-        assert result["messages"][1]["role"] == "user"
-        assert result["n"] == 1
-        assert result["temperature"] == 0.01
-        assert result["extra_body"]["api_key"] == "test-key"
-        assert result["extra_body"]["api_base"] == "https://test.example.com"
-        assert result["extra_body"]["verbose"] is True
+        assert result_dict["model"] == "datarobot-deployed-llm"
+        assert len(result_dict["messages"]) == 2
+        assert result_dict["messages"][0]["content"] == "You are a helpful assistant"
+        assert result_dict["messages"][0]["role"] == "system"
+        assert result_dict["messages"][1]["content"] == "Hello, how are you?"
+        assert result_dict["messages"][1]["role"] == "user"
+        assert result_dict["n"] == 1
+        assert result_dict["temperature"] == 0.01
+        assert result_dict["extra_body"]["api_key"] == "test-key"
+        assert result_dict["extra_body"]["api_base"] == "https://test.example.com"
+        assert result_dict["extra_body"]["verbose"] is True
 
     def test_construct_prompt_without_verbose(self):
         """Test construct_prompt with verbose set to False."""
@@ -60,20 +60,20 @@ class TestKernel:
         user_prompt = "Tell me about Python"
 
         # Execute
-        result = kernel.construct_prompt(user_prompt, verbose=False)
+        result_dict = kernel.construct_prompt(user_prompt, verbose=False)
 
         # Assert
-        assert result["model"] == "datarobot-deployed-llm"
-        assert len(result["messages"]) == 2
-        assert result["messages"][0]["content"] == "You are a helpful assistant"
-        assert result["messages"][0]["role"] == "system"
-        assert result["messages"][1]["content"] == "Tell me about Python"
-        assert result["messages"][1]["role"] == "user"
-        assert result["n"] == 1
-        assert result["temperature"] == 0.01
-        assert result["extra_body"]["api_key"] == "test-key"
-        assert result["extra_body"]["api_base"] == "https://test.example.com"
-        assert result["extra_body"]["verbose"] is False
+        assert result_dict["model"] == "datarobot-deployed-llm"
+        assert len(result_dict["messages"]) == 2
+        assert result_dict["messages"][0]["content"] == "You are a helpful assistant"
+        assert result_dict["messages"][0]["role"] == "system"
+        assert result_dict["messages"][1]["content"] == "Tell me about Python"
+        assert result_dict["messages"][1]["role"] == "user"
+        assert result_dict["n"] == 1
+        assert result_dict["temperature"] == 0.01
+        assert result_dict["extra_body"]["api_key"] == "test-key"
+        assert result_dict["extra_body"]["api_base"] == "https://test.example.com"
+        assert result_dict["extra_body"]["verbose"] is False
 
     @patch("os.path.exists")
     @patch("os.remove")
