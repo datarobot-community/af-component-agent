@@ -119,8 +119,11 @@ class MyAgent:
         and another for a specific DataRobot deployment, or even multiple deployments or
         third-party LLMs.
         """
+
+        # NOTE: LlamaIndex tool encodings are sensitive the the LLM model used and may need to be re-written
+        # to work with different models. This example assumes the model is a GPT compatible model.
         return DataRobotLiteLLM(
-            model="datarobot/vertex_ai/gemini-1.5-flash-002",
+            model="datarobot/azure/gpt-4o",
             api_base=self.api_base_litellm,
             api_key=self.api_key,
         )
@@ -134,8 +137,11 @@ class MyAgent:
         and another for a specific DataRobot deployment, or even multiple deployments or
         third-party LLMs.
         """
+
+        # NOTE: LlamaIndex tool encodings are sensitive the the LLM model used and may need to be re-written
+        # to work with different models. This example assumes the model is a GPT compatible model.
         return DataRobotLiteLLM(
-            model="datarobot/vertex_ai/gemini-1.5-flash-002",
+            model="datarobot/azure/gpt-4o",
             api_base=f"{self.api_base_litellm}/api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/",
             api_key=self.api_key,
         )
