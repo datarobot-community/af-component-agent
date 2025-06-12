@@ -24,11 +24,14 @@ from datarobot_pulumi_utils.schema.custom_models import (
     DeploymentArgs,
     RegisteredModelArgs,
 )
+from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 
 from . import project_dir, use_case
 
 # To use the LLM DataRobot Deployment in your Agent, uncomment the line below
 # from .llm_datarobot import app_runtime_parameters as llm_datarobot_app_runtime_parameters
+
+DEFAULT_EXECUTION_ENVIRONMENT = "[DataRobot] Python 3.11 GenAI Agents"
 
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
@@ -70,18 +73,28 @@ if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
     {{agent_app_name}}_execution_environment_id = os.environ[
         "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT"
     ]
-    pulumi.info(
-        "Using existing execution environment " + {{agent_app_name}}_execution_environment_id
-    )
-    {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
-        id={{agent_app_name}}_execution_environment_id,
-        resource_name="Execution Environment [PRE-EXISTING] " + {{agent_app_name}}_resource_name,
-    )
+
+    if {{agent_app_name}}_execution_environment_id == DEFAULT_EXECUTION_ENVIRONMENT:
+        pulumi.info(
+            "Using default GenAI Agents execution environment " + {{agent_app_name}}_execution_environment_id
+        )
+        {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
+            id=RuntimeEnvironments.PYTHON_311_GENAI_AGENTS.value.id,
+            resource_name="Agent Execution Environment [PRE-EXISTING] " + {{agent_app_name}}_resource_name,
+        )
+    else:
+        pulumi.info(
+            "Using existing execution environment " + {{agent_app_name}}_execution_environment_id
+        )
+        {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
+            id={{agent_app_name}}_execution_environment_id,
+            resource_name="Agent Execution Environment [PRE-EXISTING] " + {{agent_app_name}}_resource_name,
+        )
 else:
     {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment(
         resource_name="Agent Python 3.11 " + {{agent_app_name}}_resource_name,
         programming_language="python",
-        description="DataRobot Agent Execution Environment [Python 3.11]",
+        description="Agent Execution Environment [Python 3.11]",
         docker_context_path=os.path.join(str({{agent_app_name}}_application_path), "docker_context"),
         use_cases=["customModel", "notebook"],
     )
