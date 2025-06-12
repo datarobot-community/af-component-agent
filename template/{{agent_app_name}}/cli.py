@@ -45,8 +45,9 @@ def cli(
 
 @cli.command()
 @pass_environment
-@click.option("--user_prompt", help="Input to use for chat.")
-def execute(environment: Any, user_prompt: str) -> None:
+@click.option("--user_prompt", default="", help="Input to use for chat.")
+@click.option("--completion_json", default="", help="Path to json to use for chat.")
+def execute(environment: Any, user_prompt: str, completion_json: str) -> None:
     """Execute agent code locally using OpenAI completions.
 
     Examples:
@@ -57,12 +58,13 @@ def execute(environment: Any, user_prompt: str) -> None:
     # Run the agent with a JSON user prompt
     > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
     """
-    if len(user_prompt) == 0:
-        raise click.UsageError("User prompt message provided.")
+    if len(user_prompt) == 0 and len(completion_json) == 0:
+        raise click.UsageError("User prompt message or completion json must provided.")
 
     click.echo("Running agent...")
     response = environment.interface.local(
         user_prompt=user_prompt,
+        completion_json=completion_json,
     )
     click.echo("\nStored Execution Result:")
     click.echo(response)
@@ -70,9 +72,12 @@ def execute(environment: Any, user_prompt: str) -> None:
 
 @cli.command()
 @pass_environment
-@click.option("--user_prompt", help="Input to use for predict.")
+@click.option("--user_prompt", default="", help="Input to use for predict.")
+@click.option("--completion_json", default="", help="Path to json to use for chat.")
 @click.option("--deployment_id", help="ID for the deployment.")
-def execute_deployment(environment: Any, user_prompt: str, deployment_id: str) -> None:
+def execute_deployment(
+    environment: Any, user_prompt: str, completion_json: str, deployment_id: str
+) -> None:
     """Query a deployed model using the command line for OpenAI completions.
 
     Example:
@@ -83,14 +88,16 @@ def execute_deployment(environment: Any, user_prompt: str, deployment_id: str) -
     # Run the agent with a JSON user prompt
     > task cli -- execute-deployment --user_prompt '{"topic": "Artificial Intelligence"}' --deployment_id 680a77a9a3
     """
-    if len(user_prompt) == 0:
-        raise click.UsageError("User prompt message provided.")
+    if len(user_prompt) == 0 and len(completion_json) == 0:
+        raise click.UsageError("User prompt message or completion json must provided.")
     if len(deployment_id) == 0:
         raise click.UsageError("Deployment ID must be provided.")
 
     click.echo("Querying deployment...")
     response = environment.interface.deployment(
-        deployment_id=deployment_id, user_prompt=user_prompt
+        deployment_id=deployment_id,
+        user_prompt=user_prompt,
+        completion_json=completion_json,
     )
     click.echo(response)
 
