@@ -57,6 +57,9 @@ def execute(environment: Any, user_prompt: str, completion_json: str) -> None:
 
     # Run the agent with a JSON user prompt
     > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
+
+    # Run the agent with a JSON file containing the full chat completion json
+    > task cli -- execute --completion_json "example-completion.json"
     """
     if len(user_prompt) == 0 and len(completion_json) == 0:
         raise click.UsageError("User prompt message or completion json must provided.")
@@ -87,6 +90,9 @@ def execute_deployment(
 
     # Run the agent with a JSON user prompt
     > task cli -- execute-deployment --user_prompt '{"topic": "Artificial Intelligence"}' --deployment_id 680a77a9a3
+
+    # Run the agent with a JSON file containing the full chat completion json
+    > task cli -- execute-deployment --completion_json "example-completion.json" --deployment_id 680a77a9a3
     """
     if len(user_prompt) == 0 and len(completion_json) == 0:
         raise click.UsageError("User prompt message or completion json must provided.")
