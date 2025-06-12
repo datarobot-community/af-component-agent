@@ -31,57 +31,49 @@ class TestKernel:
 
         assert headers == {"Authorization": "Token api-123456"}
 
-    def test_construct_prompt_with_extra_body(self):
-        """Test construct_prompt with extra_body provided."""
+    def test_construct_prompt_with_verbose(self):
+        """Test construct_prompt with verbose set to True."""
         # Setup
+        kernel = Kernel(api_token="test-key", base_url="https://test.example.com")
         user_prompt = "Hello, how are you?"
-        extra_body = json.dumps(
-            {
-                "api_key": "test-key",
-                "api_base": "https://test.example.com",
-                "verbose": True,
-            }
-        )
 
         # Execute
-        result = Kernel.construct_prompt(user_prompt, extra_body)
-
-        # Parse the result to verify structure
-        result_dict = json.loads(result)
+        result = kernel.construct_prompt(user_prompt, verbose=True)
 
         # Assert
-        assert result_dict["model"] == "datarobot-deployed-llm"
-        assert len(result_dict["messages"]) == 2
-        assert result_dict["messages"][0]["content"] == "You are a helpful assistant"
-        assert result_dict["messages"][0]["role"] == "system"
-        assert result_dict["messages"][1]["content"] == "Hello, how are you?"
-        assert result_dict["messages"][1]["role"] == "user"
-        assert result_dict["n"] == 1
-        assert result_dict["temperature"] == 0.01
-        assert result_dict["extra_body"]["api_key"] == "test-key"
-        assert result_dict["extra_body"]["api_base"] == "https://test.example.com"
-        assert result_dict["extra_body"]["verbose"] is True
+        assert result["model"] == "datarobot-deployed-llm"
+        assert len(result["messages"]) == 2
+        assert result["messages"][0]["content"] == "You are a helpful assistant"
+        assert result["messages"][0]["role"] == "system"
+        assert result["messages"][1]["content"] == "Hello, how are you?"
+        assert result["messages"][1]["role"] == "user"
+        assert result["n"] == 1
+        assert result["temperature"] == 0.01
+        assert result["extra_body"]["api_key"] == "test-key"
+        assert result["extra_body"]["api_base"] == "https://test.example.com"
+        assert result["extra_body"]["verbose"] is True
 
-    def test_construct_prompt_without_extra_body(self):
-        """Test construct_prompt with empty extra_body."""
+    def test_construct_prompt_without_verbose(self):
+        """Test construct_prompt with verbose set to False."""
         # Setup
+        kernel = Kernel(api_token="test-key", base_url="https://test.example.com")
         user_prompt = "Tell me about Python"
-        extra_body = ""
 
         # Execute
-        result = Kernel.construct_prompt(user_prompt, extra_body)
-
-        # Parse the result to verify structure
-        result_dict = json.loads(result)
+        result = kernel.construct_prompt(user_prompt, verbose=False)
 
         # Assert
-        assert result_dict["model"] == "datarobot-deployed-llm"
-        assert len(result_dict["messages"]) == 2
-        assert result_dict["messages"][0]["content"] == "You are a helpful assistant"
-        assert result_dict["messages"][1]["content"] == "Tell me about Python"
-        assert result_dict["n"] == 1
-        assert result_dict["temperature"] == 0.01
-        assert result_dict["extra_body"] == {}
+        assert result["model"] == "datarobot-deployed-llm"
+        assert len(result["messages"]) == 2
+        assert result["messages"][0]["content"] == "You are a helpful assistant"
+        assert result["messages"][0]["role"] == "system"
+        assert result["messages"][1]["content"] == "Tell me about Python"
+        assert result["messages"][1]["role"] == "user"
+        assert result["n"] == 1
+        assert result["temperature"] == 0.01
+        assert result["extra_body"]["api_key"] == "test-key"
+        assert result["extra_body"]["api_base"] == "https://test.example.com"
+        assert result["extra_body"]["verbose"] is False
 
     @patch("os.path.exists")
     @patch("os.remove")
@@ -139,11 +131,12 @@ class TestKernel:
         )
 
         # Execute and Assert
-        with pytest.raises(ValueError, match="user_prompt must be provided."):
+        with pytest.raises(
+            ValueError, match="user_prompt or completion_json must provided."
+        ):
             kernel.validate_and_create_execute_args(user_prompt="")
 
-    @patch.object(Kernel, "construct_prompt")
-    def test_validate_execute_args_basic(self, mock_construct_prompt):
+    def test_validate_execute_args_basic(self):
         """Test validate_execute_args with minimal parameters."""
         # Setup
         kernel = Kernel(
@@ -151,17 +144,12 @@ class TestKernel:
             base_url="https://test.example.com",
         )
         user_prompt = "Hello, assistant!"
-        expected_chat_completion = '{"content": "test completion"}'
-        mock_construct_prompt.return_value = expected_chat_completion
 
         # Execute
         command_args, output_path = kernel.validate_and_create_execute_args(user_prompt)
 
-        # Assert
-        mock_construct_prompt.assert_called_once()
         # Verify the extra_body contains the correct API details
-        extra_body_arg = mock_construct_prompt.call_args[0][1]
-        extra_body = json.loads(extra_body_arg)
+        extra_body = json.loads(command_args.split("--")[1][17:-2])["extra_body"]
         assert extra_body["api_key"] == "test-token"
         assert extra_body["api_base"] == "https://test.example.com"
         assert extra_body["verbose"] is True
@@ -171,7 +159,7 @@ class TestKernel:
         assert output_path == expected_output_path
 
         # Verify command_args contains all parameters
-        assert f"--chat_completion '{expected_chat_completion}'" in command_args
+        assert user_prompt in command_args.split("--")[1]
         assert "--default_headers '{}'" in command_args
         assert (
             f"--custom_model_dir '{os.path.join(os.getcwd(), 'custom_model')}'"
@@ -262,19 +250,17 @@ class TestKernel:
 
         # Verify chat.completions.create was called with correct parameters
         mock_completions.create.assert_called_once_with(
-            model="datarobot-deployed-agent",
+            model="datarobot-deployed-llm",
             messages=[
-                {
-                    "role": "system",
-                    "content": "Explain your thoughts using at least 100 words.",
-                },
-                {"role": "user", "content": "Hello, assistant!"},
+                {"content": "You are a helpful assistant", "role": "system"},
+                {"content": "Hello, assistant!", "role": "user"},
             ],
-            max_tokens=512,
+            n=1,
+            temperature=0.01,
             extra_body={
                 "api_key": "test-token",
                 "api_base": "https://test.example.com",
-                "verbose": False,
+                "verbose": True,
             },
         )
 
@@ -308,9 +294,6 @@ class TestKernel:
             "https://test.example.com/api/v2/deployments/test-deployment-id/"
         )
         mock_print.assert_any_call(expected_api_url)
-        mock_print.assert_any_call(
-            'Querying deployment with prompt: "Hello, assistant!"'
-        )
 
     @patch("agent_cli.kernel.OpenAI")
     def test_deployment_error_handling(self, mock_openai):
@@ -359,7 +342,7 @@ class TestKernel:
         result = kernel.local("Test prompt")
 
         # Assert
-        mock_validate.assert_called_once_with("Test prompt", "", "")
+        mock_validate.assert_called_once_with("Test prompt", "", "", "")
 
         # Verify system command was executed correctly
         mock_system.assert_called_once_with("python3 run_agent.py --test-args")
