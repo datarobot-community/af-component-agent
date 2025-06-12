@@ -94,14 +94,14 @@ def argparse_args() -> argparse.Namespace:
     return args
 
 
-def get_open_port() -> None:
+def get_open_port() -> int:
     """Get an open port on the local machine."""
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind(("", 0))
     s.listen(1)
     port = s.getsockname()[1]
     s.close()
-    return port
+    return int(port)
 
 
 def setup_logging(
