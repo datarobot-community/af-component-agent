@@ -513,6 +513,7 @@ class TestExecuteDrum:
         mock_get_open_port,
     ):
         # Setup mocks
+        # Open port is mocked to return a set port during testing
         mock_get_open_port.return_value = 8191
 
         mock_drum_instance = MagicMock()
