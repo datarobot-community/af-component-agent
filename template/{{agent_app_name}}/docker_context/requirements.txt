@@ -336,7 +336,7 @@ ragas @ git+https://github.com/explodinggradients/ragas@5d59549ad5ef511f621502c5
 readme-renderer==44.0
 referencing==0.36.2
 regex==2024.11.6
-requests==2.32.3
+requests==2.32.4
 requests-oauthlib==2.0.0
 requests-toolbelt==1.0.0
 rfc3339-validator==0.1.4
