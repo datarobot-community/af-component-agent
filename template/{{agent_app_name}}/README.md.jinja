@@ -121,6 +121,13 @@ task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
 
 The JSON object is passed directly to the agent's `run` method as the `inputs` parameter.
 
+You can also test your agent by providing a full chat completion request as a JSON file. An
+example json is provided in the `example-completion.json` file.
+
+```bash
+task cli -- execute --chat_completion "example-completion.json"
+```
+
 ### Method 2: Use direct execution
 
 For more advanced testing scenarios, you can use the `run_agent.py` script directly:
@@ -196,6 +203,21 @@ pulumi up
 The `AGENT_DEPLOY` environment variable controls whether Pulumi creates only the custom model (`DEPLOY=0`) or both the custom model and a production deployment (`DEPLOY=1`). If not set, Pulumi defaults to full deployment mode.
 
 Pulumi will prompt you to confirm the resources to be created or updated.
+
+### Use the CLI to execute the deployment
+
+Test your deployed agent using the CLI interface with a sample prompt:
+
+```bash
+task cli -- execute-deployment --user_prompt '{"topic": "Artificial Intelligence"}' --deployment "<deployment_id>"
+```
+
+Similar to the `execute` command, you can also provide a full chat completion request as a JSON file for the
+deployed agent:
+
+```bash
+task cli -- execute-deployment --chat_completion "example-completion.json" --deployment "<deployment_id>"
+```
 
 ## Next steps
 
