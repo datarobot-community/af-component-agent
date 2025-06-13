@@ -68,15 +68,15 @@ __all__ = [
 {{agent_app_name}}_application_path = project_dir.parent / "{{agent_app_name}}"
 
 
-def get_custom_model_files(root_folder: str) -> list[tuple[str, str]]:
+def get_custom_model_files(custom_model_folder: str) -> list[tuple[str, str]]:
     # Get all files from application path, following symlinks
     # When we've upgraded to Python 3.13 we can use Path.glob(reduce_symlinks=True)
     # https://docs.python.org/3.13/library/pathlib.html#pathlib.Path.glob
     source_files = []
-    for dirpath, dirnames, filenames in os.walk(root_folder, followlinks=True):
+    for dirpath, dirnames, filenames in os.walk(custom_model_folder, followlinks=True):
         for filename in filenames:
             file_path = os.path.join(dirpath, filename)
-            rel_path = os.path.relpath(file_path, root_folder)
+            rel_path = os.path.relpath(file_path, custom_model_folder)
             source_files.append((os.path.abspath(file_path), rel_path))
     source_files = [
         (file_path, file_name)
