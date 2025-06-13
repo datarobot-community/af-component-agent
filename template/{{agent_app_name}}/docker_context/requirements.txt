@@ -55,7 +55,7 @@ crewai-tools==0.44.0
 cryptography==44.0.3
 dataclasses-json==0.6.7
 datarobot==3.7.1
-datarobot-drum==1.16.16
+datarobot-drum @ git+https://github.com/datarobot/datarobot-user-models@5908ac925528cd62ae861e7e110063f61c39b35f#egg=datarobot-drum&subdirectory=custom_model_runner
 datarobot-mlops==11.0.0
 datarobot-moderations==11.1.18
 datarobot-predict==1.13.2
@@ -173,7 +173,7 @@ langgraph-prebuilt==0.1.8
 langgraph-sdk==0.1.66
 langsmith==0.3.42
 lark==1.2.2
-litellm==1.68.0
+litellm==1.72.4
 llama-cloud==0.1.21
 llama-cloud-services==0.6.15
 llama-index==0.12.35

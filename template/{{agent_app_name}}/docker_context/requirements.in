@@ -8,7 +8,7 @@ ipykernel<6.29.0
 pandas
 numpy
 mistune
-datarobot-drum>=1.16.16
+datarobot-drum @ git+https://github.com/datarobot/datarobot-user-models@yolo/really-yolo#egg=datarobot-drum&subdirectory=custom_model_runner
 datarobot
 numpy
 uwsgi
