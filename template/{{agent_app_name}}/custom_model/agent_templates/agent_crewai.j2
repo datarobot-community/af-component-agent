@@ -78,33 +78,30 @@ class MyAgent:
             return self.api_base
         return "https://api.datarobot.com"
 
-    @property
-    def llm_with_datarobot_llm_gateway(self) -> LLM:
-        """Returns a CrewAI LLM instance configured to use DataRobot's LLM Gateway.
+    def model_factory(
+        self, model: str = DEFAULT_MODEL, use_deployment: bool = True
+    ) -> LLM:
+        """Returns the model to use for the LLM.
 
-        This property can serve as a primary LLM backend for the agents. You can optionally
-        have multiple LLMs configured, such as one for DataRobot's LLM Gateway
-        and another for a specific DataRobot deployment, or even multiple deployments or
-        third-party LLMs.
+        If a model is provided, it will be used. Otherwise, the default model will be used.
+        If use_deployment is True, the model will be used with the deployment ID
+        from the environment variable LLM_DEPLOYMENT_ID. If False, it will use the
+        LLM Gateway.
+
+        Args:
+            model: Optional[str]: The model to use. Defaults to None.
+
+        Returns:
+            str: The model to use.
         """
-        return LLM(
-            model="datarobot/vertex_ai/gemini-1.5-flash-002",
-            api_base=self.api_base_litellm,
-            api_key=self.api_key,
+        api_base = (
+            f"{self.api_base_litellm}api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/chat/completions"
+            if use_deployment
+            else self.api_base_litellm
         )
-
-    @property
-    def llm_with_datarobot_deployment(self) -> LLM:
-        """Returns a CrewAI LLM instance configured to use DataRobot's LLM Deployments.
-
-        This property can serve as a primary LLM backend for the agents. You can optionally
-        have multiple LLMs configured, such as one for DataRobot's LLM Gateway
-        and another for a specific DataRobot deployment, or even multiple deployments or
-        third-party LLMs.
-        """
         return LLM(
-            model="datarobot/vertex_ai/gemini-1.5-flash-002",
-            api_base=f"{self.api_base_litellm}/api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/",
+            model=model,
+            api_base=api_base,
             api_key=self.api_key,
         )
 
@@ -122,7 +119,10 @@ class MyAgent:
             "the Content Writer to write an article on this topic.",
             allow_delegation=False,
             verbose=self.verbose,
-            llm=self.llm_with_datarobot_llm_gateway,
+            llm=self.model_factory(
+                model="datarobot/vertex_ai/gemini-1.5-flash-002",
+                use_deployment=False,
+            ),
         )
 
     @property
@@ -147,7 +147,10 @@ class MyAgent:
             "as opposed to objective statements.",
             allow_delegation=False,
             verbose=self.verbose,
-            llm=self.llm_with_datarobot_llm_gateway,
+            llm=self.model_factory(
+                model="datarobot/azure/gpt-4o-mini",
+                use_deployment=False,
+            ),
         )
 
     @property
@@ -166,7 +169,10 @@ class MyAgent:
             "or opinions when possible.",
             allow_delegation=False,
             verbose=self.verbose,
-            llm=self.llm_with_datarobot_llm_gateway,
+            llm=self.model_factory(
+                model="bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0",
+                use_deployment=False,
+            ),
         )
 
     @property
