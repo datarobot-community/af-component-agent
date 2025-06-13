@@ -81,8 +81,7 @@ if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
         )
         {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
             id=RuntimeEnvironments.PYTHON_311_GENAI_AGENTS.value.id,
-            resource_name="Execution Environment [PRE-EXISTING] "
-            + {{agent_app_name}}_resource_name,
+            resource_name="Execution Environment [PRE-EXISTING] " + {{agent_app_name}}_resource_name,
         )
     else:
         pulumi.info(
@@ -90,8 +89,7 @@ if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
         )
         {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
             id={{agent_app_name}}_execution_environment_id,
-            resource_name="Execution Environment [PRE-EXISTING] "
-            + {{agent_app_name}}_resource_name,
+            resource_name="Execution Environment [PRE-EXISTING] " + {{agent_app_name}}_resource_name,
         )
 else:
     {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment(
