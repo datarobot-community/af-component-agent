@@ -13,7 +13,7 @@
 # limitations under the License.
 import os
 import re
-from typing import cast
+from typing import cast, Sequence
 
 import datarobot as dr
 import pulumi
@@ -36,15 +36,15 @@ DEFAULT_EXECUTION_ENVIRONMENT = "[DataRobot] Python 3.11 GenAI Agents"
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
     for pattern in [
-        r"tests.*",
-        r"\.coverage",
+        r".*tests/.*",
+        r".*\.coverage",
         r".*\.DS_Store",
         r".*\.pyc",
-        r"\.ruff_cache.*",
-        r"\.venv.*",
-        r"\.mypy_cache.*",
-        r"__pycache__.*",
-        r"\.pytest_cache.*",
+        r".*\.ruff_cache/.*",
+        r".*\.venv/.*",
+        r".*\.mypy_cache/.*",
+        r".*__pycache__/.*",
+        r".*\.pytest_cache/.*",
     ]
 ]
 
@@ -66,6 +66,25 @@ __all__ = [
 {{agent_app_name}}_application_name: str = "{{agent_app_name}}"
 {{agent_app_name}}_resource_name: str = "[{{agent_app_name}}]"
 {{agent_app_name}}_application_path = project_dir.parent / "{{agent_app_name}}"
+
+def get_custom_model_files(root_folder) -> list[tuple[str, str]]:
+    # Get all files from application path, following symlinks
+    # When we've upgraded to Python 3.13 we can use Path.glob(reduce_symlinks=True)
+    # https://docs.python.org/3.13/library/pathlib.html#pathlib.Path.glob
+    source_files = []
+    for dirpath, dirnames, filenames in os.walk(root_folder, followlinks=True):
+        for filename in filenames:
+            file_path = os.path.join(dirpath, filename)
+            rel_path = os.path.relpath(file_path, root_folder)
+            source_files.append((os.path.abspath(file_path), rel_path))
+    source_files = [
+        (file_path, file_name)
+        for file_path, file_name in source_files
+        if not any(
+            exclude_pattern.match(file_name) for exclude_pattern in EXCLUDE_PATTERNS
+        )
+    ]
+    return source_files
 
 
 # Start of Pulumi settings and application infrastructure
@@ -100,6 +119,10 @@ else:
         use_cases=["customModel", "notebook"],
     )
 
+{{agent_app_name}}_custom_model_files = get_custom_model_files(
+    os.path.join(str({{agent_app_name}}_application_path), "custom_model")
+)
+
 {{agent_app_name}}_custom_model = pulumi_datarobot.CustomModel(
     resource_name="Custom Model " + {{agent_app_name}}_resource_name,
     base_environment_id={{agent_app_name}}_execution_environment.id,
@@ -107,11 +130,11 @@ else:
     target_type="AgenticWorkflow",
     target_name="response",
     language="python",
-    runtime_parameter_values=[],
-    # To use the LLM DataRobot Deployment in your Agent, uncomment the line below
-    # runtime_parameter_values=llm_datarobot_app_runtime_parameters,
     use_case_ids=[use_case.id],
-    folder_path=os.path.join(str({{agent_app_name}}_application_path), "custom_model"),
+    files={{agent_app_name}}_custom_model_files,
+    runtime_parameter_values=[],
+    # To use the LLM DataRobot Deployment in your Agent, use the alternative parameter below
+    # runtime_parameter_values=llm_datarobot_app_runtime_parameters,
 )
 
 {{agent_app_name}}_custom_model_endpoint = {{agent_app_name}}_custom_model.id.apply(
