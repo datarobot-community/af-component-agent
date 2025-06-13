@@ -24,11 +24,14 @@ from datarobot_pulumi_utils.schema.custom_models import (
     DeploymentArgs,
     RegisteredModelArgs,
 )
+from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 
 from . import project_dir, use_case
 
 # To use the LLM DataRobot Deployment in your Agent, uncomment the line below
 # from .llm_datarobot import app_runtime_parameters as llm_datarobot_app_runtime_parameters
+
+DEFAULT_EXECUTION_ENVIRONMENT = "[DataRobot] Python 3.11 GenAI Agents"
 
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
@@ -70,24 +73,35 @@ if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
     {{agent_app_name}}_execution_environment_id = os.environ[
         "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT"
     ]
-    pulumi.info(
-        "Using existing execution environment " + {{agent_app_name}}_execution_environment_id
-    )
-    {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
-        id={{agent_app_name}}_execution_environment_id,
-        resource_name="Execution Environment [PRE-EXISTING] " + {{agent_app_name}}_resource_name,
-    )
+
+    if {{agent_app_name}}_execution_environment_id == DEFAULT_EXECUTION_ENVIRONMENT:
+        pulumi.info(
+            "Using default GenAI Agents execution environment "
+            + {{agent_app_name}}_execution_environment_id
+        )
+        {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
+            id=RuntimeEnvironments.PYTHON_311_GENAI_AGENTS.value.id,
+            resource_name="Execution Environment [PRE-EXISTING] " + {{agent_app_name}}_resource_name,
+        )
+    else:
+        pulumi.info(
+            "Using existing execution environment " + {{agent_app_name}}_execution_environment_id
+        )
+        {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
+            id={{agent_app_name}}_execution_environment_id,
+            resource_name="Execution Environment [PRE-EXISTING] " + {{agent_app_name}}_resource_name,
+        )
 else:
     {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment(
-        resource_name="Agent Python 3.11 " + {{agent_app_name}}_resource_name,
+        resource_name="Execution Environment [docker_context] " + {{agent_app_name}}_resource_name,
         programming_language="python",
-        description="DataRobot Agent Execution Environment [Python 3.11]",
+        description="Execution Environment [agent docker_context]",
         docker_context_path=os.path.join(str({{agent_app_name}}_application_path), "docker_context"),
         use_cases=["customModel", "notebook"],
     )
 
 {{agent_app_name}}_custom_model = pulumi_datarobot.CustomModel(
-    resource_name="Agent Custom Model " + {{agent_app_name}}_resource_name,
+    resource_name="Custom Model " + {{agent_app_name}}_resource_name,
     base_environment_id={{agent_app_name}}_execution_environment.id,
     base_environment_version_id={{agent_app_name}}_execution_environment.version_id,
     target_type="AgenticWorkflow",
@@ -105,14 +119,14 @@ else:
 )
 
 # Export the IDs of the created resources
-pulumi.export("Use Case ID " + {{agent_app_name}}_resource_name, use_case.id)
+pulumi.export("Agent Use Case ID " + {{agent_app_name}}_resource_name, use_case.id)
 pulumi.export(
-    "Execution Environment ID " + {{agent_app_name}}_resource_name,
+    "Agent Execution Environment ID " + {{agent_app_name}}_resource_name,
     {{agent_app_name}}_execution_environment.id,
 )
-pulumi.export("Custom Model ID " + {{agent_app_name}}_resource_name, {{agent_app_name}}_custom_model.id)
+pulumi.export("Agent Custom Model ID " + {{agent_app_name}}_resource_name, {{agent_app_name}}_custom_model.id)
 pulumi.export(
-    "Custom Model Chat Endpoint " + {{agent_app_name}}_resource_name,
+    "Agent Custom Model Chat Endpoint " + {{agent_app_name}}_resource_name,
     {{agent_app_name}}_custom_model_endpoint,
 )
 
@@ -120,17 +134,17 @@ pulumi.export(
 {{agent_app_name}}_agent_deployment_id: pulumi.Output[str] = cast(pulumi.Output[str], "None")
 if os.environ.get("AGENT_DEPLOY") != "0":
     {{agent_app_name}}_prediction_environment = pulumi_datarobot.PredictionEnvironment(
-        resource_name="Agent Prediction Environment " + {{agent_app_name}}_resource_name,
+        resource_name="Prediction Environment " + {{agent_app_name}}_resource_name,
         platform=dr.enums.PredictionEnvironmentPlatform.DATAROBOT_SERVERLESS,
     )
 
     {{agent_app_name}}_registered_model_args = RegisteredModelArgs(
-        resource_name="Agent Registered Model " + {{agent_app_name}}_resource_name,
+        resource_name="Registered Model " + {{agent_app_name}}_resource_name,
     )
 
     {{agent_app_name}}_deployment_args = DeploymentArgs(
-        resource_name="Agent Deployment " + {{agent_app_name}}_resource_name,
-        label=f"Agent Deployment [{PROJECT_NAME}] " + {{agent_app_name}}_resource_name,
+        resource_name="Deployment " + {{agent_app_name}}_resource_name,
+        label=f"Deployment [{PROJECT_NAME}] " + {{agent_app_name}}_resource_name,
         association_id_settings=pulumi_datarobot.DeploymentAssociationIdSettingsArgs(
             column_names=["association_id"],
             auto_generate_id=False,
@@ -149,7 +163,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
     )
 
     {{agent_app_name}}_agent_deployment = CustomModelDeployment(
-        resource_name="Agent Chat Deployment " + {{agent_app_name}}_resource_name,
+        resource_name="Chat Deployment " + {{agent_app_name}}_resource_name,
         use_case_ids=[use_case.id],
         custom_model_version_id={{agent_app_name}}_custom_model.version_id,
         prediction_environment={{agent_app_name}}_prediction_environment,
