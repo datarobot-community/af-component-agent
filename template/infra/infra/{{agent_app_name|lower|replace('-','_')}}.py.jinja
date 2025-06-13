@@ -68,7 +68,7 @@ __all__ = [
 {{agent_app_name}}_application_path = project_dir.parent / "{{agent_app_name}}"
 
 
-def get_custom_model_files(root_folder) -> list[tuple[str, str]]:
+def get_custom_model_files(root_folder: str) -> list[tuple[str, str]]:
     # Get all files from application path, following symlinks
     # When we've upgraded to Python 3.13 we can use Path.glob(reduce_symlinks=True)
     # https://docs.python.org/3.13/library/pathlib.html#pathlib.Path.glob
