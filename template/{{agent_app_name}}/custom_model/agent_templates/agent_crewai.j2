@@ -19,6 +19,8 @@ from helpers import CrewAIEventListener, create_inputs_from_completion_params
 from openai.types.chat import CompletionCreateParams
 from ragas.messages import AIMessage
 
+DEFAULT_MODEL = "datarobot/azure/gpt-4o-mini"
+
 
 class MyAgent:
     """MyAgent is a custom agent that uses CrewAI to plan, write, and edit content.
