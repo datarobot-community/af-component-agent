@@ -91,6 +91,7 @@ jobs:
         run: |
           uvx copier copy . ./copier_context --defaults
           cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
+          cp ./fixtures/infra/Pulumi.yaml ./copier_context/infra/Pulumi.yaml
           cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
           cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
           
