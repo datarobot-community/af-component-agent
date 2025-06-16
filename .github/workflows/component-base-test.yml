@@ -101,9 +101,9 @@ jobs:
         run: |
           cd ./copier_context
           cd ./infra
-          export PULUMI_ACCESS_TOKEN="123" && pulumi stack -s test
-          export PULUMI_ACCESS_TOKEN="123" && \
-            uv run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/
+          pulumi login --local
+          pulumi stack -s test
+          uv run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/
   uvx-copier-unit-test:
     name: Base Unit Tests
     runs-on: ubuntu-latest
