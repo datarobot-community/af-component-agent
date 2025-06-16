@@ -101,6 +101,7 @@ jobs:
         run: |
           cd ./copier_context
           cd ./infra
+          pulumi stack -s test
           uv run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/
   uvx-copier-unit-test:
     name: Base Unit Tests
