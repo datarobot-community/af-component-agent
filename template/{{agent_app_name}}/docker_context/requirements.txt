@@ -173,7 +173,7 @@ langgraph-prebuilt==0.1.8
 langgraph-sdk==0.1.66
 langsmith==0.3.42
 lark==1.2.2
-litellm==1.72.4
+litellm==1.68.0
 llama-cloud==0.1.21
 llama-cloud-services==0.6.15
 llama-index==0.12.35
