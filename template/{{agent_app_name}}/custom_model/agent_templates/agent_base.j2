@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import re
 from typing import Any, Optional, Union
 
 from helpers import create_inputs_from_completion_params
@@ -66,11 +67,7 @@ class MyAgent:
             str: The modified API base URL.
         """
         if self.api_base:
-            if self.api_base.endswith("api/v2/"):
-                return self.api_base[:-7]  # Remove 'api/v2/'
-            elif self.api_base.endswith("api/v2"):
-                return self.api_base[:-6]  # Remove 'api/v2'
-            return self.api_base
+            return re.sub(r"api/v2/?$", "", self.api_base)
         return "https://api.datarobot.com"
 
     def run(
