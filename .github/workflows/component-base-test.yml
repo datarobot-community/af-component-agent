@@ -97,7 +97,7 @@ jobs:
           cd ./copier_context
           cd ./infra
           uv sync --all-extras --all-groups --dev
-      - name: Lint Infra Template
+      - name: Run unit tests
         run: |
           cd ./copier_context
           cd ./infra
