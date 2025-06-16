@@ -101,6 +101,7 @@ jobs:
         run: |
           cd ./copier_context
           cd ./infra
+          export PULUMI_CONFIG_PASSPHRASE=123
           pulumi login --local
           pulumi stack init -s organization/unittest/unittest
           uv run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/
