@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import re
 from typing import Any, Optional, Union
 
 from crewai import LLM, Agent, Crew, CrewOutput, Task
@@ -71,11 +72,7 @@ class MyAgent:
             str: The modified API base URL.
         """
         if self.api_base:
-            if self.api_base.endswith("api/v2/"):
-                return self.api_base[:-7]  # Remove 'api/v2/'
-            elif self.api_base.endswith("api/v2"):
-                return self.api_base[:-6]  # Remove 'api/v2'
-            return self.api_base
+            return re.sub(r"api/v2/?$", "", self.api_base)
         return "https://api.datarobot.com"
 
     @property
@@ -104,7 +101,7 @@ class MyAgent:
         """
         return LLM(
             model="datarobot/vertex_ai/gemini-1.5-flash-002",
-            api_base=f"{self.api_base_litellm}/api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/",
+            api_base=f"{self.api_base_litellm}api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/chat/completions",
             api_key=self.api_key,
         )
 
