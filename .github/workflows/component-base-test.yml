@@ -292,7 +292,7 @@ jobs:
           fi
           
           # Check the chat completion returned
-          if cat ./agent/output.log | grep -q 'INFO - Running agent with inputs'; then
+          if cat ./agent/output.log | grep -q 'Running agent with inputs'; then
             echo "Test passed: cli.py returned log containing in-agent messaging"
           else
             echo "Test failed: cli.py did not return log containing in-agent messaging"

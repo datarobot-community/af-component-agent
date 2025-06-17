@@ -93,8 +93,7 @@ def argparse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--use_server",
-        type=bool,
-        default=False,
+        action=argparse.BooleanOptionalAction,
         help="Custom attributes for tracing. Should be a JSON dictionary.",
     )
     args = parser.parse_args()
