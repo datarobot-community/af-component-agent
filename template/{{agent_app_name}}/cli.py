@@ -49,7 +49,7 @@ def cli(
 @click.option("--completion_json", default="", help="Path to json to use for chat.")
 @click.option("--use_server", is_flag=True, help="Use DRUM Server for execution.")
 def execute(
-        environment: Any, user_prompt: str, completion_json: str, use_server: bool
+    environment: Any, user_prompt: str, completion_json: str, use_server: bool
 ) -> None:
     """Execute agent code locally using OpenAI completions.
 
