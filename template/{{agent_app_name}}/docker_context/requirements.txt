@@ -247,6 +247,7 @@ opentelemetry-instrumentation-fastapi==0.54b0
 opentelemetry-instrumentation-google-generativeai==0.40.3
 opentelemetry-instrumentation-groq==0.40.3
 opentelemetry-instrumentation-haystack==0.40.3
+opentelemetry-instrumentation-httpx==0.54b0
 opentelemetry-instrumentation-lancedb==0.40.3
 opentelemetry-instrumentation-langchain==0.40.3
 opentelemetry-instrumentation-llamaindex==0.40.3
