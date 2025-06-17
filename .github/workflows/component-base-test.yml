@@ -133,7 +133,7 @@ jobs:
           cd ./copier_context
           task agent_test:agent:test-coverage
   uvx-copier-cli-drum-server-test:
-    name: Base CLI Tests
+    name: Base CLI Tests with DRUM Server
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -219,8 +219,8 @@ jobs:
             echo "Test failed: cli.py did not return chat completion success"
             exit 1
           fi
-  uvx-copier-cli-drum-inline-test:
-    name: Base CLI Tests
+  uvx-copier-cli-drum-runner-test:
+    name: Base CLI Tests with DRUM Runner
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
