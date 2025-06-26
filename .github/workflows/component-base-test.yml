@@ -166,7 +166,7 @@ jobs:
           # Run the CLI command with a sample user prompt
           task agent_test:agent:cli -- \
             execute \
-            --user_prompt '{"topic": "Artificial Intelligence"}' --use_server \
+            --user_prompt '{"topic": "Artificial Intelligence"}' \
             > ./agent/output.log 2>&1
 
           # Check if the log file was created
@@ -254,6 +254,7 @@ jobs:
           task agent_test:agent:cli -- \
             execute \
             --user_prompt '{"topic": "Artificial Intelligence"}' \
+            --use_inline_predictor \
             > ./agent/output.log 2>&1
 
           # Check if the log file was created

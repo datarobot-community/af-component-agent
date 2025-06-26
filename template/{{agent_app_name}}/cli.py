@@ -47,9 +47,9 @@ def cli(
 @pass_environment
 @click.option("--user_prompt", default="", help="Input to use for chat.")
 @click.option("--completion_json", default="", help="Path to json to use for chat.")
-@click.option("--use_server", is_flag=True, help="Use DRUM Server for execution.")
+@click.option("--use_inline_predictor", is_flag=True, help="Use DRUM Server for execution.")
 def execute(
-    environment: Any, user_prompt: str, completion_json: str, use_server: bool
+    environment: Any, user_prompt: str, completion_json: str, use_inline_predictor: bool
 ) -> None:
     """Execute agent code locally using OpenAI completions.
 
@@ -71,7 +71,7 @@ def execute(
     response = environment.interface.local(
         user_prompt=user_prompt,
         completion_json=completion_json,
-        use_server=use_server,
+        use_inline_predictor=use_inline_predictor,
     )
     click.echo("\nStored Execution Result:")
     click.echo(response)

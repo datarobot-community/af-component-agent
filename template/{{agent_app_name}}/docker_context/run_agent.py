@@ -92,9 +92,9 @@ def argparse_args() -> argparse.Namespace:
         help="Custom attributes for tracing. Should be a JSON dictionary.",
     )
     parser.add_argument(
-        "--use_server",
+        "--use_inline_predictor",
         action=argparse.BooleanOptionalAction,
-        help="Custom attributes for tracing. Should be a JSON dictionary.",
+        help="Use DRUM serverless inline execution.",
     )
     args = parser.parse_args()
     return args
@@ -301,15 +301,15 @@ def run_agent_procedure(args: Any) -> None:
         root.info(f"Trace id: {trace_id}")
 
         root.info(f"Executing request in directory {args.custom_model_dir}")
-        if args.use_server:
-            result = execute_drum(
+        if args.use_inline_predictor:
+            result = execute_drum_inline(
                 chat_completion=chat_completion,
-                default_headers=default_headers,
                 custom_model_dir=args.custom_model_dir,
             )
         else:
-            result = execute_drum_inline(
+            result = execute_drum(
                 chat_completion=chat_completion,
+                default_headers=default_headers,
                 custom_model_dir=args.custom_model_dir,
             )
         store_result(
