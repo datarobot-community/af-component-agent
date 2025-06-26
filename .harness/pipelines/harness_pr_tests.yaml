@@ -43,7 +43,7 @@ pipeline:
                     shell: Sh
                     command: |-
                       apt-get update
-                      apt-get install -y --no-install-recommends git go-task
+                      apt-get install -y --no-install-recommends git task
 
                       ls -la
                       uvx copier copy . ./copier_context --defaults
@@ -52,4 +52,4 @@ pipeline:
                       cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
                       cd ./copier_context
 
-                      go-task agent_test:agent:req
+                      task agent_test:agent:req
