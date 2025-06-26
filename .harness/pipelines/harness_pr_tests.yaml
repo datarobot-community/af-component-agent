@@ -39,11 +39,11 @@ pipeline:
                   identifier: copier
                   spec:
                     connectorRef: account.GHCR
-                    image: astral-sh/uv:python3.12-alpine
+                    image: astral-sh/uv:python3.12-bookworm
                     shell: Sh
                     command: |-
-                      apk update
-                      apk add go-task git py3-onnxruntime
+                      apt-get update
+                      apt-get install -y --no-install-recommends git go-task
 
                       ls -la
                       uvx copier copy . ./copier_context --defaults
