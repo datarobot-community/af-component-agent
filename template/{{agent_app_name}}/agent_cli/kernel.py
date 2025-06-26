@@ -90,7 +90,7 @@ class Kernel:
         completion_json: str = "",
         custom_model_dir: str = "",
         output_path: str = "",
-        use_inline_predictor: bool = False,
+        use_serverless: bool = False,
     ) -> tuple[str, str]:
         if len(user_prompt) == 0 and len(completion_json) == 0:
             raise ValueError("user_prompt or completion_json must provided.")
@@ -115,8 +115,8 @@ class Kernel:
             f"--custom_model_dir '{custom_model_dir}' "
             f"--output_path '{output_path}'"
         )
-        if use_inline_predictor:
-            command_args += " --use_inline_predictor"
+        if use_serverless:
+            command_args += " --use_serverless"
 
         return command_args, output_path
 
@@ -136,10 +136,10 @@ class Kernel:
         completion_json: str = "",
         custom_model_dir: str = "",
         output_path: str = "",
-        use_inline_predictor: bool = False,
+        use_serverless: bool = False,
     ) -> Any:
         command_args, output_path = self.validate_and_create_execute_args(
-            user_prompt, completion_json, custom_model_dir, output_path, use_inline_predictor
+            user_prompt, completion_json, custom_model_dir, output_path, use_serverless
         )
 
         local_cmd = f"python3 run_agent.py {command_args}"
