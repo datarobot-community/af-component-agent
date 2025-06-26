@@ -42,10 +42,12 @@ pipeline:
                     image: astral-sh/uv:python3.12-bookworm
                     shell: Sh
                     command: |-
-                      apt-get update
-                      apt-get install -y --no-install-recommends git snapd
+                      sh -c "echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' > /etc/apt/sources.list.d/goreleaser.list"
+                      sudo apt-get install task
 
-                      snap install task --classic
+                      apt-get update
+                      apt-get install -y --no-install-recommends git
+                      apt-get install task
 
                       ls -la
                       uvx copier copy . ./copier_context --defaults
