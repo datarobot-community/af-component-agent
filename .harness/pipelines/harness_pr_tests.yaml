@@ -33,24 +33,6 @@ pipeline:
               os: Linux
           execution:
             steps:
-              - step:
-                  type: Run
-                  name: environment
-                  identifier: environment
-                  spec:
-                    connectorRef: account.GHCR
-                    image: astral-sh/uv:python3.12-alpine
-                    shell: Sh
-                    command: |-
-                      apk update
-                      apk add go-task git
-
-                      ls -la
-                      uvx copier copy . ./copier_context --defaults
-                      cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
-                      cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
-                      cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
-                      cd ./copier_context
               - parallel:
                   - step:
                       type: Run
@@ -60,7 +42,18 @@ pipeline:
                         connectorRef: account.GHCR
                         image: astral-sh/uv:python3.12-alpine
                         shell: Sh
-                        command: task agent_test:agent:req
+                        command: |-
+                          apk update
+                          apk add go-task git
+
+                          ls -la
+                          uvx copier copy . ./copier_context --defaults
+                          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
+                          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+                          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+                          cd ./copier_context
+
+                          /usr/local/bin/task agent_test:agent:req
                   - step:
                       type: Run
                       name: lint
@@ -70,9 +63,19 @@ pipeline:
                         image: astral-sh/uv:python3.12-alpine
                         shell: Sh
                         command: |-
-                          task agent_test:agent:req
+                          apk update
+                          apk add go-task git
 
-                          task agent_test:agent:lint-check
+                          ls -la
+                          uvx copier copy . ./copier_context --defaults
+                          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
+                          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+                          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+                          cd ./copier_context
+
+                          /usr/local/bin/task agent_test:agent:req
+
+                          /usr/local/bin/task agent_test:agent:lint-check
                   - step:
                       type: Run
                       name: unit_tests
@@ -82,9 +85,19 @@ pipeline:
                         image: astral-sh/uv:python3.12-alpine
                         shell: Sh
                         command: |-
-                          task agent_test:agent:req
+                          apk update
+                          apk add go-task git
 
-                          task agent_test:agent:test-coverage
+                          ls -la
+                          uvx copier copy . ./copier_context --defaults
+                          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
+                          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+                          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+                          cd ./copier_context
+
+                          /usr/local/bin/task agent_test:agent:req
+
+                          /usr/local/bin/task agent_test:agent:test-coverage
                         reports:
                           type: JUnit
                           spec:
