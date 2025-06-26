@@ -43,7 +43,6 @@ pipeline:
                     shell: Sh
                     command: |-
                       sh -c "echo 'deb [trusted=yes] https://repo.goreleaser.com/apt/ /' > /etc/apt/sources.list.d/goreleaser.list"
-                      sudo apt-get install task
 
                       apt-get update
                       apt-get install -y --no-install-recommends git
