@@ -43,7 +43,7 @@ pipeline:
                     shell: Sh
                     command: |-
                       apk update
-                      apk add taskfile
+                      apk add go-task
 
                       uvx copier copy . ./copier_context --defaults
                       cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
