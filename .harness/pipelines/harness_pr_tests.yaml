@@ -52,8 +52,4 @@ pipeline:
                       cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
                       cd ./copier_context
 
-                      ls -la /usr/bin
-
-                      ls -la /usr/local/bin
-
                       go-task agent_test:agent:req
