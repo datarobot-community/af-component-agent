@@ -43,7 +43,7 @@ pipeline:
                     shell: Sh
                     command: |-
                       apk update
-                      apk add go-task
+                      apk add go-task git
 
                       ls -la
                       uvx copier copy . ./copier_context --defaults
