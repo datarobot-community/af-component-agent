@@ -40,7 +40,7 @@ pipeline:
                   spec:
                     connectorRef: account.GHCR
                     image: astral-sh/uv:python3.12-alpine
-                    shell: Bash
+                    shell: Sh
                     command: |-
                       apk update
                       apk add taskfile
