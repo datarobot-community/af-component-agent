@@ -43,7 +43,9 @@ pipeline:
                     shell: Sh
                     command: |-
                       apt-get update
-                      apt-get install -y --no-install-recommends git task
+                      apt-get install -y --no-install-recommends git snapd
+
+                      snap install task --classic
 
                       ls -la
                       uvx copier copy . ./copier_context --defaults
