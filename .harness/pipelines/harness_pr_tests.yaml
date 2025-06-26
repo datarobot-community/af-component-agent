@@ -43,7 +43,7 @@ pipeline:
                     shell: Sh
                     command: |-
                       apk update
-                      apk add go-task git
+                      apk add go-task git onnxruntime
 
                       ls -la
                       uvx copier copy . ./copier_context --defaults
