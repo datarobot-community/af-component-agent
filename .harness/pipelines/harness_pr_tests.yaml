@@ -56,4 +56,4 @@ pipeline:
 
                       ls -la /usr/local/bin
 
-                      /usr/local/bin/task agent_test:agent:req
+                      go-task agent_test:agent:req
