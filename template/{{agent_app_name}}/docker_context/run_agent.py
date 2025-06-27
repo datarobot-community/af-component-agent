@@ -93,7 +93,7 @@ def argparse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--use_serverless",
-        action=argparse.BooleanOptionalAction,
+        action="store_true",
         help="Use DRUM serverless predictor.",
     )
     args = parser.parse_args()
