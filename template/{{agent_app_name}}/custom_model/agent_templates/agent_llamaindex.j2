@@ -163,7 +163,7 @@ class MyAgent:
         return "Report written."
 
     @staticmethod
-    async def review_report(ctx: Context, review: str) -> str:
+    async def review_report(ctx: Context, review: str) -> str:  # type: ignore
         """Useful for reviewing a report and providing feedback. Your input should be a review of the report."""
         current_state = await ctx.get("state")
         current_state["review"] = review
