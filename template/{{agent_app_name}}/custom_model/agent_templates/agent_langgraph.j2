@@ -194,7 +194,7 @@ class MyAgent:
         )
 
     @property
-    def agent_editor(self) -> CompiledGraph:  # type: ignore
+    def agent_editor(self) -> CompiledGraph:
         return create_react_agent(
             self.llm_with_datarobot_llm_gateway,
             tools=[],
