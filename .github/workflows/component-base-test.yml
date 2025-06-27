@@ -132,8 +132,8 @@ jobs:
         run: |
           cd ./copier_context
           task agent_test:agent:test-coverage
-  uvx-copier-cli-test:
-    name: Base CLI Tests
+  uvx-copier-cli-drum-server-test:
+    name: Base CLI Tests with DRUM Server
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -206,6 +206,94 @@ jobs:
           
           # Check the chat completion returned
           if cat ./agent/output.log | grep -q 'INFO - Running agent with inputs'; then
+            echo "Test passed: cli.py returned log containing in-agent messaging"
+          else
+            echo "Test failed: cli.py did not return log containing in-agent messaging"
+            exit 1
+          fi
+          
+          # Check the chat completion returned
+          if cat ./agent/output.log | grep -q '"content": "success"'; then
+            echo "Test passed: cli.py returned chat completion success"
+          else
+            echo "Test failed: cli.py did not return chat completion success"
+            exit 1
+          fi
+  uvx-copier-cli-drum-runner-test:
+    name: Base CLI Tests with DRUM Runner
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Install Task
+        uses: arduino/setup-task@v2
+      - name: Install Dependencies
+        run: |
+          uvx copier copy . ./copier_context --defaults
+          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
+          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+          
+          cd ./copier_context
+          task agent_test:agent:req
+      - name: Run cli test
+        run: |-
+          cd ./copier_context
+
+          # Ensure the log file does not exist before running the CLI command
+          if ! [ -f "output.log" ]; then
+            echo "Log file not created yet. Proceeding with CLI test."
+          else
+            echo "Log file exists before test. CLI test cannot be run."
+            exit 1
+          fi
+
+          # Run the CLI command with a sample user prompt
+          task agent_test:agent:cli -- \
+            execute \
+            --user_prompt '{"topic": "Artificial Intelligence"}' \
+            --use_serverless \
+            > ./agent/output.log 2>&1
+
+          # Check if the log file was created
+          if [ $(wc -l <./agent/output.log) -ge 13 ]; then
+            echo "Log file created successfully and file not empty."
+            echo ""
+            echo "Contents of output.log:"
+            cat ./agent/output.log
+          else
+            echo "Log file was not created."
+            exit 1
+          fi
+          
+          # Check the logger showed the first command
+          if cat ./agent/output.log | grep -q 'Running CLI execute'; then
+            echo "Test passed: cli.py returned log for starting cli"
+          else
+            echo "Test failed: cli.py did not return log for starting cli"
+            exit 1
+          fi
+          
+          # Check the logger showed the startup commands
+          if cat ./agent/output.log | grep -q 'INFO - Parsing args'; then
+            echo "Test passed: cli.py returned log for argparse"
+          else
+            echo "Test failed: cli.py did not return log for argparse"
+            exit 1
+          fi
+          
+          # Check the chat completion returned
+          if cat ./agent/output.log | grep -q 'INFO - Starting DRUM runner'; then
+            echo "Test passed: cli.py returned log for starting DRUM runner"
+          else
+            echo "Test failed: cli.py did not return log for starting DRUM runner"
+            exit 1
+          fi
+          
+          # Check the chat completion returned
+          if cat ./agent/output.log | grep -q 'Running agent with inputs'; then
             echo "Test passed: cli.py returned log containing in-agent messaging"
           else
             echo "Test failed: cli.py did not return log containing in-agent messaging"

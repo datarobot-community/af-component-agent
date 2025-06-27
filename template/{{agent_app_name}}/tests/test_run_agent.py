@@ -642,21 +642,26 @@ class TestExecuteDrum:
 
 class TestRunAgentProcedure:
     @patch("run_agent.construct_prompt")
+    @patch("run_agent.execute_drum_inline")
     @patch("run_agent.execute_drum")
     @patch("run_agent.store_result")
     @patch("run_agent.setup_otel")
+    @pytest.mark.parametrize("use_serverless", [False, True])
     def test_run_agent_with_custom_model_dir(
         self,
         mock_setup_otel,
         mock_store_result,
         mock_execute_drum,
+        mock_execute_drum_inline,
         mock_construct_prompt,
+        use_serverless,
     ):
         # GIVEN simple input arguments
         mock_args = MagicMock()
         mock_args.chat_completion = '{"messages": []}'
         mock_args.default_headers = "{}"
         mock_args.custom_model_dir = "/path/to/custom/model"
+        mock_args.use_serverless = use_serverless
 
         # GIVEN output_path is set
         mock_args.output_path = "/path/to/output"
@@ -664,6 +669,7 @@ class TestRunAgentProcedure:
         # GIVEN a mock completion
         mock_completion = MagicMock()
         mock_execute_drum.return_value = mock_completion
+        mock_execute_drum_inline.return_value = mock_completion
 
         # GIVEN mock_setup_otel returns a span with a trace_id
         mock_span = MagicMock()
@@ -680,11 +686,19 @@ class TestRunAgentProcedure:
         mock_setup_otel.assert_called_once_with(mock_args)
 
         # THEN execute_drum was called with correct parameters
-        mock_execute_drum.assert_called_once_with(
-            chat_completion={"messages": []},
-            default_headers={},
-            custom_model_dir="/path/to/custom/model",
-        )
+        if use_serverless:
+            mock_execute_drum_inline.assert_called_once_with(
+                chat_completion={"messages": []},
+                custom_model_dir="/path/to/custom/model",
+            )
+            mock_execute_drum.assert_not_called()
+        else:
+            mock_execute_drum.assert_called_once_with(
+                chat_completion={"messages": []},
+                default_headers={},
+                custom_model_dir="/path/to/custom/model",
+            )
+            mock_execute_drum_inline.assert_not_called()
 
         # THEN store_result was called with correct parameters
         mock_store_result.assert_called_once_with(
@@ -694,21 +708,26 @@ class TestRunAgentProcedure:
         )
 
     @patch("run_agent.construct_prompt")
+    @patch("run_agent.execute_drum_inline")
     @patch("run_agent.execute_drum")
     @patch("run_agent.store_result")
     @patch("run_agent.setup_otel")
+    @pytest.mark.parametrize("use_serverless", [False, True])
     def test_run_agent_without_custom_model_dir(
         self,
         mock_setup_otel,
         mock_store_result,
         mock_execute_drum,
+        mock_execute_drum_inline,
         mock_construct_prompt,
+        use_serverless,
     ):
         # GIVEN simple input arguments
         mock_args = MagicMock()
         mock_args.chat_completion = '{"messages": []}'
         mock_args.default_headers = "{}"
         mock_args.custom_model_dir = "/path/to/custom/model"
+        mock_args.use_serverless = use_serverless
 
         # GIVEN output_path is not set
         mock_args.output_path = None
@@ -716,6 +735,7 @@ class TestRunAgentProcedure:
         # GIVEN a mock completion
         mock_completion = MagicMock()
         mock_execute_drum.return_value = mock_completion
+        mock_execute_drum_inline.return_value = mock_completion
 
         # GIVEN mock_setup_otel returns a span with a trace_id
         mock_span = MagicMock()
@@ -732,11 +752,19 @@ class TestRunAgentProcedure:
         mock_setup_otel.assert_called_once_with(mock_args)
 
         # THEN execute_drum was called with correct parameters
-        mock_execute_drum.assert_called_once_with(
-            chat_completion={"messages": []},
-            default_headers={},
-            custom_model_dir="/path/to/custom/model",
-        )
+        if use_serverless:
+            mock_execute_drum_inline.assert_called_once_with(
+                chat_completion={"messages": []},
+                custom_model_dir="/path/to/custom/model",
+            )
+            mock_execute_drum.assert_not_called()
+        else:
+            mock_execute_drum.assert_called_once_with(
+                chat_completion={"messages": []},
+                default_headers={},
+                custom_model_dir="/path/to/custom/model",
+            )
+            mock_execute_drum_inline.assert_not_called()
 
         # THEN store_result was called with correct parameters
         mock_store_result.assert_called_once_with(
@@ -763,6 +791,7 @@ class TestMain:
         )
         mock_args.default_headers = '{"X-Custom": "value"}'
         mock_args.custom_model_dir = "/path/to/model"
+        mock_args.use_serverless = False
         # GIVEN a temporary directory for the output path
         mock_args.output_path = str(tempdir_and_cleanup / "output.json")
         mock_argparse_args.return_value = mock_args
@@ -1001,6 +1030,7 @@ class TestMainStdoutRedirect:
         )
         mock_args.default_headers = '{"X-Custom": "value"}'
         mock_args.custom_model_dir = "/path/to/model"
+        mock_args.use_serverless = False
         # GIVEN a temporary directory for the output path
         mock_args.output_path = str(tempdir_and_cleanup / "output.json")
         mock_argparse_args.return_value = mock_args

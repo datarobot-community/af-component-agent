@@ -47,7 +47,10 @@ def cli(
 @pass_environment
 @click.option("--user_prompt", default="", help="Input to use for chat.")
 @click.option("--completion_json", default="", help="Path to json to use for chat.")
-def execute(environment: Any, user_prompt: str, completion_json: str) -> None:
+@click.option("--use_serverless", is_flag=True, help="Use DRUM serverless predictor.")
+def execute(
+    environment: Any, user_prompt: str, completion_json: str, use_serverless: bool
+) -> None:
     """Execute agent code locally using OpenAI completions.
 
     Examples:
@@ -68,6 +71,7 @@ def execute(environment: Any, user_prompt: str, completion_json: str) -> None:
     response = environment.interface.local(
         user_prompt=user_prompt,
         completion_json=completion_json,
+        use_serverless=use_serverless,
     )
     click.echo("\nStored Execution Result:")
     click.echo(response)
