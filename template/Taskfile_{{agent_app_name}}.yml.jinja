@@ -11,14 +11,17 @@ tasks:
     cmds:
       - task --list
     silent: true
-  setup:
-    desc: "🏗️ Setup the agent and infra environments"
+  install:
+    desc: "🏗️ Install and setup the agent and infra environments"
     cmds:
       - echo "Updating agent environment"
       - task: agent:req
       - echo "Updating infra environment"
       - cd ./infra && uv sync --all-extras
     silent: true
+    aliases:
+      - setup
+      - req
   build:
     desc: "🔵 [{{ agent_app_name }}] Run Pulumi up in [BUILD] mode"
     env:
