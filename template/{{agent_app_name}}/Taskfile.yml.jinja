@@ -2,7 +2,7 @@
 # https://taskfile.dev
 version: '3'
 tasks:
-  req:
+  install:
     desc: 🛠️ [{{ agent_app_name }}] Update local dependencies
     cmds:
       - echo "Updating local dependencies"
@@ -10,7 +10,7 @@ tasks:
       - cd custom_model && uv pip install -r requirements.txt
     silent: true
     aliases:
-      - install
+      - req
   lint:
     desc: 🧹 [{{ agent_app_name }}] Lint the codebase
     cmds:
