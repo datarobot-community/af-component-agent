@@ -47,3 +47,12 @@ pipeline:
                       ./bin/task --version
                     envVariables:
                       PYTHON_VERSION: "3.11"
+              - step:
+                  type: Run
+                  name: copier
+                  identifier: copier
+                  spec:
+                    connectorRef: account.GHCR
+                    image: astral-sh/uv:python3.11-bookworm
+                    shell: Sh
+                    command: ./bin/task --version
