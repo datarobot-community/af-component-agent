@@ -27,9 +27,48 @@ jobs:
           cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
           cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
           cd ./copier_context
-  uvx-copier-lint-test:
-    name: Base Linter
+  uvx-copier-infra-tests:
+    name: Base Infra Linter and Unit Tests
     runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Install Task
+        uses: arduino/setup-task@v2
+      - name: Install Dependencies
+        run: |
+          uvx copier copy . ./copier_context --defaults
+          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
+          cp ./fixtures/infra/Pulumi.yaml ./copier_context/infra/Pulumi.yaml
+          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+          
+          cd ./copier_context
+          cd ./infra
+          uv sync --all-extras --all-groups --dev
+      - name: Lint Infra Template
+        run: |
+          cd ./copier_context
+          cd ./infra
+          uv run ruff format --check --diff .
+          uv run ruff check --diff .
+          uv run mypy --pretty .
+      - name: Run unit tests
+        run: |
+          cd ./copier_context
+          cd ./infra
+          export PULUMI_CONFIG_PASSPHRASE=123
+          pulumi login --local
+          pulumi stack init -s organization/unittest/unittest
+          uv run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/
+  uvx-copier-base-tests:
+    name: Base Linter and Unit Tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.11', '3.12']
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,89 +89,11 @@ jobs:
         run: |
           cd ./copier_context
           task agent_test:agent:lint-check
-  uvx-copier-infra-lint-test:
-    name: Base Infra Linter
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-      - name: Install Task
-        uses: arduino/setup-task@v2
-      - name: Install Dependencies
-        run: |
-          uvx copier copy . ./copier_context --defaults
-          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
-          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
-          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
-          
-          cd ./copier_context
-          cd ./infra
-          uv sync --all-extras --all-groups --dev
-      - name: Lint Infra Template
-        run: |
-          cd ./copier_context
-          cd ./infra
-          uv run ruff format --check --diff .
-          uv run ruff check --diff .
-          uv run mypy --pretty .
-  uvx-copier-infra-unit-test:
-    name: Base Infra Unit Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-      - name: Install Task
-        uses: arduino/setup-task@v2
-      - name: Install Dependencies
-        run: |
-          uvx copier copy . ./copier_context --defaults
-          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
-          cp ./fixtures/infra/Pulumi.yaml ./copier_context/infra/Pulumi.yaml
-          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
-          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
-          
-          cd ./copier_context
-          cd ./infra
-          uv sync --all-extras --all-groups --dev
-      - name: Run unit tests
-        run: |
-          cd ./copier_context
-          cd ./infra
-          export PULUMI_CONFIG_PASSPHRASE=123
-          pulumi login --local
-          pulumi stack init -s organization/unittest/unittest
-          uv run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/
-  uvx-copier-unit-test:
-    name: Base Unit Tests
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.10', '3.11', '3.12']
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-      - name: Install Task
-        uses: arduino/setup-task@v2
-      - name: Install Dependencies
-        run: |
-          uvx copier copy . ./copier_context --defaults
-          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
-          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
-          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
-          
-          cd ./copier_context
-          task agent_test:agent:req
       - name: Run unit tests
         run: |
           cd ./copier_context
           task agent_test:agent:test-coverage
-  uvx-copier-cli-drum-server-test:
+  uvx-copier-cli-drum-test:
     name: Base CLI Tests with DRUM Server
     runs-on: ubuntu-latest
     steps:
@@ -151,7 +112,7 @@ jobs:
           
           cd ./copier_context
           task agent_test:agent:req
-      - name: Run cli test
+      - name: Run cli test [using server mode]
         run: |-
           cd ./copier_context
 
@@ -219,26 +180,7 @@ jobs:
             echo "Test failed: cli.py did not return chat completion success"
             exit 1
           fi
-  uvx-copier-cli-drum-runner-test:
-    name: Base CLI Tests with DRUM Runner
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-      - name: Install Task
-        uses: arduino/setup-task@v2
-      - name: Install Dependencies
-        run: |
-          uvx copier copy . ./copier_context --defaults
-          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
-          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
-          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
-          
-          cd ./copier_context
-          task agent_test:agent:req
-      - name: Run cli test
+      - name: Run cli test [using serverless mode]
         run: |-
           cd ./copier_context
 
