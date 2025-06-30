@@ -15,9 +15,6 @@ jobs:
   llamaindex-copier-tests:
     name: LlamaIndex Linter and Unit Tests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.11']
     steps:
       - name: Checkout
         uses: actions/checkout@v4
