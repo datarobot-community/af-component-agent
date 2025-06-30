@@ -53,7 +53,7 @@ pipeline:
                   identifier: copier
                   spec:
                     connectorRef: account.GHCR
-                    image: astral-sh/uv:python3.11-bookworm
+                    image: astral-sh/uv:python3.11-alpine
                     shell: Sh
                     command: |-
                       echo $(pwd)
