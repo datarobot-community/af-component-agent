@@ -27,64 +27,8 @@ jobs:
           cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
           cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
           cd ./copier_context
-  uvx-copier-lint-test:
-    name: Base Linter
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Sleep for rate-limiting
-        run: sleep 1s
-        shell: bash
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-      - name: Install Task
-        uses: arduino/setup-task@v2
-      - name: Install Dependencies
-        run: |
-          uvx copier copy . ./copier_context --defaults
-          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
-          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
-          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
-          
-          cd ./copier_context
-          task agent_test:agent:req
-      - name: Lint Template
-        run: |
-          cd ./copier_context
-          task agent_test:agent:lint-check
-  uvx-copier-infra-lint-test:
-    name: Base Infra Linter
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Sleep for rate-limiting
-        run: sleep 1s
-        shell: bash
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-      - name: Install Task
-        uses: arduino/setup-task@v2
-      - name: Install Dependencies
-        run: |
-          uvx copier copy . ./copier_context --defaults
-          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
-          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
-          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
-          
-          cd ./copier_context
-          cd ./infra
-          uv sync --all-extras --all-groups --dev
-      - name: Lint Infra Template
-        run: |
-          cd ./copier_context
-          cd ./infra
-          uv run ruff format --check --diff .
-          uv run ruff check --diff .
-          uv run mypy --pretty .
-  uvx-copier-infra-unit-test:
-    name: Base Infra Unit Tests
+  uvx-copier-infra-tests:
+    name: Base Infra Linter and Unit Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -107,6 +51,13 @@ jobs:
           cd ./copier_context
           cd ./infra
           uv sync --all-extras --all-groups --dev
+      - name: Lint Infra Template
+        run: |
+          cd ./copier_context
+          cd ./infra
+          uv run ruff format --check --diff .
+          uv run ruff check --diff .
+          uv run mypy --pretty .
       - name: Run unit tests
         run: |
           cd ./copier_context
@@ -115,8 +66,8 @@ jobs:
           pulumi login --local
           pulumi stack init -s organization/unittest/unittest
           uv run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/
-  uvx-copier-unit-test:
-    name: Base Unit Tests
+  uvx-copier-base-tests:
+    name: Base Linter and Unit Tests
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -137,6 +88,10 @@ jobs:
           
           cd ./copier_context
           task agent_test:agent:req
+      - name: Lint Template
+        run: |
+          cd ./copier_context
+          task agent_test:agent:lint-check
       - name: Run unit tests
         run: |
           cd ./copier_context
