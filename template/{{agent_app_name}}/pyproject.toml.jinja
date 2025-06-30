@@ -17,10 +17,6 @@ dependencies = [
     "requests>=2.32.4",
     "traceloop-sdk>=0.40.2",
     "uvicorn>=0.22.0",
-]
-
-[project.optional-dependencies]
-agents = [
     "crewai>=0.117.1",
     "crewai-tools>=0.43.0",
     "langchain>=0.3.24",
@@ -33,8 +29,6 @@ agents = [
     "onnxruntime~=1.21.1",
     "multidict~=6.5.0",
     "ragas @ git+https://github.com/explodinggradients/ragas@5d59549ad5ef511f621502c563bc55ac5aeb9188#subdirectory=ragas",
-]
-telemetry = [
     "opentelemetry-api>=1.33.0",
     "opentelemetry-instrumentation-aiohttp-client>=0.54b0",
     "opentelemetry-instrumentation-crewai>=0.40.5",
@@ -45,6 +39,8 @@ telemetry = [
     "opentelemetry-instrumentation-httpx>=0.54b0",
     "opentelemetry-sdk>=1.33.0",
 ]
+
+[project.optional-dependencies]
 dev = [
     "pytest-cov>=6.1.1",
     "pytest>=7.4.0",
