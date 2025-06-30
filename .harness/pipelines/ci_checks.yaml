@@ -39,15 +39,17 @@ pipeline:
                   identifier: build_environment
                   spec:
                     connectorRef: account.dockerhub_datarobot_read
-                    image: datarobotdev/mirror_chainguard_datarobot.com_python-fips:3.11-dev
-                    shell: Sh
+                    image: python:3.11
+                    shell: Bash
                     command: |-
-                      apk update
-                      apk add --no-cache uv task rust sqlite
+                      set -exuo pipefail
+                      wget -qO- https://astral.sh/uv/install.sh | sh
+                      sh -c "wget -q0- https://taskfile.dev/install.sh" -- -d
 
-                      git --version
+
                       uv version
                       task --version
+                      git --version
 
                       uvx copier copy . ./copier_context --defaults
                       cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
