@@ -38,9 +38,9 @@ pipeline:
                   name: build environment
                   identifier: build_environment
                   spec:
-                    connectorRef: account.GHCR
-                    image: runner-images/ubuntu-latest
-                    shell: Bash
+                    connectorRef: account.dockerhub_datarobot_read
+                    image: ubuntu:24.04
+                    shell: Sh
                     command: |-
                       apt update && apt upgrade -y
                       apt install -y git curl g++
