@@ -12,8 +12,8 @@ defaults:
   run:
     working-directory: .
 jobs:
-  langgraph-copier-lint-test:
-    name: Langgraph Linter
+  langgraph-copier-tests:
+    name: Langgraph Linter and Unit Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
