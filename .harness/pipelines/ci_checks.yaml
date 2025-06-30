@@ -56,5 +56,6 @@ pipeline:
 
                       cd ./copier_context
                       task agent_test:agent:install
+                    privileged: true
                     envVariables:
                       PYTHON_VERSION: "3.11"
