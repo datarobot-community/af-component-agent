@@ -38,8 +38,8 @@ pipeline:
                   name: build environment
                   identifier: build_environment
                   spec:
-                    connectorRef: account.dockerhub_datarobot_read
-                    image: ubuntu/python:3.12-24.04_stable
+                    connectorRef: account.GHCR
+                    image: ubuntu-latest
                     shell: Bash
                     command: |-
                       apt update && apt upgrade -y
