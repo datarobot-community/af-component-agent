@@ -16,6 +16,7 @@ import time
 import uuid
 from typing import Any, Union
 
+from langchain_core.messages import ToolMessage
 from openai.types import CompletionUsage
 from openai.types.chat import (
     ChatCompletion,
@@ -36,6 +37,11 @@ def _extract_pipeline_interactions(events: list[dict[str, Any]]) -> MultiTurnSam
     for e in events:
         for k, v in e.items():
             messages.extend(v["messages"])
+
+    # Drop the ToolMessages since they may not be compatible with Ragas ToolMessage
+    # that is needed for the MultiTurnSample.
+    messages = [m for m in messages if not isinstance(m, ToolMessage)]
+
     ragas_trace = convert_to_ragas_messages(messages)
     pipeline_interactions = MultiTurnSample(user_input=ragas_trace)
     return pipeline_interactions
