@@ -68,8 +68,11 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.11', '3.12']
+        python-version: ['3.10', '3.11', '3.12']
     steps:
+      - name: Delay startup for GitHub Actions
+        run: sleep 15s
+        shell: bash
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install uv
@@ -249,26 +252,7 @@ jobs:
             echo "Test failed: cli.py did not return chat completion success"
             exit 1
           fi
-  uvx-copier-cli-json-test:
-    name: Base CLI JSON Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-      - name: Install Task
-        uses: arduino/setup-task@v2
-      - name: Install Dependencies
-        run: |
-          uvx copier copy . ./copier_context --defaults
-          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
-          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
-          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
-          
-          cd ./copier_context
-          task agent_test:agent:req
-      - name: Run cli test
+      - name: Run JSON cli test
         run: |-
           cd ./copier_context
 

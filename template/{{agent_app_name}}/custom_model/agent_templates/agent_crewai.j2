@@ -85,7 +85,7 @@ class MyAgent:
         third-party LLMs.
         """
         return LLM(
-            model="datarobot/vertex_ai/gemini-1.5-flash-002",
+            model="datarobot/azure/gpt-4o-mini",
             api_base=self.api_base_litellm,
             api_key=self.api_key,
         )
@@ -100,7 +100,7 @@ class MyAgent:
         third-party LLMs.
         """
         return LLM(
-            model="datarobot/vertex_ai/gemini-1.5-flash-002",
+            model="datarobot/azure/gpt-4o-mini",
             api_base=f"{self.api_base_litellm}api/v2/deployments/{os.environ.get('LLM_DEPLOYMENT_ID')}/chat/completions",
             api_key=self.api_key,
         )
