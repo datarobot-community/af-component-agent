@@ -42,8 +42,8 @@ pipeline:
                     image: datarobotdev/mirror_chainguard_datarobot.com_python-fips:3.11-dev
                     shell: Bash
                     command: |-
-                      apk upgrade
-                      apk add --no-cache uv task rust sqlite
+                      sudo apk upgrade
+                      sudo apk add --no-cache uv task rust sqlite
 
                       git --version
                       uv version
