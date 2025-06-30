@@ -170,7 +170,7 @@ langchain-openai==0.2.14
 langchain-text-splitters==0.3.8
 langgraph==0.4.10
 langgraph-checkpoint==2.1.0
-langgraph-prebuilt==0.5.1
+langgraph-prebuilt==0.2.3
 langgraph-sdk==0.1.66
 langsmith==0.3.42
 lark==1.2.2
