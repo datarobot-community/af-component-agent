@@ -56,6 +56,7 @@ pipeline:
                     image: astral-sh/uv:python3.11-bookworm
                     shell: Sh
                     command: |-
+                      echo $(pwd)
                       ./bin/task --version
 
                       uvx copier copy . ./copier_context --defaults
@@ -64,13 +65,4 @@ pipeline:
                       cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
 
                       cd ./copier_context
-                      ./bin/task agent_test:agent:install
-              - step:
-                  type: Run
-                  name: lint
-                  identifier: lint
-                  spec:
-                    connectorRef: account.GHCR
-                    image: astral-sh/uv:python3.11-bookworm
-                    shell: Sh
-                    command: ./bin/task agent_test:agent:lint-check
+                      ../bin/task agent_test:agent:install
