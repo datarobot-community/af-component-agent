@@ -39,12 +39,12 @@ pipeline:
                   identifier: build_environment
                   spec:
                     connectorRef: account.GHCR
-                    image: astral-sh/uv:python3.11-bookworm
+                    image: astral-sh/uv:python3.11-alpine
                     shell: Sh
                     command: |-
                       sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
 
-                      ./bin/task --version
+                      /harness/bin/task --version
                     envVariables:
                       PYTHON_VERSION: "3.11"
               - step:
@@ -57,7 +57,7 @@ pipeline:
                     shell: Sh
                     command: |-
                       echo $(pwd)
-                      ./bin/task --version
+                      /harness/bin/task --version
 
                       uvx copier copy . ./copier_context --defaults
                       cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
@@ -65,4 +65,4 @@ pipeline:
                       cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
 
                       cd ./copier_context
-                      ../bin/task agent_test:agent:install
+                      /harness/bin/task agent_test:agent:install
