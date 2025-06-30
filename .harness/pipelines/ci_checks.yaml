@@ -43,7 +43,7 @@ pipeline:
                     shell: Sh
                     command: |-
                       apt update && apt upgrade -y
-                      apt install -y git curl g++ gcc python3-dev
+                      apt install -y git curl g++ gcc
                       curl -LsSf https://astral.sh/uv/install.sh | sh
                       sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
 
@@ -53,6 +53,8 @@ pipeline:
                       git --version
                       uv version
                       task --version
+
+                      uv python install 3.11
 
                       uvx copier copy . ./copier_context --defaults
                       cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
