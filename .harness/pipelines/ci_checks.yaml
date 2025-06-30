@@ -39,7 +39,7 @@ pipeline:
                   identifier: build_environment
                   spec:
                     connectorRef: account.dockerhub_datarobot_read
-                    image: datarobot/mirror_chainguard_datarobot.com_python-fips:3.11-dev
+                    image: datarobotdev/mirror_chainguard_datarobot.com_python-fips:3.11-dev
                     shell: Bash
                     command: |-
                       apk upgrade
