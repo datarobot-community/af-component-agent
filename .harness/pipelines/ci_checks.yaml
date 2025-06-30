@@ -39,7 +39,7 @@ pipeline:
                   identifier: build_environment
                   spec:
                     connectorRef: account.dockerhub_datarobot_read
-                    image: ubuntu/python:3.12-24.04_stable Digest
+                    image: ubuntu/python:3.12-24.04_stable
                     shell: Sh
                     command: |-
                       apt update && apt upgrade -y
