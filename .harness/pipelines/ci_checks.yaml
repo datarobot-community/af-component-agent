@@ -43,8 +43,8 @@ pipeline:
                     shell: Bash
                     command: |-
                       set -exuo pipefail
-                      apt-get update && apt upgrade
-                      apt-get g++
+                      apt-get update && apt upgrade -y
+                      apt-get install gcc g++
                       curl -LsSf https://astral.sh/uv/install.sh | sh
                       sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
 
