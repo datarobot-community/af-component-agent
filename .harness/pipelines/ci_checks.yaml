@@ -48,19 +48,6 @@ pipeline:
 
                       /harness/bin/task --version
                       git --version
-                    envVariables:
-                      PYTHON_VERSION: "3.11"
-              - step:
-                  type: Run
-                  name: copier
-                  identifier: copier
-                  spec:
-                    connectorRef: account.GHCR
-                    image: astral-sh/uv:python3.11-alpine
-                    shell: Sh
-                    command: |-
-                      echo $(pwd)
-                      /harness/bin/task --version
 
                       uvx copier copy . ./copier_context --defaults
                       cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
@@ -69,3 +56,5 @@ pipeline:
 
                       cd ./copier_context
                       /harness/bin/task agent_test:agent:install
+                    envVariables:
+                      PYTHON_VERSION: "3.11"
