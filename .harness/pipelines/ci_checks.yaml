@@ -39,7 +39,7 @@ pipeline:
                   identifier: build_environment
                   spec:
                     connectorRef: account.GHCR
-                    image: ubuntu-latest
+                    image: runner-images/ubuntu-latest
                     shell: Bash
                     command: |-
                       apt update && apt upgrade -y
