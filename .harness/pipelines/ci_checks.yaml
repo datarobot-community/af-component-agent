@@ -42,6 +42,8 @@ pipeline:
                     image: astral-sh/uv:python3.11-alpine
                     shell: Sh
                     command: |-
+                      apk update
+                      apk add curl g++
                       sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
 
                       /harness/bin/task --version
