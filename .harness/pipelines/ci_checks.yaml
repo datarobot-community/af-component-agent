@@ -47,6 +47,7 @@ pipeline:
                       sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
 
                       /harness/bin/task --version
+                      ls -la /harness/bin
                     envVariables:
                       PYTHON_VERSION: "3.11"
               - step:
