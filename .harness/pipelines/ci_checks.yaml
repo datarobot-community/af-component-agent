@@ -38,12 +38,12 @@ pipeline:
                   name: build environment
                   identifier: build_environment
                   spec:
-                    connectorRef: account.GHCR
-                    image: astral-sh/uv:python3.11-alpine
+                    connectorRef: account.dockerhub_datarobot_read
+                    image: ubuntu/python:3.12-24.04_stable Digest
                     shell: Sh
                     command: |-
-                      apk upgrade
-                      apk add --no-cache git curl g++
+                      apt update && apt upgrade -y
+                      apt install -y git curl g++
                       sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
 
                       /harness/bin/task --version
