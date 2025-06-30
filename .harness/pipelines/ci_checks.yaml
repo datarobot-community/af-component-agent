@@ -54,7 +54,7 @@ pipeline:
                       uv version
                       task --version
 
-                      uv python install 3.11
+                      uv python install 3.12
 
                       uvx copier copy . ./copier_context --defaults
                       cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
