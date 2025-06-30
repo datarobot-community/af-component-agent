@@ -39,22 +39,15 @@ pipeline:
                   identifier: build_environment
                   spec:
                     connectorRef: account.dockerhub_datarobot_read
-                    image: ubuntu:24.04
-                    shell: Sh
+                    image: datarobot/mirror_chainguard_datarobot.com_python-fips:3.11-dev
+                    shell: Bash
                     command: |-
-                      apt update
-                      apt install -y git curl g++ gcc pipx
-                      curl -LsSf https://astral.sh/uv/install.sh | sh
-                      sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d
-
-                      PATH="$PATH:/root/.local/bin"
-                      PATH="$PATH:/harness/bin"
+                      apk upgrade
+                      apk add --no-cache uv task rust sqlite
 
                       git --version
                       uv version
                       task --version
-
-                      uv python install 3.12
 
                       uvx copier copy . ./copier_context --defaults
                       cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
