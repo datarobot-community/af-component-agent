@@ -45,7 +45,7 @@ pipeline:
                       set -exuo pipefail
 
                       apt-get update && apt upgrade -y
-                      apt-get install -y gcc g++ python3-dev
+                      apt-get install -y gcc g++ libc-dev python3-dev
                       apt-get clean
 
                       curl -LsSf https://astral.sh/uv/install.sh | sh
