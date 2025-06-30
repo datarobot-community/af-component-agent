@@ -18,6 +18,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Sleep for rate-limiting
+        run: sleep 3s
+        shell: bash
       - name: Install uv
         uses: astral-sh/setup-uv@v5
       - name: Install Task
@@ -43,6 +46,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Sleep for rate-limiting
+        run: sleep 3s
+        shell: bash
       - name: Install uv
         uses: astral-sh/setup-uv@v5
       - name: Install Task
