@@ -16,6 +16,9 @@ jobs:
     name: CrewAI Linter and Unit Tests
     runs-on: ubuntu-latest
     steps:
+      - name: Delay startup for GitHub Actions
+        run: sleep 10s
+        shell: bash
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install uv

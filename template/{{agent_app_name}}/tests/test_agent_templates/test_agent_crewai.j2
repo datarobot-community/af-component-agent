@@ -176,7 +176,7 @@ class TestMyAgentCrewAI:
         # Test that LLM is created with correct parameters
         agent.llm_with_datarobot_llm_gateway
         mock_llm.assert_called_once_with(
-            model="datarobot/vertex_ai/gemini-1.5-flash-002",
+            model="datarobot/azure/gpt-4o-mini",
             api_base="test_base",
             api_key="test_key",
         )
@@ -188,7 +188,7 @@ class TestMyAgentCrewAI:
             agent = MyAgent(api_key="test_key", verbose=True)
             agent.llm_with_datarobot_llm_gateway
             mock_llm.assert_called_once_with(
-                model="datarobot/vertex_ai/gemini-1.5-flash-002",
+                model="datarobot/azure/gpt-4o-mini",
                 api_base="https://api.datarobot.com",
                 api_key="test_key",
             )
