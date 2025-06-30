@@ -40,7 +40,7 @@ pipeline:
                   spec:
                     connectorRef: account.dockerhub_datarobot_read
                     image: ubuntu/python:3.12-24.04_stable
-                    shell: Sh
+                    shell: Bash
                     command: |-
                       apt update && apt upgrade -y
                       apt install -y git curl g++
