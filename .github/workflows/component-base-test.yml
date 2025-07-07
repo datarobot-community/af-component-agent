@@ -19,7 +19,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
       - name: Install Dependencies
         run: |
           uvx copier copy . ./copier_context --defaults
@@ -40,7 +40,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
       - name: Install Task
         uses: arduino/setup-task@v2
       - name: Install Dependencies
@@ -67,7 +67,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v6
       - name: Install Task
         uses: arduino/setup-task@v2
       - name: Install Dependencies
@@ -95,6 +95,7 @@ jobs:
           task agent_test:agent:cli -- \
             execute \
             --user_prompt '{"topic": "Artificial Intelligence"}' \
+            --disable_serverless \
             > ./agent/output.log 2>&1
 
           # Check if the log file was created
@@ -163,7 +164,6 @@ jobs:
           task agent_test:agent:cli -- \
             execute \
             --user_prompt '{"topic": "Artificial Intelligence"}' \
-            --use_serverless \
             > ./agent/output.log 2>&1
 
           # Check if the log file was created

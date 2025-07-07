@@ -31,13 +31,23 @@ def cli(
 ) -> None:
     """A CLI for interacting executing agent custom models using the chat endpoint and OpenAI completions.
 
-    Examples:
-
+    For more information on the main CLI commands and all available options, run the help command:
     > task cli -- execute --help
-
     > task cli -- execute-deployment --help
 
+    Common examples:
+
+    # Run the agent with a string user prompt
+    > task cli -- execute --user_prompt "Artificial Intelligence"
+
+    # Run the agent with a JSON user prompt
     > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
+
+    # Run the agent with a JSON file containing the full chat completion json
+    > task cli -- execute --completion_json "example-completion.json"
+
+    # Run the deployed agent with a string user prompt [Other prompt methods are also supported similar to execute]
+    > task cli -- execute-deployment --user_prompt "Artificial Intelligence" --deployment_id 680a77a9a3
 
     """
     ctx.obj = Environment(api_token, base_url)
@@ -47,9 +57,11 @@ def cli(
 @pass_environment
 @click.option("--user_prompt", default="", help="Input to use for chat.")
 @click.option("--completion_json", default="", help="Path to json to use for chat.")
-@click.option("--use_serverless", is_flag=True, help="Use DRUM serverless predictor.")
+@click.option(
+    "--disable_serverless", is_flag=True, help="Use DRUM server standalone predictor."
+)
 def execute(
-    environment: Any, user_prompt: str, completion_json: str, use_serverless: bool
+    environment: Any, user_prompt: str, completion_json: str, disable_serverless: bool
 ) -> None:
     """Execute agent code locally using OpenAI completions.
 
@@ -63,6 +75,9 @@ def execute(
 
     # Run the agent with a JSON file containing the full chat completion json
     > task cli -- execute --completion_json "example-completion.json"
+
+    # To disable serverless and use DRUM standalone predictor
+    > task cli -- execute --user_prompt "Artificial Intelligence" --disable_serverless
     """
     if len(user_prompt) == 0 and len(completion_json) == 0:
         raise click.UsageError("User prompt message or completion json must provided.")
@@ -71,7 +86,7 @@ def execute(
     response = environment.interface.local(
         user_prompt=user_prompt,
         completion_json=completion_json,
-        use_serverless=use_serverless,
+        use_serverless=not disable_serverless,
     )
     click.echo("\nStored Execution Result:")
     click.echo(response)
