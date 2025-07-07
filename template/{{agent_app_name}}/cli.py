@@ -47,7 +47,7 @@ def cli(
 @pass_environment
 @click.option("--user_prompt", default="", help="Input to use for chat.")
 @click.option("--completion_json", default="", help="Path to json to use for chat.")
-@click.option("--disable_serverless", is_flag=True, help="Use DRUM serverless predictor.")
+@click.option("--disable_serverless", is_flag=True, help="Use DRUM server standalone predictor.")
 def execute(
     environment: Any, user_prompt: str, completion_json: str, disable_serverless: bool
 ) -> None:
