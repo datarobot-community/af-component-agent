@@ -64,31 +64,46 @@ file to ensure that environment variables are set correctly if you are running c
 The `cli` command provides a convenient interface for testing your agent.
 
 ```bash
-task task {{ agent_app_name }}:agent:cli
+# Root directory
+task agent:cli
+
+# Agent directory
+task cli
 ```
 
 This displays CLI usage information.
 
 ```
+❯ task cli
 Running CLI
 Usage: cli.py [OPTIONS] COMMAND [ARGS]...
 
   A CLI for interacting executing agent custom models using the chat endpoint
   and OpenAI completions.
 
-  Examples:
+  For more information on the main CLI commands and all available options, run
+  the help command: > task cli -- execute --help > task cli -- execute-
+  deployment --help
 
-  > task cli -- execute --help
+  Common examples:
 
-  > task cli -- execute-deployment --help
+  # Run the agent with a string user prompt > task cli -- execute
+  --user_prompt "Artificial Intelligence"
 
-  > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
+  # Run the agent with a JSON user prompt > task cli -- execute --user_prompt
+  '{"topic": "Artificial Intelligence"}'
+
+  # Run the agent with a JSON file containing the full chat completion json >
+  task cli -- execute --completion_json "example-completion.json"
+
+  # Run the deployed agent with a string user prompt [Other prompt methods are
+  also supported similar to execute] > task cli -- execute-deployment
+  --user_prompt "Artificial Intelligence" --deployment_id 680a77a9a3
 
 Options:
-  --codespace_id TEXT  Codespace ID for the session.
-  --api_token TEXT     API token for authentication.
-  --base_url TEXT      Base URL for the API.
-  --help               Show this message and exit.
+  --api_token TEXT  API token for authentication.
+  --base_url TEXT   Base URL for the API.
+  --help            Show this message and exit.
 
 Commands:
   execute             Execute agent code using OpenAI completions.
