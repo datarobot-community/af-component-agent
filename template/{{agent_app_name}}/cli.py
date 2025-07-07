@@ -37,7 +37,14 @@ def cli(
 
     > task cli -- execute-deployment --help
 
+    # Run the agent with a string user prompt
+    > task cli -- execute --user_prompt "Artificial Intelligence"
+
+    # Run the agent with a JSON user prompt
     > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
+
+    # Run the agent with a JSON file containing the full chat completion json
+    > task cli -- execute --completion_json "example-completion.json"
 
     """
     ctx.obj = Environment(api_token, base_url)
@@ -55,7 +62,11 @@ def execute(
 ) -> None:
     """Execute agent code locally using OpenAI completions.
 
-    Examples:
+    For more information on the main CLI commands and all available options, run:
+    > task cli -- execute --help
+    > task cli -- execute-deployment --help
+
+    Common examples:
 
     # Run the agent with a string user prompt
     > task cli -- execute --user_prompt "Artificial Intelligence"
@@ -66,8 +77,8 @@ def execute(
     # Run the agent with a JSON file containing the full chat completion json
     > task cli -- execute --completion_json "example-completion.json"
 
-    # To disable serverless and use DRUM standalone predictor
-    > task cli -- execute --user_prompt "Artificial Intelligence" --disable_serverless
+    # Run the deployed agent with a string user prompt [Other prompt methods are also supported similar to execute]
+    > task cli -- execute-deployment --user_prompt "Artificial Intelligence" --deployment_id 680a77a9a3
     """
     if len(user_prompt) == 0 and len(completion_json) == 0:
         raise click.UsageError("User prompt message or completion json must provided.")

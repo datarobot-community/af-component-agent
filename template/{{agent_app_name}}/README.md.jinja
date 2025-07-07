@@ -39,21 +39,25 @@ This will display a list of available commands (the prefix will change based on 
 ```
 ❯ task
 task: Available tasks for this project:
-* default:                                   Show all available tasks
-* lint:                                      Lint all agent components and infra
-* req:                                       Install dependencies for all agent components and infra
-* {{ agent_app_name }}:agent:cli:              🖥️ [agent_generic_base] Run the CLI with provided arguments
-* {{ agent_app_name }}:agent:lint:             🧹 [agent_generic_base] Lint the codebase
-* {{ agent_app_name }}:agent:lint-check:       🧹 [agent_generic_base] Check whether the codebase is linted
-* {{ agent_app_name }}:agent:req:              🛠️ [agent_generic_base] Update local dependencies
-* {{ agent_app_name }}:agent:test:             🧪 [agent_generic_base] Run tests
-* {{ agent_app_name }}:build:                  🔵 [agent_generic_base] Run Pulumi up in [BUILD] mode
-* {{ agent_app_name }}:deploy:                 🟢 [agent_generic_base] Run Pulumi up in [DEPLOY] mode
-* {{ agent_app_name }}:destroy:                🔴 [agent_generic_base] Run Pulumi destroy
+* build:                     🔵 [agent_crewai] Run Pulumi up in [BUILD] mode
+* default:                   🗒️ Show all available tasks
+* deploy:                    🟢 [agent_crewai] Run Pulumi up in [DEPLOY] mode
+* destroy:                   🔴 [agent_crewai] Run Pulumi destroy
+* install:                   🏗️ Install and setup the agent and infra environments      (aliases: setup, req)
+* refresh:                   ⚪️ [agent_crewai] Run Pulumi refresh
+* agent:cli:                 🖥️ [agent_crewai] Run the CLI with provided arguments
+* agent:dev:                 🔨 [agent_crewai] Run the development server
+* agent:install:             🛠️ [agent_crewai] Update local dependencies      (aliases: agent:req)
+* agent:lint:                🧹 [agent_crewai] Lint the codebase
+* agent:lint-check:          🧹 [agent_crewai] Check whether the codebase is linted
+* agent:test:                🧪 [agent_crewai] Run tests
+* agent:test-coverage:       🧪 [agent_crewai] Run tests with coverage
+* agent:update:              🛠️ [agent_crewai] Update local dependencies (refresh uv locks)
 ```
 
 You can also run `task` commands from various directories. Please note that the task command may change
-based on the agent framework you selected and the current directory you are in.
+based on the agent framework you selected and the current directory you are in. You may also need to source the `.env`
+file to ensure that environment variables are set correctly if you are running commands outside the agent directory.
 
 ### Use the agent CLI
 
