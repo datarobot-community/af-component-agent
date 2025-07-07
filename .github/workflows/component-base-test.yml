@@ -95,6 +95,7 @@ jobs:
           task agent_test:agent:cli -- \
             execute \
             --user_prompt '{"topic": "Artificial Intelligence"}' \
+            --disable_serverless \
             > ./agent/output.log 2>&1
 
           # Check if the log file was created
@@ -163,7 +164,6 @@ jobs:
           task agent_test:agent:cli -- \
             execute \
             --user_prompt '{"topic": "Artificial Intelligence"}' \
-            --use_serverless \
             > ./agent/output.log 2>&1
 
           # Check if the log file was created
