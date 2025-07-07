@@ -63,6 +63,9 @@ def execute(
 
     # Run the agent with a JSON file containing the full chat completion json
     > task cli -- execute --completion_json "example-completion.json"
+
+    # To disable serverless and use DRUM standalone predictor
+    > task cli -- execute <other args> --disable_serverless
     """
     if len(user_prompt) == 0 and len(completion_json) == 0:
         raise click.UsageError("User prompt message or completion json must provided.")
