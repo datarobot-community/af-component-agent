@@ -31,11 +31,11 @@ def cli(
 ) -> None:
     """A CLI for interacting executing agent custom models using the chat endpoint and OpenAI completions.
 
-    Examples:
-
+    For more information on the main CLI commands and all available options, run the help command:
     > task cli -- execute --help
-
     > task cli -- execute-deployment --help
+
+    Common examples:
 
     # Run the agent with a string user prompt
     > task cli -- execute --user_prompt "Artificial Intelligence"
@@ -45,6 +45,9 @@ def cli(
 
     # Run the agent with a JSON file containing the full chat completion json
     > task cli -- execute --completion_json "example-completion.json"
+
+    # Run the deployed agent with a string user prompt [Other prompt methods are also supported similar to execute]
+    > task cli -- execute-deployment --user_prompt "Artificial Intelligence" --deployment_id 680a77a9a3
 
     """
     ctx.obj = Environment(api_token, base_url)
@@ -62,11 +65,7 @@ def execute(
 ) -> None:
     """Execute agent code locally using OpenAI completions.
 
-    For more information on the main CLI commands and all available options, run:
-    > task cli -- execute --help
-    > task cli -- execute-deployment --help
-
-    Common examples:
+    Examples:
 
     # Run the agent with a string user prompt
     > task cli -- execute --user_prompt "Artificial Intelligence"
@@ -77,8 +76,8 @@ def execute(
     # Run the agent with a JSON file containing the full chat completion json
     > task cli -- execute --completion_json "example-completion.json"
 
-    # Run the deployed agent with a string user prompt [Other prompt methods are also supported similar to execute]
-    > task cli -- execute-deployment --user_prompt "Artificial Intelligence" --deployment_id 680a77a9a3
+    # To disable serverless and use DRUM standalone predictor
+    > task cli -- execute --user_prompt "Artificial Intelligence" --disable_serverless
     """
     if len(user_prompt) == 0 and len(completion_json) == 0:
         raise click.UsageError("User prompt message or completion json must provided.")
