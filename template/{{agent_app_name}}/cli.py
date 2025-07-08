@@ -100,7 +100,8 @@ def execute(
 def execute_custom_model(
     environment: Any, user_prompt: str, completion_json: str, custom_model_id: str
 ) -> None:
-    """Query a deployed model using the command line for OpenAI completions.
+    """Query a custom model using the command line for OpenAI completions. Custom models will execute inside an
+    ephemeral CodeSpace environment. This can also be done through the DataRobot Playground UI.
 
     Example:
 
