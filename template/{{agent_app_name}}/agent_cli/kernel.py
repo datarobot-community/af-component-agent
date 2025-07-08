@@ -152,6 +152,27 @@ class Kernel:
             print(f"Error executing command: {e}")
             raise
 
+    def custom_model(
+        self, custom_model_id: str, user_prompt: str, completion_json: str = ""
+    ) -> ChatCompletion:
+        chat_api_url = f"{self.base_url}/genai/agents/fromCustomModel/{custom_model_id}/chat/"
+        print(chat_api_url)
+
+        if len(user_prompt) > 0:
+            completion_create_params = self.construct_prompt(user_prompt, verbose=True)
+        else:
+            completion_create_params = self.load_completion_json(completion_json)
+
+        openai_client = OpenAI(
+            base_url=chat_api_url,
+            api_key=self.api_token,
+            _strict_response_validation=False,
+        )
+
+        print(f'Querying custom model with prompt: "{completion_create_params}"')
+        completion = openai_client.chat.completions.create(**completion_create_params)
+        return completion
+
     def deployment(
         self, deployment_id: str, user_prompt: str, completion_json: str = ""
     ) -> ChatCompletion:

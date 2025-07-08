@@ -96,6 +96,41 @@ def execute(
 @pass_environment
 @click.option("--user_prompt", default="", help="Input to use for predict.")
 @click.option("--completion_json", default="", help="Path to json to use for chat.")
+@click.option("--custom_model_id", help="ID for the deployment.")
+def execute_custom_model(
+    environment: Any, user_prompt: str, completion_json: str, custom_model_id: str
+) -> None:
+    """Query a deployed model using the command line for OpenAI completions.
+
+    Example:
+
+    # Run the agent with a string user prompt
+    > task cli -- execute-custom-model --user_prompt "Artificial Intelligence" --custom_model_id 680a77a9a3
+
+    # Run the agent with a JSON user prompt
+    > task cli -- execute-custom-model --user_prompt '{"topic": "Artificial Intelligence"}' --custom_model_id 680a77a9a3
+
+    # Run the agent with a JSON file containing the full chat completion json
+    > task cli -- execute-custom-model --completion_json "example-completion.json" --custom_model_id 680a77a9a3
+    """
+    if len(user_prompt) == 0 and len(completion_json) == 0:
+        raise click.UsageError("User prompt message or completion json must provided.")
+    if len(custom_model_id) == 0:
+        raise click.UsageError("Custom Model ID must be provided.")
+
+    click.echo("Querying deployment...")
+    response = environment.interface.custom_model(
+        custom_model_id=custom_model_id,
+        user_prompt=user_prompt,
+        completion_json=completion_json,
+    )
+    click.echo(response)
+
+
+@cli.command()
+@pass_environment
+@click.option("--user_prompt", default="", help="Input to use for predict.")
+@click.option("--completion_json", default="", help="Path to json to use for chat.")
 @click.option("--deployment_id", help="ID for the deployment.")
 def execute_deployment(
     environment: Any, user_prompt: str, completion_json: str, deployment_id: str

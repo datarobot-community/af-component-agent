@@ -268,6 +268,55 @@ class TestKernel:
         assert result == mock_completion_obj
 
     @patch("agent_cli.kernel.OpenAI")
+    def test_custom_model_basic_functionality(self, mock_openai):
+        """Test deployment method creates OpenAI client and calls chat.completions.create correctly."""
+        # Setup
+        kernel = Kernel(
+            api_token="test-token",
+            base_url="https://test.example.com",
+        )
+        custom_model_id = "test-custom-model-id"
+        user_prompt = "Hello, assistant!"
+
+        # Mock the OpenAI client and its methods
+        mock_client = Mock()
+        mock_openai.return_value = mock_client
+        mock_completions = Mock()
+        mock_client.chat.completions = mock_completions
+        mock_completion_obj = Mock(spec=ChatCompletion)
+        mock_completions.create.return_value = mock_completion_obj
+
+        # Execute
+        result = kernel.custom_model(custom_model_id, user_prompt)
+
+        # Assert
+        # Verify OpenAI client was created with correct parameters
+        mock_openai.assert_called_once_with(
+            base_url=f"https://test.example.com/genai/agents/fromCustomModel/{custom_model_id}/chat/",
+            api_key="test-token",
+            _strict_response_validation=False,
+        )
+
+        # Verify chat.completions.create was called with correct parameters
+        mock_completions.create.assert_called_once_with(
+            model="datarobot-deployed-llm",
+            messages=[
+                {"content": "You are a helpful assistant", "role": "system"},
+                {"content": "Hello, assistant!", "role": "user"},
+            ],
+            n=1,
+            temperature=0.01,
+            extra_body={
+                "api_key": "test-token",
+                "api_base": "https://test.example.com",
+                "verbose": True,
+            },
+        )
+
+        # Verify the result is the completion object
+        assert result == mock_completion_obj
+
+    @patch("agent_cli.kernel.OpenAI")
     @patch("builtins.print")
     def test_deployment_prints_debug_info(self, mock_print, mock_openai):
         """Test deployment method prints debug info."""
