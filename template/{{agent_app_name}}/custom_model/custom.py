@@ -14,6 +14,7 @@
 # isort: off
 from helpers_telemetry import *  # noqa # pylint: disable=unused-import
 import os
+
 # Some libraries collect telemetry data by default. Let's disable that.
 os.environ["RAGAS_DO_NOT_TRACK"] = "true"
 os.environ["DEEPEVAL_TELEMETRY_OPT_OUT"] = "YES"
