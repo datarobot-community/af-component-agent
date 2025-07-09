@@ -138,17 +138,26 @@ def setup_otel_env_variables(entity_id: str) -> None:
         )
         return
 
-    datarobot_endpoint = os.environ.get("DATAROBOT_ENDPOINT")
+    datarobot_endpoint = os.environ.get("DATAROBOT_ENDPOINT", "")
     datarobot_api_token = os.environ.get("DATAROBOT_API_TOKEN")
-    if not datarobot_endpoint or not datarobot_api_token:
+    otlp_endpoint = os.environ.get("DATAROBOT_OTEL_COLLECTOR_BASE_URL", "")
+
+    if not (datarobot_endpoint or otlp_endpoint):
         root.warning(
-            "DATAROBOT_ENDPOINT or DATAROBOT_API_TOKEN not set, tracing is disabled"
+            "DATAROBOT_ENDPOINT or DATAROBOT_OTEL_COLLECTOR_BASE_URL not set, tracing is disabled"
         )
         return
 
-    parsed_url = urlparse(datarobot_endpoint)
-    stripped_url = (parsed_url.scheme, parsed_url.netloc, "otel", "", "", "")
-    otlp_endpoint = urlunparse(stripped_url)
+    if not datarobot_api_token:
+        root.warning("DATAROBOT_API_TOKEN not set, tracing is disabled")
+        return
+
+    if not otlp_endpoint:
+        assert datarobot_endpoint is not None  # mypy
+        parsed_url = urlparse(datarobot_endpoint)
+        stripped_url = (parsed_url.scheme, parsed_url.netloc, "otel", "", "", "")
+        otlp_endpoint = urlunparse(stripped_url)
+
     otlp_headers = (
         f"X-DataRobot-Api-Key={datarobot_api_token},X-DataRobot-Entity-Id={entity_id}"
     )
