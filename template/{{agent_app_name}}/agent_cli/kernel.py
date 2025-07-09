@@ -184,7 +184,7 @@ class Kernel:
         )
 
         if not response.ok or not response.headers.get("Location"):
-            raise Exception(response.content)
+            raise Exception(response.text)
         # Wait for the agent to complete
         status_location = response.headers["Location"]
         while response.ok:
