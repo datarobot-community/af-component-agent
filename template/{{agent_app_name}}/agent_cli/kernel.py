@@ -161,9 +161,7 @@ class Kernel:
             raise
 
     def custom_model(self, custom_model_id: str, user_prompt: str) -> str:
-        chat_api_url = (
-            f"{self.base_url}/api/v2/genai/agents/fromCustomModel/{custom_model_id}/chat/"
-        )
+        chat_api_url = f"{self.base_url}/api/v2/genai/agents/fromCustomModel/{custom_model_id}/chat/"
         print(chat_api_url)
 
         headers = {
