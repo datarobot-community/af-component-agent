@@ -178,7 +178,7 @@ class Kernel:
             "for the custom model to execute."
         )
         response = requests.post(
-            f"{os.environ['DATAROBOT_ENDPOINT']}/genai/agents/fromCustomModel/{custom_model_id}/chat/",
+            chat_api_url,
             headers=headers,
             json=data,
         )
