@@ -457,7 +457,7 @@ class TestKernel:
         # Assert
         # Verify POST request was made with correct parameters
         mock_requests_post.assert_called_once_with(
-            "https://test.example.com/genai/agents/fromCustomModel/test-custom-model-id/chat/",
+            "https://test.example.com/api/v2/genai/agents/fromCustomModel/test-custom-model-id/chat/",
             headers={
                 "Authorization": "Bearer test-api-token",
                 "Content-Type": "application/json",
@@ -502,7 +502,7 @@ class TestKernel:
 
         # Verify the correct request was attempted
         mock_requests_post.assert_called_once_with(
-            "https://test.example.com/genai/agents/fromCustomModel/test-custom-model-id/chat/",
+            "https://test.example.com/api/v2/genai/agents/fromCustomModel/test-custom-model-id/chat/",
             headers={
                 "Authorization": "Bearer test-api-token",
                 "Content-Type": "application/json",
