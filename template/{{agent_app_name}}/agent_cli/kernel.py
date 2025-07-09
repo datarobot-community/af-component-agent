@@ -172,7 +172,7 @@ class Kernel:
 
         print(f'Querying custom model with prompt: "{data}"')
         print(
-            "Please wait... This may take 1-2 minutes the first time you run this as a codespace is provisioned"
+            "Please wait... This may take 1-2 minutes the first time you run this as a codespace is provisioned "
             "for the custom model to execute."
         )
         response = requests.post(
