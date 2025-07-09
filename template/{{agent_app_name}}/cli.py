@@ -95,6 +95,37 @@ def execute(
 @cli.command()
 @pass_environment
 @click.option("--user_prompt", default="", help="Input to use for predict.")
+@click.option("--custom_model_id", help="ID for the deployment.")
+def execute_custom_model(
+    environment: Any, user_prompt: str, custom_model_id: str
+) -> None:
+    """Query a custom model using the command line for OpenAI completions. Custom models will execute inside an
+    ephemeral CodeSpace environment. This can also be done through the DataRobot Playground UI.
+
+    Example:
+
+    # Run the agent with a string user prompt
+    > task cli -- execute-custom-model --user_prompt "Artificial Intelligence" --custom_model_id 680a77a9a3
+
+    # Run the agent with a JSON user prompt
+    > task cli -- execute-custom-model --user_prompt '{"topic": "Artificial Intelligence"}' --custom_model_id 680a77a9a3
+    """
+    if len(user_prompt) == 0:
+        raise click.UsageError("User prompt message must be provided.")
+    if len(custom_model_id) == 0:
+        raise click.UsageError("Custom Model ID must be provided.")
+
+    click.echo("Querying deployment...")
+    response = environment.interface.custom_model(
+        custom_model_id=custom_model_id,
+        user_prompt=user_prompt,
+    )
+    click.echo(response)
+
+
+@cli.command()
+@pass_environment
+@click.option("--user_prompt", default="", help="Input to use for predict.")
 @click.option("--completion_json", default="", help="Path to json to use for chat.")
 @click.option("--deployment_id", help="ID for the deployment.")
 def execute_deployment(
