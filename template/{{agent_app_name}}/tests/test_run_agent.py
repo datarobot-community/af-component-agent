@@ -255,6 +255,28 @@ class TestSetupOtelEnvVariables:
             assert os.environ.get("OTEL_EXPORTER_OTLP_HEADERS") == expected_headers
             assert os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") == expected_endpoint
 
+    def test_setup_otel_env_variables_with_on_prem_collector(self, entity_id):
+        datarobot_api_token = "test-api-key"
+        expected_headers = (
+            "X-DataRobot-Api-Key=test-api-key,X-DataRobot-Entity-Id=test-entity-id"
+        )
+        expected_endpoint = "http://datarobot-otel-collector:4318"
+
+        os_environ = {}
+        os_environ["DATAROBOT_ENDPOINT"] = "https://app.datarobot.com/api/v2"
+        os_environ["DATAROBOT_OTEL_COLLECTOR_BASE_URL"] = (
+            "http://datarobot-otel-collector:4318"
+        )
+        os_environ["DATAROBOT_API_TOKEN"] = datarobot_api_token
+
+        with patch.dict(os.environ, os_environ, clear=True):
+            # WHEN setup_otel_env_variables is called
+            setup_otel_env_variables(entity_id)
+
+            # THEN the environment variables are set
+            assert os.environ.get("OTEL_EXPORTER_OTLP_HEADERS") == expected_headers
+            assert os.environ.get("OTEL_EXPORTER_OTLP_ENDPOINT") == expected_endpoint
+
 
 class TestSetupOtelExporter:
     def test_setup_otel_exporter(self):
