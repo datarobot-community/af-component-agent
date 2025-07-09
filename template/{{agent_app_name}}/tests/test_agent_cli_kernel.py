@@ -405,7 +405,7 @@ class TestKernel:
         "os.environ",
         {
             "DATAROBOT_API_TOKEN": "test-api-token",
-            "DATAROBOT_ENDPOINT": "https://test.datarobot.com",
+            "DATAROBOT_ENDPOINT": "https://test.example.com",
         },
     )
     def test_custom_model_basic_functionality(
@@ -424,7 +424,7 @@ class TestKernel:
         mock_post_response = Mock()
         mock_post_response.ok = True
         mock_post_response.headers = {
-            "Location": "https://test.datarobot.com/status/123"
+            "Location": "https://test.example.com/status/123"
         }
         mock_requests_post.return_value = mock_post_response
 
@@ -438,7 +438,7 @@ class TestKernel:
         mock_redirect_response.ok = True
         mock_redirect_response.status_code = 303
         mock_redirect_response.headers = {
-            "Location": "https://test.datarobot.com/result/123"
+            "Location": "https://test.example.com/result/123"
         }
 
         # Mock the final result response
@@ -459,7 +459,7 @@ class TestKernel:
         # Assert
         # Verify POST request was made with correct parameters
         mock_requests_post.assert_called_once_with(
-            "https://test.datarobot.com/genai/agents/fromCustomModel/test-custom-model-id/chat/",
+            "https://test.example.com/genai/agents/fromCustomModel/test-custom-model-id/chat/",
             headers={
                 "Authorization": "Bearer test-api-token",
                 "Content-Type": "application/json",
@@ -479,7 +479,7 @@ class TestKernel:
         "os.environ",
         {
             "DATAROBOT_API_TOKEN": "test-api-token",
-            "DATAROBOT_ENDPOINT": "https://test.datarobot.com",
+            "DATAROBOT_ENDPOINT": "https://test.example.com",
         },
     )
     def test_custom_model_initial_request_failure(self, mock_sleep, mock_requests_post):
@@ -504,7 +504,7 @@ class TestKernel:
 
         # Verify the correct request was attempted
         mock_requests_post.assert_called_once_with(
-            "https://test.datarobot.com/genai/agents/fromCustomModel/test-custom-model-id/chat/",
+            "https://test.example.com/genai/agents/fromCustomModel/test-custom-model-id/chat/",
             headers={
                 "Authorization": "Bearer test-api-token",
                 "Content-Type": "application/json",
@@ -519,7 +519,7 @@ class TestKernel:
         "os.environ",
         {
             "DATAROBOT_API_TOKEN": "test-api-token",
-            "DATAROBOT_ENDPOINT": "https://test.datarobot.com",
+            "DATAROBOT_ENDPOINT": "https://test.example.com",
         },
     )
     def test_custom_model_missing_location_header(
@@ -552,7 +552,7 @@ class TestKernel:
         "os.environ",
         {
             "DATAROBOT_API_TOKEN": "test-api-token",
-            "DATAROBOT_ENDPOINT": "https://test.datarobot.com",
+            "DATAROBOT_ENDPOINT": "https://test.example.com",
         },
     )
     def test_custom_model_status_error(
@@ -571,7 +571,7 @@ class TestKernel:
         mock_post_response = Mock()
         mock_post_response.ok = True
         mock_post_response.headers = {
-            "Location": "https://test.datarobot.com/status/123"
+            "Location": "https://test.example.com/status/123"
         }
         mock_requests_post.return_value = mock_post_response
 
@@ -600,7 +600,7 @@ class TestKernel:
         "os.environ",
         {
             "DATAROBOT_API_TOKEN": "test-api-token",
-            "DATAROBOT_ENDPOINT": "https://test.datarobot.com",
+            "DATAROBOT_ENDPOINT": "https://test.example.com",
         },
     )
     def test_custom_model_error_in_response(
@@ -619,7 +619,7 @@ class TestKernel:
         mock_post_response = Mock()
         mock_post_response.ok = True
         mock_post_response.headers = {
-            "Location": "https://test.datarobot.com/status/123"
+            "Location": "https://test.example.com/status/123"
         }
         mock_requests_post.return_value = mock_post_response
 
@@ -633,7 +633,7 @@ class TestKernel:
         mock_redirect_response.ok = True
         mock_redirect_response.status_code = 303
         mock_redirect_response.headers = {
-            "Location": "https://test.datarobot.com/result/123"
+            "Location": "https://test.example.com/result/123"
         }
 
         # Mock the final result response with an error message
