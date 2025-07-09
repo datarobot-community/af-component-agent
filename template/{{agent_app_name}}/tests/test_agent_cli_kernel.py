@@ -423,9 +423,7 @@ class TestKernel:
         # Mock the initial POST response
         mock_post_response = Mock()
         mock_post_response.ok = True
-        mock_post_response.headers = {
-            "Location": "https://test.example.com/status/123"
-        }
+        mock_post_response.headers = {"Location": "https://test.example.com/status/123"}
         mock_requests_post.return_value = mock_post_response
 
         # Mock the status check response (first call returns status, second redirects)
@@ -570,9 +568,7 @@ class TestKernel:
         # Mock the initial POST response
         mock_post_response = Mock()
         mock_post_response.ok = True
-        mock_post_response.headers = {
-            "Location": "https://test.example.com/status/123"
-        }
+        mock_post_response.headers = {"Location": "https://test.example.com/status/123"}
         mock_requests_post.return_value = mock_post_response
 
         # Mock the status check response with ERROR status
@@ -618,9 +614,7 @@ class TestKernel:
         # Mock the initial POST response
         mock_post_response = Mock()
         mock_post_response.ok = True
-        mock_post_response.headers = {
-            "Location": "https://test.example.com/status/123"
-        }
+        mock_post_response.headers = {"Location": "https://test.example.com/status/123"}
         mock_requests_post.return_value = mock_post_response
 
         # Mock the status check responses
