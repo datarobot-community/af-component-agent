@@ -39,6 +39,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
       - name: Compile Requirements
         run: |-
           cd docker_context
