@@ -34,12 +34,12 @@ jobs:
           cd docker_context
           docker build . -t docker_context
   docker-dependency-test:
-    name: Docker Public Build and Test
+    name: Docker Requirements Compile Test
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Build Docker Image
+      - name: Compile Requirements
         run: |-
           cd docker_context
           uv pip compile --no-annotate --no-emit-index-url --output-file=requirements.txt requirements.in
