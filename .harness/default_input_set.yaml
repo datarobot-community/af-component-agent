@@ -2,7 +2,7 @@ inputSet:
   name: default_input_set
   identifier: default_input_set
   orgIdentifier: buzok
-  projectIdentifier: afcomponentagent
+  projectIdentifier: datarobotagenttemplates
   pipeline:
     identifier: Harness_Docker
     properties:
