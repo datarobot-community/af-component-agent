@@ -121,7 +121,7 @@ pipeline:
                   identifier: Base_CLI_Tests_with_DRUM_using_serverless_mode
                   spec:
                     connectorRef: GHCR_HHI
-                    image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+                    image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
                     shell: Sh
                     command: |-
                       cd ./copier_context
@@ -190,7 +190,7 @@ pipeline:
                   identifier: Base_CLI_Tests_with_JSON
                   spec:
                     connectorRef: GHCR_HHI
-                    image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+                    image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
                     shell: Sh
                     command: |-
                       cd ./copier_context
