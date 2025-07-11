@@ -538,13 +538,16 @@ pipeline:
                             image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
                             shell: Sh
                             command: |-
+                              apt install -y curl
+                              curl -fsSL https://get.pulumi.com | sh
+                              export PATH=/root/.pulumi/bin:$PATH
                               cd ./copier_context/infra
-                              export PULUMI_CONFIG_PASSPHRASE=123
-                              uv run pulumi login --local
-                              uv run pulumi stack init -s organization/unittest/unittest
+                              pulumi login --local
+                              pulumi stack init -s organization/unittest/unittest
                               uv run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/
                             envVariables:
                               UV_CACHE_DIR: /.uv_cache
+                              PULUMI_CONFIG_PASSPHRASE: "123"
               platform:
                 os: Linux
                 arch: Amd64
