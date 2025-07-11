@@ -50,6 +50,9 @@ update-requirements: ## Update requirements.in from pyproject.toml template
 	@echo "$(BLUE)Exporting dependencies to requirements.in...$(RESET)"
 	uv pip compile template-rendered/pyproject.toml --extra codespaces --no-deps --no-annotate \
 	> template/{{agent_app_name}}/docker_context/requirements.in
+	@echo "$(BLUE)Syncing dependencies from requirements.in to requirements.txt...$(RESET)"
+	cd template/{{agent_app_name}}/docker_context/ && \
+	uv pip compile --no-annotate --no-emit-index-url --output-file=requirements.txt requirements.in
 	@echo "$(BLUE)Cleaning up temporary files...$(RESET)"
 	rm -rf template-rendered
 	@echo "$(GREEN)Successfully updated requirements.in!$(RESET)"
