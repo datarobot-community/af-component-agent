@@ -50,22 +50,14 @@ pipeline:
                   name: Base CLI Tests with DRUM using server mode
                   identifier: Base_CLI_Tests_with_DRUM_using_server_mode
                   spec:
-                    shell: Sh
                     connectorRef: GHCR_HHI
                     image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+                    shell: Sh
                     command: |-
                       cd ./copier_context
 
-                      # Ensure the log file does not exist before running the CLI command
-                      if ! [ -f "output.log" ]; then
-                        echo "Log file not created yet. Proceeding with CLI test."
-                      else
-                        echo "Log file exists before test. CLI test cannot be run."
-                        exit 1
-                      fi
-
                       # Run the CLI command with a sample user prompt
-                      task agent_test:agent:cli -- \
+                      uvx --from go-task-bin task agent_test:agent:cli -- \
                         execute \
                         --user_prompt '{"topic": "Artificial Intelligence"}' \
                         --disable_serverless \
@@ -128,22 +120,14 @@ pipeline:
                   name: Base CLI Tests with DRUM using serverless mode
                   identifier: Base_CLI_Tests_with_DRUM_using_serverless_mode
                   spec:
-                    shell: Sh
                     connectorRef: GHCR_HHI
                     image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+                    shell: Sh
                     command: |-
                       cd ./copier_context
 
-                      # Ensure the log file does not exist before running the CLI command
-                      if ! [ -f "output.log" ]; then
-                        echo "Log file not created yet. Proceeding with CLI test."
-                      else
-                        echo "Log file exists before test. CLI test cannot be run."
-                        exit 1
-                      fi
-
                       # Run the CLI command with a sample user prompt
-                      task agent_test:agent:cli -- \
+                      uvx --from go-task-bin task agent_test:agent:cli -- \
                         execute \
                         --user_prompt '{"topic": "Artificial Intelligence"}' \
                         > ./agent/output.log 2>&1
@@ -205,22 +189,14 @@ pipeline:
                   name: Base CLI Tests with JSON
                   identifier: Base_CLI_Tests_with_JSON
                   spec:
-                    shell: Sh
                     connectorRef: GHCR_HHI
                     image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+                    shell: Sh
                     command: |-
                       cd ./copier_context
 
-                      # Ensure the log file does not exist before running the CLI command
-                      if ! [ -f "output.log" ]; then
-                        echo "Log file not created yet. Proceeding with CLI test."
-                      else
-                        echo "Log file exists before test. CLI test cannot be run."
-                        exit 1
-                      fi
-
                       # Run the CLI command with a sample user prompt
-                      task agent_test:agent:cli -- \
+                      uvx --from go-task-bin task agent_test:agent:cli -- \
                         execute \
                         --completion_json "example-completion.json" \
                         > ./agent/output.log 2>&1
