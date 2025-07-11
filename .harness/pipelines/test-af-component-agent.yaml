@@ -17,7 +17,7 @@ pipeline:
                   name: Install dependencies and copy with copier
                   identifier: Install_dependencies_and_copy_with_copier
                   spec:
-                    connectorRef: account.GHCR
+                    connectorRef: GHCR_HHI
                     image: astral-sh/uv:python3.11-alpine
                     shell: Sh
                     command: |-
