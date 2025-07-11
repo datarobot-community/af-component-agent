@@ -28,6 +28,7 @@ pipeline:
                       cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
                     envVariables:
                       UV_CACHE_DIR: /.uv_cache
+                      PYTHON_PLATFORM: manylinux_2_27_x86_64
               - step:
                   type: Run
                   name: Base Linter and Unit Tests
@@ -44,6 +45,7 @@ pipeline:
                       uvx --from go-task-bin task agent_test:agent:test-coverage
                     envVariables:
                       UV_CACHE_DIR: /.uv_cache
+                      PYTHON_PLATFORM: manylinux_2_27_x86_64
           platform:
             os: Linux
             arch: Amd64
