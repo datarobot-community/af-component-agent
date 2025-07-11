@@ -28,7 +28,7 @@ pipeline:
                       cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
                       cd ./copier_context
                       uv --directory agent venv
-                      uv --directory agent pip install onnxruntime~=1.22.0 --python-platform manylinux_2_27_x86_64
+                      uv --directory agent pip install onnxruntime~=1.22.0 --python-platform x86_64-manylinux_2_28
                       uvx --from go-task-bin task agent_test:agent:install
                     envVariables:
                       UV_CACHE_DIR: /.uv_cache
