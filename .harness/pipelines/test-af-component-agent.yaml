@@ -57,6 +57,7 @@ pipeline:
             enabled: true
           sharedPaths:
             - /.uv_cache
+            - /usr/bin
         description: ""
   properties:
     ci:
