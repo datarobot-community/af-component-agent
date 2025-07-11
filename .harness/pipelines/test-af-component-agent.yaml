@@ -281,12 +281,12 @@ pipeline:
                           name: Linter
                           identifier: Linter
                           spec:
-                            shell: Sh
                             connectorRef: GHCR_HHI
                             image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                            shell: Sh
                             command: |-
                               cd ./copier_context/agent_crewai
-                              uvx --from go-task-bin task agent_test:agent:lint-check
+                              uvx --from go-task-bin task lint-check
                             envVariables:
                               UV_CACHE_DIR: /.uv_cache
                       - step:
@@ -294,12 +294,12 @@ pipeline:
                           name: Unit Tests
                           identifier: Unit_Tests
                           spec:
-                            shell: Sh
                             connectorRef: GHCR_HHI
                             image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                            shell: Sh
                             command: |-
                               cd ./copier_context/agent_crewai
-                              uvx --from go-task-bin task agent_test:agent:test-coverage
+                              uvx --from go-task-bin task test-coverage
                             envVariables:
                               UV_CACHE_DIR: /.uv_cache
               platform:
