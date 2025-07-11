@@ -18,7 +18,7 @@ pipeline:
                   identifier: Install_dependencies_and_copy_with_copier
                   spec:
                     connectorRef: GHCR_HHI
-                    image: ghcr.io/astral-sh/uv:python3.11-alpine
+                    image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
                     shell: Sh
                     command: |-
                       apk add --cache-dir /.apk_cache git
@@ -27,9 +27,6 @@ pipeline:
                       cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
                       cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
                       cd ./copier_context
-
-                      uv --directory agent venv
-                      uv --directory agent pip install onnxruntime~=1.22.0 --python-platform x86_64-manylinux_2_28
                       uvx --from go-task-bin task agent_test:agent:install
                     envVariables:
                       UV_CACHE_DIR: /.uv_cache
@@ -40,7 +37,7 @@ pipeline:
                   spec:
                     shell: Sh
                     connectorRef: GHCR_HHI
-                    image: ghcr.io/astral-sh/uv:python3.11-alpine
+                    image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
                     command: |-
                       apk add --cache-dir /.apk_cache git
                       cd ./copier_context
