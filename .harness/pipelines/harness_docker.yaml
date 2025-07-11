@@ -1,6 +1,6 @@
 pipeline:
-  projectIdentifier: afcomponentagent
-  orgIdentifier: No_Code_Apps
+  projectIdentifier: datarobotagenttemplates
+  orgIdentifier: buzok
   tags: {}
   stages:
     - stage:
