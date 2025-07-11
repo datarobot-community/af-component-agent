@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import re
 import time
 from pathlib import Path
@@ -21,12 +20,12 @@ import psutil  # type: ignore
 # Parts of this code have been reused from repo:
 # https://github.com/neptune-ai/neptune-client/blob/master/LICENSE
 
-NANO_SECS = 10**9
+NANO_SECS = 10 ** 9
 
 
 class CGroupVersionUnsupported(Exception):
     """There are two versions of CGroups, the agent is compatible with V1 only.
-    This error occurs when the agent was tried to be ran in V2"""
+     This error occurs when the agent was tried to be ran in V2"""
 
 
 class SystemWatcher:
@@ -59,10 +58,7 @@ class CGroupFileReader:
 
     def memory_usage_in_bytes(self) -> int:
         memory_stat_str = self._memory_usage_file.read_text()
-        total_rss_str = next(
-            iter([stat for stat in memory_stat_str.split("\n") if stat.startswith("total_rss")]),
-            "0",
-        )
+        total_rss_str = next(iter([stat for stat in memory_stat_str.split("\n") if stat.startswith("total_rss")]), "0")
         total_rss = int(total_rss_str.split(" ")[-1])
         return total_rss
 
@@ -150,9 +146,7 @@ class CGroupWatcher(BaseWatcher):
         else:
             usage_diff = cpu_cum_usage_nanos - self._last_cpu_cum_usage_nanos
             time_diff = current_timestamp_nanos - self._last_cpu_usage_ts_nanos
-            current_usage = (
-                float(usage_diff) / float(time_diff) / self.cpu_usage_limit_in_cores() * 100.0
-            )
+            current_usage = float(usage_diff) / float(time_diff) / self.cpu_usage_limit_in_cores() * 100.0
 
         self._last_cpu_usage_ts_nanos = current_timestamp_nanos
         self._last_cpu_cum_usage_nanos = cpu_cum_usage_nanos

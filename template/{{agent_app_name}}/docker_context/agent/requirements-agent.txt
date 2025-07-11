@@ -1,2 +1,1 @@
-fastapi[All]==0.111.0
-psutil==5.9.8
+# See NBX Agent Requirements in ../requirements.in

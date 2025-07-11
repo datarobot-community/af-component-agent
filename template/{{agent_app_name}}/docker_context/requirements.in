@@ -1,15 +1,19 @@
 # This file is used to generate the requirements.txt file for the Docker image.
 setuptools
-ecs-logging
+ecs-logging~=2.2.0
 jupyter-client
 jupyter_kernel_gateway
-jupyter_core>=5.8.1
+jupyter_core~=5.8.1
 ipykernel<6.29.0
 pandas
 numpy
 mistune
 numpy
 uwsgi
+
+# NBX Agent Requirements
+fastapi[All]~=0.115.4
+psutil==5.9.1
 
 # CVE Updates
 flask>=3.1.1
