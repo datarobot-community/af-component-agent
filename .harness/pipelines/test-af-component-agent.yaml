@@ -18,7 +18,7 @@ pipeline:
                   identifier: Install_dependencies_and_copy_with_copier
                   spec:
                     connectorRef: GHCR_HHI
-                    image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+                    image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
                     shell: Sh
                     command: |-
                       apt update && apt install -y git g++
@@ -37,7 +37,7 @@ pipeline:
                   spec:
                     shell: Sh
                     connectorRef: GHCR_HHI
-                    image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+                    image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
                     command: |-
                       cd ./copier_context
 
@@ -51,7 +51,7 @@ pipeline:
                   identifier: Base_CLI_Tests_with_DRUM_using_server_mode
                   spec:
                     connectorRef: GHCR_HHI
-                    image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+                    image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
                     shell: Sh
                     command: |-
                       cd ./copier_context
@@ -240,6 +240,12 @@ pipeline:
             - /var/cache/apt/archives
             - /var/lib/apt/lists
         description: ""
+        strategy:
+          matrix:
+            python:
+              - python3.10
+              - python3.11
+              - python3.12
   properties:
     ci:
       codebase:
