@@ -1,0 +1,14 @@
+inputSet:
+  name: Build_af_component_agent_1752223405520-push-trigger-input-set
+  identifier: Build_af_component_agent_1752223405520pushtriggerinputset
+  orgIdentifier: buzok
+  projectIdentifier: afcomponentagent
+  pipeline:
+    identifier: Build_af_component_agent_1752223405520
+    properties:
+      ci:
+        codebase:
+          build:
+            type: branch
+            spec:
+              branch: <+trigger.branch>
