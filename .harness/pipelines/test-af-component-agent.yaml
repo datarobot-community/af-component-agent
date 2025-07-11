@@ -38,6 +38,7 @@ pipeline:
                     image: ghcr.io/astral-sh/uv:python3.11-alpine
                     command: |-
                       cd ./copier_context
+                      uvx task -l
                       uvx task agent_test:agent:req
                       uvx task task agent_test:agent:lint-check
                       uvx task agent_test:agent:test-coverage
