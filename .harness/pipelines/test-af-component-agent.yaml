@@ -21,7 +21,7 @@ pipeline:
                     image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
                     shell: Sh
                     command: |-
-                      apt install git
+                      apt update && apt install git
                       uvx copier copy . ./copier_context --defaults
                       cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
                       cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
@@ -39,7 +39,6 @@ pipeline:
                     connectorRef: GHCR_HHI
                     image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
                     command: |-
-                      apt install git
                       cd ./copier_context
 
                       uvx --from go-task-bin task agent_test:agent:lint-check
@@ -57,11 +56,13 @@ pipeline:
             paths:
               - /.uv_cache
               - /var/cache/apt/archives
+              - /var/lib/apt/lists
           buildIntelligence:
             enabled: true
           sharedPaths:
             - /.uv_cache
             - /var/cache/apt/archives
+            - /var/lib/apt/lists
         description: ""
   properties:
     ci:
