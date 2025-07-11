@@ -28,6 +28,21 @@ pipeline:
                       cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
                     envVariables:
                       UV_CACHE_DIR: /.uv_cache
+              - step:
+                  type: Run
+                  name: Base Linter and Unit Tests
+                  identifier: Base_Linter_and_Unit_Tests
+                  spec:
+                    shell: Sh
+                    connectorRef: GHCR_HHI
+                    image: ghcr.io/astral-sh/uv:python3.11-alpine
+                  command: |-
+                    cd ./copier_context
+                    uvx task agent_test:agent:req
+                    uvx task task agent_test:agent:lint-check
+                    uvx task agent_test:agent:test-coverage
+                  envVariables:
+                    UV_CACHE_DIR: /.uv_cache
           platform:
             os: Linux
             arch: Amd64
