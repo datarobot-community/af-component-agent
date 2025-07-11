@@ -5,7 +5,7 @@ pipeline:
   orgIdentifier: buzok
   stages:
     - stage:
-        name: Build
+        name: Test Component Base
         identifier: Build
         type: CI
         spec:
@@ -14,20 +14,38 @@ pipeline:
             steps:
               - step:
                   type: Run
-                  name: Echo Welcome Message
-                  identifier: Echo_Welcome_Message
+                  name: Install dependencies and copy with copier
+                  identifier: Install_dependencies_and_copy_with_copier
                   spec:
+                    connectorRef: account.GHCR
+                    image: astral-sh/uv:python3.11-alpine
                     shell: Sh
-                    command: echo "Welcome to Harness CI"
+                    command: |-
+                      uvx copier copy . ./copier_context --defaults
+                      cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
+                      cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+                      cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+                    envVariables:
+                      UV_CACHE_DIR: /.uv_cache
           platform:
             os: Linux
             arch: Amd64
           runtime:
             type: Cloud
             spec: {}
+          caching:
+            enabled: true
+            paths:
+              - /.uv_cache
+          buildIntelligence:
+            enabled: true
+          sharedPaths:
+            - /.uv_cache
+        description: ""
   properties:
     ci:
       codebase:
         connectorRef: account.svc_harness_git1
         repoName: af-component-agent
         build: <+input>
+        sparseCheckout: []
