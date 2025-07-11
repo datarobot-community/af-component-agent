@@ -246,7 +246,7 @@ pipeline:
               - python3.10
               - python3.11
               - python3.12
-            nodeName: <+matrix.python_version>
+            nodeName: <+matrix.python>
   properties:
     ci:
       codebase:
