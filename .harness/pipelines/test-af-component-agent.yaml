@@ -4,65 +4,568 @@ pipeline:
   projectIdentifier: afcomponentagent
   orgIdentifier: buzok
   stages:
-    - stage:
-        name: Test Component Base
-        identifier: Build
-        type: CI
-        spec:
-          cloneCodebase: true
-          execution:
-            steps:
-              - step:
-                  type: Run
-                  name: Copy with copier and install dependencies
-                  identifier: Install_dependencies_and_copy_with_copier
-                  spec:
-                    connectorRef: GHCR_HHI
-                    image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
-                    shell: Sh
-                    command: |-
-                      apk add --cache-dir /.apk_cache git
-                      uvx copier copy . ./copier_context --defaults
-                      cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
-                      cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
-                      cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
-                      cd ./copier_context
-                      uvx --from go-task-bin task agent_test:agent:install
-                    envVariables:
-                      UV_CACHE_DIR: /.uv_cache
-              - step:
-                  type: Run
-                  name: Linter and Unit Tests
-                  identifier: Base_Linter_and_Unit_Tests
-                  spec:
-                    shell: Sh
-                    connectorRef: GHCR_HHI
-                    image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
-                    command: |-
-                      apk add --cache-dir /.apk_cache git
-                      cd ./copier_context
+    - parallel:
+        - stage:
+            name: Test Component Base
+            identifier: Build
+            type: CI
+            spec:
+              cloneCodebase: true
+              execution:
+                steps:
+                  - step:
+                      type: Run
+                      name: Copy with copier and install dependencies
+                      identifier: Install_dependencies_and_copy_with_copier
+                      spec:
+                        connectorRef: GHCR_HHI
+                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                        shell: Sh
+                        command: |-
+                          apt update && apt install -y git g++
+                          uvx copier copy . ./copier_context --defaults
+                          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
+                          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+                          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+                          cd ./copier_context
+                          uvx --from go-task-bin task agent_test:agent:install
+                        envVariables:
+                          UV_CACHE_DIR: /.uv_cache
+                  - step:
+                      type: Run
+                      name: Linter and Unit Tests
+                      identifier: Base_Linter_and_Unit_Tests
+                      spec:
+                        shell: Sh
+                        connectorRef: GHCR_HHI
+                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                        command: |-
+                          cd ./copier_context
 
-                      uvx --from go-task-bin task agent_test:agent:lint-check
-                      uvx --from go-task-bin task agent_test:agent:test-coverage
-                    envVariables:
-                      UV_CACHE_DIR: /.uv_cache
-          platform:
-            os: Linux
-            arch: Amd64
-          runtime:
-            type: Cloud
-            spec: {}
-          caching:
-            enabled: true
-            paths:
-              - /.uv_cache
-              - /.apk_cache
-          buildIntelligence:
-            enabled: true
-          sharedPaths:
-            - /.uv_cache
-            - /.apk_cache
-        description: ""
+                          uvx --from go-task-bin task agent_test:agent:lint-check
+                          uvx --from go-task-bin task agent_test:agent:test-coverage
+                        envVariables:
+                          UV_CACHE_DIR: /.uv_cache
+                  - step:
+                      type: Run
+                      name: Base CLI Tests with DRUM using server mode
+                      identifier: Base_CLI_Tests_with_DRUM_using_server_mode
+                      spec:
+                        connectorRef: GHCR_HHI
+                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                        shell: Sh
+                        command: |-
+                          cd ./copier_context
+
+                          # Run the CLI command with a sample user prompt
+                          uvx --from go-task-bin task agent_test:agent:cli -- \
+                            execute \
+                            --user_prompt '{"topic": "Artificial Intelligence"}' \
+                            --disable_serverless \
+                            > ./agent/output.log 2>&1
+
+                          # Check if the log file was created
+                          if [ $(wc -l <./agent/output.log) -ge 13 ]; then
+                            echo "Log file created successfully and file not empty."
+                            echo ""
+                            echo "Contents of output.log:"
+                            cat ./agent/output.log
+                          else
+                            echo "Log file was not created."
+                            exit 1
+                          fi
+
+                          # Check the logger showed the first command
+                          if cat ./agent/output.log | grep -q 'Running CLI execute'; then
+                            echo "Test passed: cli.py returned log for starting cli"
+                          else
+                            echo "Test failed: cli.py did not return log for starting cli"
+                            exit 1
+                          fi
+
+                          # Check the logger showed the startup commands
+                          if cat ./agent/output.log | grep -q 'INFO - Parsing args'; then
+                            echo "Test passed: cli.py returned log for argparse"
+                          else
+                            echo "Test failed: cli.py did not return log for argparse"
+                            exit 1
+                          fi
+
+                          # Check the chat completion returned
+                          if cat ./agent/output.log | grep -q 'INFO - Starting DRUM server'; then
+                            echo "Test passed: cli.py returned log for starting DRUM server"
+                          else
+                            echo "Test failed: cli.py did not return log for starting DRUM server"
+                            exit 1
+                          fi
+
+                          # Check the chat completion returned
+                          if cat ./agent/output.log | grep -q 'INFO - Running agent with inputs'; then
+                            echo "Test passed: cli.py returned log containing in-agent messaging"
+                          else
+                            echo "Test failed: cli.py did not return log containing in-agent messaging"
+                            exit 1
+                          fi
+
+                          # Check the chat completion returned
+                          if cat ./agent/output.log | grep -q '"content": "success"'; then
+                            echo "Test passed: cli.py returned chat completion success"
+                          else
+                            echo "Test failed: cli.py did not return chat completion success"
+                            exit 1
+                          fi
+                        envVariables:
+                          UV_CACHE_DIR: /.uv_cache
+                  - step:
+                      type: Run
+                      name: Base CLI Tests with DRUM using serverless mode
+                      identifier: Base_CLI_Tests_with_DRUM_using_serverless_mode
+                      spec:
+                        connectorRef: GHCR_HHI
+                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                        shell: Sh
+                        command: |-
+                          cd ./copier_context
+
+                          # Run the CLI command with a sample user prompt
+                          uvx --from go-task-bin task agent_test:agent:cli -- \
+                            execute \
+                            --user_prompt '{"topic": "Artificial Intelligence"}' \
+                            > ./agent/output.log 2>&1
+
+                          # Check if the log file was created
+                          if [ $(wc -l <./agent/output.log) -ge 13 ]; then
+                            echo "Log file created successfully and file not empty."
+                            echo ""
+                            echo "Contents of output.log:"
+                            cat ./agent/output.log
+                          else
+                            echo "Log file was not created."
+                            exit 1
+                          fi
+
+                          # Check the logger showed the first command
+                          if cat ./agent/output.log | grep -q 'Running CLI execute'; then
+                            echo "Test passed: cli.py returned log for starting cli"
+                          else
+                            echo "Test failed: cli.py did not return log for starting cli"
+                            exit 1
+                          fi
+
+                          # Check the logger showed the startup commands
+                          if cat ./agent/output.log | grep -q 'INFO - Parsing args'; then
+                            echo "Test passed: cli.py returned log for argparse"
+                          else
+                            echo "Test failed: cli.py did not return log for argparse"
+                            exit 1
+                          fi
+
+                          # Check the chat completion returned
+                          if cat ./agent/output.log | grep -q 'INFO - Starting DRUM runner'; then
+                            echo "Test passed: cli.py returned log for starting DRUM runner"
+                          else
+                            echo "Test failed: cli.py did not return log for starting DRUM runner"
+                            exit 1
+                          fi
+
+                          # Check the chat completion returned
+                          if cat ./agent/output.log | grep -q 'Running agent with inputs'; then
+                            echo "Test passed: cli.py returned log containing in-agent messaging"
+                          else
+                            echo "Test failed: cli.py did not return log containing in-agent messaging"
+                            exit 1
+                          fi
+
+                          # Check the chat completion returned
+                          if cat ./agent/output.log | grep -q '"content": "success"'; then
+                            echo "Test passed: cli.py returned chat completion success"
+                          else
+                            echo "Test failed: cli.py did not return chat completion success"
+                            exit 1
+                          fi
+                        envVariables:
+                          UV_CACHE_DIR: /.uv_cache
+                  - step:
+                      type: Run
+                      name: Base CLI Tests with JSON
+                      identifier: Base_CLI_Tests_with_JSON
+                      spec:
+                        connectorRef: GHCR_HHI
+                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                        shell: Sh
+                        command: |-
+                          cd ./copier_context
+
+                          # Run the CLI command with a sample user prompt
+                          uvx --from go-task-bin task agent_test:agent:cli -- \
+                            execute \
+                            --completion_json "example-completion.json" \
+                            > ./agent/output.log 2>&1
+
+                          # Check if the log file was created
+                          if [ $(wc -l <./agent/output.log) -ge 13 ]; then
+                            echo "Log file created successfully and file not empty."
+                            echo ""
+                            echo "Contents of output.log:"
+                            cat ./agent/output.log
+                          else
+                            echo "Log file was not created."
+                            exit 1
+                          fi
+
+                          # Check the chat completion returned
+                          if cat ./agent/output.log | grep -q '"content": "success"'; then
+                            echo "Test passed: cli.py returned chat completion success"
+                          else
+                            echo "Test failed: cli.py did not return chat completion success"
+                            exit 1
+                          fi
+                        envVariables:
+                          UV_CACHE_DIR: /.uv_cache
+              platform:
+                os: Linux
+                arch: Amd64
+              runtime:
+                type: Cloud
+                spec: {}
+              caching:
+                enabled: true
+                paths:
+                  - /.uv_cache
+                  - /var/cache/apt/archives
+                  - /var/lib/apt/lists
+              buildIntelligence:
+                enabled: true
+              sharedPaths:
+                - /.uv_cache
+                - /var/cache/apt/archives
+                - /var/lib/apt/lists
+            description: ""
+            strategy:
+              matrix:
+                python:
+                  - python3.10
+                  - python3.11
+                  - python3.12
+                nodeName: <+matrix.python>
+        - stage:
+            name: Test Component CrewAI
+            identifier: Test_Component_CrewAI
+            description: ""
+            type: CI
+            spec:
+              cloneCodebase: true
+              execution:
+                steps:
+                  - step:
+                      type: Run
+                      name: Copy with copier and install dependencies
+                      identifier: Install_dependencies_and_copy_with_copier
+                      spec:
+                        connectorRef: GHCR_HHI
+                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                        shell: Sh
+                        command: |-
+                          apt update && apt install -y git g++
+                          uvx copier copy . ./copier_context \
+                            --data agent_app_name=agent_crewai \
+                            --data agent_template_framework=crewai \
+                            --data base_answers_file=.datarobot/answers/base.yml
+                          cd ./copier_context/agent_crewai
+                          uvx --from go-task-bin task install
+                        envVariables:
+                          UV_CACHE_DIR: /.uv_cache
+                  - parallel:
+                      - step:
+                          type: Run
+                          name: Linter
+                          identifier: Linter
+                          spec:
+                            connectorRef: GHCR_HHI
+                            image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                            shell: Sh
+                            command: |-
+                              cd ./copier_context/agent_crewai
+                              uvx --from go-task-bin task lint-check
+                            envVariables:
+                              UV_CACHE_DIR: /.uv_cache
+                      - step:
+                          type: Run
+                          name: Unit Tests
+                          identifier: Unit_Tests
+                          spec:
+                            connectorRef: GHCR_HHI
+                            image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                            shell: Sh
+                            command: |-
+                              cd ./copier_context/agent_crewai
+                              uvx --from go-task-bin task test-coverage
+                            envVariables:
+                              UV_CACHE_DIR: /.uv_cache
+              platform:
+                os: Linux
+                arch: Amd64
+              runtime:
+                type: Cloud
+                spec: {}
+              caching:
+                enabled: true
+                paths:
+                  - /.uv_cache
+                  - /var/cache/apt/archives
+                  - /var/lib/apt/lists
+              buildIntelligence:
+                enabled: true
+              sharedPaths:
+                - /.uv_cache
+                - /var/cache/apt/archives
+                - /var/lib/apt/lists
+            strategy:
+              matrix:
+                python:
+                  - python3.10
+                  - python3.11
+                  - python3.12
+                nodeName: <+matrix.python>
+        - stage:
+            name: Test Component Langgraph
+            identifier: Test_Component_Langgraph
+            description: ""
+            type: CI
+            spec:
+              cloneCodebase: true
+              execution:
+                steps:
+                  - step:
+                      type: Run
+                      name: Copy with copier and install dependencies
+                      identifier: Install_dependencies_and_copy_with_copier
+                      spec:
+                        connectorRef: GHCR_HHI
+                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                        shell: Sh
+                        command: |-
+                          apt update && apt install -y git g++
+                          uvx copier copy . ./copier_context \
+                            --data agent_app_name=agent_langgraph \
+                            --data agent_template_framework=langgraph \
+                            --data base_answers_file=.datarobot/answers/base.yml
+                          cd ./copier_context/agent_langgraph
+                          uvx --from go-task-bin task install
+                        envVariables:
+                          UV_CACHE_DIR: /.uv_cache
+                  - parallel:
+                      - step:
+                          type: Run
+                          name: Linter
+                          identifier: Linter
+                          spec:
+                            connectorRef: GHCR_HHI
+                            image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                            shell: Sh
+                            command: |-
+                              cd ./copier_context/agent_langgraph
+                              uvx --from go-task-bin task lint-check
+                            envVariables:
+                              UV_CACHE_DIR: /.uv_cache
+                      - step:
+                          type: Run
+                          name: Unit Tests
+                          identifier: Unit_Tests
+                          spec:
+                            connectorRef: GHCR_HHI
+                            image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                            shell: Sh
+                            command: |-
+                              cd ./copier_context/agent_langgraph
+                              uvx --from go-task-bin task test-coverage
+                            envVariables:
+                              UV_CACHE_DIR: /.uv_cache
+              platform:
+                os: Linux
+                arch: Amd64
+              runtime:
+                type: Cloud
+                spec: {}
+              caching:
+                enabled: true
+                paths:
+                  - /.uv_cache
+                  - /var/cache/apt/archives
+                  - /var/lib/apt/lists
+              buildIntelligence:
+                enabled: true
+              sharedPaths:
+                - /.uv_cache
+                - /var/cache/apt/archives
+                - /var/lib/apt/lists
+            strategy:
+              matrix:
+                python:
+                  - python3.10
+                  - python3.11
+                  - python3.12
+                nodeName: <+matrix.python>
+        - stage:
+            name: Test Component LlamaIndex
+            identifier: Test_Component_LlamaIndex
+            description: ""
+            type: CI
+            spec:
+              cloneCodebase: true
+              execution:
+                steps:
+                  - step:
+                      type: Run
+                      name: Copy with copier and install dependencies
+                      identifier: Install_dependencies_and_copy_with_copier
+                      spec:
+                        connectorRef: GHCR_HHI
+                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                        shell: Sh
+                        command: |-
+                          apt update && apt install -y git g++
+                          uvx copier copy . ./copier_context \
+                            --data agent_app_name=agent_llamaindex \
+                            --data agent_template_framework=llamaindex \
+                            --data base_answers_file=.datarobot/answers/base.yml
+                          cd ./copier_context/agent_llamaindex
+                          uvx --from go-task-bin task install
+                        envVariables:
+                          UV_CACHE_DIR: /.uv_cache
+                  - parallel:
+                      - step:
+                          type: Run
+                          name: Linter
+                          identifier: Linter
+                          spec:
+                            connectorRef: GHCR_HHI
+                            image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                            shell: Sh
+                            command: |-
+                              cd ./copier_context/agent_llamaindex
+                              uvx --from go-task-bin task lint-check
+                            envVariables:
+                              UV_CACHE_DIR: /.uv_cache
+                      - step:
+                          type: Run
+                          name: Unit Tests
+                          identifier: Unit_Tests
+                          spec:
+                            connectorRef: GHCR_HHI
+                            image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                            shell: Sh
+                            command: |-
+                              cd ./copier_context/agent_llamaindex
+                              uvx --from go-task-bin task test-coverage
+                            envVariables:
+                              UV_CACHE_DIR: /.uv_cache
+              platform:
+                os: Linux
+                arch: Amd64
+              runtime:
+                type: Cloud
+                spec: {}
+              caching:
+                enabled: true
+                paths:
+                  - /.uv_cache
+                  - /var/cache/apt/archives
+                  - /var/lib/apt/lists
+              buildIntelligence:
+                enabled: true
+              sharedPaths:
+                - /.uv_cache
+                - /var/cache/apt/archives
+                - /var/lib/apt/lists
+            strategy:
+              matrix:
+                python:
+                  - python3.10
+                  - python3.11
+                  - python3.12
+                nodeName: <+matrix.python>
+        - stage:
+            name: Test Component Infra
+            identifier: Test_Component_Infra
+            description: ""
+            type: CI
+            spec:
+              cloneCodebase: true
+              execution:
+                steps:
+                  - step:
+                      type: Run
+                      name: Copy with copier and install dependencies
+                      identifier: Install_dependencies_and_copy_with_copier
+                      spec:
+                        connectorRef: GHCR_HHI
+                        image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+                        shell: Sh
+                        command: |-
+                          apt update && apt install -y git
+                          uvx copier copy . ./copier_context --defaults
+                          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
+                          cp ./fixtures/infra/Pulumi.yaml ./copier_context/infra/Pulumi.yaml
+                          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+                          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+                          cd ./copier_context/infra
+                          uv sync --all-extras --all-groups --dev
+                        envVariables:
+                          UV_CACHE_DIR: /.uv_cache
+                  - parallel:
+                      - step:
+                          type: Run
+                          name: Linter
+                          identifier: Linter
+                          spec:
+                            connectorRef: GHCR_HHI
+                            image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+                            shell: Sh
+                            command: |-
+                              cd ./copier_context/infra
+                              uv run ruff format --check --diff .
+                              uv run ruff check --diff .
+                              uv run mypy --pretty .
+                            envVariables:
+                              UV_CACHE_DIR: /.uv_cache
+                      - step:
+                          type: Run
+                          name: Unit Tests
+                          identifier: Unit_Tests
+                          spec:
+                            connectorRef: GHCR_HHI
+                            image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+                            shell: Sh
+                            command: |-
+                              apt install -y curl
+                              curl -fsSL https://get.pulumi.com | sh
+                              export PATH=/root/.pulumi/bin:$PATH
+                              cd ./copier_context/infra
+                              pulumi login --local
+                              pulumi stack init -s organization/unittest/unittest
+                              uv run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/
+                            envVariables:
+                              UV_CACHE_DIR: /.uv_cache
+                              PULUMI_CONFIG_PASSPHRASE: "123"
+              platform:
+                os: Linux
+                arch: Amd64
+              runtime:
+                type: Cloud
+                spec: {}
+              caching:
+                enabled: true
+                paths:
+                  - /.uv_cache
+                  - /var/cache/apt/archives
+                  - /var/lib/apt/lists
+              buildIntelligence:
+                enabled: true
+              sharedPaths:
+                - /.uv_cache
+                - /var/cache/apt/archives
+                - /var/lib/apt/lists
   properties:
     ci:
       codebase:
