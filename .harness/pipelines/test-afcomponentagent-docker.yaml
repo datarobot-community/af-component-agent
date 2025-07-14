@@ -81,7 +81,7 @@ pipeline:
                         shell: Sh
                         command: |-
                           cd template/{{agent_app_name}}/docker_context
-                          hadolint Dockerfile
+                          hadolint <+matrix.dockerfile>
                   - step:
                       type: BuildAndPushDockerRegistry
                       name: Build Dockerfile
@@ -92,7 +92,14 @@ pipeline:
                         tags:
                           - latest
                         caching: true
-                        dockerfile: template/{{agent_app_name}}/docker_context/Dockerfile
+                        dockerfile: template/{{agent_app_name}}/docker_context/<+matrix.dockerfile>
                         context: template/{{agent_app_name}}/docker_context
                         baseImageConnectorRefs:
                           - account.dockerhub_datarobot_read
+            strategy:
+              matrix:
+                dockerfile:
+                  - Dockerfile
+                  - Dockerfile.prod
+                  - Dockerfile.local
+                nodeName: <+matrix.dockerfile>
