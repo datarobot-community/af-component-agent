@@ -42,7 +42,7 @@ pipeline:
                         image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
                         shell: Sh
                         command: |-
-                          cd docker_context
+                          cd template/{{agent_app_name}}/docker_context
                           uv pip compile --no-annotate --no-emit-index-url --output-file=requirements.txt requirements.in
         - stage:
             name: Test Dockerfile
