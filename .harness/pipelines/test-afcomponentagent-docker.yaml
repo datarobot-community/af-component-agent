@@ -73,3 +73,17 @@ pipeline:
                         image: ghcr.io/hadolint/hadolint
                         shell: Sh
                         command: hadolint < template/{{agent_app_name}}/docker_context/Dockerfile
+                  - step:
+                      type: BuildAndPushDockerRegistry
+                      name: Build Dockerfile
+                      identifier: Build_Dockerfile
+                      spec:
+                        connectorRef: org.dockerhubrwhhi
+                        repo: datarobotdev/buzok-genai-custom-model-dropin-env
+                        tags:
+                          - latest
+                        caching: true
+                        dockerfile: template/{{agent_app_name}}/docker_context/Dockerfile
+                        context: template/{{agent_app_name}}/docker_context
+                        baseImageConnectorRefs:
+                          - account.dockerhub_datarobot_read
