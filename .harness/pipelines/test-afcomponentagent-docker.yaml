@@ -1,0 +1,103 @@
+pipeline:
+  name: Test af-component-agent Docker
+  identifier: Test_afcomponentagent_Docker
+  projectIdentifier: afcomponentagent
+  orgIdentifier: buzok
+  tags: {}
+  properties:
+    ci:
+      codebase:
+        connectorRef: account.svc_harness_git1
+        repoName: af-component-agent
+        build: <+input>
+        sparseCheckout: []
+  stages:
+    - parallel:
+        - stage:
+            name: Docker Requirements Compile Test
+            identifier: Docker_Requirements_Compile_Test
+            description: ""
+            type: CI
+            spec:
+              cloneCodebase: true
+              caching:
+                enabled: true
+                override: false
+                paths:
+                  - /var/lib/apt/lists
+                  - /var/cache/apt/archives
+              buildIntelligence:
+                enabled: true
+              platform:
+                os: Linux
+                arch: Amd64
+              runtime:
+                type: Cloud
+                spec: {}
+              execution:
+                steps:
+                  - step:
+                      type: Run
+                      name: Docker Requirements Compile Test
+                      identifier: Docker_Requirements_Compile_Test
+                      spec:
+                        connectorRef: GHCR_HHI
+                        image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+                        shell: Sh
+                        command: |-
+                          apt update && apt install -y git
+                          cd template/{{agent_app_name}}/docker_context
+                          uv pip compile --no-annotate --no-emit-index-url --output-file=requirements.txt requirements.in
+              sharedPaths:
+                - /var/cache/apt/archives
+                - /var/lib/apt/lists
+        - stage:
+            name: Test Dockerfile
+            identifier: Test_Dockerfile
+            description: ""
+            type: CI
+            spec:
+              cloneCodebase: true
+              caching:
+                enabled: true
+                override: false
+              buildIntelligence:
+                enabled: true
+              platform:
+                os: Linux
+                arch: Amd64
+              runtime:
+                type: Cloud
+                spec: {}
+              execution:
+                steps:
+                  - step:
+                      type: Run
+                      name: Lint Dockerfile
+                      identifier: Lint_Dockerfile
+                      spec:
+                        connectorRef: GHCR_HHI
+                        image: ghcr.io/hadolint/hadolint:2.11.0-debian
+                        shell: Sh
+                        command: hadolint --config .hadolint.yaml template/{{agent_app_name}}/docker_context/<+matrix.dockerfile>
+                  - step:
+                      type: BuildAndPushDockerRegistry
+                      name: Build Dockerfile
+                      identifier: Build_Dockerfile
+                      spec:
+                        connectorRef: org.dockerhubrwhhi
+                        repo: datarobotdev/buzok-genai-custom-model-dropin-env
+                        tags:
+                          - latest
+                        caching: true
+                        dockerfile: template/{{agent_app_name}}/docker_context/<+matrix.dockerfile>
+                        context: template/{{agent_app_name}}/docker_context
+                        baseImageConnectorRefs:
+                          - account.dockerhub_datarobot_read
+            strategy:
+              matrix:
+                dockerfile:
+                  - Dockerfile
+                  - Dockerfile.prod
+                  - Dockerfile.local
+                nodeName: <+matrix.dockerfile>
