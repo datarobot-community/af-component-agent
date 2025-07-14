@@ -79,9 +79,7 @@ pipeline:
                         connectorRef: GHCR_HHI
                         image: ghcr.io/hadolint/hadolint:2.11.0-debian
                         shell: Sh
-                        command: |-
-                          cd template/{{agent_app_name}}/docker_context
-                          hadolint <+matrix.dockerfile>
+                        command: hadolint --config .hadolint.yaml template/{{agent_app_name}}/docker_context/<+matrix.dockerfile>
                   - step:
                       type: BuildAndPushDockerRegistry
                       name: Build Dockerfile
