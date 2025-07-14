@@ -12,34 +12,64 @@ pipeline:
         build: <+input>
         sparseCheckout: []
   stages:
-    - stage:
-        name: Docker Requirements Compile Test
-        identifier: Docker_Requirements_Compile_Test
-        description: ""
-        type: CI
-        spec:
-          cloneCodebase: true
-          caching:
-            enabled: true
-            override: false
-          buildIntelligence:
-            enabled: true
-          platform:
-            os: Linux
-            arch: Amd64
-          runtime:
-            type: Cloud
-            spec: {}
-          execution:
-            steps:
-              - step:
-                  type: Run
-                  name: Docker Requirements Compile Test
-                  identifier: Docker_Requirements_Compile_Test
-                  spec:
-                    connectorRef: GHCR_HHI
-                    image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
-                    shell: Sh
-                    command: |-
-                      cd docker_context
-                      uv pip compile --no-annotate --no-emit-index-url --output-file=requirements.txt requirements.in
+    - parallel:
+        - stage:
+            name: Docker Requirements Compile Test
+            identifier: Docker_Requirements_Compile_Test
+            description: ""
+            type: CI
+            spec:
+              cloneCodebase: true
+              caching:
+                enabled: true
+                override: false
+              buildIntelligence:
+                enabled: true
+              platform:
+                os: Linux
+                arch: Amd64
+              runtime:
+                type: Cloud
+                spec: {}
+              execution:
+                steps:
+                  - step:
+                      type: Run
+                      name: Docker Requirements Compile Test
+                      identifier: Docker_Requirements_Compile_Test
+                      spec:
+                        connectorRef: GHCR_HHI
+                        image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+                        shell: Sh
+                        command: |-
+                          cd docker_context
+                          uv pip compile --no-annotate --no-emit-index-url --output-file=requirements.txt requirements.in
+        - stage:
+            name: Test Dockerfile
+            identifier: Test_Dockerfile
+            description: ""
+            type: CI
+            spec:
+              cloneCodebase: true
+              caching:
+                enabled: true
+                override: false
+              buildIntelligence:
+                enabled: true
+              platform:
+                os: Linux
+                arch: Amd64
+              runtime:
+                type: Cloud
+                spec: {}
+              execution:
+                steps:
+                  - step:
+                      type: Run
+                      name: Lint Dockerfile
+                      identifier: Lint_Dockerfile
+                      spec:
+                        connectorRef: GHCR_HHI
+                        image: ghcr.io/hadolint/hadolint
+                        shell: Sh
+                        command: hadolint < template/{{agent_app_name}}/docker_context/Dockerfile
