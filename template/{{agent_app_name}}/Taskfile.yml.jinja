@@ -70,7 +70,7 @@ tasks:
       - echo "Compiling requirements for Docker"
       - cd docker_context && uv pip compile --no-annotate --no-emit-index-url --output-file=requirements.txt requirements.in
       - echo "Building Docker image"
-      - cd docker_context && docker build -f Dockerfile -t {{ agent_app_name }}:latest .
+      - cd docker_context && docker build -platform linux/amd64 -f Dockerfile -t {{ agent_app_name }}:latest .
       - echo "Saving Docker image"
       - docker save {{ agent_app_name }}:latest | gzip > docker_context.tar.gz
     silent: true
