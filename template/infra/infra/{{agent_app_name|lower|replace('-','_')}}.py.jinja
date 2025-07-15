@@ -113,7 +113,7 @@ if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
         )
 else:
     if os.path.exists(
-            os.path.join(str({{agent_app_name}}_application_path), "docker_context.tar.gz")
+        os.path.join(str({{agent_app_name}}_application_path), "docker_context.tar.gz")
     ):
         pulumi.info(
             "Using prebuilt Dockerfile docker_context.tar.gz to run the execution environment"
