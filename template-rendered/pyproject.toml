@@ -1,8 +1,8 @@
 [project]
 
-name = "{{ agent_app_name }}"
+name = "agent"
 version = "0.1.0"
-description = "Implementation of {{ agent_app_name }}"
+description = "Implementation of agent"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

@@ -48,11 +48,12 @@ update-requirements: ## Update requirements.in from pyproject.toml template
 	@echo "$(BLUE)Rendering pyproject.toml from Jinja template...$(RESET)"
 	uv run jinja2 -D agent_app_name=agent template-rendered/pyproject.toml.jinja -o template-rendered/pyproject.toml
 	@echo "$(BLUE)Exporting dependencies to requirements.in...$(RESET)"
-	uv pip compile template-rendered/pyproject.toml --extra codespaces --no-deps --no-annotate \
+	uv pip compile template-rendered/pyproject.toml --extra codespaces --no-deps --no-annotate | \
+	sed 's/==/~=/g' \
 	> template/{{agent_app_name}}/docker_context/requirements.in
 	@echo "$(BLUE)Syncing dependencies from requirements.in to requirements.txt...$(RESET)"
 	cd template/{{agent_app_name}}/docker_context/ && \
-	uv pip compile --no-annotate --no-emit-index-url --output-file=requirements.txt requirements.in
+	uv pip compile --verbose --no-annotate --no-emit-index-url --output-file=requirements.txt requirements.in
 	@echo "$(BLUE)Cleaning up temporary files...$(RESET)"
 	rm -rf template-rendered
 	@echo "$(GREEN)Successfully updated requirements.in!$(RESET)"
