@@ -128,6 +128,7 @@ def test_execution_environment_not_set_with_docker_image(monkeypatch):
         if path.endswith("docker_context.tar.gz"):
             return True
         return False
+
     monkeypatch.setattr("os.path.exists", mock_exists)
 
     import importlib
