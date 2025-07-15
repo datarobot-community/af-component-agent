@@ -14,8 +14,8 @@
 
 from typing import Any, cast
 
-from openai.types.chat import CompletionCreateParams
 from datarobot.models.genai.agent.auth import set_authorization_context
+from openai.types.chat import CompletionCreateParams
 
 
 def initialize_authorization_context(
