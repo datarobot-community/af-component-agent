@@ -50,7 +50,7 @@ pipeline:
                           uv pip compile --no-annotate --no-emit-index-url requirements.in
 
                           VAR1=$(cat requirements.txt)
-                          VAR2=$(uv pip compile --no-annotate --no-emit-index-url requirements.in)
+                          VAR2=$(uv pip compile --no-annotate --no-emit-index-url --output-file=requirements.txt requirements.in)
 
                           if [ "$VAR1" = "$VAR2" ]; then
                             echo "Requirements.txt is in sync."
