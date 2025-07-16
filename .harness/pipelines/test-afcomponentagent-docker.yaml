@@ -52,7 +52,9 @@ pipeline:
                           update=$(uv pip compile --no-annotate --no-emit-index-url requirements.in)
                           current=$(cat requirements.txt)
 
-                          if [[ "$update" != "$current" ]]; then
+                          if [ "$update" == "$current" ]; then
+                            echo "Requirements.txt is in sync."
+                          else
                             echo "Requirements.txt is out of sync with requirements.txt."
                             echo "Please run:"
                             echo ""
