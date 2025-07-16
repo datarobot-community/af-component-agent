@@ -68,7 +68,7 @@ tasks:
     desc: 🐳 [{{ agent_app_name }}] Build the Docker image
     cmds:
       - echo "Compiling requirements for Docker"
-      - cd docker_context && uv pip compile --no-annotate --no-emit-index-url --output-file=requirements.txt requirements.in
+      - cd docker_context && uv pip compile --python-version 3.11 --universal --no-annotate --no-emit-index-url --output-file=requirements.txt requirements.in
       - echo "Building Docker image"
       - cd docker_context && docker build --platform linux/amd64 -f Dockerfile -t {{ agent_app_name }}:latest .
       - echo "Saving Docker image"
