@@ -49,12 +49,14 @@ pipeline:
                           cd template/{{agent_app_name}}/docker_context
                           uv pip compile --no-annotate --no-emit-index-url requirements.in
 
-                          update=$(uv pip compile --no-annotate --no-emit-index-url requirements.in)
-                          current=$(cat requirements.txt)
+                          VAR1=$(cat requirements.txt)
+                          VAR2=$(uv pip compile --no-annotate --no-emit-index-url requirements.in)
 
-                          if [ "$update" = "$current" ]; then
+                          if [ "$VAR1" = "$VAR2" ]; then
                             echo "Requirements.txt is in sync."
                           else
+                            diff <(echo "$VAR1") <(echo "$VAR2")
+
                             echo "Requirements.txt is out of sync with requirements.txt."
                             echo "Please run:"
                             echo ""
