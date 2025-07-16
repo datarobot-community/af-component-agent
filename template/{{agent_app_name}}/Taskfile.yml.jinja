@@ -64,3 +64,13 @@ tasks:
       - echo "Running development server on http://localhost:8842"
       - uv run drum server -cd custom_model --address localhost:8842 --target-type agenticworkflow
       - wait
+  build-docker:
+    desc: 🐳 [{{ agent_app_name }}] Build the Docker image
+    cmds:
+      - echo "Compiling requirements for Docker"
+      - cd docker_context && uv pip compile --python-version 3.11 --universal --no-annotate --no-emit-index-url --output-file=requirements.txt requirements.in
+      - echo "Building Docker image"
+      - cd docker_context && docker build --platform linux/amd64 -f Dockerfile -t {{ agent_app_name }}:latest .
+      - echo "Saving Docker image"
+      - docker save {{ agent_app_name }}:latest | gzip > docker_context.tar.gz
+    silent: true
