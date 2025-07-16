@@ -48,6 +48,31 @@ pipeline:
                           apt update && apt install -y git
                           cd template/{{agent_app_name}}/docker_context
                           uv pip compile --no-annotate --no-emit-index-url --output-file=requirements.txt requirements.in
+                  - step:
+                      type: Run
+                      name: Requirements are updated
+                      identifier: Requirements_are_updated
+                      spec:
+                        shell: Sh
+                        command: |-
+                          apt update && apt install -y git
+                          cd template/{{agent_app_name}}/docker_context
+
+                          update=$(uv pip compile --no-annotate --no-emit-index-url requirements.in)
+                          current=$(cat requirements.txt)
+
+                          if [[ "$var1" == "$var2" ]]; then
+                            echo "Requirements.txt is in sync with requirements.in."
+                          else
+                            echo "Requirements.txt is out of sync with requirements.txt."
+                            echo "Please run:"
+                            echo ""
+                            echo "cd template/{{agent_app_name}}/docker_context"
+                            echo "uv pip compile --no-annotate --no-emit-index-url --output-file=requirements.txt requirements.in"
+                            echo ""
+                            echo "And add the updated requirements.txt to your PR."
+                            exit 1
+                          fi
               sharedPaths:
                 - /var/cache/apt/archives
                 - /var/lib/apt/lists
