@@ -47,16 +47,7 @@ pipeline:
                         command: |-
                           apt update && apt install -y git
                           cd template/{{agent_app_name}}/docker_context
-                          uv pip compile --no-annotate --no-emit-index-url --output-file=requirements.txt requirements.in
-                  - step:
-                      type: Run
-                      name: Requirements are updated
-                      identifier: Requirements_are_updated
-                      spec:
-                        shell: Sh
-                        command: |-
-                          apt update && apt install -y git
-                          cd template/{{agent_app_name}}/docker_context
+                          uv pip compile --no-annotate --no-emit-index-url requirements.in
 
                           update=$(uv pip compile --no-annotate --no-emit-index-url requirements.in)
                           current=$(cat requirements.txt)
