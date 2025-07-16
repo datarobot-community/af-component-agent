@@ -55,7 +55,9 @@ pipeline:
                           if [ "$VAR1" = "$VAR2" ]; then
                             echo "Requirements.txt is in sync."
                           else
-                            diff <(echo "$VAR1") <(echo "$VAR2")
+                            echo "$VAR1" > /tmp/current_requirements.txt
+                            echo "$VAR2" > /tmp/compiled_requirements.txt
+                            diff /tmp/current_requirements.txt /tmp/compiled_requirements.txt
 
                             echo "Requirements.txt is out of sync with requirements.txt."
                             echo "Please run:"
