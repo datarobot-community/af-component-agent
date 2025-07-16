@@ -52,6 +52,15 @@ pipeline:
                           VAR1=$(cat requirements.txt)
                           VAR2=$(uv pip compile --python-version 3.11 --universal --no-annotate --no-emit-index-url --output-file=requirements.txt requirements.in)
 
+                          # Check for asyncio in compiled requirements (should not be there)
+                          if echo "$VAR2" | grep -q "^asyncio=="; then
+                            echo "Error: Compiled requirements contains 'asyncio==' which should not be included."
+                            echo "asyncio is part of Python's standard library and should not be listed as a dependency."
+                            echo "This suggests an issue with the dependency resolution."
+                            echo "Packages which require the outdated asyncio library are NOT compatible with DataRobot environments."
+                            exit 1
+                          fi
+
                           if [ "$VAR1" = "$VAR2" ]; then
                             echo "Requirements.txt is in sync."
                           else
