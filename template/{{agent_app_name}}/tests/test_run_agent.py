@@ -562,7 +562,6 @@ class TestRunAgentProcedure:
         # THEN execute_drum was called with correct parameters
         mock_execute_drum_inline.assert_called_once_with(
             chat_completion={"messages": []},
-            default_headers={},
             custom_model_dir="/path/to/custom/model",
         )
 
@@ -614,7 +613,6 @@ class TestRunAgentProcedure:
         # THEN execute_drum was called with correct parameters
         mock_execute_drum_inline.assert_called_once_with(
             chat_completion={"messages": []},
-            default_headers={},
             custom_model_dir="/path/to/custom/model",
         )
 
