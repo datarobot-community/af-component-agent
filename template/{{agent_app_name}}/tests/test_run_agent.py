@@ -30,7 +30,6 @@ from run_agent import (
     DEFAULT_OUTPUT_LOG_PATH,
     argparse_args,
     construct_prompt,
-    execute_drum,
     main,
     main_stdout_redirect,
     run_agent_procedure,
@@ -659,7 +658,6 @@ class TestMain:
                 "messages": [{"role": "user", "content": "Hello"}],
                 "model": "unknown",
             },
-            default_headers={"X-Custom": "value"},
             custom_model_dir="/path/to/model",
         )
 
@@ -867,9 +865,9 @@ class TestMainStdoutRedirect:
         assert f.flush.call_count == 2
 
     @patch("run_agent.argparse_args")
-    @patch("run_agent.execute_drum")
+    @patch("run_agent.execute_drum_inline")
     def test_main_stdout_redirect_integration(
-        self, mock_execute_drum, mock_argparse_args, tempdir_and_cleanup
+        self, mock_execute_drum_inline, mock_argparse_args, tempdir_and_cleanup
     ):
         """Test main function with a more integrated approach."""
         # GIVEN valid input arguments
@@ -886,18 +884,17 @@ class TestMainStdoutRedirect:
         # GIVEN a mock completion returned from execute_drum
         mock_completion = MagicMock()
         mock_completion.model_dump.return_value = {"id": "test-id", "choices": []}
-        mock_execute_drum.return_value = mock_completion
+        mock_execute_drum_inline.return_value = mock_completion
 
         # WHEN main is called
         main_stdout_redirect()
 
         # THEN execute_drum was called with correct parsed parameters
-        mock_execute_drum.assert_called_once_with(
+        mock_execute_drum_inline.assert_called_once_with(
             chat_completion={
                 "messages": [{"role": "user", "content": "Hello"}],
                 "model": "unknown",
             },
-            default_headers={"X-Custom": "value"},
             custom_model_dir="/path/to/model",
         )
 
