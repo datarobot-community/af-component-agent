@@ -523,14 +523,12 @@ class TestStoreResult:
 class TestRunAgentProcedure:
     @patch("run_agent.construct_prompt")
     @patch("run_agent.execute_drum_inline")
-    @patch("run_agent.execute_drum")
     @patch("run_agent.store_result")
     @patch("run_agent.setup_otel")
     def test_run_agent_with_custom_model_dir(
         self,
         mock_setup_otel,
         mock_store_result,
-        mock_execute_drum,
         mock_execute_drum_inline,
         mock_construct_prompt,
     ):
@@ -545,7 +543,6 @@ class TestRunAgentProcedure:
 
         # GIVEN a mock completion
         mock_completion = MagicMock()
-        mock_execute_drum.return_value = mock_completion
         mock_execute_drum_inline.return_value = mock_completion
 
         # GIVEN mock_setup_otel returns a span with a trace_id
@@ -563,12 +560,11 @@ class TestRunAgentProcedure:
         mock_setup_otel.assert_called_once_with(mock_args)
 
         # THEN execute_drum was called with correct parameters
-        mock_execute_drum.assert_called_once_with(
+        mock_execute_drum_inline.assert_called_once_with(
             chat_completion={"messages": []},
             default_headers={},
             custom_model_dir="/path/to/custom/model",
         )
-        mock_execute_drum_inline.assert_not_called()
 
         # THEN store_result was called with correct parameters
         mock_store_result.assert_called_once_with(
@@ -579,14 +575,12 @@ class TestRunAgentProcedure:
 
     @patch("run_agent.construct_prompt")
     @patch("run_agent.execute_drum_inline")
-    @patch("run_agent.execute_drum")
     @patch("run_agent.store_result")
     @patch("run_agent.setup_otel")
     def test_run_agent_without_custom_model_dir(
         self,
         mock_setup_otel,
         mock_store_result,
-        mock_execute_drum,
         mock_execute_drum_inline,
         mock_construct_prompt,
     ):
@@ -601,7 +595,6 @@ class TestRunAgentProcedure:
 
         # GIVEN a mock completion
         mock_completion = MagicMock()
-        mock_execute_drum.return_value = mock_completion
         mock_execute_drum_inline.return_value = mock_completion
 
         # GIVEN mock_setup_otel returns a span with a trace_id
@@ -619,12 +612,11 @@ class TestRunAgentProcedure:
         mock_setup_otel.assert_called_once_with(mock_args)
 
         # THEN execute_drum was called with correct parameters
-        mock_execute_drum.assert_called_once_with(
+        mock_execute_drum_inline.assert_called_once_with(
             chat_completion={"messages": []},
             default_headers={},
             custom_model_dir="/path/to/custom/model",
         )
-        mock_execute_drum_inline.assert_not_called()
 
         # THEN store_result was called with correct parameters
         mock_store_result.assert_called_once_with(
@@ -639,9 +631,9 @@ class TestMain:
     use it to test the integration of the other procedures."""
 
     @patch("run_agent.argparse_args")
-    @patch("run_agent.execute_drum")
+    @patch("run_agent.execute_drum_inline")
     def test_main_integration(
-        self, mock_execute_drum, mock_argparse_args, tempdir_and_cleanup
+        self, mock_execute_drum_inline, mock_argparse_args, tempdir_and_cleanup
     ):
         """Test main function with a more integrated approach."""
         # GIVEN valid input arguments
@@ -658,13 +650,13 @@ class TestMain:
         # GIVEN a mock completion returned from execute_drum
         mock_completion = MagicMock()
         mock_completion.model_dump.return_value = {"id": "test-id", "choices": []}
-        mock_execute_drum.return_value = mock_completion
+        mock_execute_drum_inline.return_value = mock_completion
 
         # WHEN main is called
         main()
 
         # THEN execute_drum was called with correct parsed parameters
-        mock_execute_drum.assert_called_once_with(
+        mock_execute_drum_inline.assert_called_once_with(
             chat_completion={
                 "messages": [{"role": "user", "content": "Hello"}],
                 "model": "unknown",
