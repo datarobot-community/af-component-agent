@@ -57,9 +57,7 @@ def cli(
 @pass_environment
 @click.option("--user_prompt", default="", help="Input to use for chat.")
 @click.option("--completion_json", default="", help="Path to json to use for chat.")
-def execute(
-    environment: Any, user_prompt: str, completion_json: str
-) -> None:
+def execute(environment: Any, user_prompt: str, completion_json: str) -> None:
     """Execute agent code locally using OpenAI completions.
 
     Examples:
