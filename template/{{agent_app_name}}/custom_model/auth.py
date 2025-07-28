@@ -12,10 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from contextvars import ContextVar
 from typing import Any, cast
 
-from datarobot.models.genai.agent.auth import set_authorization_context
 from openai.types.chat import CompletionCreateParams
+
+authorization_context_var: ContextVar[dict[str, Any]] = ContextVar(
+    "authorization_context"
+)
 
 
 def initialize_authorization_context(
@@ -29,3 +33,11 @@ def initialize_authorization_context(
     """
     authorization_context = completion_create_params.get("authorization_context", {})
     set_authorization_context(cast(dict[str, Any], authorization_context))
+
+
+def set_authorization_context(authorization_context: dict[str, Any]) -> None:
+    authorization_context_var.set(authorization_context)
+
+
+def get_authorization_context() -> dict[str, Any]:
+    return authorization_context_var.get()
