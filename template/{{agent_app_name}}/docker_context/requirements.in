@@ -58,3 +58,5 @@ ragas @ git+https://github.com/explodinggradients/ragas@5d59549ad5ef511f621502c5
 requests~=2.32.4
 traceloop-sdk~=0.40.2
 uvicorn~=0.35.0
+# pyarrow >=21.0.0 breaks the current ragas version https://github.com/apache/arrow/issues/47155
+pyarrow<21.0.0
