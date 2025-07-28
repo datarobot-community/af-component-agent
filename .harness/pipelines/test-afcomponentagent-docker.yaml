@@ -45,7 +45,7 @@ pipeline:
                         image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
                         shell: Sh
                         command: |-
-                          apt -o Acquire::Check-Valid-Until=false update && apt install -y git
+                          apt update && apt install -y git
                           cd template/{{agent_app_name}}/docker_context
                           uv pip compile --python-version 3.11 --universal --no-annotate --no-emit-index-url requirements.in
 
