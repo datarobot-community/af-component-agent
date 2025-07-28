@@ -41,11 +41,11 @@ dependencies = [
     "opentelemetry-sdk>=1.33.0",
     "python-dotenv~=1.1.0",
     "ragas @ git+https://github.com/explodinggradients/ragas@5d59549ad5ef511f621502c563bc55ac5aeb9188#subdirectory=ragas",
+    # pyarrow==21.0.0 breaks the current ragas version https://github.com/apache/arrow/issues/47155
+    "pyarrow<21.0.0",
     "requests~=2.32.4",
     "traceloop-sdk~=0.40.2",
     "uvicorn~=0.35.0",
-    # pyarrow >=21.0.0 breaks the current ragas version https://github.com/apache/arrow/issues/47155
-    "pyarrow<21.0.0"
 ]
 
 [project.optional-dependencies]
