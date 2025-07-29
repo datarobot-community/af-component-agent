@@ -12,7 +12,7 @@ tasks:
       - task --list
     silent: true
   install:
-    desc: "🏗️ Install and setup the agent and infra environments"
+    desc: "🏗️ [{{ agent_app_name }}] Install and setup the agent and infra environments"
     cmds:
       - echo "Updating agent environment"
       - task: agent:req
