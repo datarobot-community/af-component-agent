@@ -12,7 +12,7 @@ tasks:
       - task --list
     silent: true
   install:
-    desc: "🏗️ Install and setup the agent and infra environments"
+    desc: "🏗️ [{{ agent_app_name }}] Install and setup the agent and infra environments"
     cmds:
       - echo "Updating agent environment"
       - task: agent:req
@@ -28,7 +28,7 @@ tasks:
       AGENT_DEPLOY: 0
     cmds:
       - echo "Running pulumi up with [BUILD] mode"
-      - cd ./infra && uv run pulumi up
+      - cd ./infra && uv run pulumi up {% raw %}{{.CLI_ARGS}}{% endraw %}
     silent: true
   deploy:
     desc: "🟢 [{{ agent_app_name }}] Run Pulumi up in [DEPLOY] mode"
@@ -36,25 +36,17 @@ tasks:
       AGENT_DEPLOY: 1
     cmds:
       - echo "Running pulumi up with [DEPLOY] mode"
-      - cd ./infra && uv run pulumi up
-    silent: true
-  silent-deploy:
-    desc: "⭕️ [{{ agent_app_name }}] Run Pulumi up in Silent/Integration [DEPLOY] mode"
-    env:
-      AGENT_DEPLOY: 1
-    cmds:
-      - echo "Running pulumi up with [DEPLOY] mode"
-      - cd ./infra && uv run pulumi up --yes --skip-preview
+      - cd ./infra && uv run pulumi up {% raw %}{{.CLI_ARGS}}{% endraw %}
     silent: true
   refresh:
     desc: "⚪️ [{{ agent_app_name }}] Run Pulumi refresh"
     cmds:
       - echo "Running pulumi refresh"
-      - cd ./infra && uv run pulumi refresh
+      - cd ./infra && uv run pulumi refresh {% raw %}{{.CLI_ARGS}}{% endraw %}
     silent: true
   destroy:
     desc: "🔴 [{{ agent_app_name }}] Run Pulumi destroy"
     cmds:
       - echo "Running pulumi destroy"
-      - cd ./infra && uv run pulumi destroy
+      - cd ./infra && uv run pulumi destroy {% raw %}{{.CLI_ARGS}}{% endraw %}
     silent: true
