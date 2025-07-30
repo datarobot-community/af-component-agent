@@ -56,7 +56,7 @@ tasks:
       - uv run cli.py {% raw %}{{.CLI_ARGS}}{% endraw %}
     silent: true
   dev:
-    desc: 🔨[{{ agent_app_name }}] Run the development server
+    desc: 🔨 [{{ agent_app_name }}] Run the development server
     env:
       TARGET_NAME: response
       FLASK_DEBUG: 1
