@@ -345,7 +345,7 @@ class TestMyAgentCrewAI:
 
         # Setup mocks
         mock_agent_instance = MagicMock()
-        mock_agent_instance.run.return_value = (events, crew_output)
+        mock_agent_instance.run.return_value = (crew_output, events)
         mock_agent.return_value = mock_agent_instance
 
         completion_create_params = {
