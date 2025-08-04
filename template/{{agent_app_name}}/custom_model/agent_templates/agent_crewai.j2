@@ -269,4 +269,9 @@ class MyAgent:
                 events.append(AIMessage(content=response_text))
         else:
             events = None
-        return events, crew_output
+        # The content of the `events` variable is necessary to compute agentic metrics
+        # (e.g. Task Adherence, Agent Goal Accuracy, Agent Goal Accuracy with Reference,
+        # Tool Call Accuracy).
+        # If you are not interested in these metrics, you can also return None, which will reduce
+        # the response significantly.
+        return crew_output, events

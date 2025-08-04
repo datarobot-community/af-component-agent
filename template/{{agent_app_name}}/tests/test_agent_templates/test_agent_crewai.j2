@@ -304,7 +304,7 @@ class TestMyAgentCrewAI:
                 ],
                 "environment_var": True,
             }
-            events, crew_output = agent.run(completion_create_params)
+            crew_output, events = agent.run(completion_create_params)
 
             # Verify crew() was called
             agent.crew.assert_called_once()
