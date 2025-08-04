@@ -308,9 +308,9 @@ class MyAgent:
             "prompt_tokens": 0,
             "total_tokens": 0,
         }
-        # The content of the `events` variable is necessary to compute agentic metrics
+        # The `events` variable is used to compute agentic metrics
         # (e.g. Task Adherence, Agent Goal Accuracy, Agent Goal Accuracy with Reference,
         # Tool Call Accuracy).
-        # If you are not interested in these metrics, you can also pass None instead, which will
-        # reduce the response significantly.
+        # If you are not interested in these metrics, you can also return None instead.
+        # This will reduce the size of the response significantly.
         return str(result["report_content"]), usage_metrics, events
