@@ -227,7 +227,7 @@ class MyAgent:
 
     def run(
         self, completion_create_params: CompletionCreateParams
-    ) -> tuple[list[Any], CrewOutput]:
+    ) -> tuple[CrewOutput, list[Any]]:
         """Run the agent with the provided completion parameters.
 
         [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
@@ -241,7 +241,7 @@ class MyAgent:
             completion_create_params (CompletionCreateParams): The parameters for
                 the completion request, which includes the input topic and other settings.
         Returns:
-            tuple[list[Any], CrewOutput]: A tuple containing a list of messages (events) and the crew output.
+            tuple[CrewOutput, list[Any]]: A tuple containing a list of messages (events) and the crew output.
 
         """
         # Example helper for extracting inputs as a json from the completion_create_params["messages"]
