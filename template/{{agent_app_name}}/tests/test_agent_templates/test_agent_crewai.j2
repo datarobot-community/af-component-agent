@@ -179,6 +179,7 @@ class TestMyAgentCrewAI:
             model="datarobot/azure/gpt-4o-mini",
             api_base="test_base",
             api_key="test_key",
+            timeout=90,
         )
 
     @patch("agent.LLM")
@@ -191,6 +192,7 @@ class TestMyAgentCrewAI:
                 model="datarobot/azure/gpt-4o-mini",
                 api_base="https://api.datarobot.com",
                 api_key="test_key",
+                timeout=90,
             )
 
     @patch("agent.Agent")
