@@ -39,6 +39,7 @@ class MyAgent:
         api_base: Optional[str] = None,
         model: Optional[str] = None,
         verbose: Optional[Union[bool, str]] = True,
+        timeout: Optional[int] = 90,
         **kwargs: Any,
     ):
         """Initializes the MyAgent class with API key, base URL, model, and verbosity settings.
@@ -52,6 +53,8 @@ class MyAgent:
                 Defaults to None.
             verbose: Optional[Union[bool, str]]: Whether to enable verbose logging.
                 Accepts boolean or string values ("true"/"false"). Defaults to True.
+            timeout: Optional[int]: How long to wait for the agent to respond.
+                Defaults to 90 seconds.
             **kwargs: Any: Additional keyword arguments passed to the agent.
                 Contains any parameters received in the CompletionCreateParams.
 
@@ -61,6 +64,7 @@ class MyAgent:
         self.api_key = api_key or os.environ.get("DATAROBOT_API_TOKEN")
         self.api_base = api_base or os.environ.get("DATAROBOT_ENDPOINT")
         self.model = model
+        self.timeout = timeout
         if isinstance(verbose, str):
             self.verbose = verbose.lower() == "true"
         elif isinstance(verbose, bool):
@@ -92,6 +96,7 @@ class MyAgent:
             model="datarobot/azure/gpt-4o-mini",
             api_base=self.api_base_litellm,
             api_key=self.api_key,
+            timeout=self.timeout,
         )
 
     @property
@@ -108,6 +113,7 @@ class MyAgent:
             model="datarobot/azure/gpt-4o-mini",
             api_base=deployment_url,
             api_key=self.api_key,
+            timeout=self.timeout,
         )
 
     @staticmethod
