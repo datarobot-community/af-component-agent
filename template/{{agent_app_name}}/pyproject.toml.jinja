@@ -154,7 +154,9 @@ line_length = 120
 [tool.mypy]
 strict = true
 python_version = "3.11"
-plugins = "{% if agent_template_framework != 'llamaindex' %}pydantic.mypy{% endif %}"
+{% if agent_template_framework != 'llamaindex' %}
+plugins = "pydantic.mypy"
+{% endif %}
 exclude = """(?x)(
     output/ # exclude files starting with "output"
     | deployment_.*/
