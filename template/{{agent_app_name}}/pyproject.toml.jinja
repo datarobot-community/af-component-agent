@@ -150,10 +150,13 @@ docstring-code-line-length = "dynamic"
 allow_duplicate_keys = true
 line_length = 120
 
+# Pydantic plugin must be disabled with llamaindex, see https://github.com/python/mypy/issues/15927
 [tool.mypy]
 strict = true
 python_version = "3.11"
+{% if agent_template_framework != 'llamaindex' %}
 plugins = "pydantic.mypy"
+{% endif %}
 exclude = """(?x)(
     output/ # exclude files starting with "output"
     | deployment_.*/
