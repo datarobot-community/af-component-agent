@@ -233,7 +233,7 @@ class MyAgent:
 
     def run(
         self, completion_create_params: CompletionCreateParams
-    ) -> tuple[list[Any], CrewOutput]:
+    ) -> tuple[CrewOutput, list[Any]]:
         """Run the agent with the provided completion parameters.
 
         [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
@@ -247,7 +247,7 @@ class MyAgent:
             completion_create_params (CompletionCreateParams): The parameters for
                 the completion request, which includes the input topic and other settings.
         Returns:
-            tuple[list[Any], CrewOutput]: A tuple containing a list of messages (events) and the crew output.
+            tuple[CrewOutput, list[Any]]: A tuple containing a list of messages (events) and the crew output.
 
         """
         # Example helper for extracting inputs as a json from the completion_create_params["messages"]
@@ -275,4 +275,9 @@ class MyAgent:
                 events.append(AIMessage(content=response_text))
         else:
             events = None
-        return events, crew_output
+        # The `events` variable is used to compute agentic metrics
+        # (e.g. Task Adherence, Agent Goal Accuracy, Agent Goal Accuracy with Reference,
+        # Tool Call Accuracy).
+        # If you are not interested in these metrics, you can also return None instead.
+        # This will reduce the size of the response significantly.
+        return crew_output, events
