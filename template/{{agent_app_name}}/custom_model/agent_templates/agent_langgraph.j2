@@ -241,7 +241,7 @@ class MyAgent:
         )
 
     def task_write(self, state: MessagesState) -> Command[Any]:
-        result = self.agent_planner.invoke(state)
+        result = self.agent_writer.invoke(state)
         result["messages"][-1] = HumanMessage(
             content=result["messages"][-1].content, name="writer_node"
         )

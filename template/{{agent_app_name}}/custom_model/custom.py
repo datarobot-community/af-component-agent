@@ -73,7 +73,7 @@ def chat(
     # the deployment ID can be set as an environment variable and used inside the agent
     # in the llm_with_datarobot_deployment property.
 
-    # llm_datarobot_deployment_id_from_runtime RuntimeParameters.get(
+    # llm_datarobot_deployment_id_from_runtime = RuntimeParameters.get(
     #     "LLM_DATAROBOT_DEPLOYMENT_ID"
     # )
     # os.environ["LLM_DATAROBOT_DEPLOYMENT_ID"] = llm_datarobot_deployment_id_from_runtime
