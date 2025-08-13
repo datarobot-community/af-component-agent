@@ -70,7 +70,7 @@ def pulumi_mocks(monkeypatch):
         MagicMock(),
     )
 
-    # Mock Output to behave like a Pulumi Output with .apply() and support subscript notation
+    # Mock Output to behave like a Pulumi Output with .apply(), support subscript notation, and from_input
     class MockOutput(MagicMock):
         def __new__(cls, val=None, *args, **kwargs):
             m = super().__new__(cls)
@@ -81,6 +81,8 @@ def pulumi_mocks(monkeypatch):
         def __class_getitem__(cls, item):
             return cls
 
+    # Set from_input as a class method that can be tracked
+    MockOutput.from_input = MagicMock()
     monkeypatch.setattr("pulumi.Output", MockOutput)
 
     yield
