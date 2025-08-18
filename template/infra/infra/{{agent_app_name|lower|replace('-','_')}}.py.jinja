@@ -151,8 +151,7 @@ else:
 )
 
 {{agent_app_name}}_custom_model = pulumi_datarobot.CustomModel(
-    resource_name="Custom Model " + {{agent_app_name}}_application_name,
-    name={{agent_app_name}}_asset_name,
+    resource_name="Custom Model " + {{agent_app_name}}_resource_name,
     name={{agent_app_name}}_asset_name,
     base_environment_id={{agent_app_name}}_execution_environment.id,
     base_environment_version_id={{agent_app_name}}_execution_environment.version_id,
