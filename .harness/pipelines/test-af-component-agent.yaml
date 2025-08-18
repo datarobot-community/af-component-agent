@@ -22,7 +22,7 @@ pipeline:
                         image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
                         shell: Sh
                         command: |-
-                          apt -o Acquire::Check-Valid-Until=false update && apt install -y git g++
+                          apt update && apt install -y git g++
                           uvx copier copy . ./copier_context --defaults
                           cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
                           cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
