@@ -64,7 +64,7 @@ __all__ = [
 ]
 
 {{agent_app_name}}_application_name: str = "{{agent_app_name}}"
-{{agent_app_name}}_asset_name = f"[{PROJECT_NAME}] {{agent_app_name}}"
+{{agent_app_name}}_asset_name: str = f"[{PROJECT_NAME}] {{agent_app_name}}"
 {{agent_app_name}}_application_path = project_dir.parent / "{{agent_app_name}}"
 
 
@@ -88,7 +88,7 @@ def get_custom_model_files(custom_model_folder: str) -> list[tuple[str, str]]:
     return source_files
 
 
-{{agent_app_name}}_exec_env_resource_name = f"Execution Environment " + {{agent_app_name}}_application_name
+{{agent_app_name}}_exec_env_resource_name: str = f"Execution Environment " + {{agent_app_name}}_application_name
 # Start of Pulumi settings and application infrastructure
 if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
     {{agent_app_name}}_execution_environment_id = os.environ[
