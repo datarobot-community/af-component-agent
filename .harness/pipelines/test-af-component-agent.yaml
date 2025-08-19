@@ -19,10 +19,10 @@ pipeline:
                       identifier: Install_dependencies_and_copy_with_copier
                       spec:
                         connectorRef: GHCR_HHI
-                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm
                         shell: Sh
                         command: |-
-                          apt -o Acquire::Check-Valid-Until=false update && apt install -y git g++
+                          apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
                           uvx copier copy . ./copier_context --defaults
                           cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
                           cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
@@ -193,10 +193,10 @@ pipeline:
                       identifier: Install_dependencies_and_copy_with_copier
                       spec:
                         connectorRef: GHCR_HHI
-                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm
                         shell: Sh
                         command: |-
-                          apt -o Acquire::Check-Valid-Until=false update && apt install -y git g++
+                          apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
                           uvx copier copy . ./copier_context \
                             --data agent_app_name=agent_crewai \
                             --data agent_template_framework=crewai \
@@ -272,10 +272,10 @@ pipeline:
                       identifier: Install_dependencies_and_copy_with_copier
                       spec:
                         connectorRef: GHCR_HHI
-                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm
                         shell: Sh
                         command: |-
-                          apt -o Acquire::Check-Valid-Until=false update && apt install -y git g++
+                          apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
                           uvx copier copy . ./copier_context \
                             --data agent_app_name=agent_langgraph \
                             --data agent_template_framework=langgraph \
@@ -351,10 +351,10 @@ pipeline:
                       identifier: Install_dependencies_and_copy_with_copier
                       spec:
                         connectorRef: GHCR_HHI
-                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm
                         shell: Sh
                         command: |-
-                          apt -o Acquire::Check-Valid-Until=false update && apt install -y git g++
+                          apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
                           uvx copier copy . ./copier_context \
                             --data agent_app_name=agent_llamaindex \
                             --data agent_template_framework=llamaindex \
@@ -430,10 +430,10 @@ pipeline:
                       identifier: Install_dependencies_and_copy_with_copier
                       spec:
                         connectorRef: GHCR_HHI
-                        image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+                        image: ghcr.io/astral-sh/uv:python3.11-bookworm
                         shell: Sh
                         command: |-
-                          apt -o Acquire::Check-Valid-Until=false update && apt install -y git
+                          apt update --allow-releaseinfo-change && apt install -y git --no-install-recommends
                           uvx copier copy . ./copier_context --defaults
                           cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
                           cp ./fixtures/infra/Pulumi.yaml ./copier_context/infra/Pulumi.yaml
@@ -474,7 +474,7 @@ pipeline:
                               cd ./copier_context/infra
                               pulumi login --local
                               pulumi stack init -s organization/unittest/unittest
-                              uv run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/
+                              uv run pytest --disable-warnings -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/
                             envVariables:
                               UV_CACHE_DIR: /.uv_cache
                               PULUMI_CONFIG_PASSPHRASE: "123"
