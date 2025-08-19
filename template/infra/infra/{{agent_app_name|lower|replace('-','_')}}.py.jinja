@@ -126,7 +126,6 @@ else:
             + {{agent_app_name}}_resource_name,
             name={{agent_app_name}}_asset_name,
             programming_language="python",
-            description={{agent_app_name}}_exec_env_resource_name,
             docker_image=os.path.join(
                 str({{agent_app_name}}_application_path), "docker_context.tar.gz"
             ),
@@ -139,7 +138,6 @@ else:
             + {{agent_app_name}}_resource_name,
             name={{agent_app_name}}_asset_name,
             programming_language="python",
-            description={{agent_app_name}}_exec_env_resource_name,
             docker_context_path=os.path.join(
                 str({{agent_app_name}}_application_path), "docker_context"
             ),
