@@ -125,6 +125,7 @@ else:
             resource_name="Execution Environment [docker_context] "
             + {{agent_app_name}}_resource_name,
             name={{agent_app_name}}_asset_name,
+            description="Execution Environment for " + {{agent_app_name}}_asset_name,
             programming_language="python",
             docker_image=os.path.join(
                 str({{agent_app_name}}_application_path), "docker_context.tar.gz"
@@ -137,6 +138,7 @@ else:
             resource_name="Execution Environment [docker_context] "
             + {{agent_app_name}}_resource_name,
             name={{agent_app_name}}_asset_name,
+            description="Execution Environment for " + {{agent_app_name}}_asset_name,
             programming_language="python",
             docker_context_path=os.path.join(
                 str({{agent_app_name}}_application_path), "docker_context"
