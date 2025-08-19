@@ -192,12 +192,10 @@ if os.environ.get("AGENT_DEPLOY") != "0":
     {{agent_app_name}}_registered_model_args = RegisteredModelArgs(
         resource_name="Registered Model " + {{agent_app_name}}_resource_name,
         name={{agent_app_name}}_asset_name,
-        opts=pulumi.ResourceOptions(retain_on_delete=True),
     )
 
     {{agent_app_name}}_deployment_args = DeploymentArgs(
         resource_name="Deployment " + {{agent_app_name}}_resource_name,
-        name={{agent_app_name}}_asset_name,
         label={{agent_app_name}}_asset_name,
         association_id_settings=pulumi_datarobot.DeploymentAssociationIdSettingsArgs(
             column_names=["association_id"],
@@ -214,7 +212,6 @@ if os.environ.get("AGENT_DEPLOY") != "0":
                 min_computes=0, max_computes=2
             )
         ),
-        opts=pulumi.ResourceOptions(retain_on_delete=True),
     )
 
     {{agent_app_name}}_agent_deployment = CustomModelDeployment(
