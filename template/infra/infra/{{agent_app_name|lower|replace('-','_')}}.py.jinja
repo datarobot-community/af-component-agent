@@ -66,6 +66,7 @@ __all__ = [
 
 {{agent_app_name}}_application_name: str = "{{agent_app_name}}"
 {{agent_app_name}}_resource_name: str = "[{{agent_app_name}}]"
+{{agent_app_name}}_asset_name: str = f"[{PROJECT_NAME}] {{agent_app_name}}"
 {{agent_app_name}}_application_path = project_dir.parent / "{{agent_app_name}}"
 
 
@@ -113,6 +114,7 @@ if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
             resource_name="Execution Environment [PRE-EXISTING] " + {{agent_app_name}}_resource_name,
         )
 else:
+    {{agent_app_name}}_exec_env_use_cases = ["customModel", "notebook"]
     if os.path.exists(
         os.path.join(str({{agent_app_name}}_application_path), "docker_context.tar.gz")
     ):
@@ -122,24 +124,26 @@ else:
         {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment(
             resource_name="Execution Environment [docker_context] "
             + {{agent_app_name}}_resource_name,
+            name={{agent_app_name}}_asset_name,
+            description="Execution Environment for " + {{agent_app_name}}_asset_name,
             programming_language="python",
-            description="Execution Environment [agent docker_context]",
             docker_image=os.path.join(
                 str({{agent_app_name}}_application_path), "docker_context.tar.gz"
             ),
-            use_cases=["customModel", "notebook"],
+            use_cases={{agent_app_name}}_exec_env_use_cases,
         )
     else:
         pulumi.info("Using docker_context folder to compile the execution environment")
         {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment(
             resource_name="Execution Environment [docker_context] "
             + {{agent_app_name}}_resource_name,
+            name={{agent_app_name}}_asset_name,
+            description="Execution Environment for " + {{agent_app_name}}_asset_name,
             programming_language="python",
-            description="Execution Environment [agent docker_context]",
             docker_context_path=os.path.join(
                 str({{agent_app_name}}_application_path), "docker_context"
             ),
-            use_cases=["customModel", "notebook"],
+            use_cases={{agent_app_name}}_exec_env_use_cases,
         )
 
 {{agent_app_name}}_custom_model_files = get_custom_model_files(
@@ -148,6 +152,7 @@ else:
 
 {{agent_app_name}}_custom_model = pulumi_datarobot.CustomModel(
     resource_name="Custom Model " + {{agent_app_name}}_resource_name,
+    name={{agent_app_name}}_asset_name,
     base_environment_id={{agent_app_name}}_execution_environment.id,
     base_environment_version_id={{agent_app_name}}_execution_environment.version_id,
     target_type="AgenticWorkflow",
@@ -165,14 +170,14 @@ else:
 )
 
 # Export the IDs of the created resources
-pulumi.export("Agent Use Case ID " + {{agent_app_name}}_resource_name, use_case.id)
+pulumi.export("Agent Use Case ID " + {{agent_app_name}}_asset_name, use_case.id)
 pulumi.export(
-    "Agent Execution Environment ID " + {{agent_app_name}}_resource_name,
+    "Agent Execution Environment ID " + {{agent_app_name}}_asset_name,
     {{agent_app_name}}_execution_environment.id,
 )
-pulumi.export("Agent Custom Model ID " + {{agent_app_name}}_resource_name, {{agent_app_name}}_custom_model.id)
+pulumi.export("Agent Custom Model ID " + {{agent_app_name}}_asset_name, {{agent_app_name}}_custom_model.id)
 pulumi.export(
-    "Agent Custom Model Chat Endpoint " + {{agent_app_name}}_resource_name,
+    "Agent Custom Model Chat Endpoint " + {{agent_app_name}}_asset_name,
     {{agent_app_name}}_custom_model_endpoint,
 )
 
@@ -181,16 +186,19 @@ pulumi.export(
 if os.environ.get("AGENT_DEPLOY") != "0":
     {{agent_app_name}}_prediction_environment = pulumi_datarobot.PredictionEnvironment(
         resource_name="Prediction Environment " + {{agent_app_name}}_resource_name,
+        name={{agent_app_name}}_asset_name,
         platform=dr.enums.PredictionEnvironmentPlatform.DATAROBOT_SERVERLESS,
+        opts=pulumi.ResourceOptions(retain_on_delete=True),
     )
 
     {{agent_app_name}}_registered_model_args = RegisteredModelArgs(
         resource_name="Registered Model " + {{agent_app_name}}_resource_name,
+        name={{agent_app_name}}_asset_name,
     )
 
     {{agent_app_name}}_deployment_args = DeploymentArgs(
         resource_name="Deployment " + {{agent_app_name}}_resource_name,
-        label=f"Deployment [{PROJECT_NAME}] " + {{agent_app_name}}_resource_name,
+        label={{agent_app_name}}_asset_name,
         association_id_settings=pulumi_datarobot.DeploymentAssociationIdSettingsArgs(
             column_names=["association_id"],
             auto_generate_id=False,
@@ -222,7 +230,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
     )
 
     pulumi.export(
-        "Agent Deployment ID " + {{agent_app_name}}_resource_name,
+        "Agent Deployment ID " + {{agent_app_name}}_asset_name,
         {{agent_app_name}}_agent_deployment.id,
     )
     export(
@@ -230,7 +238,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         {{agent_app_name}}_agent_deployment.id,
     )
     pulumi.export(
-        "Agent Deployment Chat Endpoint " + {{agent_app_name}}_resource_name,
+        "Agent Deployment Chat Endpoint " + {{agent_app_name}}_asset_name,
         {{agent_app_name}}_deployment_endpoint,
     )
 
