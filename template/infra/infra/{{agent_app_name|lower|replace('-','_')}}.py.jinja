@@ -26,6 +26,9 @@ from datarobot_pulumi_utils.schema.custom_models import (
     RegisteredModelArgs,
 )
 from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
+from datarobot_pulumi_utils.schema.guardrails import (
+    Stage, ModerationAction, Condition, GuardConditionComparator
+)
 
 from . import project_dir, use_case
 
@@ -150,6 +153,92 @@ else:
     str(os.path.join(str({{agent_app_name}}_application_path), "custom_model"))
 )
 
+# Guards configuration
+prompt_tokens = pulumi_datarobot.CustomModelGuardConfigurationArgs(
+    name="Prompt Tokens",
+    template_name="Prompt Tokens",
+    stages=[Stage.PROMPT],
+    intervention=pulumi_datarobot.CustomModelGuardConfigurationInterventionArgs(
+        action=ModerationAction.REPORT,
+        condition=Condition(
+            comparand="4096",
+            comparator=GuardConditionComparator.GREATER_THAN,
+        ).model_dump_json(),
+    ),
+)
+
+
+response_tokens = pulumi_datarobot.CustomModelGuardConfigurationArgs(
+    name="Response Tokens",
+    template_name="Response Tokens",
+    stages=[Stage.RESPONSE],
+    intervention=pulumi_datarobot.CustomModelGuardConfigurationInterventionArgs(
+        action=ModerationAction.REPORT,
+        condition=Condition(
+            comparand="4096",
+            comparator=GuardConditionComparator.GREATER_THAN,
+        ).model_dump_json(),
+    ),
+)
+
+
+cost = pulumi_datarobot.CustomModelGuardConfigurationArgs(
+    name="Cost",
+    template_name="Cost",
+    stages=[Stage.RESPONSE],
+    intervention=pulumi_datarobot.CustomModelGuardConfigurationInterventionArgs(
+        action=ModerationAction.REPORT,
+        condition='{"comparand": 0.0, "comparator": "greaterThan"}',
+        condition=Condition(
+            comparand=0,
+            comaparator=GuardConditionComparator.GREATER_THAN,
+        ).model_dump_json()
+    ),
+    additional_guard_config=pulumi_datarobot.CustomModelGuardConfigurationAdditionalGuardConfigArgs(
+        cost=pulumi_datarobot.CustomModelGuardConfigurationAdditionalGuardConfigCostArgs(
+            currency="USD",
+            input_unit=1000000,
+            input_price=0.001,
+            output_unit=1000000,
+            output_price=0.001,
+        )
+    )
+)
+
+agent_goal_accuracy = pulumi_datarobot.CustomModelGuardConfigurationArgs(
+    name="Agent Goal Accuracy",
+    template_name="Agent Goal Accuracy",
+    stages=[Stage.RESPONSE],
+    intervention=pulumi_datarobot.CustomModelGuardConfigurationInterventionArgs(
+        action=ModerationAction.REPORT,
+        condition=Condition(
+            comparand="0.0",
+            comparator=GuardConditionComparator.GREATER_THAN,
+        ).model_dump_json(),
+    ),
+    openai_api_base="https://datarobot-genai-enablement.openai.azure.com/",
+    openai_deployment_id="gpt-4o",
+    llm_type="azureOpenAi",
+)
+
+
+task_adherence = pulumi_datarobot.CustomModelGuardConfigurationArgs(
+    name="Task Adherence",
+    template_name="Task Adherence",
+    stages=[Stage.RESPONSE],
+    intervention=pulumi_datarobot.CustomModelGuardConfigurationInterventionArgs(
+        action=ModerationAction.REPORT,
+        condition=Condition(
+            comparand="0.0",
+            comparator=GuardConditionComparator.GREATER_THAN,
+        ).model_dump_json(),
+    ),
+    openai_api_base="https://datarobot-genai-enablement.openai.azure.com/",
+    openai_deployment_id="gpt-4o",
+    llm_type="azureOpenAi",
+)
+
+
 {{agent_app_name}}_custom_model = pulumi_datarobot.CustomModel(
     resource_name="Custom Model " + {{agent_app_name}}_resource_name,
     name={{agent_app_name}}_asset_name,
@@ -161,6 +250,7 @@ else:
     use_case_ids=[use_case.id],
     files={{agent_app_name}}_custom_model_files,
     runtime_parameter_values=[],
+    guard_configurations=[prompt_tokens, response_tokens, cost, agent_goal_accuracy, task_adherence],
     # To use the LLM DataRobot Deployment in your Agent, use the alternative parameter below
     # runtime_parameter_values=llm_datarobot_app_runtime_parameters,
 )
