@@ -108,13 +108,21 @@ class MyAgent:
         and another for a specific DataRobot deployment, or even multiple deployments or
         third-party LLMs.
         """
-        deployment_url = f"{self.api_base_litellm}/api/v2/deployments/{os.environ.get('LLM_DATAROBOT_DEPLOYMENT_ID')}/"
+        deployment_url = f"{self.api_base}/deployments/{os.environ.get('LLM_DATAROBOT_DEPLOYMENT_ID')}/"
         return ChatLiteLLM(
-            model="datarobot/azure/gpt-4o-mini",
+            model="openai/gpt-4o-mini",
             api_base=deployment_url,
             api_key=self.api_key,
             timeout=self.timeout,
         )
+
+    @property
+    def llm(self) -> ChatLiteLLM:
+        """Returns a ChatLiteLLM instance configured to use DataRobot's LLM Gateway or a specific deployment."""
+        if os.environ.get("LLM_DATAROBOT_DEPLOYMENT_ID"):
+            return self.llm_with_datarobot_deployment
+        else:
+            return self.llm_with_datarobot_llm_gateway
 
     @staticmethod
     def make_system_prompt(suffix: str) -> str:
@@ -129,7 +137,7 @@ class MyAgent:
     @property
     def agent_planner(self) -> CompiledGraph:
         return create_react_agent(
-            self.llm_with_datarobot_llm_gateway,
+            self.llm,
             tools=[],
             prompt=self.make_system_prompt(
                 "You are a content planner. You are working with an content writer and editor colleague."
@@ -160,7 +168,7 @@ class MyAgent:
     @property
     def agent_writer(self) -> CompiledGraph:
         return create_react_agent(
-            self.llm_with_datarobot_llm_gateway,
+            self.llm,
             tools=[],
             prompt=self.make_system_prompt(
                 "You are a content writer. You are working with an planner and editor colleague."
@@ -202,7 +210,7 @@ class MyAgent:
     @property
     def agent_editor(self) -> CompiledGraph:
         return create_react_agent(
-            self.llm_with_datarobot_llm_gateway,
+            self.llm,
             tools=[],
             prompt=self.make_system_prompt(
                 "You are a content editor. You are working with an planner and writer colleague."
