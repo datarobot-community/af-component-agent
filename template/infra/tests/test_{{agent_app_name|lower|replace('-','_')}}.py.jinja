@@ -288,12 +288,12 @@ def test_custom_model_created_llm_deployment_id(monkeypatch):
     assert kwargs["use_case_ids"] == [agent_infra.use_case.id]
     assert isinstance(kwargs["files"], list)
     assert kwargs["runtime_parameter_values"] == [
-        agent_infra.pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
+        agent_infra.pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
             key="ENABLE_LLM_GATEWAY_INFERENCE",
             type="boolean",
             value=False,
         ),
-        agent_infra.pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
+        agent_infra.pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
             key="LLM_DATAROBOT_DEPLOYMENT_ID",
             type="string",
             value="model_id",
