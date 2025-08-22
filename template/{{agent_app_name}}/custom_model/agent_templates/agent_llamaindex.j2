@@ -131,8 +131,8 @@ class MyAgent:
         )
 
     @property
-    def llm_with_datarobot_deployment(self) -> ChatLiteLLM:
-        """Returns a ChatLiteLLM instance configured to use DataRobot's LLM Deployments.
+    def llm_with_datarobot_deployment(self) -> DataRobotLiteLLM:
+        """Returns a LlamaIndex LiteLLM compatible LLM instance configured to use DataRobot's LLM Deployments.
 
         This property can serve as a primary LLM backend for the agents. You can optionally
         have multiple LLMs configured, such as one for DataRobot's LLM Gateway
@@ -140,7 +140,10 @@ class MyAgent:
         third-party LLMs.
         """
         deployment_url = f"{self.api_base}/deployments/{os.environ.get('LLM_DATAROBOT_DEPLOYMENT_ID')}/"
-        return ChatLiteLLM(
+
+        # NOTE: LlamaIndex tool encodings are sensitive the the LLM model used and may need to be re-written
+        # to work with different models. This example assumes the model is a GPT compatible model.
+        return DataRobotLiteLLM(
             model="openai/gpt-4o-mini",
             api_base=deployment_url,
             api_key=self.api_key,
@@ -148,8 +151,8 @@ class MyAgent:
         )
 
     @property
-    def llm(self) -> ChatLiteLLM:
-        """Returns a ChatLiteLLM instance configured to use DataRobot's LLM Gateway or a specific deployment."""
+    def llm(self) -> DataRobotLiteLLM:
+        """Returns a LlamaIndex LiteLLM compatible LLM instance configured to use DataRobot's LLM Gateway or a specific deployment."""
         if os.environ.get("LLM_DATAROBOT_DEPLOYMENT_ID"):
             return self.llm_with_datarobot_deployment
         else:
