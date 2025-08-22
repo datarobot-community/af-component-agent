@@ -27,5 +27,7 @@ def initialize_authorization_context(
     agents and tools to retrieve access tokens to connect to external services. When set,
     authorization context will be automatically propagated when using ToolClient class.
     """
+    # Note: authorization context internally uses contextvars, which are
+    # thread-safe and async-safe.
     authorization_context = completion_create_params.get("authorization_context", {})
     set_authorization_context(cast(dict[str, Any], authorization_context))
