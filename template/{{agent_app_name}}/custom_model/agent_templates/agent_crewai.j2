@@ -96,8 +96,8 @@ class MyAgent:
         )
 
     @property
-    def llm_with_datarobot_deployment(self) -> ChatLiteLLM:
-        """Returns a ChatLiteLLM instance configured to use DataRobot's LLM Deployments.
+    def llm_with_datarobot_deployment(self) -> LLM:
+        """Returns a CrewAI LLM instance configured to use DataRobot's LLM Deployments.
 
         This property can serve as a primary LLM backend for the agents. You can optionally
         have multiple LLMs configured, such as one for DataRobot's LLM Gateway
@@ -105,7 +105,7 @@ class MyAgent:
         third-party LLMs.
         """
         deployment_url = f"{self.api_base}/deployments/{os.environ.get('LLM_DATAROBOT_DEPLOYMENT_ID')}/"
-        return ChatLiteLLM(
+        return LLM(
             model="openai/gpt-4o-mini",
             api_base=deployment_url,
             api_key=self.api_key,
