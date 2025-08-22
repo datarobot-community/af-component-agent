@@ -113,8 +113,8 @@ class MyAgent:
         )
 
     @property
-    def llm(self) -> ChatLiteLLM:
-        """Returns a ChatLiteLLM instance configured to use DataRobot's LLM Gateway or a specific deployment."""
+    def llm(self) -> LLM:
+        """Returns a CrewAI LLM instance configured to use DataRobot's LLM Gateway or a specific deployment."""
         if os.environ.get("LLM_DATAROBOT_DEPLOYMENT_ID"):
             return self.llm_with_datarobot_deployment
         else:
