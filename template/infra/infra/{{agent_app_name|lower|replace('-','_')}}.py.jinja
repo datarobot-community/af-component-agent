@@ -154,11 +154,6 @@ else:
 if os.environ.get("LLM_DATAROBOT_DEPLOYMENT_ID"):
     {{agent_app_name}}_runtime_parameters = [
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-            key="ENABLE_LLM_GATEWAY_INFERENCE",
-            type="boolean",
-            value="false",
-        ),
-        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
             key="LLM_DATAROBOT_DEPLOYMENT_ID",
             type="string",
             value=os.environ["LLM_DATAROBOT_DEPLOYMENT_ID"],
@@ -167,13 +162,7 @@ if os.environ.get("LLM_DATAROBOT_DEPLOYMENT_ID"):
 elif os.environ.get("USE_DATAROBOT_LLM_GATEWAY") in [0, "0", False, "false", "False"]:
     from .llm_datarobot import app_runtime_parameters  # type: ignore[import-not-found]
 
-    {{agent_app_name}}_runtime_parameters = [
-        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-            key="ENABLE_LLM_GATEWAY_INFERENCE",
-            type="boolean",
-            value="false",
-        ),
-    ] + app_runtime_parameters
+    {{agent_app_name}}_runtime_parameters = app_runtime_parameters
 
 {{agent_app_name}}_custom_model = pulumi_datarobot.CustomModel(
     resource_name="Custom Model " + {{agent_app_name}}_resource_name,
