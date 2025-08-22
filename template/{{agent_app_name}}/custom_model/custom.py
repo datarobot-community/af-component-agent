@@ -30,7 +30,7 @@ from helpers import (
 from openai.types.chat import CompletionCreateParams
 
 
-def maybe_set_env_from_runtime_parameters(key: str):
+def maybe_set_env_from_runtime_parameters(key: str) -> None:
     """
     Set an environment variable from a runtime parameter if it exists.
 
