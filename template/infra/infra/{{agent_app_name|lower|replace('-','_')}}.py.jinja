@@ -166,6 +166,7 @@ if os.environ.get("LLM_DATAROBOT_DEPLOYMENT_ID"):
     ]
 elif os.environ.get("USE_DATAROBOT_LLM_GATEWAY") in [0, "0", False, "false", "False"]:
     from .llm_datarobot import app_runtime_parameters
+
     {{agent_app_name}}_runtime_parameters = [
         pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
             key="ENABLE_LLM_GATEWAY_INFERENCE",
