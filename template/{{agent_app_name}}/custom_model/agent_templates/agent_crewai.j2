@@ -96,20 +96,29 @@ class MyAgent:
         )
 
     @property
-    def llm_with_datarobot_deployment(self) -> LLM:
-        """Returns a CrewAI LLM instance configured to use DataRobot's LLM Deployments.
+    def llm_with_datarobot_deployment(self) -> ChatLiteLLM:
+        """Returns a ChatLiteLLM instance configured to use DataRobot's LLM Deployments.
 
         This property can serve as a primary LLM backend for the agents. You can optionally
         have multiple LLMs configured, such as one for DataRobot's LLM Gateway
         and another for a specific DataRobot deployment, or even multiple deployments or
         third-party LLMs.
         """
-        return LLM(
-            model="datarobot/azure/gpt-4o-mini",
-            api_base=f"{self.api_base_litellm}api/v2/deployments/{os.environ.get('LLM_DATAROBOT_DEPLOYMENT_ID')}/chat/completions",
+        deployment_url = f"{self.api_base}/deployments/{os.environ.get('LLM_DATAROBOT_DEPLOYMENT_ID')}/"
+        return ChatLiteLLM(
+            model="openai/gpt-4o-mini",
+            api_base=deployment_url,
             api_key=self.api_key,
             timeout=self.timeout,
         )
+
+    @property
+    def llm(self) -> ChatLiteLLM:
+        """Returns a ChatLiteLLM instance configured to use DataRobot's LLM Gateway or a specific deployment."""
+        if os.environ.get("LLM_DATAROBOT_DEPLOYMENT_ID"):
+            return self.llm_with_datarobot_deployment
+        else:
+            return self.llm_with_datarobot_llm_gateway
 
     @property
     def agent_planner(self) -> Agent:
@@ -125,7 +134,7 @@ class MyAgent:
             "the Content Writer to write an article on this topic.",
             allow_delegation=False,
             verbose=self.verbose,
-            llm=self.llm_with_datarobot_llm_gateway,
+            llm=self.llm,
         )
 
     @property
@@ -150,7 +159,7 @@ class MyAgent:
             "as opposed to objective statements.",
             allow_delegation=False,
             verbose=self.verbose,
-            llm=self.llm_with_datarobot_llm_gateway,
+            llm=self.llm,
         )
 
     @property
@@ -169,7 +178,7 @@ class MyAgent:
             "or opinions when possible.",
             allow_delegation=False,
             verbose=self.verbose,
-            llm=self.llm_with_datarobot_llm_gateway,
+            llm=self.llm,
         )
 
     @property
