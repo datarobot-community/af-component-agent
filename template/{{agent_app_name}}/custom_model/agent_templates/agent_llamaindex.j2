@@ -139,15 +139,24 @@ class MyAgent:
         and another for a specific DataRobot deployment, or even multiple deployments or
         third-party LLMs.
         """
+        deployment_url = f"{self.api_base}/deployments/{os.environ.get('LLM_DATAROBOT_DEPLOYMENT_ID')}/"
 
         # NOTE: LlamaIndex tool encodings are sensitive the the LLM model used and may need to be re-written
         # to work with different models. This example assumes the model is a GPT compatible model.
         return DataRobotLiteLLM(
-            model="datarobot/azure/gpt-4o-mini",
-            api_base=f"{self.api_base_litellm}/api/v2/deployments/{os.environ.get('LLM_DATAROBOT_DEPLOYMENT_ID')}/",
+            model="openai/gpt-4o-mini",
+            api_base=deployment_url,
             api_key=self.api_key,
             timeout=self.timeout,
         )
+
+    @property
+    def llm(self) -> DataRobotLiteLLM:
+        """Returns a LlamaIndex LiteLLM compatible LLM instance configured to use DataRobot's LLM Gateway or a specific deployment."""
+        if os.environ.get("LLM_DATAROBOT_DEPLOYMENT_ID"):
+            return self.llm_with_datarobot_deployment
+        else:
+            return self.llm_with_datarobot_llm_gateway
 
     @staticmethod
     async def record_notes(ctx: Context, notes: str, notes_title: str) -> str:
@@ -187,7 +196,7 @@ class MyAgent:
                 "WriteAgent to write a report on the topic. You should have at least some notes on a topic "
                 "before handing off control to the WriteAgent."
             ),
-            llm=self.llm_with_datarobot_llm_gateway,
+            llm=self.llm,
             tools=[self.record_notes],
             can_handoff_to=["WriteAgent"],
         )
@@ -202,7 +211,7 @@ class MyAgent:
                 "Your report should be in a markdown format. The content should be grounded in the research notes. "
                 "Once the report is written, you should get feedback at least once from the ReviewAgent."
             ),
-            llm=self.llm_with_datarobot_llm_gateway,
+            llm=self.llm,
             tools=[self.write_report],
             can_handoff_to=["ReviewAgent", "ResearchAgent"],
         )
@@ -218,7 +227,7 @@ class MyAgent:
                 "WriteAgent to implement.  If you have feedback that requires changes, you should hand "
                 "off control to the WriteAgent to implement the changes after submitting the review."
             ),
-            llm=self.llm_with_datarobot_llm_gateway,
+            llm=self.llm,
             tools=[self.review_report],
             can_handoff_to=["WriteAgent"],
         )
