@@ -287,7 +287,7 @@ def test_custom_model_created_llm_deployment_id(monkeypatch):
     assert kwargs["language"] == "python"
     assert kwargs["use_case_ids"] == [agent_infra.use_case.id]
     assert isinstance(kwargs["files"], list)
-    assert sorted(kwargs["runtime_parameter_values"]) == sorted([
+    assert kwargs["runtime_parameter_values"] == [
         agent_infra.pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
             key="ENABLE_LLM_GATEWAY_INFERENCE",
             type="boolean",
@@ -298,7 +298,7 @@ def test_custom_model_created_llm_deployment_id(monkeypatch):
             type="string",
             value="model_id",
         ),
-    ])
+    ]
 
 
 def test_agent_deployment_created_when_env(monkeypatch):
