@@ -248,7 +248,7 @@ def test_custom_model_created(monkeypatch):
     args, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
     assert kwargs["resource_name"].startswith("Custom Model")
     assert kwargs["name"] == "[unittest] {{agent_app_name}}"
-    assert kwargs["base_environment_id"] == agent_infra.{{agent_app_name}}_execution_environment.id  # noqa
+    assert kwargs["base_environment_id"] == agent_infra.{{agent_app_name}}_execution_environment.id  # fmt: skip
     assert (
         kwargs["base_environment_version_id"]
         == agent_infra.{{agent_app_name}}_execution_environment.version_id
@@ -277,7 +277,7 @@ def test_custom_model_created_llm_deployment_id(monkeypatch):
     args, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
     assert kwargs["resource_name"].startswith("Custom Model")
     assert kwargs["name"] == "[unittest] {{agent_app_name}}"
-    assert kwargs["base_environment_id"] == agent_infra.{{agent_app_name}}_execution_environment.id  # noqa
+    assert kwargs["base_environment_id"] == agent_infra.{{agent_app_name}}_execution_environment.id  # fmt: skip
     assert (
         kwargs["base_environment_version_id"]
         == agent_infra.{{agent_app_name}}_execution_environment.version_id
