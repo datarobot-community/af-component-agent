@@ -150,6 +150,30 @@ else:
     str(os.path.join(str({{agent_app_name}}_application_path), "custom_model"))
 )
 
+{{agent_app_name}}_runtime_parameters = []
+if os.environ.get("LLM_DATAROBOT_DEPLOYMENT_ID"):
+    {{agent_app_name}}_runtime_parameters = [
+        pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
+            key="ENABLE_LLM_GATEWAY_INFERENCE",
+            type="boolean",
+            value=False,
+        ),
+        pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
+            key="LLM_DATAROBOT_DEPLOYMENT_ID",
+            type="string",
+            value=os.environ.get("LLM_DATAROBOT_DEPLOYMENT_ID"),
+        ),
+    ]
+elif os.environ.get("USE_DATAROBOT_LLM_GATEWAY") in [0, "0", False, "false", "False"]:
+    from .llm_datarobot import app_runtime_parameters
+    {{agent_app_name}}_runtime_parameters = [
+        pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
+            key="ENABLE_LLM_GATEWAY_INFERENCE",
+            type="boolean",
+            value=False,
+        ),
+    ] + app_runtime_parameters
+
 {{agent_app_name}}_custom_model = pulumi_datarobot.CustomModel(
     resource_name="Custom Model " + {{agent_app_name}}_resource_name,
     name={{agent_app_name}}_asset_name,
@@ -160,9 +184,7 @@ else:
     language="python",
     use_case_ids=[use_case.id],
     files={{agent_app_name}}_custom_model_files,
-    runtime_parameter_values=[],
-    # To use the LLM DataRobot Deployment in your Agent, use the alternative parameter below
-    # runtime_parameter_values=llm_datarobot_app_runtime_parameters,
+    runtime_parameter_values={{agent_app_name}}_runtime_parameters = [],
 )
 
 {{agent_app_name}}_custom_model_endpoint = {{agent_app_name}}_custom_model.id.apply(
