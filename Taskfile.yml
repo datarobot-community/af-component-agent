@@ -11,21 +11,21 @@ tasks:
     desc: "Render template"
     cmds:
       - echo "Rendering template"
-      - copier copy . ./copier_context --defaults
-      - cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
-      - cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
-      - cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+      - copier copy . ./.rendered/agent_base --defaults
+      - cp ./fixtures/Taskfile.yml ./.rendered/agent_base/Taskfile.yml
+      - cp ./fixtures/infra/pyproject.toml ./.rendered/agent_base/infra/pyproject.toml
+      - cp ./fixtures/infra/__init__.py ./.rendered/agent_base/infra/infra/__init__.py
   install-dev:
     desc: "Install dev"
     cmds:
       - task: render-template
       - echo "Installing dev"
       - task: render-template
-      - task agent_test:agent:install --dir copier_context
+      - task agent_test:agent:install --dir .rendered/agent_base
   test:
     desc: "Run tests"
     cmds:
       - task: install-dev
       - echo "Running tests"
-      - task agent_test:agent:lint-check --dir copier_context
-      - task agent_test:agent:test-coverage --dir copier_context
+      - task agent_test:agent:lint-check --dir .rendered/agent_base
+      - task agent_test:agent:test-coverage --dir .rendered/agent_base
