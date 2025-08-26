@@ -3,7 +3,6 @@
 version: '3'
 env:
   RENDER_DIR: .rendered
-  AGENT: base
 tasks:
   default:
     desc: "Show all available tasks"
@@ -13,7 +12,7 @@ tasks:
   render-template:
     desc: "Render template"
     cmds:
-      - echo "Rendering template"
+      - echo "Rendering template $AGENT"
       - copier copy . ./$RENDER_DIR/agent_$AGENT --defaults
       - cp ./fixtures/Taskfile.yml ./$RENDER_DIR/agent_$AGENT/Taskfile.yml
       - cp ./fixtures/infra/pyproject.toml ./$RENDER_DIR/agent_$AGENT/infra/pyproject.toml
@@ -22,13 +21,23 @@ tasks:
     desc: "Install dev"
     cmds:
       - task: render-template
-      - echo "Installing dev"
+      - echo "Installing dev for $AGENT"
       - task: render-template
       - task agent_test:agent:install --dir $RENDER_DIR/agent_$AGENT
-  test:
+  test-agent:
     desc: "Run tests"
     cmds:
       - task: install-dev
-      - echo "Running tests"
+      - echo "Running tests for $AGENT"
       - task agent_test:agent:lint-check --dir $RENDER_DIR/agent_$AGENT
       - task agent_test:agent:test-coverage --dir $RENDER_DIR/agent_$AGENT
+  test-base:
+    desc: "Run tests for base agent"
+    env:
+      AGENT: base
+    cmds:
+      - task: test-agent
+  test:
+    desc: "Run tests for all agents"
+    cmds:
+      - task: test-base
