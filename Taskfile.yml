@@ -17,15 +17,15 @@ tasks:
       - cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
   install-dev:
     desc: "Install dev"
-    dir: ./copier_context
     cmds:
+      - task: render-template
       - echo "Installing dev"
-      # - task: render-template
-      - task agent_test:agent:install
+      - task: render-template
+      - task agent_test:agent:install --dir copier_context
   test:
     desc: "Run tests"
-    dir: ./copier_context
     cmds:
+      - task: install-dev
       - echo "Running tests"
-      - task agent_test:agent:lint-check
-      - task agent_test:agent:test-coverage
+      - task agent_test:agent:lint-check --dir copier_context
+      - task agent_test:agent:test-coverage --dir copier_context
