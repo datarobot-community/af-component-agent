@@ -1,0 +1,31 @@
+---
+# https://taskfile.dev
+version: '3'
+tasks:
+  default:
+    desc: "Show all available tasks"
+    cmds:
+      - task --list
+    silent: true
+  render-template:
+    desc: "Render template"
+    cmds:
+      - echo "Rendering template"
+      - copier copy . ./copier_context --defaults
+      - cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
+      - cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+      - cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+  install-dev:
+    desc: "Install dev"
+    dir: ./copier_context
+    cmds:
+      - echo "Installing dev"
+      # - task: render-template
+      - task agent_test:agent:install
+  test:
+    desc: "Run tests"
+    dir: ./copier_context
+    cmds:
+      - echo "Running tests"
+      - task agent_test:agent:lint-check
+      - task agent_test:agent:test-coverage
