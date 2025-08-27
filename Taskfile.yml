@@ -1,0 +1,67 @@
+---
+# https://taskfile.dev
+version: '3'
+env :
+  RENDER_DIR: .rendered
+tasks:
+  default:
+    desc: "Show all available tasks"
+    cmds:
+      - task --list
+    silent: true
+  render-template:
+    desc: "Render template"
+    cmds:
+      - echo "Rendering template {{.AGENT}}"
+      - copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_template_framework={{.AGENT}}
+      - cp ./fixtures/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/Taskfile.yml
+      - cp ./fixtures/infra/pyproject.toml ./$RENDER_DIR/agent_{{.AGENT}}/infra/pyproject.toml
+      - cp ./fixtures/infra/__init__.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/__init__.py
+  install-dev:
+    desc: "Install dev"
+    cmds:
+      - echo "Installing dev for {{.AGENT}}"
+      - task: render-template
+        vars:
+          AGENT: "{{.AGENT}}"
+      - task agent_test:agent:install --dir $RENDER_DIR/agent_{{.AGENT}}
+  test-agent:
+    desc: "Run tests"
+    cmds:
+      - task: install-dev
+        vars:
+          AGENT: "{{.AGENT}}"
+      - echo "Running tests for {{.AGENT}}"
+      - task agent_test:agent:lint-check --dir $RENDER_DIR/agent_{{.AGENT}}
+      - task agent_test:agent:test-coverage --dir $RENDER_DIR/agent_{{.AGENT}}
+  test-base:
+    desc: "Run tests for base agent"
+    cmds:
+      - task: test-agent
+        vars:
+          AGENT: base
+  test-crewai:
+    desc: "Run tests for crewai agent"
+    cmds:
+      - task: test-agent
+        vars:
+          AGENT: crewai
+  test-langgraph:
+    desc: "Run tests for langgraph agent"
+    cmds:
+      - task: test-agent
+        vars:
+          AGENT: langgraph
+  test-llamaindex:
+    desc: "Run tests for llamaindex agent"
+    cmds:
+      - task: test-agent
+        vars:
+          AGENT: llamaindex
+  test:
+    desc: "Run tests for all agents"
+    cmds:
+      - task: test-base
+      - task: test-crewai
+      - task: test-langgraph
+      - task: test-llamaindex
