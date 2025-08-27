@@ -65,3 +65,14 @@ tasks:
       - task: test-crewai
       - task: test-langgraph
       - task: test-llamaindex
+  test-cli:
+    desc: "Run CLI test"
+    cmds:
+      - task: install-dev
+        vars:
+          AGENT: "base"
+      - echo "Running tests for {{.AGENT}}"
+      - task agent_test:agent:cli --dir $RENDER_DIR/agent_base
+        vars:
+          CLI_ARGS: "execute --user_prompt '{"topic": "Artificial Intelligence"}'" #> $RENDER_DIR/agent_base/agent/output.log 2>&1
+
