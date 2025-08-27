@@ -37,9 +37,13 @@ def maybe_set_env_from_runtime_parameters(key: str) -> None:
     In local development, the runtime parameters are not available, and environment variable
     is set from the .env file, so it's safe to ignore the exception.
     """
+    RUNTIME_PARAMETER_PLACEHOLDER_VALUE = "SET_VIA_PULUMI_OR_MANUALLY"
     try:
         runtime_parameter_value = RuntimeParameters.get(key)
-        if len(runtime_parameter_value) > 0 and runtime_parameter_value != "SET_VIA_PULUMI_OR_MANUALLY":
+        if (
+            runtime_parameter_value and len(runtime_parameter_value) > 0 and 
+            runtime_parameter_value != RUNTIME_PARAMETER_PLACEHOLDER_VALUE
+        ):
             os.environ[key] = runtime_parameter_value
     except ValueError:
         pass
