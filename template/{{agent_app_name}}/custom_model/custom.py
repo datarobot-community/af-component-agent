@@ -39,7 +39,8 @@ def maybe_set_env_from_runtime_parameters(key: str) -> None:
     """
     try:
         runtime_parameter_value = RuntimeParameters.get(key)
-        os.environ[key] = runtime_parameter_value
+        if len(runtime_parameter_value) > 0 and runtime_parameter_value != "SET_VIA_PULUMI_OR_MANUALLY":
+            os.environ[key] = runtime_parameter_value
     except ValueError:
         pass
 
