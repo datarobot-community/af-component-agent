@@ -41,19 +41,19 @@ tasks:
         vars:
           AGENT: base
   test-crewai:
-    desc: "Run tests for base agent"
+    desc: "Run tests for crewai agent"
     cmds:
       - task: test-agent
         vars:
           AGENT: crewai
   test-langgraph:
-    desc: "Run tests for base agent"
+    desc: "Run tests for langgraph agent"
     cmds:
       - task: test-agent
         vars:
           AGENT: langgraph
   test-llamaindex:
-    desc: "Run tests for base agent"
+    desc: "Run tests for llamaindex agent"
     cmds:
       - task: test-agent
         vars:
