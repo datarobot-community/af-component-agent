@@ -1,6 +1,8 @@
 ---
 # https://taskfile.dev
 version: '3'
+env:
+  UV_PROJECT_ENVIRONMENT: .venv
 tasks:
   install:
     desc: 🛠️ [{{ agent_app_name }}] Update local dependencies
