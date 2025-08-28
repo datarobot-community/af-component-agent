@@ -66,7 +66,7 @@ tasks:
       - task: test-langgraph
       - task: test-llamaindex
   run-cli:
-    desc: "Run CLI test"
+    desc: "Run CLI"
     cmds:
       - task: install-dev
         vars:
@@ -74,12 +74,27 @@ tasks:
       - echo "Running tests for {{.AGENT}}"
       - task agent_test:agent:cli --dir $RENDER_DIR/agent_base -- execute --user_prompt "Artificial Intelligence" > $RENDER_DIR/agent_base/agent/output.log 2>&1
   test-cli:
-    desc: "Check output"
+    desc: "Test CLI"
     cmds:
       - task: run-cli
+      - task: check-output
+  check-output:
       - if [ $(wc -l < $RENDER_DIR/agent_base/agent/output.log) -lt 13 ]; then exit 1; fi
       - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "Running CLI execute"; then exit 1; fi
       - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "INFO - Parsing args"; then exit 1; fi
       - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "INFO - Starting DRUM runner"; then exit 1; fi
       - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "Running agent with inputs"; then exit 1; fi
       - 'if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "\"content\": \"success\""; then exit 1; fi'
+  run-cli-json:
+    desc: "Run CLI with JSON"
+    cmds:
+      - task: install-dev
+        vars:
+          AGENT: "base"
+      - echo "Running tests for {{.AGENT}}"
+      - task agent_test:agent:cli --dir $RENDER_DIR/agent_base -- execute --completion_json example-completion.json > $RENDER_DIR/agent_base/agent/output.log 2>&1
+  test-cli-json:
+    desc: "Test CLI with JSON"
+    cmds:
+      - task: run-cli-json
+      - task: check-output
