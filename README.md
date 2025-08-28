@@ -45,9 +45,11 @@ uvx copier update -a .datarobot/answers/agent-{{ agent_app }}.yml -A
 
 ### af-component-agent
 
-This is a template repo, and as such it is not easy to run tests and linters locally. To run tests and linters,
-you should open a PR against your branch. Tests will be run through github actions, and you can see the results
-in the PR. If you are making large changes that may have significant impacts to the template installation
+To run tests and linters locally on all agent frameworks you can run `task test`. To test an individual
+framework you can run `task test-<agent_framework>`. To test the CLI on the base agent you can run `task test-cli`
+and `task test-cli-json`. These are equivalent to the tests when you open a PR against your branch.
+Tests will be run through github actions, and you can see the results in the PR. If you are making large changes 
+that may have significant impacts to the template installation
 and usage, you should additionally open a branch in [recipe-datarobot-agent-templates](https://github.com/datarobot/recipe-datarobot-agent-templates).
 
 > After committing a PR you should create a new release in this repository to bump the version of the component.
