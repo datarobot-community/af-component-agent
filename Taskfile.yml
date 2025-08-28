@@ -65,14 +65,21 @@ tasks:
       - task: test-crewai
       - task: test-langgraph
       - task: test-llamaindex
-  test-cli:
+  run-cli:
     desc: "Run CLI test"
     cmds:
       - task: install-dev
         vars:
           AGENT: "base"
       - echo "Running tests for {{.AGENT}}"
-      - task agent_test:agent:cli --dir $RENDER_DIR/agent_base
-        vars:
-          CLI_ARGS: "execute --user_prompt '{"topic": "Artificial Intelligence"}'" #> $RENDER_DIR/agent_base/agent/output.log 2>&1
-
+      - task agent_test:agent:cli --dir $RENDER_DIR/agent_base -- execute --user_prompt "Artificial Intelligence" > $RENDER_DIR/agent_base/agent/output.log 2>&1
+  test-cli:
+    desc: "Check output"
+    cmds:
+      - task: run-cli
+      - if [ $(wc -l < $RENDER_DIR/agent_base/agent/output.log) -lt 13 ]; then exit 1; fi
+      - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "Running CLI execute"; then exit 1; fi
+      - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "INFO - Parsing args"; then exit 1; fi
+      - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "INFO - Starting DRUM runner"; then exit 1; fi
+      - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "Running agent with inputs"; then exit 1; fi
+      - 'if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "\"content\": \"success\""; then exit 1; fi'
