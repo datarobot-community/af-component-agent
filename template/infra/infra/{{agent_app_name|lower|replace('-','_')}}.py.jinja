@@ -181,6 +181,35 @@ elif os.environ.get("USE_DATAROBOT_LLM_GATEWAY") in [0, "0", False, "false", "Fa
     lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/genai/agents/fromCustomModel/{id}/chat/"
 )
 
+{{agent_app_name}}_playground = pulumi_datarobot.Playground(
+    name={{agent_app_name}}_asset_name,
+    resource_name="Agentic Playground " + {{agent_app_name}}_resource_name,
+    description="Experimentation Playground for " + {{agent_app_name}}_asset_name,
+    use_case_id=use_case.id,
+    playground_type="agentic",
+)
+
+{{agent_app_name}}_blueprint = pulumi_datarobot.LlmBlueprint(
+    name={{agent_app_name}}_asset_name,
+    resource_name="LLM Blueprint " + {{agent_app_name}}_resource_name,
+    playground_id={{agent_app_name}}_playground.id,
+    llm_id = "chat-interface-custom-model",
+    llm_settings = pulumi_datarobot.LlmBlueprintLlmSettingsArgs(
+        custom_model_id = {{agent_app_name}}_custom_model.id
+    ),
+    prompt_type = "ONE_TIME_PROMPT"
+)
+
+datarobot_url = os.getenv(
+    "DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2"
+).rstrip("/").rstrip("/api/v2")
+
+{{agent_app_name}}_playground_url = pulumi.Output.format(
+    "{0}/usecases/{1}/agentic-playgrounds/{2}/comparison/chats",
+    datarobot_url, use_case.id, {{agent_app_name}}_playground.id
+)
+
+
 # Export the IDs of the created resources
 pulumi.export("Agent Use Case ID " + {{agent_app_name}}_asset_name, use_case.id)
 pulumi.export(
@@ -192,6 +221,7 @@ pulumi.export(
     "Agent Custom Model Chat Endpoint " + {{agent_app_name}}_asset_name,
     {{agent_app_name}}_custom_model_endpoint,
 )
+pulumi.export("Agent Playground URL " + {{agent_app_name}}_asset_name, {{agent_app_name}}_playground_url)
 
 
 {{agent_app_name}}_agent_deployment_id: pulumi.Output[str] = cast(pulumi.Output[str], "None")
