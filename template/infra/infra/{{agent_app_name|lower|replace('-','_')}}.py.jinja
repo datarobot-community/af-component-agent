@@ -193,20 +193,24 @@ elif os.environ.get("USE_DATAROBOT_LLM_GATEWAY") in [0, "0", False, "false", "Fa
     name={{agent_app_name}}_asset_name,
     resource_name="LLM Blueprint " + {{agent_app_name}}_resource_name,
     playground_id={{agent_app_name}}_playground.id,
-    llm_id = "chat-interface-custom-model",
-    llm_settings = pulumi_datarobot.LlmBlueprintLlmSettingsArgs(
-        custom_model_id = {{agent_app_name}}_custom_model.id
+    llm_id="chat-interface-custom-model",
+    llm_settings=pulumi_datarobot.LlmBlueprintLlmSettingsArgs(
+        custom_model_id={{agent_app_name}}_custom_model.id
     ),
-    prompt_type = "ONE_TIME_PROMPT"
+    prompt_type="ONE_TIME_PROMPT"
 )
 
-datarobot_url = os.getenv(
-    "DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2"
-).rstrip("/").rstrip("/api/v2")
+datarobot_url = (
+    os.getenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2")
+    .rstrip("/")
+    .rstrip("/api/v2")
+)
 
 {{agent_app_name}}_playground_url = pulumi.Output.format(
     "{0}/usecases/{1}/agentic-playgrounds/{2}/comparison/chats",
-    datarobot_url, use_case.id, {{agent_app_name}}_playground.id
+    datarobot_url,
+    use_case.id,
+    {{agent_app_name}}_playground.id
 )
 
 

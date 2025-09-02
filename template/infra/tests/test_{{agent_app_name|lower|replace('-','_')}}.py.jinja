@@ -329,8 +329,10 @@ def test_agentic_playground_and_blueprint_created(monkeypatch):
     assert kwargs["name"] == "[unittest] {{agent_app_name}}"
     assert kwargs["llm_id"] == "chat-interface-custom-model"
     assert kwargs["prompt_type"] == "ONE_TIME_PROMPT"
-    assert kwargs["llm_settings"] == agent_infra.pulumi_datarobot.LlmBlueprintLlmSettingsArgs(
-        custom_model_id = agent_infra.{{agent_app_name}}_custom_model.id
+    assert kwargs[
+        "llm_settings"
+    ] == agent_infra.pulumi_datarobot.LlmBlueprintLlmSettingsArgs(
+        custom_model_id=agent_infra.{{agent_app_name}}_custom_model.id
     )
 
 
