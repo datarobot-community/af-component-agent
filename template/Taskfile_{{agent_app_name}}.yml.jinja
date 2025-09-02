@@ -1,8 +1,8 @@
 ---
 # https://taskfile.dev
 version: '3'
-env:
-  UV_PROJECT_ENVIRONMENT: .venv
+vars:
+  CLEAN_PYTHON_ENV: env -u PYTHONPATH -u VIRTUAL_ENV
 includes:
   agent:
     taskfile: ./{{ agent_app_name }}/Taskfile.yml
@@ -30,7 +30,7 @@ tasks:
       AGENT_DEPLOY: 0
     cmds:
       - echo "Running pulumi up with [BUILD] mode"
-      - cd ./infra && uv run pulumi up {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - "cd ./infra && {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi up {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   deploy:
     desc: "🟢 [{{ agent_app_name }}] Run Pulumi up in [DEPLOY] mode"
@@ -38,17 +38,17 @@ tasks:
       AGENT_DEPLOY: 1
     cmds:
       - echo "Running pulumi up with [DEPLOY] mode"
-      - cd ./infra && uv run pulumi up {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - "cd ./infra && {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi up {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   refresh:
     desc: "⚪️ [{{ agent_app_name }}] Run Pulumi refresh"
     cmds:
       - echo "Running pulumi refresh"
-      - cd ./infra && uv run pulumi refresh {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - "cd ./infra && {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi refresh {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   destroy:
     desc: "🔴 [{{ agent_app_name }}] Run Pulumi destroy"
     cmds:
       - echo "Running pulumi destroy"
-      - cd ./infra && uv run pulumi destroy {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - "cd ./infra && {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi destroy {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true

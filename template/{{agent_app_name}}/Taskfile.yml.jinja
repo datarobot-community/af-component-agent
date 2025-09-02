@@ -1,8 +1,8 @@
 ---
 # https://taskfile.dev
 version: '3'
-env:
-  UV_PROJECT_ENVIRONMENT: .venv
+vars:
+  CLEAN_PYTHON_ENV: env -u PYTHONPATH -u VIRTUAL_ENV
 tasks:
   install:
     desc: 🛠️ [{{ agent_app_name }}] Update local dependencies
@@ -23,37 +23,37 @@ tasks:
     cmds:
       - task: req
       - echo "Linting the codebase"
-      - uv run ruff check . --fix
-      - uv run ruff format .
-      - uv run mypy --pretty .
-      - uv run yamlfix custom_model
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run ruff check . --fix"
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run ruff format ."
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run mypy --pretty ."
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run yamlfix custom_model"
     silent: true
   lint-check:
     desc: 🧹 [{{ agent_app_name }}] Check whether the codebase is linted
     cmds:
       - task: req
       - echo "Checking linting"
-      - uv run ruff format --check --diff .
-      - uv run ruff check --diff .
-      - uv run mypy --pretty .
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run ruff format --check --diff ."
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run ruff check --diff ."
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run mypy --pretty ."
     silent: true
   test:
     desc: 🧪 [{{ agent_app_name }}] Run tests
     cmds:
       - echo "Running pytest on tests"
-      - uv run pytest -vv ./tests/
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pytest -vv ./tests/"
     silent: true
   test-coverage:
     desc: 🧪 [{{ agent_app_name }}] Run tests with coverage
     cmds:
       - echo "Running pytest on tests"
-      - uv run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/"
     silent: true
   cli:
     desc: 🖥️ [{{ agent_app_name }}] Run the CLI with provided arguments
     cmds:
       - echo "Running CLI {% raw %}{{.CLI_ARGS}}{% endraw %}"
-      - uv run cli.py {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run cli.py {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   dev:
     desc: 🔨 [{{ agent_app_name }}] Run the development server
@@ -62,7 +62,7 @@ tasks:
       FLASK_DEBUG: 1
     cmds:
       - echo "Running development server on http://localhost:8842"
-      - uv run drum server -cd custom_model --address localhost:8842 --target-type agenticworkflow
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run drum server -cd custom_model --address localhost:8842 --target-type agenticworkflow"
       - wait
   build-docker:
     desc: 🐳 [{{ agent_app_name }}] Build the Docker image
