@@ -197,7 +197,7 @@ elif os.environ.get("USE_DATAROBOT_LLM_GATEWAY") in [0, "0", False, "false", "Fa
     llm_settings=pulumi_datarobot.LlmBlueprintLlmSettingsArgs(
         custom_model_id={{agent_app_name}}_custom_model.id
     ),
-    prompt_type="ONE_TIME_PROMPT"
+    prompt_type="ONE_TIME_PROMPT",
 )
 
 datarobot_url = (
@@ -210,7 +210,7 @@ datarobot_url = (
     "{0}/usecases/{1}/agentic-playgrounds/{2}/comparison/chats",
     datarobot_url,
     use_case.id,
-    {{agent_app_name}}_playground.id
+    {{agent_app_name}}_playground.id,
 )
 
 

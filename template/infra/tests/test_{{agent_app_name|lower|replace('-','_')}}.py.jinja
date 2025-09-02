@@ -335,7 +335,6 @@ def test_agentic_playground_and_blueprint_created(monkeypatch):
         custom_model_id=agent_infra.{{agent_app_name}}_custom_model.id
     )
 
-
     # Check that we export agent Playground URL from pulumi
     export_names = [call.args[0] for call in agent_infra.pulumi.export.call_args_list]
     assert "Agent Playground URL " + agent_infra.{{agent_app_name}}_asset_name in export_names
