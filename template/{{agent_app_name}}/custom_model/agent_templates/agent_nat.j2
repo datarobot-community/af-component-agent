@@ -13,15 +13,13 @@
 # limitations under the License.
 import asyncio
 import os
-import re
 from pathlib import Path
-from datetime import datetime
 from typing import Any, Optional, Union
 
 from helpers import create_inputs_from_completion_params
-from openai.types.chat import CompletionCreateParams
 from nat.runtime.loader import load_workflow
 from nat.utils.type_utils import StrPath
+from openai.types.chat import CompletionCreateParams
 
 
 class MyAgent:
@@ -66,76 +64,14 @@ class MyAgent:
         self.api_key = api_key or os.environ.get("DATAROBOT_API_TOKEN")
         self.api_base = api_base or os.environ.get("DATAROBOT_ENDPOINT")
         self.model = model
-        self.workflow_file_name = workflow_file_name or os.environ.get("WORKFLOW_FILE_NAME", "nat-calculator.yaml")
+        self.workflow_file_name = workflow_file_name or os.environ.get(
+            "WORKFLOW_FILE_NAME", "nat-calculator.yaml"
+        )
         self.timeout = timeout
         if isinstance(verbose, str):
             self.verbose = verbose.lower() == "true"
         elif isinstance(verbose, bool):
             self.verbose = verbose
-
-    @property
-    def api_base_litellm(self) -> str:
-        """Returns a modified version of the API base URL suitable for LiteLLM.
-
-        Strips 'api/v2/' or 'api/v2' from the end of the URL if present.
-
-        Returns:
-            str: The modified API base URL.
-        """
-        if self.api_base:
-            return re.sub(r"api/v2/?$", "", self.api_base)
-        return "https://api.datarobot.com"
-
-    @property
-    def llm_with_datarobot_llm_gateway(self) -> ChatLiteLLM:
-        """Returns a ChatLiteLLM instance configured to use DataRobot's LLM Gateway.
-
-        This property can serve as a primary LLM backend for the agents. You can optionally
-        have multiple LLMs configured, such as one for DataRobot's LLM Gateway
-        and another for a specific DataRobot deployment, or even multiple deployments or
-        third-party LLMs.
-        """
-        return ChatLiteLLM(
-            model="datarobot/azure/gpt-4o-mini",
-            api_base=self.api_base_litellm,
-            api_key=self.api_key,
-            timeout=self.timeout,
-        )
-
-    @property
-    def llm_with_datarobot_deployment(self) -> ChatLiteLLM:
-        """Returns a ChatLiteLLM instance configured to use DataRobot's LLM Deployments.
-
-        This property can serve as a primary LLM backend for the agents. You can optionally
-        have multiple LLMs configured, such as one for DataRobot's LLM Gateway
-        and another for a specific DataRobot deployment, or even multiple deployments or
-        third-party LLMs.
-        """
-        deployment_url = f"{self.api_base}/deployments/{os.environ.get('LLM_DATAROBOT_DEPLOYMENT_ID')}/"
-        return ChatLiteLLM(
-            model="openai/gpt-4o-mini",
-            api_base=deployment_url,
-            api_key=self.api_key,
-            timeout=self.timeout,
-        )
-
-    @property
-    def llm(self) -> ChatLiteLLM:
-        """Returns a ChatLiteLLM instance configured to use DataRobot's LLM Gateway or a specific deployment."""
-        if os.environ.get("LLM_DATAROBOT_DEPLOYMENT_ID"):
-            return self.llm_with_datarobot_deployment
-        else:
-            return self.llm_with_datarobot_llm_gateway
-
-    @staticmethod
-    def make_system_prompt(suffix: str) -> str:
-        return (
-            "You are a helpful AI assistant, collaborating with other assistants."
-            " Use the provided tools to progress towards answering the question."
-            " If you are unable to fully answer, that's OK, another assistant with different tools "
-            " will help where you left off. Execute what you can to make progress."
-            f"\n{suffix}"
-        )
 
     async def run_nat_workflow(self, config_file: StrPath, input_str: str) -> str:
         """Run the NAT workflow with the provided config file and input string.
@@ -149,7 +85,7 @@ class MyAgent:
         """
         async with load_workflow(config_file) as workflow:
             async with workflow.run(input_str) as runner:
-                return await runner.result(to_type=str)
+                return await runner.result(to_type=str)  # type: ignore[no-any-return]
 
     def run(
         self, completion_create_params: CompletionCreateParams
@@ -185,7 +121,7 @@ class MyAgent:
         print("Running NAT agent with inputs:", input_str, flush=True)
 
         # Get the config file path
-        config_file = Path(__file__).parent / self.workflow_file_name
+        config_file = Path(__file__).parent / self.workflow_file_name  # type: ignore[operator]
 
         # Run the NAT workflow
         try:
