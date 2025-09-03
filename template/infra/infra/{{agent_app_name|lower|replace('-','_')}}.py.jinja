@@ -225,7 +225,7 @@ pulumi.export(
     "Agent Custom Model Chat Endpoint " + {{agent_app_name}}_asset_name,
     {{agent_app_name}}_custom_model_endpoint,
 )
-pulumi.export("Agent Playground URL " + {{agent_app_name}}_asset_name, {{agent_app_name}}_playground_url)
+pulumi.export("Agent Playground URL " + {{agent_app_name}}_asset_name, {{agent_app_name}}_playground_url)  # fmt: skip
 
 
 {{agent_app_name}}_agent_deployment_id: pulumi.Output[str] = cast(pulumi.Output[str], "None")
