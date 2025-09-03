@@ -13,6 +13,7 @@
 # limitations under the License.
 import asyncio
 import os
+import re
 from pathlib import Path
 from typing import Any, Optional, Union
 
@@ -65,13 +66,26 @@ class MyAgent:
         self.api_base = api_base or os.environ.get("DATAROBOT_ENDPOINT")
         self.model = model
         self.workflow_file_name = workflow_file_name or os.environ.get(
-            "WORKFLOW_FILE_NAME", "nat-calculator.yaml"
+            "WORKFLOW_FILE_NAME", "nat-workflow.yaml"
         )
         self.timeout = timeout
         if isinstance(verbose, str):
             self.verbose = verbose.lower() == "true"
         elif isinstance(verbose, bool):
             self.verbose = verbose
+
+    @property
+    def api_base_litellm(self) -> str:
+        """Returns a modified version of the API base URL suitable for LiteLLM.
+
+        Strips 'api/v2/' or 'api/v2' from the end of the URL if present.
+
+        Returns:
+            str: The modified API base URL.
+        """
+        if self.api_base:
+            return re.sub(r"api/v2/?$", "", self.api_base)
+        return "https://api.datarobot.com"
 
     async def run_nat_workflow(self, config_file: StrPath, input_str: str) -> str:
         """Run the NAT workflow with the provided config file and input string.
