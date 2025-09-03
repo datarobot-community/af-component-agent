@@ -3,9 +3,11 @@
 version: '3'
 vars:
   CLEAN_PYTHON_ENV: env -u PYTHONPATH -u VIRTUAL_ENV
+  {% if agent_template_framework == "nat" %}
   # Read version from pyproject.toml
   VERSION:
     sh: uv run python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])"
+  {% endif %}
 includes:
   agent:
     taskfile: ./{{ agent_app_name }}/Taskfile.yml

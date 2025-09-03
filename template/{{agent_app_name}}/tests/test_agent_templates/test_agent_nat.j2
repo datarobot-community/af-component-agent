@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -133,48 +134,29 @@ class TestMyAgentBase:
         with pytest.raises(AttributeError):
             _ = agent.extra_param1
 
-    @patch("builtins.print")
-    def test_run_method_with_json_input(self, mock_print, agent):
-        # Create a mock result with a raw attribute
-        completion_create_params = {
-            "model": "test-model",
-            "messages": [
-                {"role": "user", "content": '{"topic": "Artificial Intelligence"}'}
-            ],
-            "environment_var": True,
-        }
-        assert agent.run(completion_create_params) == (
-            "success",
-            {"completion_tokens": 0, "prompt_tokens": 0, "total_tokens": 0},
-        )
+    def test_run_method(self, agent):
+        # Patch the run_nat_workflow method
+        with patch.object(MyAgent, "run_nat_workflow", return_value="success"):
+            # Call the run method with test inputs
+            completion_create_params = {
+                "model": "test-model",
+                "messages": [{"role": "user", "content": "Artificial Intelligence"}],
+                "environment_var": True,
+            }
+            result, usage = agent.run(completion_create_params)
 
-        # Assert that print was called with "Has inputs"
-        mock_print.assert_called_with(
-            "Running agent with inputs:",
-            {"topic": "Artificial Intelligence"},
-            flush=True,
-        )
+            # Verify run_nat_workflow was called with the right inputs
+            agent.run_nat_workflow.assert_called_once_with(
+                Path(__file__).parent.parent / "custom_model" / "nat-workflow.yaml",
+                "Artificial Intelligence",
+            )
 
-    @patch("builtins.print")
-    def test_run_method_with_string_input(self, mock_print, agent):
-        # Create a mock result with a raw attribute
-        completion_create_params = {
-            "model": "test-model",
-            "messages": [{"role": "user", "content": "Artificial Intelligence"}],
-            "environment_var": True,
-        }
-        result = agent.run(completion_create_params)
-        assert result == (
-            "success",
-            {"completion_tokens": 0, "prompt_tokens": 0, "total_tokens": 0},
-        )
-
-        # Assert that print was called with "Has inputs"
-        mock_print.assert_called_with(
-            "Running agent with inputs:",
-            {"topic": "Artificial Intelligence"},
-            flush=True,
-        )
+            assert result == "success"
+            assert usage == {
+                "completion_tokens": 0,
+                "prompt_tokens": 0,
+                "total_tokens": 0,
+            }
 
     @pytest.mark.parametrize(
         "api_base,expected_result",
