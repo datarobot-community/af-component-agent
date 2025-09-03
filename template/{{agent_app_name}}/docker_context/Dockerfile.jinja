@@ -133,11 +133,17 @@ ARG VENV_PATH
 
 COPY ./requirements.txt ${WORKDIR}/
 COPY ./agent/requirements-agent.txt ${WORKDIR}/
+{% if agent_template_framework == "nat" %}
+COPY ./nat_calculator-0.1.0.tar.gz ${WORKDIR}/
+{% endif %}
 
 # hadolint ignore=DL3013, SC1091
 RUN source ${VENV_PATH}/bin/activate && \
     uv pip install --no-cache-dir -r ${WORKDIR}/requirements.txt && rm ${WORKDIR}/requirements.txt && \
     uv pip install --no-cache-dir -r ${WORKDIR}/requirements-agent.txt && rm ${WORKDIR}/requirements-agent.txt
+{% if agent_template_framework == "nat" %}
+RUN uv pip install --no-cache-dir ${WORKDIR}/nat_calculator-0.1.0.tar.gz
+{% endif %}
 
 # Copy agent runtime into work directory
 COPY ./run_agent.py ${WORKDIR}/
