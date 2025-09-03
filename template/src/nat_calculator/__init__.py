@@ -1,0 +1,1 @@
+from nat_calculator import register
