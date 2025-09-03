@@ -3,6 +3,9 @@
 version: '3'
 vars:
   CLEAN_PYTHON_ENV: env -u PYTHONPATH -u VIRTUAL_ENV
+  # Read version from pyproject.toml
+  VERSION:
+    sh: uv run python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])"
 includes:
   agent:
     taskfile: ./{{ agent_app_name }}/Taskfile.yml
@@ -51,4 +54,21 @@ tasks:
     cmds:
       - echo "Running pulumi destroy"
       - "cd ./infra && {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi destroy {% raw %}{{.CLI_ARGS}}{% endraw %}"
+    silent: true
+  build-nat:
+    desc: "📦 Build nat_calculator package and copy to docker context"
+    sources:
+      - "src/**/*.py"
+      - "pyproject.toml"
+      - "README.md"
+    generates:
+      - "./{{ agent_app_name }}/docker_context/nat_calculator-{% raw %}{{.VERSION}}{% endraw %}.tar.gz"
+      - "./{{ agent_app_name }}/nat_calculator-{% raw %}{{.VERSION}}{% endraw %}.tar.gz"
+    cmds:
+      - echo "Building nat_calculator package (version {% raw %}{{.VERSION}}{% endraw %})"
+      - uv build
+      - echo "Copying built package to docker context"
+      - cp dist/nat_calculator-{% raw %}{{.VERSION}}{% endraw %}.tar.gz ./{{ agent_app_name }}/docker_context/
+      - cp dist/nat_calculator-{% raw %}{{.VERSION}}{% endraw %}.tar.gz ./{{ agent_app_name }}/
+      - echo "✅ Package nat_calculator-{% raw %}{{.VERSION}}{% endraw %}.tar.gz copied to docker context"
     silent: true

@@ -1,0 +1,31 @@
+{% if agent_template_framework == "nat" %}
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nat-calculator"
+version = "0.1.0"
+description = "A calculator package using NVIDIA NAT components"
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [
+    {name = "Luke Shulman", email = "Luke.Shulman@datarobot.com"},
+]
+dependencies = [
+    "nvidia-nat",
+    "nvidia-nat-langchain",
+    "nvidia-nat-opentelemetry",
+    "datarobot",
+]
+
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[project.entry-points.'nat.components']
+nat_calculator = "nat_calculator.register"
+{% endif %}
