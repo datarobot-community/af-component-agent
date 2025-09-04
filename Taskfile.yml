@@ -61,9 +61,6 @@ tasks:
   test-nat:
     desc: "Run tests for NAT agent"
     cmds:
-      - task: build-nat-components
-        vars:
-          AGENT: nat
       - task: test-agent
         vars:
           AGENT: nat
