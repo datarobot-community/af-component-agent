@@ -58,7 +58,7 @@ dependencies = [
     "nvidia-nat",
     "nvidia-nat-langchain",
     "nvidia-nat-opentelemetry",
-    "nat-calculator",
+    "nat-components",
     {% endif %}
     {% if agent_template_framework == "base" %}
     "uvicorn~=0.35.0",
@@ -214,5 +214,5 @@ override-dependencies = [
 ]
 
 [tool.uv.sources]
-nat-calculator = { path = "nat_components-0.1.0.tar.gz" }
+nat-components = { path = "nat_components-0.1.0.tar.gz" }
 {% endif %}
