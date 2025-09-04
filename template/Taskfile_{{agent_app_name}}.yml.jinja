@@ -57,7 +57,7 @@ tasks:
       - echo "Running pulumi destroy"
       - "cd ./infra && {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi destroy {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
-  build-nat:
+  build-nat-components:
     desc: "📦 Build nat_components package and copy to docker context"
     sources:
       - "src/**/*.py"
