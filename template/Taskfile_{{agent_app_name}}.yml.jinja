@@ -58,19 +58,19 @@ tasks:
       - "cd ./infra && {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi destroy {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   build-nat:
-    desc: "📦 Build nat_calculator package and copy to docker context"
+    desc: "📦 Build nat_components package and copy to docker context"
     sources:
       - "src/**/*.py"
       - "pyproject.toml"
       - "README.md"
     generates:
-      - "./{{ agent_app_name }}/docker_context/nat_calculator-{% raw %}{{.VERSION}}{% endraw %}.tar.gz"
-      - "./{{ agent_app_name }}/nat_calculator-{% raw %}{{.VERSION}}{% endraw %}.tar.gz"
+      - "./{{ agent_app_name }}/docker_context/nat_components-{% raw %}{{.VERSION}}{% endraw %}.tar.gz"
+      - "./{{ agent_app_name }}/nat_components-{% raw %}{{.VERSION}}{% endraw %}.tar.gz"
     cmds:
-      - echo "Building nat_calculator package (version {% raw %}{{.VERSION}}{% endraw %})"
+      - echo "Building nat_components package (version {% raw %}{{.VERSION}}{% endraw %})"
       - uv build
       - echo "Copying built package to docker context"
-      - cp dist/nat_calculator-{% raw %}{{.VERSION}}{% endraw %}.tar.gz ./{{ agent_app_name }}/docker_context/
-      - cp dist/nat_calculator-{% raw %}{{.VERSION}}{% endraw %}.tar.gz ./{{ agent_app_name }}/
-      - echo "✅ Package nat_calculator-{% raw %}{{.VERSION}}{% endraw %}.tar.gz copied to docker context"
+      - cp dist/nat_components-{% raw %}{{.VERSION}}{% endraw %}.tar.gz ./{{ agent_app_name }}/docker_context/
+      - cp dist/nat_components-{% raw %}{{.VERSION}}{% endraw %}.tar.gz ./{{ agent_app_name }}/
+      - echo "✅ Package nat_components-{% raw %}{{.VERSION}}{% endraw %}.tar.gz copied to docker context"
     silent: true
