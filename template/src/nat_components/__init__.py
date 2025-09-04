@@ -1,1 +1,0 @@
-from nat_components import register

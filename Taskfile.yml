@@ -58,13 +58,6 @@ tasks:
       - task: test-agent
         vars:
           AGENT: llamaindex
-  build-nat-components:
-    desc: "Build package for nat-components"
-    cmds:
-      - task: install-dev
-        vars:
-          AGENT: "{{.AGENT}}"
-      - task agent_test:build-nat-components --dir $RENDER_DIR/agent_{{.AGENT}}/src
   test-nat:
     desc: "Run tests for NAT agent"
     cmds:
