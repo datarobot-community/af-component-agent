@@ -13,24 +13,12 @@
 # limitations under the License.
 {% if agent_template_framework == "nat" %}
 functions:
-  add:
-    _type: add
-  multiply:
-    _type: multiply
-  subtract:
-    _type: subtract
-  divide:
-    _type: divide
-  power:
-    _type: power
-  modulo:
-    _type: modulo
-  sin:
-    _type: sin
-  cos:
-    _type: cos
-  tan:
-    _type: tan
+  planner:
+    _type: planner
+  writer:
+    _type: writer
+  editor:
+    _type: editor
 llms:
   datarobot_llm:
     _type: openai
@@ -40,7 +28,7 @@ llms:
     base_url: https://app.datarobot.com/api/v2/genai/llmgw
 workflow:
   _type: react_agent
-  tool_names: [add, multiply, subtract, divide, power, modulo, sin, cos, tan]
+  tool_names: [planner, writer, editor]
   llm_name: datarobot_llm
   verbose: true
 {% endif %}
