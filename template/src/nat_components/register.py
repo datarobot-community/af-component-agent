@@ -1,7 +1,7 @@
 import logging 
 
 from pydantic import Field, BaseModel
-from nat_calculator.tools import add, multiply, subtract, divide, power, modulo, sin, cos, tan
+from nat_components.tools import add, multiply, subtract, divide, power, modulo, sin, cos, tan
 
 from nat.builder.builder import Builder
 from nat.builder.function import LambdaFunction

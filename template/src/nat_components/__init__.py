@@ -1,1 +1,1 @@
-from nat_calculator import register
+from nat_components import register
