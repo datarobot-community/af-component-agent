@@ -12,7 +12,7 @@ aiosqlite==0.21.0
 alembic==1.15.2
 annotated-types==0.7.0
 annoy==1.17.3
-anthropic==0.49.0
+anthropic==0.66.0
 anyio==4.9.0
 appdirs==1.4.4
 appnope==0.1.4 ; sys_platform == 'darwin'
@@ -34,6 +34,7 @@ bleach==6.2.0
 blinker==1.9.0
 boto3==1.37.3
 botocore==1.37.3
+browserbase==1.4.0
 build==1.2.2.post1
 cachetools==5.5.2
 certifi==2025.4.26
@@ -46,8 +47,8 @@ cohere==5.15.0
 colorama==0.4.6
 coloredlogs==15.0.1
 comm==0.2.2
-crewai==0.140.0
-crewai-tools==0.48.0
+crewai==0.177.0
+crewai-tools==0.69.0
 cryptography==44.0.3
 dataclasses-json==0.6.7
 datarobot==3.8.2
@@ -167,7 +168,7 @@ langgraph-sdk==0.1.66
 langsmith==0.3.42
 lark==1.2.2
 legacy-cgi==2.6.3
-litellm==1.72.6
+litellm==1.74.9
 llama-cloud==0.1.21
 llama-cloud-services==0.6.15
 llama-index==0.12.52
@@ -283,8 +284,9 @@ pdfplumber==0.11.6
 pexpect==4.9.0 ; sys_platform != 'emscripten' and sys_platform != 'win32'
 pillow==11.3.0
 platformdirs==4.3.8
+playwright==1.55.0
 pluggy==1.6.0
-portalocker==2.10.1
+portalocker==2.7.0
 posthog==3.25.0
 progress==1.6
 prometheus-client==0.21.1
@@ -304,6 +306,7 @@ pycparser==2.22
 pydantic==2.11.7
 pydantic-core==2.33.2
 pydantic-settings==2.9.1
+pyee==13.0.0
 pyfiglet==1.0.3
 pygments==2.19.1
 pyjwt==2.10.1
@@ -359,6 +362,7 @@ soupsieve==2.7
 sqlalchemy==2.0.40
 sse-starlette==2.4.1
 stack-data==0.6.3
+stagehand==0.5.0
 starlette==0.46.2
 strenum==0.4.15
 strictyaml==1.4.2
