@@ -18,7 +18,10 @@ from typing import Any, Iterator, Optional, Union, cast
 import datarobot as dr
 import openai
 import pandas as pd
-from datarobot.models.genai.agent.auth import get_authorization_context, set_authorization_context
+from datarobot.models.genai.agent.auth import (
+    get_authorization_context,
+    set_authorization_context,
+)
 from datarobot_predict.deployment import (
     PredictionResult,
     UnstructuredPredictionResult,
