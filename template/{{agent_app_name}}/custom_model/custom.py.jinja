@@ -11,9 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-# isort: off
 # ------------------------------------------------------------------------------
 # THIS SECTION OF CODE IS REQUIRED TO SETUP TRACING AND TELEMETRY FOR THE AGENTS.
+# REMOVING THIS CODE WILL DISABLE ALL MONITORING, TRACING AND TELEMETRY.
+# isort: off
 from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from opentelemetry.instrumentation.openai import OpenAIInstrumentor
@@ -40,8 +41,8 @@ import os
 # Some libraries collect telemetry data by default. Let's disable that.
 os.environ["RAGAS_DO_NOT_TRACK"] = "true"
 os.environ["DEEPEVAL_TELEMETRY_OPT_OUT"] = "YES"
-# ------------------------------------------------------------------------------
 # isort: on
+# ------------------------------------------------------------------------------
 
 from agent import MyAgent
 from auth import initialize_authorization_context
