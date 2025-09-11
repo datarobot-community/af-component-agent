@@ -274,7 +274,7 @@ class MyAgent:
             goto=END,
         )
 
-    def graph(self) -> CompiledStateGraph[MessagesState]:
+    def graph(self) -> Any:
         workflow = StateGraph(MessagesState)
         workflow.add_node("planner_node", self.task_plan)
         workflow.add_node("writer_node", self.task_write)
