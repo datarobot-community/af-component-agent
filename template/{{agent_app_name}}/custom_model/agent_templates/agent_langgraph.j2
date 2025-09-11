@@ -317,10 +317,10 @@ class MyAgent:
         input_message = Command(
             update={
                 "messages": (
-                        "user",
-                        f"The topic is '{inputs['topic']}'. Make sure you find any interesting and relevant"
-                        f"information given the current year is {str(datetime.now().year)}.",
-                    ),
+                    "user",
+                    f"The topic is '{inputs['topic']}'. Make sure you find any interesting and relevant"
+                    f"information given the current year is {str(datetime.now().year)}.",
+                ),
             },
             goto="writer_node",
         )
