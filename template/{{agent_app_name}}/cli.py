@@ -86,7 +86,7 @@ def execute(environment: Any, user_prompt: str, completion_json: str) -> None:
 @cli.command()
 @pass_environment
 @click.option("--user_prompt", default="", help="Input to use for predict.")
-@click.option("--custom_model_id", help="ID for the deployment.")
+@click.option("--custom_model_id", default="", help="ID for the deployment.")
 def execute_custom_model(
     environment: Any, user_prompt: str, custom_model_id: str
 ) -> None:
@@ -118,7 +118,7 @@ def execute_custom_model(
 @pass_environment
 @click.option("--user_prompt", default="", help="Input to use for predict.")
 @click.option("--completion_json", default="", help="Path to json to use for chat.")
-@click.option("--deployment_id", help="ID for the deployment.")
+@click.option("--deployment_id", default="", help="ID for the deployment.")
 def execute_deployment(
     environment: Any, user_prompt: str, completion_json: str, deployment_id: str
 ) -> None:
