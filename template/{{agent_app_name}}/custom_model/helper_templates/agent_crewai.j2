@@ -28,6 +28,7 @@ try:
         ToolUsageFinishedEvent,
         ToolUsageStartedEvent,
     )
+# Handle legacy crewai package structure
 except ImportError as e:
     from crewai.utilities.events import (
         AgentExecutionCompletedEvent,
