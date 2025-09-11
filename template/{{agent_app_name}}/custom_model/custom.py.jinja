@@ -47,7 +47,7 @@ os.environ["DEEPEVAL_TELEMETRY_OPT_OUT"] = "YES"
 # isort: on
 # ------------------------------------------------------------------------------
 
-from agent import MyAgent
+from agent import MyAgent  # ruff: noqa: E402
 from datarobot_drum import RuntimeParameters
 from helpers import (
     CustomModelChatResponse,
