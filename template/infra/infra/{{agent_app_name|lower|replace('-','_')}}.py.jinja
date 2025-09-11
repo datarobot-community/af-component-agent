@@ -65,7 +65,11 @@ __all__ = [
 ]
 
 {{agent_app_name}}_application_name: str = "{{agent_app_name}}"
-{{agent_app_name}}_resource_name: str = "[{{agent_app_name}}]"
+resource_name_suffix = os.environ.get(
+    {{agent_app_name}}_application_name.upper() + "_RESOURCE_NAME_SUFFIX",
+    {{agent_app_name}}_application_name
+)
+{{agent_app_name}}_resource_name: str = f"[{resource_name_suffix}]"
 {{agent_app_name}}_asset_name: str = f"[{PROJECT_NAME}] {{agent_app_name}}"
 {{agent_app_name}}_application_path = project_dir.parent / "{{agent_app_name}}"
 
