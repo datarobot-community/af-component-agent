@@ -314,15 +314,15 @@ class MyAgent:
         print("Running agent with inputs:", inputs, flush=True)
 
         # Construct the input message for the langgraph graph.
-        input_message = {
-            "messages": [
-                (
-                    "user",
-                    f"The topic is '{inputs['topic']}'. Make sure you find any interesting and relevant"
-                    f"information given the current year is {str(datetime.now().year)}.",
-                )
-            ],
-        }
+        input_message = MessagesState(
+            messages = [
+                    (
+                        "user",
+                        f"The topic is '{inputs['topic']}'. Make sure you find any interesting and relevant"
+                        f"information given the current year is {str(datetime.now().year)}.",
+                    )
+            ]
+        )
 
         # Graph stream is a generator that will execute the graph
         graph_stream = self.graph().stream(
