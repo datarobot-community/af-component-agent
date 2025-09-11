@@ -42,7 +42,7 @@ pipeline:
                       identifier: Docker_Requirements_Compile_Test
                       spec:
                         connectorRef: GHCR_HHI
-                        image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+                        image: ghcr.io/astral-sh/uv:python3.11-bookworm
                         shell: Sh
                         command: |-
                           apt -o Acquire::Check-Valid-Until=false update && apt install -y git
