@@ -30,7 +30,7 @@ try:
         ToolUsageStartedEvent,
     )
 # Handle legacy crewai package structure
-except ImportError as e:
+except ImportError:
     from crewai.utilities.events import (
         AgentExecutionCompletedEvent,
         AgentExecutionStartedEvent,
