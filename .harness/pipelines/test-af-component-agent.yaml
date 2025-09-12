@@ -434,7 +434,8 @@ pipeline:
                         shell: Sh
                         command: |-
                           sudo rm /var/lib/apt/lists/
-                          apt update && apt install -y git --no-install-recommends
+                          apt update
+                          apt install -y git --no-install-recommends
                           uvx copier copy . ./copier_context --defaults
                           cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
                           cp ./fixtures/infra/Pulumi.yaml ./copier_context/infra/Pulumi.yaml
