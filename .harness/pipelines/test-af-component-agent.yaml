@@ -433,7 +433,7 @@ pipeline:
                         image: ghcr.io/astral-sh/uv:python3.11-bookworm
                         shell: Sh
                         command: |-
-                          apt update --allow-releaseinfo-change && apt install -y git --no-install-recommends
+                          apt-get update && apt install -y git --no-install-recommends
                           uvx copier copy . ./copier_context --defaults
                           cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
                           cp ./fixtures/infra/Pulumi.yaml ./copier_context/infra/Pulumi.yaml
