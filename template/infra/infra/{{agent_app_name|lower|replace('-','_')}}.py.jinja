@@ -73,8 +73,7 @@ __all__ = [
 # The following could be added to your .env file to customize the resource name:
 # AGENT_CREWAI_RESOURCE_NAME_SUFFIX="my-custom-suffix"
 resource_name_suffix = os.environ.get(
-    {{agent_app_name}}_application_name.upper() + "_RESOURCE_NAME_SUFFIX",
-    {{agent_app_name}}_application_name
+    {{agent_app_name}}_application_name.upper() + "_RESOURCE_NAME_SUFFIX", {{agent_app_name}}_application_name
 )
 {{agent_app_name}}_resource_name: str = f"[{resource_name_suffix}]"
 
