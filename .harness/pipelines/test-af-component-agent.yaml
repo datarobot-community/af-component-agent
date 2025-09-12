@@ -38,7 +38,7 @@ pipeline:
                       spec:
                         shell: Sh
                         connectorRef: GHCR_HHI
-                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm
                         command: |-
                           cd ./copier_context
 
@@ -52,7 +52,7 @@ pipeline:
                       identifier: Base_CLI_Tests_with_DRUM_using_serverless_mode
                       spec:
                         connectorRef: GHCR_HHI
-                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm
                         shell: Sh
                         command: |-
                           cd ./copier_context
@@ -121,7 +121,7 @@ pipeline:
                       identifier: Base_CLI_Tests_with_JSON
                       spec:
                         connectorRef: GHCR_HHI
-                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                        image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm
                         shell: Sh
                         command: |-
                           cd ./copier_context
@@ -212,7 +212,7 @@ pipeline:
                           identifier: Linter
                           spec:
                             connectorRef: GHCR_HHI
-                            image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                            image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm
                             shell: Sh
                             command: |-
                               cd ./copier_context/agent_crewai
@@ -225,7 +225,7 @@ pipeline:
                           identifier: Unit_Tests
                           spec:
                             connectorRef: GHCR_HHI
-                            image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                            image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm
                             shell: Sh
                             command: |-
                               cd ./copier_context/agent_crewai
@@ -291,7 +291,7 @@ pipeline:
                           identifier: Linter
                           spec:
                             connectorRef: GHCR_HHI
-                            image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                            image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm
                             shell: Sh
                             command: |-
                               cd ./copier_context/agent_langgraph
@@ -304,7 +304,7 @@ pipeline:
                           identifier: Unit_Tests
                           spec:
                             connectorRef: GHCR_HHI
-                            image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                            image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm
                             shell: Sh
                             command: |-
                               cd ./copier_context/agent_langgraph
@@ -370,7 +370,7 @@ pipeline:
                           identifier: Linter
                           spec:
                             connectorRef: GHCR_HHI
-                            image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                            image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm
                             shell: Sh
                             command: |-
                               cd ./copier_context/agent_llamaindex
@@ -383,7 +383,7 @@ pipeline:
                           identifier: Unit_Tests
                           spec:
                             connectorRef: GHCR_HHI
-                            image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm-slim
+                            image: ghcr.io/astral-sh/uv:<+matrix.python>-bookworm
                             shell: Sh
                             command: |-
                               cd ./copier_context/agent_llamaindex
