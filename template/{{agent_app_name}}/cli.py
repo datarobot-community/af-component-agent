@@ -26,10 +26,10 @@ pass_environment = click.make_pass_decorator(Environment)
 def display_response(response: Union[str, ChatCompletion], show_output: bool) -> None:
     """Display the response in a formatted way."""
 
-    if isinstance(response, str):
-        response_json = json.loads(response)
-    else:
+    if isinstance(response, ChatCompletion):
         response_json = json.loads(response.model_dump_json())
+    else:
+        response_json = json.loads(response)
 
     # Write response to execute_output.json
     with open("execute_output.json", "w") as json_file:
