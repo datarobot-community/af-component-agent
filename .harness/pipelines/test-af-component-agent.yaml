@@ -60,6 +60,7 @@ pipeline:
                           # Run the CLI command with a sample user prompt
                           uvx --from go-task-bin task agent_test:agent:cli -- \
                             execute \
+                            --show_output \
                             --user_prompt '{"topic": "Artificial Intelligence"}' \
                             > ./agent/output.log 2>&1
 
@@ -129,6 +130,7 @@ pipeline:
                           # Run the CLI command with a sample user prompt
                           uvx --from go-task-bin task agent_test:agent:cli -- \
                             execute \
+                            --show_output \
                             --completion_json "example-completion.json" \
                             > ./agent/output.log 2>&1
 

@@ -88,7 +88,7 @@ def execute(environment: Any, user_prompt: str, completion_json: str, show_outpu
 
     # Write response to execute_output.json
     with open("execute_output.json", "w") as json_file:
-        json.dump(response, json_file, indent=2)
+        json.dump(json.loads(response), json_file, indent=2)
 
     if show_output:
         click.echo("\nStored execution result:")
@@ -168,17 +168,18 @@ def execute_deployment(
         user_prompt=user_prompt,
         completion_json=completion_json,
     )
+    response_json = response.model_dump_json()
 
     # Write response to execute_deployment_output.json
     with open("execute_deployment_output.json", "w") as json_file:
-        json.dump(response, json_file, indent=2)
+        json.dump(json.loads(response_json), json_file, indent=2)
 
     if show_output:
         click.echo("\nStored execution result:")
-        click.echo(response)
+        click.echo(response_json)
     else:
         # Show only first 200 characters of response
-        truncated_response = response[:200] + ("..." if len(response) > 200 else "")
+        truncated_response = response_json[:200] + ("..." if len(response_json) > 200 else "")
         click.echo(f"\nStored execution result preview: {truncated_response}")
         click.echo(f"To view the full result run `cat {os.path.abspath('execute_deployment_output.json')}`.")
         click.echo("To display the full result inline, rerun with the --show_output flag.")
