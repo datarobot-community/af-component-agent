@@ -39,14 +39,14 @@ def display_response(response: Union[str, ChatCompletion], show_output: bool) ->
         response_json["pipeline_interactions"] = "[Truncated for display]"
 
     if show_output:
-        click.echo("Stored execution result:")
+        click.echo("\nStored execution result:")
         click.echo(json.dumps(response_json, indent=2))
     else:
         if "choices" in response_json:
             response_json["choices"] = "[Truncated for display]"
 
         # Show only first 200 characters of response
-        click.echo(f"\nStored execution result preview:")
+        click.echo("\nStored execution result preview:")
         click.echo(json.dumps(response_json, indent=2))
         click.echo(
             f"To view the full result run `cat {os.path.abspath('execute_output.json')}`."
