@@ -13,7 +13,8 @@
 # limitations under the License.
 import json
 import os
-from typing import Any
+from typing import Any, Union
+from openai.types.chat import ChatCompletion
 
 import click
 
@@ -22,14 +23,43 @@ from agent_cli.environment import Environment
 pass_environment = click.make_pass_decorator(Environment)
 
 
+def display_response(response: Union[str, ChatCompletion], show_output: bool) -> None:
+    """Display the response in a formatted way."""
+
+    if isinstance(response, str):
+        response_json = json.loads(response)
+    else:
+        response_json = json.loads(response.model_dump_json())
+
+    # Write response to execute_output.json
+    with open("execute_output.json", "w") as json_file:
+        json.dump(response_json, json_file, indent=2)
+
+    if "pipeline_interactions" in response_json:
+        response_json["pipeline_interactions"] = "[Truncated for display]"
+
+    if show_output:
+        click.echo("\nStored execution result:")
+        click.echo(json.dumps(response_json, indent=2))
+    else:
+        if "choices" in response_json:
+            response_json["choices"] = "[Truncated for display]"
+
+        # Show only first 200 characters of response
+        click.echo(f"\nStored execution result preview:")
+        click.echo(json.dumps(response_json, indent=2))
+        click.echo(f"To view the full result run `cat {os.path.abspath('execute_output.json')}`.")
+        click.echo("To display the full result inline, rerun with the --show_output flag.")
+
+
 @click.group()
 @click.option("--api_token", default=None, help="API token for authentication.")
 @click.option("--base_url", default=None, help="Base URL for the API.")
 @click.pass_context
 def cli(
-    ctx: Any,
-    api_token: str | None,
-    base_url: str | None,
+        ctx: Any,
+        api_token: str | None,
+        base_url: str | None,
 ) -> None:
     """A CLI for interacting executing agent custom models using the chat endpoint and OpenAI completions.
 
@@ -85,20 +115,7 @@ def execute(environment: Any, user_prompt: str, completion_json: str, show_outpu
         user_prompt=user_prompt,
         completion_json=completion_json,
     )
-
-    # Write response to execute_output.json
-    with open("execute_output.json", "w") as json_file:
-        json.dump(json.loads(response), json_file, indent=2)
-
-    if show_output:
-        click.echo("\nStored execution result:")
-        click.echo(response)
-    else:
-        # Show only first 200 characters of response
-        truncated_response = response[:200] + ("..." if len(response) > 200 else "")
-        click.echo(f"\nStored execution result preview: {truncated_response}")
-        click.echo(f"To view the full result run `cat {os.path.abspath('execute_output.json')}`.")
-        click.echo("To display the full result inline, rerun with the --show_output flag.")
+    display_response(response, show_output)
 
 
 @cli.command()
@@ -168,21 +185,7 @@ def execute_deployment(
         user_prompt=user_prompt,
         completion_json=completion_json,
     )
-    response_json = response.model_dump_json()
-
-    # Write response to execute_deployment_output.json
-    with open("execute_deployment_output.json", "w") as json_file:
-        json.dump(json.loads(response_json), json_file, indent=2)
-
-    if show_output:
-        click.echo("\nStored execution result:")
-        click.echo(response_json)
-    else:
-        # Show only first 200 characters of response
-        truncated_response = response_json[:200] + ("..." if len(response_json) > 200 else "")
-        click.echo(f"\nStored execution result preview: {truncated_response}")
-        click.echo(f"To view the full result run `cat {os.path.abspath('execute_deployment_output.json')}`.")
-        click.echo("To display the full result inline, rerun with the --show_output flag.")
+    display_response(response, show_output)
 
 
 if __name__ == "__main__":
