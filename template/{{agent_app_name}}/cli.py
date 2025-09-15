@@ -170,7 +170,7 @@ def execute_deployment(
     user_prompt: str,
     completion_json: str,
     deployment_id: str,
-    show_output: bool
+    show_output: bool,
 ) -> None:
     """Query a deployed model using the command line for OpenAI completions.
 
