@@ -48,8 +48,12 @@ def display_response(response: Union[str, ChatCompletion], show_output: bool) ->
         # Show only first 200 characters of response
         click.echo(f"\nStored execution result preview:")
         click.echo(json.dumps(response_json, indent=2))
-        click.echo(f"To view the full result run `cat {os.path.abspath('execute_output.json')}`.")
-        click.echo("To display the full result inline, rerun with the --show_output flag.")
+        click.echo(
+            f"To view the full result run `cat {os.path.abspath('execute_output.json')}`."
+        )
+        click.echo(
+            "To display the full result inline, rerun with the --show_output flag."
+        )
 
 
 @click.group()
@@ -57,9 +61,9 @@ def display_response(response: Union[str, ChatCompletion], show_output: bool) ->
 @click.option("--base_url", default=None, help="Base URL for the API.")
 @click.pass_context
 def cli(
-        ctx: Any,
-        api_token: str | None,
-        base_url: str | None,
+    ctx: Any,
+    api_token: str | None,
+    base_url: str | None,
 ) -> None:
     """A CLI for interacting executing agent custom models using the chat endpoint and OpenAI completions.
 
@@ -89,8 +93,12 @@ def cli(
 @pass_environment
 @click.option("--user_prompt", default="", help="Input to use for chat.")
 @click.option("--completion_json", default="", help="Path to json to use for chat.")
-@click.option("--show_output", is_flag=True, help="Show the full stored execution result.")
-def execute(environment: Any, user_prompt: str, completion_json: str, show_output: bool) -> None:
+@click.option(
+    "--show_output", is_flag=True, help="Show the full stored execution result."
+)
+def execute(
+    environment: Any, user_prompt: str, completion_json: str, show_output: bool
+) -> None:
     """Execute agent code locally using OpenAI completions.
 
     Examples:
@@ -154,9 +162,15 @@ def execute_custom_model(
 @click.option("--user_prompt", default="", help="Input to use for predict.")
 @click.option("--completion_json", default="", help="Path to json to use for chat.")
 @click.option("--deployment_id", default="", help="ID for the deployment.")
-@click.option("--show_output", is_flag=True, help="Show the full stored execution result.")
+@click.option(
+    "--show_output", is_flag=True, help="Show the full stored execution result."
+)
 def execute_deployment(
-    environment: Any, user_prompt: str, completion_json: str, deployment_id: str, show_output: bool
+    environment: Any,
+    user_prompt: str,
+    completion_json: str,
+    deployment_id: str,
+    show_output: bool
 ) -> None:
     """Query a deployed model using the command line for OpenAI completions.
 
