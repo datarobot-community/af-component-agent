@@ -169,8 +169,8 @@ def execute_deployment(
         completion_json=completion_json,
     )
 
-    # Write response to execute_output.json
-    with open("execute_output.json", "w") as json_file:
+    # Write response to execute_deployment_output.json
+    with open("execute_deployment_output.json", "w") as json_file:
         json.dump(response, json_file, indent=2)
 
     if show_output:
@@ -180,7 +180,7 @@ def execute_deployment(
         # Show only first 200 characters of response
         truncated_response = response[:200] + ("..." if len(response) > 200 else "")
         click.echo(f"\nStored execution result preview: {truncated_response}")
-        click.echo(f"To view the full result run `cat {os.path.abspath('execute_output.json')}`.")
+        click.echo(f"To view the full result run `cat {os.path.abspath('execute_deployment_output.json')}`.")
         click.echo("To display the full result inline, rerun with the --show_output flag.")
 
 
