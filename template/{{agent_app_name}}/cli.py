@@ -14,9 +14,9 @@
 import json
 import os
 from typing import Any, Union
-from openai.types.chat import ChatCompletion
 
 import click
+from openai.types.chat import ChatCompletion
 
 from agent_cli.environment import Environment
 
@@ -39,7 +39,7 @@ def display_response(response: Union[str, ChatCompletion], show_output: bool) ->
         response_json["pipeline_interactions"] = "[Truncated for display]"
 
     if show_output:
-        click.echo("\nStored execution result:")
+        click.echo("Stored execution result:")
         click.echo(json.dumps(response_json, indent=2))
     else:
         if "choices" in response_json:
