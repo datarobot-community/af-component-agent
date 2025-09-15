@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
+import os
 from typing import Any
 
 import click
@@ -57,13 +59,17 @@ def cli(
 @pass_environment
 @click.option("--user_prompt", default="", help="Input to use for chat.")
 @click.option("--completion_json", default="", help="Path to json to use for chat.")
-def execute(environment: Any, user_prompt: str, completion_json: str) -> None:
+@click.option("--show_output", is_flag=True, help="Show the full stored execution result.")
+def execute(environment: Any, user_prompt: str, completion_json: str, show_output: bool) -> None:
     """Execute agent code locally using OpenAI completions.
 
     Examples:
 
     # Run the agent with a string user prompt
     > task cli -- execute --user_prompt "Artificial Intelligence"
+
+    # Run the agent with a string user prompt and show full output
+    > task cli -- execute-deployment --user_prompt "Artificial Intelligence" --show_output
 
     # Run the agent with a JSON user prompt
     > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
@@ -79,8 +85,20 @@ def execute(environment: Any, user_prompt: str, completion_json: str) -> None:
         user_prompt=user_prompt,
         completion_json=completion_json,
     )
-    click.echo("\nStored Execution Result:")
-    click.echo(response)
+
+    # Write response to execute_output.json
+    with open("execute_output.json", "w") as json_file:
+        json.dump(response, json_file, indent=2)
+
+    if show_output:
+        click.echo("\nStored execution result:")
+        click.echo(response)
+    else:
+        # Show only first 200 characters of response
+        truncated_response = response[:200] + ("..." if len(response) > 200 else "")
+        click.echo(f"\nStored execution result preview: {truncated_response}")
+        click.echo(f"To view the full result run `cat {os.path.abspath('execute_output.json')}`.")
+        click.echo("To display the full result inline, rerun with the --show_output flag.")
 
 
 @cli.command()
@@ -119,8 +137,9 @@ def execute_custom_model(
 @click.option("--user_prompt", default="", help="Input to use for predict.")
 @click.option("--completion_json", default="", help="Path to json to use for chat.")
 @click.option("--deployment_id", default="", help="ID for the deployment.")
+@click.option("--show_output", is_flag=True, help="Show the full stored execution result.")
 def execute_deployment(
-    environment: Any, user_prompt: str, completion_json: str, deployment_id: str
+    environment: Any, user_prompt: str, completion_json: str, deployment_id: str, show_output: bool
 ) -> None:
     """Query a deployed model using the command line for OpenAI completions.
 
@@ -128,6 +147,9 @@ def execute_deployment(
 
     # Run the agent with a string user prompt
     > task cli -- execute-deployment --user_prompt "Artificial Intelligence" --deployment_id 680a77a9a3
+
+    # Run the agent with a string user prompt and show full output
+    > task cli -- execute-deployment --user_prompt "Artificial Intelligence" --show_output --deployment_id 680a77a9a3
 
     # Run the agent with a JSON user prompt
     > task cli -- execute-deployment --user_prompt '{"topic": "Artificial Intelligence"}' --deployment_id 680a77a9a3
@@ -146,7 +168,20 @@ def execute_deployment(
         user_prompt=user_prompt,
         completion_json=completion_json,
     )
-    click.echo(response)
+
+    # Write response to execute_output.json
+    with open("execute_output.json", "w") as json_file:
+        json.dump(response, json_file, indent=2)
+
+    if show_output:
+        click.echo("\nStored execution result:")
+        click.echo(response)
+    else:
+        # Show only first 200 characters of response
+        truncated_response = response[:200] + ("..." if len(response) > 200 else "")
+        click.echo(f"\nStored execution result preview: {truncated_response}")
+        click.echo(f"To view the full result run `cat {os.path.abspath('execute_output.json')}`.")
+        click.echo("To display the full result inline, rerun with the --show_output flag.")
 
 
 if __name__ == "__main__":
