@@ -15,7 +15,7 @@ tasks:
     desc: 🛠️ [{{ agent_app_name }}] Update local dependencies
     cmds:
       - echo "Updating local dependencies"
-      - uv sync --all-extras
+      - uv sync --all-extras --quiet
     silent: true
     aliases:
       - req
