@@ -63,7 +63,7 @@ class MyAgent:
 
     @property
     def llm(self) -> Any:
-        """Returns a CrewAI LLM instance configured to use DataRobot's LLM Gateway or a specific deployment.
+        """ The LLM property should return an instance of the LLM client being used by the agent.
 
         For help configuring different LLM backends see:
         https://github.com/datarobot-community/datarobot-agent-templates/blob/main/docs/developing-agents-llm-providers.md
