@@ -62,17 +62,13 @@ class MyAgent:
             self.verbose = verbose
 
     @property
-    def api_base_litellm(self) -> str:
-        """Returns a modified version of the API base URL suitable for LiteLLM.
+    def llm(self) -> Any:
+        """Returns a CrewAI LLM instance configured to use DataRobot's LLM Gateway or a specific deployment.
 
-        Strips 'api/v2/' or 'api/v2' from the end of the URL if present.
-
-        Returns:
-            str: The modified API base URL.
+        For help configuring different LLM backends see:
+        https://github.com/datarobot-community/datarobot-agent-templates/blob/main/docs/developing-agents-llm-providers.md
         """
-        if self.api_base:
-            return re.sub(r"api/v2/?$", "", self.api_base)
-        return "https://api.datarobot.com"
+        return None
 
     def run(
         self, completion_create_params: CompletionCreateParams
