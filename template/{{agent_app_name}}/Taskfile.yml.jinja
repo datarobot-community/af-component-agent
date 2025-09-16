@@ -12,9 +12,9 @@ vars:
       fi
 tasks:
   install:
-    desc: 🛠️ [{{ agent_app_name }}] Update local dependencies
+    desc: 🛠️ [{{ agent_app_name }}] Installing local dependencies
     cmds:
-      - echo "Updating local dependencies"
+      - echo "Updating local dependencies for {{ agent_app_name }}"
       - uv sync --all-extras --quiet
     silent: true
     aliases:
