@@ -76,17 +76,10 @@ class MyAgent:
 
         [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
 
-        Inputs can be extracted from the completion_create_params in several ways. A helper function
-        `create_inputs_from_completion_params` is provided to extract the inputs as json or a string
-        from the 'user' portion of the input prompt. Alternatively you can extract and use one or
-        more inputs or messages from the completion_create_params["messages"] field.
-
         Args:
-            completion_create_params (CompletionCreateParams): The parameters for
-                the completion request, which includes the input topic and other settings.
+            completion_create_params: The completion request parameters including input topic and settings.
         Returns:
-            tuple[list[Any], dict[str, int]]: A tuple containing a list of messages (events) and the agent output.
-
+            tuple[list[Any], dict[str, int]]: The langgraph output and usage_statistics for agentic metrics.
         """
 
         # Example helper for extracting inputs as a json from the completion_create_params["messages"]
