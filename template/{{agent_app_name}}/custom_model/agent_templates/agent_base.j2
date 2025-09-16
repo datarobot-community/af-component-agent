@@ -71,7 +71,7 @@ class MyAgent:
         Args:
             completion_create_params: The completion request parameters including input topic and settings.
         Returns:
-            tuple[list[Any], dict[str, int]]: The langgraph output and usage_statistics for agentic metrics.
+            tuple[list[Any], dict[str, int]]: A tuple containing a list of messages (events) and usage_statistics for agentic metrics.
         """
 
         # Example helper for extracting inputs as a json from the completion_create_params["messages"]
