@@ -107,7 +107,7 @@ def execute(
     > task cli -- execute --user_prompt "Artificial Intelligence"
 
     # Run the agent with a string user prompt and show full output
-    > task cli -- execute-deployment --user_prompt "Artificial Intelligence" --show_output
+    > task cli -- execute --user_prompt "Artificial Intelligence" --show_output
 
     # Run the agent with a JSON user prompt
     > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
