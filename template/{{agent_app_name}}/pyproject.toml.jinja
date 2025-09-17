@@ -4,7 +4,7 @@ name = "{{ agent_app_name }}"
 version = "0.1.0"
 description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11, <3.13"
 dependencies = [
     "click>=8.1.8",
     "crewai>=0.177.0",
@@ -48,7 +48,7 @@ dependencies = [
     "pyarrow<21.0.0",
     "requests>=2.32.4",
     "traceloop-sdk>=0.40.2",
-    "uvicorn>=0.35.0",
+    "uvicorn>=0.32.0",
     "pypdf>=6.0.0",
 ]
 
@@ -192,3 +192,8 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module = "datarobot.*"
 implicit_reexport = true
+
+[tool.uv]
+override-dependencies = [
+    "pydantic==2.11.7"
+]
