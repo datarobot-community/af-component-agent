@@ -15,10 +15,14 @@ includes:
     # rm ./infra/Taskfile.yml
     taskfile: ./{{ agent_app_name }}/Taskfile_infra.yml
     dir: ./infra
-    flatten: true
 tasks:
   default:
     desc: "ℹ️ Show all available tasks (run `task --list-all` to see hidden tasks)"
     cmds:
-      - task --list
+      - task --list --sort none
     silent: true
+  install:
+    desc: "🛠️ Install all dependencies for agent and infra"
+    cmds:
+      - task: agent:install
+      - task: infra:install
