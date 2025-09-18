@@ -13,7 +13,7 @@ vars:
       fi
 tasks:
   build:
-    desc: "🔵 [{{ agent_app_name }}] Run Pulumi up in [BUILD] mode"
+    desc: "🔵 Run Pulumi up in [BUILD] mode"
     env:
       AGENT_DEPLOY: 0
     cmds:
@@ -21,7 +21,7 @@ tasks:
       - "cd ./infra && {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi up {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   deploy:
-    desc: "🟢 [{{ agent_app_name }}] Run Pulumi up in [DEPLOY] mode"
+    desc: "🟢 Run Pulumi up in [DEPLOY] mode"
     env:
       AGENT_DEPLOY: 1
     cmds:
@@ -29,13 +29,13 @@ tasks:
       - "cd ./infra && {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi up {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   refresh:
-    desc: "⚪️ [{{ agent_app_name }}] Run Pulumi refresh"
+    desc: "⚪️ Run Pulumi refresh"
     cmds:
       - echo "Running pulumi refresh"
       - "cd ./infra && {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi refresh {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   destroy:
-    desc: "🔴 [{{ agent_app_name }}] Run Pulumi destroy"
+    desc: "🔴 Run Pulumi destroy"
     cmds:
       - echo "Running pulumi destroy"
       - "cd ./infra && {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi destroy {% raw %}{{.CLI_ARGS}}{% endraw %}"
