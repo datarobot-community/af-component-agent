@@ -12,6 +12,11 @@ vars:
         echo ""
       fi
 tasks:
+  default:
+    desc: "ℹ️ Show all available tasks (run `task --list-all` to see hidden tasks)"
+    cmds:
+      - task --list
+    silent: true
   install:
     desc: "🏗️ [{{ agent_app_name }}] Install and setup the agent and infra environments"
     cmds:
