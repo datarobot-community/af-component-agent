@@ -17,7 +17,7 @@ tasks:
     desc: 🛠️ [infra] Install infra uv dependencies
     cmds:
       - echo "Updating local dependencies for infra"
-      - uv sync --all-extras --dev
+      - uv sync --all-extras --dev --quiet
   lint:
     silent: true
     # desc: "🧹 Run linters"
