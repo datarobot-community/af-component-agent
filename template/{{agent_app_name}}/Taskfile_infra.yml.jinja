@@ -12,6 +12,16 @@ vars:
         echo ""
       fi
 tasks:
+  install:
+    desc: "🏗️ [{{ agent_app_name }}] Install and setup the agent and infra environments"
+    cmds:
+      - task: agent:req
+      - echo "Updating infra environment"
+      - cd ./infra && uv sync --all-extras
+    silent: true
+    aliases:
+      - setup
+      - req
   build:
     desc: "🔵 Run Pulumi up in [BUILD] mode"
     env:
