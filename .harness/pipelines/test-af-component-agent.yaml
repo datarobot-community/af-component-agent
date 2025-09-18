@@ -28,7 +28,7 @@ pipeline:
                           cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
                           cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
                           cd ./copier_context
-                          uvx --from go-task-bin task agent_test:agent:install
+                          uvx --from go-task-bin task agent:install
                         envVariables:
                           UV_CACHE_DIR: /.uv_cache
                   - step:
@@ -42,8 +42,8 @@ pipeline:
                         command: |-
                           cd ./copier_context
 
-                          uvx --from go-task-bin task agent_test:agent:lint-check
-                          uvx --from go-task-bin task agent_test:agent:test-coverage
+                          uvx --from go-task-bin task agent:lint-check
+                          uvx --from go-task-bin task agent:test-coverage
                         envVariables:
                           UV_CACHE_DIR: /.uv_cache
                   - step:
@@ -58,7 +58,7 @@ pipeline:
                           cd ./copier_context
 
                           # Run the CLI command with a sample user prompt
-                          uvx --from go-task-bin task agent_test:agent:cli -- \
+                          uvx --from go-task-bin task agent:cli -- \
                             execute \
                             --show_output \
                             --user_prompt '{"topic": "Artificial Intelligence"}' \
@@ -128,7 +128,7 @@ pipeline:
                           cd ./copier_context
 
                           # Run the CLI command with a sample user prompt
-                          uvx --from go-task-bin task agent_test:agent:cli -- \
+                          uvx --from go-task-bin task agent:cli -- \
                             execute \
                             --show_output \
                             --completion_json "example-completion.json" \
