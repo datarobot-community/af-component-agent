@@ -3,7 +3,7 @@
 version: '3'
 env:
   ENV: testing
-dotenv: ['.env', '.env.{{.ENV}}']
+dotenv: ['.env', {% raw %}'.env.{{.ENV}}'{% endraw %}]
 includes:
   # Source the agent Taskfile
   agent:

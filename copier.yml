@@ -22,6 +22,6 @@ _external_data:
 _subdirectory: template
 _answers_file: ".datarobot/answers/agent-{{ agent_app_name }}.yml"
 _skip_if_exists:
-  - template/Taskfile.yml.jinja
+  - template/Taskfile.yml
 _exclude:
     - "*.j2"
