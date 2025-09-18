@@ -16,7 +16,7 @@ includes:
     taskfile: ./{{ agent_app_name }}/Taskfile_infra.yml
     dir: ./infra
     flatten: true
-task:
+tasks:
   default:
     desc: "ℹ️ Show all available tasks (run `task --list-all` to see hidden tasks)"
     cmds:
