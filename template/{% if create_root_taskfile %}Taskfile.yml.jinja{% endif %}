@@ -11,7 +11,9 @@ includes:
     dir: ./{{ agent_app_name }}
   # Source the infra Taskfile as flat tasks and point at the infra directory
   pulumi:
-    taskfile: ./{{ agent_app_name }}/Taskfile_infra.yml
+    # REPLACE YOUR INFRASTRUCTURE TASKFILE WITH THE AGENT TASKFILE
+    # cp ./{{ agent_app_name }}/Taskfile_infra.yml ./infra/Taskfile.yml
+    taskfile: ./infra/Taskfile_infra.yml
     dir: ./infra
     flatten: true
 task:
