@@ -1,0 +1,16 @@
+---
+# https://taskfile.dev
+version: '3'
+env:
+  ENV: testing
+dotenv: ['.env', '.env.{{.ENV}}']
+includes:
+  # Source the agent Taskfile
+  agent:
+    taskfile: ./{{ agent_app_name }}/Taskfile.yml
+    dir: ./{{ agent_app_name }}
+  # Source the infra Taskfile as flat tasks and point at the infra directory
+  pulumi:
+    taskfile: ./{{ agent_app_name }}/Taskfile_infra.yml
+    dir: ./infra
+    flatten: true
