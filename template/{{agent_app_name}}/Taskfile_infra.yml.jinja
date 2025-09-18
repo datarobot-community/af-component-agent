@@ -53,7 +53,7 @@ tasks:
       AGENT_DEPLOY: 0
     cmds:
       - echo "[infra] Running pulumi up with [BUILD] mode"
-      - "cd ./infra && {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi up {% raw %}{{.CLI_ARGS}}{% endraw %}"
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi up {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   deploy:
     desc: "🟢 Deploy all resources with pulumi"
@@ -61,17 +61,17 @@ tasks:
       AGENT_DEPLOY: 1
     cmds:
       - echo "Running pulumi up with [DEPLOY] mode"
-      - "cd ./infra && {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi up {% raw %}{{.CLI_ARGS}}{% endraw %}"
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi up {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   refresh:
     desc: "⚪️ Refresh and sync local pulumi state"
     cmds:
       - echo "Running pulumi refresh"
-      - "cd ./infra && {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi refresh {% raw %}{{.CLI_ARGS}}{% endraw %}"
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi refresh {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   destroy:
     desc: "🔴 Teardown all deployed resources with pulumi"
     cmds:
       - echo "Running pulumi destroy"
-      - "cd ./infra && {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi destroy {% raw %}{{.CLI_ARGS}}{% endraw %}"
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi destroy {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
