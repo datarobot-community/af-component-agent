@@ -2,28 +2,15 @@
 # https://taskfile.dev
 version: '3'
 vars:
-  CLEAN_PYTHON_ENV: env -u PYTHONPATH -u VIRTUAL_ENV
-includes:
-  agent:
-    taskfile: ./{{ agent_app_name }}/Taskfile.yml
-    dir: ./{{ agent_app_name }}
+  # Cross-platform environment cleaning - uses 'env -u' on Unix systems, falls back to empty string on Windows
+  CLEAN_PYTHON_ENV:
+    sh: |
+      if command -v env >/dev/null 2>&1; then
+        echo "env -u PYTHONPATH -u VIRTUAL_ENV"
+      else
+        echo ""
+      fi
 tasks:
-  default:
-    desc: "🗒️ Show all available tasks"
-    cmds:
-      - task --list
-    silent: true
-  install:
-    desc: "🏗️ [{{ agent_app_name }}] Install and setup the agent and infra environments"
-    cmds:
-      - echo "Updating agent environment"
-      - task: agent:req
-      - echo "Updating infra environment"
-      - cd ./infra && uv sync --all-extras
-    silent: true
-    aliases:
-      - setup
-      - req
   build:
     desc: "🔵 [{{ agent_app_name }}] Run Pulumi up in [BUILD] mode"
     env:

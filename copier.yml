@@ -8,6 +8,11 @@ agent_template_framework:
   type: str
   default: "base"
   help: "The agentic framework template to start with. Supported frameworks: base, crewai, langgraph, llamaindex"
+
+include_pulumi_taskfile:
+  type: bool
+  default: true
+  help: "Whether to include Pulumi infrastructure as code setup"
   
 base_answers_file:
   type: str
