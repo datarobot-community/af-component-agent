@@ -12,7 +12,7 @@ vars:
       fi
 tasks:
   install:
-    desc: 🛠️ [{{ agent_app_name }}] Installing local dependencies
+    desc: 🛠️ [{{ agent_app_name }}] Install agent uv dependencies
     cmds:
       - echo "Updating local dependencies for {{ agent_app_name }}"
       - uv sync --extra dev --extra {{ agent_template_framework }} --quiet

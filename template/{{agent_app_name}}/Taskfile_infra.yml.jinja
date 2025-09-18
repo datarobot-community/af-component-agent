@@ -12,31 +12,51 @@ vars:
         echo ""
       fi
 tasks:
-  default:
-    desc: "ℹ️ Show all available tasks (run `task --list-all` to see hidden tasks)"
-    cmds:
-      - task --list
-    silent: true
   install:
-    desc: "🏗️ [{{ agent_app_name }}] Install and setup the agent and infra environments"
+    desc: 🛠️ [infra] Install infra uv dependencies
     cmds:
-      - task: agent:req
-      - echo "Updating infra environment"
-      - cd ./infra && uv sync --all-extras
+      - echo "Updating local dependencies for infra"
+      - uv sync --all-extras --dev
+  lint:
     silent: true
-    aliases:
-      - setup
-      - req
+    # desc: "🧹 Run linters"
+    cmds:
+      - echo "🧹 Running linters.."
+      - uv run ruff format .
+      - uv run ruff check . --fix
+      - uv run mypy --pretty .
+  lint-check:
+    silent: true
+    # desc: "🧹 Check whether the codebase is linted"
+    cmds:
+      - uv run ruff format --check .
+      - uv run ruff check .
+      - uv run mypy --pretty .
+  init:
+    silent: true
+    # desc: "🆕 Initialize a new Pulumi stack"
+    cmds:
+      - uv run pulumi stack init
+  select:
+    silent: true
+    # desc: "🚂 Select a Stack"
+    cmds:
+      - uv run pulumi stack select
+  info:
+    silent: true
+    # desc: "ℹ️ Show Pulumi stack info"
+    cmds:
+      - uv run pulumi stack
   build:
-    desc: "🔵 Run Pulumi up in [BUILD] mode"
+    desc: "🔵 Deploy only playground testing resources with pulumi"
     env:
       AGENT_DEPLOY: 0
     cmds:
-      - echo "Running pulumi up with [BUILD] mode"
+      - echo "[infra] Running pulumi up with [BUILD] mode"
       - "cd ./infra && {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi up {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   deploy:
-    desc: "🟢 Run Pulumi up in [DEPLOY] mode"
+    desc: "🟢 Deploy all resources with pulumi"
     env:
       AGENT_DEPLOY: 1
     cmds:
@@ -44,13 +64,13 @@ tasks:
       - "cd ./infra && {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi up {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   refresh:
-    desc: "⚪️ Run Pulumi refresh"
+    desc: "⚪️ Refresh and sync local pulumi state"
     cmds:
       - echo "Running pulumi refresh"
       - "cd ./infra && {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi refresh {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   destroy:
-    desc: "🔴 Run Pulumi destroy"
+    desc: "🔴 Teardown all deployed resources with pulumi"
     cmds:
       - echo "Running pulumi destroy"
       - "cd ./infra && {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi destroy {% raw %}{{.CLI_ARGS}}{% endraw %}"
