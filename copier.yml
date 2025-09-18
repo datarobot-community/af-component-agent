@@ -9,7 +9,7 @@ agent_template_framework:
   default: "base"
   help: "The agentic framework template to start with. Supported frameworks: base, crewai, langgraph, llamaindex"
 
-include_root_taskfile:
+create_root_taskfile:
   type: bool
   default: true
   help: "Should a root Taskfile.yml be created to orchestrate all agent components and infra?"
