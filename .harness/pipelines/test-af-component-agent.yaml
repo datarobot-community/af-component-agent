@@ -24,7 +24,6 @@ pipeline:
                         command: |-
                           apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
                           uvx copier copy . ./copier_context --defaults
-                          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
                           cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
                           cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
                           cd ./copier_context
@@ -440,7 +439,6 @@ pipeline:
                         command: |-
                           apt update --allow-releaseinfo-change && apt install -y git --no-install-recommends
                           uvx copier copy . ./copier_context --defaults
-                          cp ./fixtures/Taskfile.yml ./copier_context/Taskfile.yml
                           cp ./fixtures/infra/Pulumi.yaml ./copier_context/infra/Pulumi.yaml
                           cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
                           cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py

@@ -10,8 +10,8 @@ includes:
     taskfile: ./{{ agent_app_name }}/Taskfile.yml
     dir: ./{{ agent_app_name }}
   # Source the infra Taskfile as flat tasks and point at the infra directory
-  pulumi:
-    # REMOVE YOUR INFRASTRUCTURE TASKFILE IF USING
+  infra:
+    # REMOVE YOUR INFRASTRUCTURE TASKFILE IF PRESENT
     # rm ./infra/Taskfile.yml
     taskfile: ./{{ agent_app_name }}/Taskfile_infra.yml
     dir: ./infra
