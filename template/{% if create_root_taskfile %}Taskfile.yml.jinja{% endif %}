@@ -26,3 +26,4 @@ tasks:
     cmds:
       - task: agent:install
       - task: infra:install
+    silent: true
