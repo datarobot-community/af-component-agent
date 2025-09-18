@@ -14,7 +14,6 @@ base_answers_file:
   default: ".datarobot/answers/base.yml"
   help: "Path to the base component answers file"
 
-
 # Grab the base component answers to re-use answers
 _external_data:
   base: "{{ base_answers_file }}"
