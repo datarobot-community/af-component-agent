@@ -8,16 +8,12 @@ agent_template_framework:
   type: str
   default: "base"
   help: "The agentic framework template to start with. Supported frameworks: base, crewai, langgraph, llamaindex"
-
-create_root_taskfile:
-  type: bool
-  default: true
-  help: "Should a root Taskfile.yml be created to orchestrate all agent components and infra?"
   
 base_answers_file:
   type: str
   default: ".datarobot/answers/base.yml"
   help: "Path to the base component answers file"
+
 
 # Grab the base component answers to re-use answers
 _external_data:
@@ -25,6 +21,7 @@ _external_data:
 
 _subdirectory: template
 _answers_file: ".datarobot/answers/agent-{{ agent_app_name }}.yml"
-
+_skip_if_exists:
+  - Taskfile.yml
 _exclude:
     - "*.j2"

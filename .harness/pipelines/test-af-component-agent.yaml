@@ -201,8 +201,7 @@ pipeline:
                           uvx copier copy . ./copier_context \
                             --data agent_app_name=agent_crewai \
                             --data agent_template_framework=crewai \
-                            --data base_answers_file=.datarobot/answers/base.yml \
-                            --data create_root_taskfile=true
+                            --data base_answers_file=.datarobot/answers/base.yml
                           cd ./copier_context/agent_crewai
                           uvx --from go-task-bin task install
                         envVariables:
@@ -281,8 +280,7 @@ pipeline:
                           uvx copier copy . ./copier_context \
                             --data agent_app_name=agent_langgraph \
                             --data agent_template_framework=langgraph \
-                            --data base_answers_file=.datarobot/answers/base.yml \
-                            --data create_root_taskfile=true
+                            --data base_answers_file=.datarobot/answers/base.yml
                           cd ./copier_context/agent_langgraph
                           uvx --from go-task-bin task install
                         envVariables:
@@ -361,8 +359,7 @@ pipeline:
                           uvx copier copy . ./copier_context \
                             --data agent_app_name=agent_llamaindex \
                             --data agent_template_framework=llamaindex \
-                            --data base_answers_file=.datarobot/answers/base.yml \
-                            --data create_root_taskfile=true
+                            --data base_answers_file=.datarobot/answers/base.yml
                           cd ./copier_context/agent_llamaindex
                           uvx --from go-task-bin task install
                         envVariables:
