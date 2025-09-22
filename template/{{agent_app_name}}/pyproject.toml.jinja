@@ -30,6 +30,7 @@ dependencies = [
     "mcp>=1.11.0",
     "multidict>=6.5.0",
     "nvidia-nat",
+    "nvidia-nat-llama-index",
     "nvidia-nat-opentelemetry",
     "onnxruntime>=1.22.0",
     "openai>=1.76.2",
@@ -196,5 +197,8 @@ implicit_reexport = true
 
 [tool.uv]
 override-dependencies = [
-    "pydantic==2.11.7"
+    "pydantic==2.11.7",
+    "pypdf>=6.0.0",
+    "llama-index>=0.12.33",
+    "llama-index-core>=0.12.49",
 ]
