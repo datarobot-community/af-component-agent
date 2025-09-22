@@ -4,7 +4,7 @@ name = "af-component-agent"
 version = "0.1.0"
 description = "Application Framework Agent Component"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 dependencies = [
 ]
 

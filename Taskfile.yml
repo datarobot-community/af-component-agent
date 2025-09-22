@@ -13,7 +13,7 @@ tasks:
     desc: "Render template"
     cmds:
       - echo "Rendering template {{.AGENT}}"
-      - uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_template_framework={{.AGENT}}
+      - uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_template_framework={{.AGENT}} --vcs-ref=HEAD
       - cp ./fixtures/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/Taskfile.yml
       - cp ./fixtures/infra/pyproject.toml ./$RENDER_DIR/agent_{{.AGENT}}/infra/pyproject.toml
       - cp ./fixtures/infra/__init__.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/__init__.py
@@ -98,3 +98,35 @@ tasks:
     cmds:
       - task: run-cli-json
       - task: check-output
+  build-docker:
+    desc: "Build docker image"
+    cmds:
+      - task: install-dev
+        vars:
+          AGENT: "{{.AGENT}}"
+      - echo "Building docker image for {{.AGENT}}"
+      - task agent_test:agent:build-docker --dir $RENDER_DIR/agent_{{.AGENT}}
+  build-docker-base:
+    desc: "Build docker for base agent"
+    cmds:
+      - task: build-docker
+        vars:
+          AGENT: base
+  build-docker-crewai:
+    desc: "Build docker for crewai agent"
+    cmds:
+      - task: build-docker
+        vars:
+          AGENT: crewai
+  build-docker-langgraph:
+    desc: "Build docker for langgraph agent"
+    cmds:
+      - task: build-docker
+        vars:
+          AGENT: langgraph
+  build-docker-llamaindex:
+    desc: "Build docker for llamaindex agent"
+    cmds:
+      - task: build-docker
+        vars:
+          AGENT: llamaindex

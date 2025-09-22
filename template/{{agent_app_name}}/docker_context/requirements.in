@@ -65,4 +65,4 @@ ragas @ git+https://github.com/explodinggradients/ragas@5d59549ad5ef511f621502c5
 pyarrow<21.0.0
 requests>=2.32.4
 traceloop-sdk>=0.40.2
-uvicorn>=0.35.0
+uvicorn>=0.32.0
