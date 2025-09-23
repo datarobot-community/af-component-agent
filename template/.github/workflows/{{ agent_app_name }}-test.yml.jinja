@@ -31,11 +31,7 @@ jobs:
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
-        {% if agent_template_framework == "nat" %}
-        python-version: ["3.11", "3.12"]
-        {% else %}
-        python-version: ["3.10", "3.11", "3.12"]
-        {% endif %}
+        {% if agent_template_framework == "nat" %}python-version: ["3.11", "3.12"]{% else %}python-version: ["3.10", "3.11", "3.12"]{% endif %}
     steps:
       - uses: "actions/checkout@v4"
       # Ref: https://docs.astral.sh/uv/guides/integration/github/#installation
