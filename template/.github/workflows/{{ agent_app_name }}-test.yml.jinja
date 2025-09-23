@@ -43,7 +43,7 @@ jobs:
           python-version: {% raw %}${{ matrix.python-version }}{% endraw %}
       - name: Install Dependencies
         run: |
-          uv sync --all-extras --dev
+          uv sync --group dev --group {{ agent_template_framework }}
       - name: Run Static Checks
         run: |
           uv run ruff format --check .
