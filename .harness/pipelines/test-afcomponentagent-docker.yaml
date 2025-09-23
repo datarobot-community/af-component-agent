@@ -131,5 +131,4 @@ pipeline:
                   - Dockerfile.prod
                   - Dockerfile.local
                   - Dockerfile.nat.local
-                  - Dockerfile.nat.prod
                 nodeName: <+matrix.dockerfile>
