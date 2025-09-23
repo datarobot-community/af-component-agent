@@ -4,7 +4,11 @@ name = "{{ agent_app_name }}"
 version = "0.1.0"
 description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
+{% if agent_template_framework == "nat" %}
 requires-python = ">=3.11, <3.13"
+{% else %}
+requires-python = ">=3.10, <3.13"
+{% endif %}
 dependencies = [
     "click>=8.1.8",
     "datarobot-drum>=1.16.22",
@@ -236,6 +240,7 @@ warn_unused_ignores = true
 module = "datarobot.*"
 implicit_reexport = true
 
+{% if agent_template_framework == "nat" %}
 [tool.uv]
 conflicts = [
     [
