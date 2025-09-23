@@ -111,6 +111,21 @@ pydanticai = [
     "pydantic-ai>=1.0.5",
 ]
 
+[tool.uv]
+conflicts = [
+    [
+      { group = "base" },
+      { group = "crewai" },
+      { group = "langgraph" },
+      { group = "llamaindex" },
+      { group = "nat" },
+      { group = "pydanticai" },
+    ],
+]
+
+[tool.uv.dependency-groups]
+nat = {requires-python = ">=3.12"}
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = ["test_*.py"]
@@ -239,15 +254,3 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module = "datarobot.*"
 implicit_reexport = true
-
-[tool.uv]
-conflicts = [
-    [
-      { group = "base" },
-      { group = "crewai" },
-      { group = "langgraph" },
-      { group = "llamaindex" },
-      { group = "nat" },
-      { group = "pydanticai" },
-    ],
-]
