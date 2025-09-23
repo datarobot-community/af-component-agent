@@ -88,28 +88,40 @@ llamaindex = [
     "opentelemetry-instrumentation-llamaindex>=0.40.5",
     "pypdf>=6.0.0",
 ]
-nat = [
-    # Auth needs pydantic>=2.11.3, maybe we can reduce this
-    "datarobot>=3.8.2",
-    # Moderations requires an incompatible llama-index to work
-    # "datarobot-moderations>=11.2.3",
-    "nvidia-nat",
-    "nvidia-nat-llama-index",
-    "nvidia-nat-opentelemetry",
-]
 pydanticai = [
     {include-group = "base"},
     "logfire>=4.6.0",
     "pydantic-ai>=1.0.5",
 ]
+nat = [
+    # Auth needs pydantic>=2.11.3, maybe we can reduce this
+    "datarobot>=3.8.2",
+    # Moderations requires an incompatible llama-index to work
+    # "datarobot-moderations>=11.2.3",
+    "nvidia-nat; python_version >= '3.11'",
+    "nvidia-nat-llama-index; python_version >= '3.11'",
+    "nvidia-nat-opentelemetry; python_version >= '3.11'",
+]
 
 [tool.uv]
 conflicts = [
     [
+      { group = "nat" },
       { group = "base" },
+    ],
+    [
+      { group = "nat" },
       { group = "crewai" },
+    ],
+    [
+      { group = "nat" },
       { group = "langgraph" },
+    ],
+    [
+      { group = "nat" },
       { group = "llamaindex" },
+    ],
+    [
       { group = "nat" },
       { group = "pydanticai" },
     ],
