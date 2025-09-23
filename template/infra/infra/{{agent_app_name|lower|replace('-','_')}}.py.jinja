@@ -35,7 +35,7 @@ from . import project_dir, use_case
 DEFAULT_EXECUTION_ENVIRONMENT = "[DataRobot] Python 3.11 GenAI Agents"
 
 EXCLUDE_PATTERNS = [
-    re.compile(pattern)
+    re.compile(pattern.replace("/", re.escape(os.path.sep)))
     for pattern in [
         r".*tests/.*",
         r".*\.coverage",
