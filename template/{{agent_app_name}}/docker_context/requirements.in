@@ -51,7 +51,7 @@ types-requests>=2.32.4.20250913
 yamlfix>=1.17.0
 
 ecs-logging>=2.2.0
-fastapi[all]==0.116.1
+fastapi[all]==0.115.14
 ipykernel<6.29.0
 jupyter-client>=8.6.3
 jupyter-core>=5.8.1
