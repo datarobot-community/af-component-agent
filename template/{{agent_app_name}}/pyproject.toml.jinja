@@ -7,7 +7,6 @@ readme = "README.md"
 requires-python = ">=3.11, <3.13"
 dependencies = [
     "click>=8.1.8",
-    "datarobot>=3.8.2",
     "datarobot-drum>=1.16.22",
     "datarobot-mlops>=11.1.0",
     "dotenv>=0.9.9",
@@ -77,6 +76,10 @@ llamaindex = [
     "pypdf>=6.0.0",
 ]
 nat = [
+    # Auth needs pydantic>=2.11.3, maybe we can reduce this
+    "datarobot>=3.8.2",
+    # Moderations requires an incompatible llama-index to work
+    # "datarobot-moderations>=11.2.3",
     "nvidia-nat",
     "nvidia-nat-llama-index",
     "nvidia-nat-opentelemetry",
