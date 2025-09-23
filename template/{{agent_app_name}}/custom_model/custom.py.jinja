@@ -32,7 +32,7 @@ instrument_crewai = CrewAIInstrumentor().instrument()
 {% elif agent_template_framework == "langgraph" %}
 from opentelemetry.instrumentation.langchain import LangchainInstrumentor
 
-instrument_langchain = LangchainInstrumentor().instrument()
+instrument_langchain = LangchainInstrumentor().instrument()  # type: ignore[no-untyped-call]
 {% elif agent_template_framework == "llamaindex" %}
 from opentelemetry.instrumentation.llamaindex import LlamaIndexInstrumentor
 
