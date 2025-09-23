@@ -4,11 +4,13 @@ name = "{{ agent_app_name }}"
 version = "0.1.0"
 description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
-requires-python = ">=3.11, <3.13"
+requires-python = ">=3.10, <3.13"
 dependencies = [
+    "annotated-types>=0.7.0",
     "click>=8.1.8",
     "datarobot-drum>=1.16.22",
     "datarobot-mlops>=11.1.0",
+    "datarobot-predict>=1.13.2",
     "dotenv>=0.9.9",
     "langchain-community>=0.3.27",
     "langchain-mcp-adapters>=0.1.9",
@@ -91,20 +93,32 @@ llamaindex = [
     "opentelemetry-instrumentation-llamaindex>=0.40.5",
     "pypdf>=6.0.0",
 ]
-nat = [
-    # Auth needs pydantic>=2.11.3, maybe we can reduce this
-    "datarobot>=3.8.2",
-    # Moderations requires an incompatible llama-index to work
-    # "datarobot-moderations>=11.2.3",
-    "nvidia-nat",
-    "nvidia-nat-llama-index",
-    "nvidia-nat-opentelemetry",
-]
 pydanticai = [
     "datarobot-moderations>=11.2.3",
     "datarobot[auth]>=3.8.2",
     "logfire>=4.6.0",
     "pydantic-ai>=1.0.5",
+]
+nat = [
+    # Auth needs pydantic>=2.11.3, maybe we can reduce this
+    "datarobot>=3.8.2",
+    # Moderations requires an incompatible llama-index to work
+    # "datarobot-moderations>=11.2.3",
+    "nvidia-nat; python_version >= '3.11'",
+    "nvidia-nat-llama-index; python_version >= '3.11'",
+    "nvidia-nat-opentelemetry; python_version >= '3.11'",
+]
+
+[tool.uv]
+conflicts = [
+    [
+      { extra = "nat" },
+      { extra = "base" },
+      { extra = "crewai" },
+      { extra = "langgraph" },
+      { extra = "llamaindex" },
+      { extra = "pydanticai" },
+    ],
 ]
 
 [tool.pytest.ini_options]
@@ -235,15 +249,3 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module = "datarobot.*"
 implicit_reexport = true
-
-[tool.uv]
-conflicts = [
-    [
-      { extra = "base" },
-      { extra = "crewai" },
-      { extra = "langgraph" },
-      { extra = "llamaindex" },
-      { extra = "nat" },
-      { extra = "pydanticai" },
-    ],
-]
