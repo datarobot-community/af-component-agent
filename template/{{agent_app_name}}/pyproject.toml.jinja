@@ -72,21 +72,18 @@ base = [
     "datarobot[auth]>=3.8.2",
 ]
 crewai = [
-    "datarobot-moderations>=11.2.3",
-    "datarobot[auth]>=3.8.2",
+    {include-group = "base"},
     "crewai>=0.177.0",
     "crewai-tools>=0.69.0",
     "opentelemetry-instrumentation-crewai>=0.40.5",
 ]
 langgraph = [
-    "datarobot-moderations>=11.2.3",
-    "datarobot[auth]>=3.8.2",
+    {include-group = "base"},
     "langgraph>=0.4.10",
     "langgraph-prebuilt>=0.2.3",
 ]
 llamaindex = [
-    "datarobot-moderations>=11.2.3",
-    "datarobot[auth]>=3.8.2",
+    {include-group = "base"},
     "llama-index-core>=0.12.49",
     "llama-index-llms-langchain>=0.6.1",
     "llama-index-llms-litellm>=0.4.1",
@@ -105,8 +102,7 @@ nat = [
     "nvidia-nat-opentelemetry",
 ]
 pydanticai = [
-    "datarobot-moderations>=11.2.3",
-    "datarobot[auth]>=3.8.2",
+    {include-group = "base"},
     "logfire>=4.6.0",
     "pydantic-ai>=1.0.5",
 ]
