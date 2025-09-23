@@ -7,10 +7,9 @@ readme = "README.md"
 requires-python = ">=3.11, <3.13"
 dependencies = [
     "click>=8.1.8",
+    "datarobot>=3.8.2",
     "datarobot-drum>=1.16.22",
-    "datarobot-moderations>=11.2.3",
     "datarobot-mlops>=11.1.0",
-    "datarobot[auth]>=3.8.2",
     "dotenv>=0.9.9",
     "langchain-community>=0.3.27",
     "langchain-mcp-adapters>=0.1.9",
@@ -35,13 +34,9 @@ dependencies = [
     "requests>=2.32.4",
     "traceloop-sdk>=0.40.2",
     "uvicorn>=0.32.0",
-    "pypdf>=6.0.0",
 ]
 
 [project.optional-dependencies]
-base = [
-    # Placeholder for generic agent functionality
-]
 dev = [
     "mypy>=1.15.0",
     "pre-commit>=4.2.0",
@@ -52,22 +47,34 @@ dev = [
     "ruff>=0.12.0",
     "yamlfix>=1.17.0",
 ]
+# Agentic framework specific dependencies
+base = [
+    "datarobot-moderations>=11.2.3",
+    "datarobot[auth]>=3.8.2",
+]
 crewai = [
+    "datarobot-moderations>=11.2.3",
+    "datarobot[auth]>=3.8.2",
     "crewai>=0.177.0",
     "crewai-tools>=0.69.0",
     "opentelemetry-instrumentation-crewai>=0.40.5",
 ]
 langgraph = [
+    "datarobot-moderations>=11.2.3",
+    "datarobot[auth]>=3.8.2",
     "langgraph>=0.4.10",
     "langgraph-prebuilt>=0.2.3",
 ]
 llamaindex = [
+    "datarobot-moderations>=11.2.3",
+    "datarobot[auth]>=3.8.2",
     "llama-index-core>=0.12.49",
     "llama-index-llms-langchain>=0.6.1",
     "llama-index-llms-litellm>=0.4.1",
     "llama-index-llms-openai>=0.3.38",
     "llama-index>=0.12.33",
     "opentelemetry-instrumentation-llamaindex>=0.40.5",
+    "pypdf>=6.0.0",
 ]
 nat = [
     "nvidia-nat",
@@ -75,6 +82,8 @@ nat = [
     "nvidia-nat-opentelemetry",
 ]
 pydanticai = [
+    "datarobot-moderations>=11.2.3",
+    "datarobot[auth]>=3.8.2",
     "logfire>=4.6.0",
     "pydantic-ai>=1.0.5",
 ]
@@ -209,9 +218,12 @@ module = "datarobot.*"
 implicit_reexport = true
 
 [tool.uv]
-override-dependencies = [
-    "pydantic==2.11.7",
-    "pypdf>=6.0.0",
-    "llama-index>=0.12.33",
-    "llama-index-core>=0.12.49",
+conflicts = [
+    [
+      { extra = "crewai" },
+      { extra = "langgraph" },
+      { extra = "llamaindex" },
+      { extra = "nat" },
+      { extra = "pydanticai" },
+    ],
 ]
