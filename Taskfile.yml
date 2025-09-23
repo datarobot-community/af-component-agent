@@ -40,6 +40,12 @@ tasks:
       - task: test-agent
         vars:
           AGENT: base
+  test-nat:
+    desc: "Run tests for base agent"
+    cmds:
+      - task: test-agent
+        vars:
+          AGENT: nat
   test-crewai:
     desc: "Run tests for crewai agent"
     cmds:
