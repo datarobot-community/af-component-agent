@@ -39,7 +39,7 @@ dependencies = [
     "uvicorn>=0.32.0",
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
     "mypy>=1.15.0",
     "pre-commit>=4.2.0",
@@ -243,11 +243,11 @@ implicit_reexport = true
 [tool.uv]
 conflicts = [
     [
-      { extra = "base" },
-      { extra = "crewai" },
-      { extra = "langgraph" },
-      { extra = "llamaindex" },
-      { extra = "nat" },
-      { extra = "pydanticai" },
+      { group = "base" },
+      { group = "crewai" },
+      { group = "langgraph" },
+      { group = "llamaindex" },
+      { group = "nat" },
+      { group = "pydanticai" },
     ],
 ]
