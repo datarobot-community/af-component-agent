@@ -135,8 +135,7 @@ COPY ./requirements.txt ${WORKDIR}/
 
 # hadolint ignore=DL3013, SC1091
 RUN . ${VENV_PATH}/bin/activate && \
-    uv pip install --no-cache-dir -r ${WORKDIR}/requirements.txt && rm ${WORKDIR}/requirements.txt && \
-    uv pip install --no-cache-dir nvidia-nat nvidia-nat-opentelemetry nvidia-nat-llama-index
+    uv pip install --no-cache-dir -r ${WORKDIR}/requirements.txt && rm ${WORKDIR}/requirements.txt
 
 # Copy agent runtime into work directory
 COPY ./run_agent.py ${WORKDIR}/
