@@ -1,4 +1,12 @@
 # This file is used to generate the requirements.txt file for the Docker image.
+# CVE Updates
+protobuf>=5.29.5,<6.0.0
+starlette>=0.47.2
+uv>=0.8.6
+h2>=4.3.0
+pypdf>=6.0.0
+
+# Main dependencies
 click>=8.1.8
 datarobot-drum>=1.16.22
 datarobot-mlops>=11.1.0
