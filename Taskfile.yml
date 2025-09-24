@@ -32,8 +32,8 @@ tasks:
         vars:
           AGENT: "{{.AGENT}}"
       - echo "Running tests for {{.AGENT}}"
-      - task agent_test:agent:lint-check --dir $RENDER_DIR/agent_{{.AGENT}}
-      - task agent_test:agent:test-coverage --dir $RENDER_DIR/agent_{{.AGENT}}
+      - task agent:lint-check --dir $RENDER_DIR/agent_{{.AGENT}}
+      - task agent:test-coverage --dir $RENDER_DIR/agent_{{.AGENT}}
   test-base:
     desc: "Run tests for base agent"
     cmds:
@@ -92,7 +92,7 @@ tasks:
         vars:
           AGENT: "base"
       - echo "Running tests for {{.AGENT}}"
-      - task agent_test:agent:cli --dir $RENDER_DIR/agent_base -- execute --completion_json example-completion.json > $RENDER_DIR/agent_base/agent/output.log 2>&1
+      - task agent:cli --dir $RENDER_DIR/agent_base -- execute --completion_json example-completion.json > $RENDER_DIR/agent_base/agent/output.log 2>&1
   test-cli-json:
     desc: "Test CLI with JSON"
     cmds:
