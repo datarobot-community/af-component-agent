@@ -87,6 +87,8 @@ def get_custom_model_files(custom_model_folder: str) -> list[tuple[str, str]]:
         for filename in filenames:
             file_path = os.path.join(dirpath, filename)
             rel_path = os.path.relpath(file_path, custom_model_folder)
+            # Convert to forward slashes for Linux destination
+            rel_path = rel_path.replace(os.path.sep, "/")
             source_files.append((os.path.abspath(file_path), rel_path))
     source_files = [
         (file_path, file_name)
