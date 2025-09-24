@@ -27,3 +27,9 @@ tasks:
       - task: agent:install
       - task: infra:install
     silent: true
+  deploy:
+    cmds:
+      - task: infra:deploy
+  destroy:
+    cmds:
+      - task: infra:destroy
