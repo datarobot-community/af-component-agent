@@ -12,7 +12,7 @@ vars:
       fi
 tasks:
   install:
-    desc: 🛠️ [{{ agent_app_name }}] Installing local dependencies
+    desc: 🛠️ [{{ agent_app_name }}] Install agent uv dependencies
     cmds:
       - echo "Updating local dependencies for {{ agent_app_name }}"
       - uv sync --extra dev --extra {{ agent_template_framework }} --quiet
@@ -20,13 +20,15 @@ tasks:
     aliases:
       - req
   update:
-    desc: 🛠️ [{{ agent_app_name }}] Update local dependencies (refresh uv locks)
+    # Hidden to avoid showing in task list, run `task --list-all` to see it
+    # desc: 🛠️ [{{ agent_app_name }}] Update local dependencies (refresh uv locks)
     cmds:
       - echo "Updating local dependencies"
       - uv sync --extra dev --extra {{ agent_template_framework }} -U
     silent: true
   lint:
-    desc: 🧹 [{{ agent_app_name }}] Lint the codebase
+    # Hidden to avoid showing in task list, run `task --list-all` to see it
+    # desc: 🧹 [{{ agent_app_name }}] Lint the codebase
     cmds:
       - task: req
       - echo "Linting the codebase"
@@ -36,7 +38,8 @@ tasks:
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run yamlfix custom_model"
     silent: true
   lint-check:
-    desc: 🧹 [{{ agent_app_name }}] Check whether the codebase is linted
+    # Hidden to avoid showing in task list, run `task --list-all` to see it
+    # desc: 🧹 [{{ agent_app_name }}] Check whether the codebase is linted
     cmds:
       - task: req
       - echo "Checking linting"
@@ -45,13 +48,15 @@ tasks:
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run mypy --pretty ."
     silent: true
   test:
-    desc: 🧪 [{{ agent_app_name }}] Run tests
+    # Hidden to avoid showing in task list, run `task --list-all` to see it
+    # desc: 🧪 [{{ agent_app_name }}] Run tests
     cmds:
       - echo "Running pytest on tests"
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pytest -vv ./tests/"
     silent: true
   test-coverage:
-    desc: 🧪 [{{ agent_app_name }}] Run tests with coverage
+    # Hidden to avoid showing in task list, run `task --list-all` to see it
+    # desc: 🧪 [{{ agent_app_name }}] Run tests with coverage
     cmds:
       - echo "Running pytest on tests"
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/"
@@ -63,7 +68,8 @@ tasks:
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run cli.py {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   dev:
-    desc: 🔨 [{{ agent_app_name }}] Run the development server
+    # Hidden to avoid showing in task list, run `task --list-all` to see it
+    # desc: 🔨 [{{ agent_app_name }}] Run the development server
     env:
       TARGET_NAME: response
       FLASK_DEBUG: 1
