@@ -136,3 +136,13 @@ tasks:
       - task: build-docker
         vars:
           AGENT: llamaindex
+  build-docker-nat:
+    desc: "Build docker image for NAT"
+    cmds:
+      - task: install-dev
+        vars:
+          AGENT: nat
+      - echo "Building docker image for nat"
+      - mv $RENDER_DIR/agent_nat/agent/docker_context/Dockerfile $RENDER_DIR/agent_nat/agent/docker_context/Dockerfile.base
+      - mv $RENDER_DIR/agent_nat/agent/docker_context/Dockerfile.nat.local $RENDER_DIR/agent_nat/agent/docker_context/Dockerfile
+      - task agent_test:agent:build-docker --dir $RENDER_DIR/agent_nat
