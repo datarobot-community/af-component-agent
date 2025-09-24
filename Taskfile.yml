@@ -14,7 +14,6 @@ tasks:
     cmds:
       - echo "Rendering template {{.AGENT}}"
       - uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_template_framework={{.AGENT}} --vcs-ref=HEAD
-      - cp ./fixtures/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/Taskfile.yml
       - cp ./fixtures/infra/pyproject.toml ./$RENDER_DIR/agent_{{.AGENT}}/infra/pyproject.toml
       - cp ./fixtures/infra/__init__.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/__init__.py
   install-dev:
@@ -24,7 +23,7 @@ tasks:
       - task: render-template
         vars:
           AGENT: "{{.AGENT}}"
-      - task agent_test:agent:install --dir $RENDER_DIR/agent_{{.AGENT}}
+      - task agent:install --dir $RENDER_DIR/agent_{{.AGENT}}
   test-agent:
     desc: "Run tests"
     cmds:
@@ -72,7 +71,7 @@ tasks:
         vars:
           AGENT: "base"
       - echo "Running tests for {{.AGENT}}"
-      - task agent_test:agent:cli --dir $RENDER_DIR/agent_base -- execute --user_prompt "Artificial Intelligence" > $RENDER_DIR/agent_base/agent/output.log 2>&1
+      - task agent:cli --dir $RENDER_DIR/agent_base -- execute --show_output --user_prompt "Artificial Intelligence" > $RENDER_DIR/agent_base/agent/output.log 2>&1
   test-cli:
     desc: "Test CLI"
     cmds:
@@ -92,7 +91,7 @@ tasks:
         vars:
           AGENT: "base"
       - echo "Running tests for {{.AGENT}}"
-      - task agent:cli --dir $RENDER_DIR/agent_base -- execute --completion_json example-completion.json > $RENDER_DIR/agent_base/agent/output.log 2>&1
+      - task agent:cli --dir $RENDER_DIR/agent_base -- execute --show_output --completion_json example-completion.json > $RENDER_DIR/agent_base/agent/output.log 2>&1
   test-cli-json:
     desc: "Test CLI with JSON"
     cmds:
@@ -105,7 +104,7 @@ tasks:
         vars:
           AGENT: "{{.AGENT}}"
       - echo "Building docker image for {{.AGENT}}"
-      - task agent_test:agent:build-docker --dir $RENDER_DIR/agent_{{.AGENT}}
+      - task agent:build-docker --dir $RENDER_DIR/agent_{{.AGENT}}
   build-docker-base:
     desc: "Build docker for base agent"
     cmds:
