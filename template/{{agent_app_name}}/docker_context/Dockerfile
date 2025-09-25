@@ -14,6 +14,8 @@ ARG UNAME=notebooks
 ARG UID=10101
 ARG GID=10101
 
+ARG EXT
+
 # This reproduces a open source variant of https://images.chainguard.dev/directory/image/python
 # hadolint ignore=DL3007
 FROM cgr.dev/chainguard/wolfi-base:latest AS chainguard_python_dev
@@ -133,7 +135,7 @@ ENV ANNOY_COMPILER_ARGS="-D_CRT_SECURE_NO_WARNINGS,-DANNOYLIB_MULTITHREADED_BUIL
 ARG WORKDIR
 ARG VENV_PATH
 
-COPY ./requirements.txt ${WORKDIR}/
+COPY ./requirements.txt${EXT} ${WORKDIR}/requirements.txt
 
 # hadolint ignore=DL3013, SC1091
 RUN . ${VENV_PATH}/bin/activate && \

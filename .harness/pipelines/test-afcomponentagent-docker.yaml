@@ -120,6 +120,8 @@ pipeline:
                       type: BuildAndPushDockerRegistry
                       name: Build Dockerfile
                       identifier: Build_Dockerfile
+                      buildArgs:
+                        - EXT=<matrix.ext>
                       spec:
                         connectorRef: org.dockerhubrwhhi
                         repo: datarobotdev/buzok-genai-custom-model-dropin-env
@@ -136,4 +138,7 @@ pipeline:
                   - Dockerfile
                   - Dockerfile.prod
                   - Dockerfile.local
-                nodeName: <+matrix.dockerfile>
+                ext:
+                  - .nat
+                  - ""
+                nodeName: <+matrix.dockerfile><+matrix.ext>
