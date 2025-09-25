@@ -92,7 +92,9 @@ class MyAgent:
         print("Running agent with user prompt:", user_prompt_content, flush=True)
 
         # Run the crew with the inputs
-        crew_output = self.run_crew_agentic_workflow().kickoff(inputs={"topic": user_prompt_content})
+        crew_output = self.run_crew_agentic_workflow().kickoff(
+            inputs={"topic": user_prompt_content}
+        )
 
         # Extract the response text from the crew output
         response_text = str(crew_output.raw)
