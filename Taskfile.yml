@@ -89,7 +89,7 @@ tasks:
       - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "Running CLI execute"; then exit 1; fi
       - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "INFO - Parsing args"; then exit 1; fi
       - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "INFO - Starting DRUM runner"; then exit 1; fi
-      - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "Running agent with inputs"; then exit 1; fi
+      - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "Running agent with user prompt"; then exit 1; fi
       - 'if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "\"content\": \"success\""; then exit 1; fi'
   run-cli-json:
     desc: "Run CLI with JSON"
