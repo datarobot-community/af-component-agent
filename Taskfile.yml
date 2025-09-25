@@ -146,4 +146,6 @@ tasks:
       - echo "Building docker image for nat"
       - mv $RENDER_DIR/agent_nat/agent/docker_context/Dockerfile $RENDER_DIR/agent_nat/agent/docker_context/Dockerfile.base
       - mv $RENDER_DIR/agent_nat/agent/docker_context/Dockerfile.nat.local $RENDER_DIR/agent_nat/agent/docker_context/Dockerfile
+      - mv $RENDER_DIR/agent_nat/agent/docker_context/requirements.in $RENDER_DIR/agent_nat/agent/docker_context/requirements.base
+      - mv $RENDER_DIR/agent_nat/agent/docker_context/requirements.in.nat $RENDER_DIR/agent_nat/agent/docker_context/requirements.in
       - task agent:build-docker --dir $RENDER_DIR/agent_nat

@@ -9,7 +9,6 @@ urllib3>=2.5.0
 uv>=0.8.6
 aiohttp>=3.12.14
 h2>=4.3.0
-pypdf>=6.0.0
 
 # Main dependencies
 click>=8.1.8
@@ -17,7 +16,6 @@ datarobot-drum>=1.16.22
 datarobot-mlops>=11.1.0
 datarobot-predict>=1.13.2
 dotenv>=0.9.9
-langchain-community>=0.3.27
 langchain-mcp-adapters>=0.1.9
 langchain>=0.3.23
 legacy-cgi>=2.6.3
@@ -65,5 +63,10 @@ setuptools>=80.9.0
 ujson<5.8.0
 uwsgi>=2.0.30
 
-datarobot-moderations>=11.2.3
 datarobot>=3.8.2
+
+nvidia-nat
+nvidia-nat-llama-index
+nvidia-nat-opentelemetry
+nvidia-nat-crewai
+nvidia-nat-langchain
