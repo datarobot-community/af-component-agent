@@ -13,7 +13,8 @@ tasks:
     desc: "Render template"
     cmds:
       - echo "Rendering template {{.AGENT}}"
-      - rm -f ./$RENDER_DIR/agent_{{.AGENT}}/Taskfile.yml  # Work around skip_if_exists setting
+      # Clean up the existing rendered directory except for .venv to speed up rendering and avoid conflict checks
+      - cd ./$RENDER_DIR/agent_{{.AGENT}}/ && [ -d . ] && find . -mindepth 1 -maxdepth 1 ! -name '.venv' -exec rm -rf {} + || true
       - uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_template_framework={{.AGENT}} --vcs-ref=HEAD
       - cp ./fixtures/infra/pyproject.toml ./$RENDER_DIR/agent_{{.AGENT}}/infra/pyproject.toml
       - cp ./fixtures/infra/__init__.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/__init__.py
@@ -89,7 +90,7 @@ tasks:
       - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "Running CLI execute"; then exit 1; fi
       - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "INFO - Parsing args"; then exit 1; fi
       - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "INFO - Starting DRUM runner"; then exit 1; fi
-      - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "Running agent with inputs"; then exit 1; fi
+      - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "Running agent with user prompt"; then exit 1; fi
       - 'if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "\"content\": \"success\""; then exit 1; fi'
   run-cli-json:
     desc: "Run CLI with JSON"
