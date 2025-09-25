@@ -11,16 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
 import time
 import uuid
-from typing import Any, Union
+from typing import Any
 
 from openai.types import CompletionUsage
 from openai.types.chat import (
     ChatCompletion,
     ChatCompletionMessage,
-    CompletionCreateParams,
 )
 from openai.types.chat.chat_completion import Choice
 from ragas import MultiTurnSample
