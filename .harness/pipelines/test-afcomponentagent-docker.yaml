@@ -47,10 +47,10 @@ pipeline:
                         command: |-
                           apt -o Acquire::Check-Valid-Until=false update && apt install -y git
                           cd template/{{agent_app_name}}/docker_context
-                          uv pip compile --python-version 3.11 --universal --no-annotate --no-emit-index-url requirements.in
+                          uv pip compile --python-version 3.11 --universal --no-annotate --no-emit-index-url requirements.in<+matrix.ext>
 
-                          VAR1=$(cat requirements.txt)
-                          VAR2=$(uv pip compile --python-version 3.11 --universal --no-annotate --no-emit-index-url --output-file=requirements.txt requirements.in)
+                          VAR1=$(cat requirements.txt<+matrix.ext>)
+                          VAR2=$(uv pip compile --python-version 3.11 --universal --no-annotate --no-emit-index-url --output-file=requirements.txt<+matrix.ext> requirements.in<+matrix.ext>)
 
                           # Check for asyncio in compiled requirements (should not be there)
                           if echo "$VAR2" | grep -q "^asyncio=="; then
@@ -62,25 +62,31 @@ pipeline:
                           fi
 
                           if [ "$VAR1" = "$VAR2" ]; then
-                            echo "Requirements.txt is in sync."
+                            echo "Requirements.txt<+matrix.ext> is in sync."
                           else
-                            echo "Requirementst.txt differences detected:"
-                            echo "$VAR1" > /tmp/current_requirements.txt
-                            echo "$VAR2" > /tmp/compiled_requirements.txt
-                            diff /tmp/current_requirements.txt /tmp/compiled_requirements.txt  || true
+                            echo "Requirements.txt<+matrix.ext> differences detected:"
+                            echo "$VAR1" > /tmp/current_requirements.txt<+matrix.ext>
+                            echo "$VAR2" > /tmp/compiled_requirements.txt<+matrix.ext>
+                            diff /tmp/current_requirements.txt<+matrix.ext> /tmp/compiled_requirements.txt<+matrix.ext>  || true
 
-                            echo "Requirements.txt is out of sync with requirements.txt."
+                            echo "Requirements.txt<+matrix.ext> is out of sync with requirements.txt<+matrix.ext>."
                             echo "Please run:"
                             echo ""
                             echo "cd template/{{agent_app_name}}/docker_context"
-                            echo "uv pip compile --python-version 3.11 --universal --no-annotate --no-emit-index-url --output-file=requirements.txt requirements.in"
+                            echo "uv pip compile --python-version 3.11 --universal --no-annotate --no-emit-index-url --output-file=requirements.txt<+matrix.ext> requirements.in<+matrix.ext>"
                             echo ""
-                            echo "And add the updated requirements.txt to your PR."
+                            echo "And add the updated requirements.txt<+matrix.ext> to your PR."
                             exit 1
                           fi
               sharedPaths:
                 - /var/cache/apt/archives
                 - /var/lib/apt/lists
+            strategy:
+              matrix:
+                ext:
+                  - .nat
+                  - ""
+                nodeName: <+matrix.ext>
         - stage:
             name: Test Dockerfile
             identifier: Test_Dockerfile
