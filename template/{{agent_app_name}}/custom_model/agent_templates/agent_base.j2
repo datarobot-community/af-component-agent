@@ -75,7 +75,7 @@ class MyAgent:
         # Retrieve the starting user prompt from the CompletionCreateParams
         user_messages = [
             msg for msg in completion_create_params["messages"]
-            if msg.get("role") == "user"
+            if msg.get("role") == "user"  # You can use other roles as needed (e.g. "system", "assistant")
         ]
         user_prompt = user_messages[0] if user_messages else {}
         user_prompt_content = user_prompt.get("content", {})
