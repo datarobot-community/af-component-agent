@@ -82,9 +82,9 @@ tasks:
     desc: 🐳 [{{ agent_app_name }}] Build the Docker image
     cmds:
       - echo "Compiling requirements for Docker"
-      - cd docker_context && uv pip compile --python-version 3.11 --universal --no-annotate --no-emit-index-url --output-file=requirements.txt {% if agent_template_framework == "nat" %}requirements.in.nat{% else %}requirements.in{% endif %}
+      - cd docker_context && uv pip compile --python-version 3.11 --universal --no-annotate --no-emit-index-url {% if agent_template_framework == "nat" %}--output-file=requirements.txt.nat requirements.in.nat{% else %}--output-file=requirements.txt requirements.in{% endif %}
       - echo "Building Docker image"
-      - cd docker_context && docker build --platform linux/amd64 -f Dockerfile -t {{ agent_app_name }}:latest .
+      - cd docker_context && docker build --build-arg EXT={% if agent_template_framework == "nat" %}".nat"{% else %}""{% endif %} --platform linux/amd64 -f Dockerfile -t {{ agent_app_name }}:latest .
       - echo "Saving Docker image"
       - docker save {{ agent_app_name }}:latest | gzip > docker_context.tar.gz
     silent: true
