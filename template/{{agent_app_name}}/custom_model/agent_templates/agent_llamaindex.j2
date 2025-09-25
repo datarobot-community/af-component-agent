@@ -128,7 +128,7 @@ class MyAgent:
         input_message = (
             f"Your task is to write a detailed report on a topic. "
             f"The topic is '{user_prompt_content}'. Make sure you find any interesting and relevant"
-            f"information given the current year is {str(datetime.now().year)}.",
+            f"information given the current year is {str(datetime.now().year)}."
         )
 
         result, events = asyncio.run(
