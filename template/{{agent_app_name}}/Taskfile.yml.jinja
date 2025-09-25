@@ -45,6 +45,7 @@ tasks:
       - echo "Checking linting"
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run ruff format --check --diff ."
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run ruff check --diff ."
+      - echo "Checking type hints"
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run mypy --pretty ."
     silent: true
   test:
