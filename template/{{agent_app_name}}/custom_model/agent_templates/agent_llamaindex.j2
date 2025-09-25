@@ -130,7 +130,9 @@ class MyAgent:
             f"information given the current year is {str(datetime.now().year)}.",
         )
 
-        result, events = asyncio.run(self.run_llamaindex_agentic_workflow(input_message))
+        result, events = asyncio.run(
+            self.run_llamaindex_agentic_workflow(input_message)
+        )
 
         usage_metrics: dict[str, int] = {
             "completion_tokens": 0,
