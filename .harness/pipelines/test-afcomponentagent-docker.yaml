@@ -127,7 +127,7 @@ pipeline:
                           - latest
                         caching: true
                         buildArgs:
-                          - EXT=<+matrix.ext>
+                          - EXT: <+matrix.ext>
                         dockerfile: template/{{agent_app_name}}/docker_context/<+matrix.dockerfile>
                         context: template/{{agent_app_name}}/docker_context
                         baseImageConnectorRefs:
