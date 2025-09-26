@@ -15,7 +15,7 @@ tasks:
     desc: 🛠️ [{{ agent_app_name }}] Install agent uv dependencies
     cmds:
       - echo "Updating local dependencies for {{ agent_app_name }}"
-      - uv sync --extra dev --extra cve --extra {{ agent_template_framework }} --quiet
+      - uv sync --extra dev --extra {{ agent_template_framework }} --quiet
     silent: true
     aliases:
       - req
@@ -24,7 +24,7 @@ tasks:
     # desc: 🛠️ [{{ agent_app_name }}] Update local dependencies (refresh uv locks)
     cmds:
       - echo "Updating local dependencies"
-      - uv sync --extra dev --extra cve --extra {{ agent_template_framework }} -U
+      - uv sync --extra dev --extra {{ agent_template_framework }} -U
     silent: true
   lint:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
