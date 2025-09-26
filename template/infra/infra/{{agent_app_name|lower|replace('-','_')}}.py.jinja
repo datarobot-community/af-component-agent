@@ -244,7 +244,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         resource_name="Prediction Environment " + {{agent_app_name}}_resource_name,
         name={{agent_app_name}}_asset_name,
         platform=dr.enums.PredictionEnvironmentPlatform.DATAROBOT_SERVERLESS,
-        opts=pulumi.ResourceOptions(retain_on_delete=True),
+        opts=pulumi.ResourceOptions(retain_on_delete=False),
     )
 
     {{agent_app_name}}_registered_model_args = RegisteredModelArgs(
