@@ -74,6 +74,11 @@ pipeline:
                             exit 1
                           fi
 
+                          echo "-------------------------------"
+                          echo "Printing log file for debugging:"
+                          cat ./agent/output.log
+                          echo "-------------------------------"
+
                           # Check the logger showed the first command
                           if cat ./agent/output.log | grep -q 'Running CLI execute'; then
                             echo "Test passed: cli.py returned log for starting cli"
