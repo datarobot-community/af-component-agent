@@ -120,14 +120,14 @@ pipeline:
                       type: BuildAndPushDockerRegistry
                       name: Build Dockerfile
                       identifier: Build_Dockerfile
-                      buildArgs:
-                        - EXT=<matrix.ext>
                       spec:
                         connectorRef: org.dockerhubrwhhi
                         repo: datarobotdev/buzok-genai-custom-model-dropin-env
                         tags:
                           - latest
                         caching: true
+                        buildArgs:
+                          - EXT=<matrix.ext>
                         dockerfile: template/{{agent_app_name}}/docker_context/<+matrix.dockerfile>
                         context: template/{{agent_app_name}}/docker_context
                         baseImageConnectorRefs:
