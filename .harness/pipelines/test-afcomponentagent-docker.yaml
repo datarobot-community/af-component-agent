@@ -131,7 +131,7 @@ pipeline:
                         baseImageConnectorRefs:
                           - account.dockerhub_datarobot_read
                         buildArgs:
-                          - EXT: <+matrix.ext>
+                          EXT: <+matrix.ext>
             strategy:
               matrix:
                 dockerfile:
