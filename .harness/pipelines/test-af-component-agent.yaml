@@ -74,6 +74,11 @@ pipeline:
                             exit 1
                           fi
 
+                          echo "-------------------------------"
+                          echo "Printing log file for debugging:"
+                          cat ./agent/output.log
+                          echo "-------------------------------"
+
                           # Check the logger showed the first command
                           if cat ./agent/output.log | grep -q 'Running CLI execute'; then
                             echo "Test passed: cli.py returned log for starting cli"
@@ -99,10 +104,18 @@ pipeline:
                           fi
 
                           # Check the chat completion returned
-                          if cat ./agent/output.log | grep -q 'Running agent with user prompt'; then
+                          if cat ./agent/output.log | grep -q 'Running agent with user'; then
                             echo "Test passed: cli.py returned log containing in-agent messaging"
                           else
                             echo "Test failed: cli.py did not return log containing in-agent messaging"
+                            exit 1
+                          fi
+
+                          # Check the chat completion returned
+                          if cat ./agent/output.log | grep -q 'Stored execution result'; then
+                            echo "Test passed: cli.py returned log containing stored execution result"
+                          else
+                            echo "Test failed: cli.py did not return log containing stored execution result"
                             exit 1
                           fi
 
