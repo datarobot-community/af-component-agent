@@ -55,8 +55,10 @@ pipeline:
                             framework="docker"
                           fi
 
+                          # Raw jinja render to console for debugging
                           uv run jinja -D agent_app_name=DockerContext -D agent_template_framework $framework template/\{\{agent_app_name\}\}/pyproject.toml.jinja
 
+                          # Comparison renders
                           VAR1=$(cat template/\{\{agent_app_name\}\}/docker_context/pyproject.toml<+matrix.ext>)
                           VAR2=$(uv run jinja -D agent_app_name=DockerContext -D agent_template_framework $framework template/\{\{agent_app_name\}\}/pyproject.toml.jinja)
 
