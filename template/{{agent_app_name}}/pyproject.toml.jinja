@@ -4,7 +4,7 @@ name = "{{ agent_app_name }}"
 version = "0.1.0"
 description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
-requires-python = ">=3.10, <3.13"
+{% if agent_template_framework == "nat" %}requires-python = ">=3.11, <3.13"{% else %}requires-python = ">=3.10, <3.13"{% endif %}
 dependencies = [
     "annotated-types>=0.7.0",
     "click>=8.1.8",
