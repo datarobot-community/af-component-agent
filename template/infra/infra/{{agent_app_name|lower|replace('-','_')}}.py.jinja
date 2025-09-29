@@ -143,9 +143,11 @@ else:
             use_cases={{agent_app_name}}_exec_env_use_cases,
         )
     else:
-        {% if agent_template_framework == "nat" %}raise RuntimeError(
+        {% if agent_template_framework == "nat" -%}
+        raise RuntimeError(
             "Generate docker_context.tar.gz first by running `task agent:build-docker`, then try again."
-        ){% else %}
+        )
+        {%- else -%}
         pulumi.info("Using docker_context folder to compile the execution environment")
         {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment(
             resource_name="Execution Environment [docker_context] "
@@ -158,7 +160,8 @@ else:
             ),
             use_cases={{agent_app_name}}_exec_env_use_cases,
         )
-        {% endif %}
+        {%- endif %}
+
 {{agent_app_name}}_custom_model_files = get_custom_model_files(
     str(os.path.join(str({{agent_app_name}}_application_path), "custom_model"))
 )
