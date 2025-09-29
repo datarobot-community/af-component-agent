@@ -48,7 +48,7 @@ pipeline:
                           apt -o Acquire::Check-Valid-Until=false update && apt install -y git
                           uv sync
 
-                          if [ "$ext" = ".nat" ]; then
+                          if [ "<+matrix.ext>" = ".nat" ]; then
                             framework="nat"
                           else
                             framework="docker"
