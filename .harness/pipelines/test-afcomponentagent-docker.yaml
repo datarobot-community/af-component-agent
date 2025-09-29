@@ -48,6 +48,7 @@ pipeline:
                           apt update && apt install -y git
                           cd t
                           uv add jinja-cli
+                          uv sync
 
                           if [ "<+matrix.ext>" = ".nat" ]; then
                             framework="nat"
