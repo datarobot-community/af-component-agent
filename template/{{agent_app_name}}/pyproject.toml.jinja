@@ -35,6 +35,47 @@ dependencies = [
     "requests>=2.32.4",
     "traceloop-sdk>=0.40.2",
     "uvicorn>=0.32.0",
+    {% if agent_template_framework == "nat" %}"datarobot>=3.8.2", # Auth needs pydantic>=2.11.3, maybe we can reduce this
+    # Moderations requires an incompatible llama-index to work
+    # "datarobot-moderations>=11.2.3",
+    {% else %}"datarobot[auth]>=3.8.2",
+    "datarobot-moderations>=11.2.3",{% endif %}
+
+    # Docker image requirements (These MUST be included to avoid docker conflicts)
+    "ecs-logging>=2.2.0",
+    "fastapi[all]==0.115.14",
+    "ipykernel<6.29.0",
+    "jupyter-client>=8.6.3",
+    "jupyter-core>=5.8.1",
+    "jupyter-kernel-gateway>=3.0.1",
+    "mistune>=3.1.4",
+    "numpy>=1.26.4",
+    "pandas>=2.2.3",
+    "psutil==5.9.8",
+    "setuptools>=80.9.0",
+    "ujson<5.8.0",
+    "uwsgi>=2.0.30",
+
+    {% if agent_template_framework == "nat" %}"nvidia-nat; python_version >= '3.11'",
+    "nvidia-nat-llama-index; python_version >= '3.11'",
+    "nvidia-nat-opentelemetry; python_version >= '3.11'",
+    "nvidia-nat-crewai; python_version >= '3.11'",
+    "nvidia-nat-langchain; python_version >= '3.11'",{% endif %}
+    {% if agent_template_framework == "crewai" %}"crewai>=0.177.0",
+    "crewai-tools>=0.69.0",
+    "opentelemetry-instrumentation-crewai>=0.40.5",
+    "pybase64>=1.4.2",{% endif %}
+    {% if agent_template_framework == "langgraph" %}"langgraph>=0.4.10",
+    "langgraph-prebuilt>=0.2.3",{% endif %}
+    {% if agent_template_framework == "llamaindex" %}"llama-index<14.0>",
+    "llama-index-core<14.0",
+    "llama-index-llms-langchain>=0.6.1",
+    "llama-index-llms-litellm>=0.4.1",
+    "llama-index-llms-openai>=0.3.38",
+    "opentelemetry-instrumentation-llamaindex>=0.40.5",
+    "pypdf>=6.0.0",{% endif %}
+    {% if agent_template_framework == "pydanticai" %}"logfire>=4.6.0",
+    "pydantic-ai>=1.0.5",{% endif %}
 ]
 
 [project.optional-dependencies]
@@ -49,72 +90,6 @@ dev = [
     "types-requests>=2.32.4.20250913",
     "yamlfix>=1.17.0",
 ]
-docker = [
-    "ecs-logging>=2.2.0",
-    "fastapi[all]==0.115.14",
-    "ipykernel<6.29.0",
-    "jupyter-client>=8.6.3",
-    "jupyter-core>=5.8.1",
-    "jupyter-kernel-gateway>=3.0.1",
-    "mistune>=3.1.4",
-    "numpy>=1.26.4",
-    "pandas>=2.2.3",
-    "psutil==5.9.8",
-    "setuptools>=80.9.0",
-    "ujson<5.8.0",
-    "uwsgi>=2.0.30",
-]
-# Agentic framework specific dependencies
-{% if agent_template_framework == "nat" %}
-nat = [
-    # Auth needs pydantic>=2.11.3, maybe we can reduce this
-    "datarobot>=3.8.2",
-    # Moderations requires an incompatible llama-index to work
-    # "datarobot-moderations>=11.2.3",
-    "nvidia-nat; python_version >= '3.11'",
-    "nvidia-nat-llama-index; python_version >= '3.11'",
-    "nvidia-nat-opentelemetry; python_version >= '3.11'",
-    "nvidia-nat-crewai; python_version >= '3.11'",
-    "nvidia-nat-langchain; python_version >= '3.11'",
-]
-{% else %}
-base = [
-    "datarobot-moderations>=11.2.3",
-    "datarobot[auth]>=3.8.2",
-]
-crewai = [
-    "datarobot-moderations>=11.2.3",
-    "datarobot[auth]>=3.8.2",
-    "crewai>=0.177.0",
-    "crewai-tools>=0.69.0",
-    "opentelemetry-instrumentation-crewai>=0.40.5",
-    "pybase64>=1.4.2",
-]
-langgraph = [
-    "datarobot-moderations>=11.2.3",
-    "datarobot[auth]>=3.8.2",
-    "langgraph>=0.4.10",
-    "langgraph-prebuilt>=0.2.3",
-]
-llamaindex = [
-    "datarobot-moderations>=11.2.3",
-    "datarobot[auth]>=3.8.2",
-    "llama-index<0.14",
-    "llama-index-core<0.14",
-    "llama-index-llms-langchain>=0.6.1",
-    "llama-index-llms-litellm>=0.4.1",
-    "llama-index-llms-openai>=0.3.38",
-    "opentelemetry-instrumentation-llamaindex>=0.40.5",
-    "pypdf>=6.0.0",
-]
-pydanticai = [
-    "datarobot-moderations>=11.2.3",
-    "datarobot[auth]>=3.8.2",
-    "logfire>=4.6.0",
-    "pydantic-ai>=1.0.5",
-]
-{% endif %}
-
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
