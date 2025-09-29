@@ -46,15 +46,25 @@ pipeline:
                         shell: Sh
                         command: |-
                           apt -o Acquire::Check-Valid-Until=false update && apt install -y git
-                          cd template/{{agent_app_name}}/docker_context
-                          uv pip compile --python-version 3.11 --universal --no-annotate --no-emit-index-url requirements.in<+matrix.ext>
+                          uv add jinja-cli
+                          uv sync
 
-                          VAR1=$(cat requirements.txt<+matrix.ext>)
-                          VAR2=$(uv pip compile --python-version 3.11 --universal --no-annotate --no-emit-index-url --output-file=requirements.txt<+matrix.ext> requirements.in<+matrix.ext>)
+                          if [ "<+matrix.ext>" = ".nat" ]; then
+                            framework="nat"
+                          else
+                            framework="docker"
+                          fi
 
-                          # Check for asyncio in compiled requirements (should not be there)
+                          # Raw jinja render to console for debugging
+                          uv run jinja -D agent_app_name DockerContext -D agent_template_framework $framework template/\{\{agent_app_name\}\}/pyproject.toml.jinja
+
+                          # Comparison renders
+                          VAR1=$(cat template/\{\{agent_app_name\}\}/docker_context/pyproject.toml<+matrix.ext>)
+                          VAR2=$(uv run jinja -D agent_app_name DockerContext -D agent_template_framework $framework template/\{\{agent_app_name\}\}/pyproject.toml.jinja)
+
+                          # Check for asyncio in compiled pyproject.toml (should not be there)
                           if echo "$VAR2" | grep -q "^asyncio=="; then
-                            echo "Error: Compiled requirements contains 'asyncio==' which should not be included."
+                            echo "Error: Compiled pyproject.toml<+matrix.ext> contains 'asyncio==' which should not be included."
                             echo "asyncio is part of Python's standard library and should not be listed as a dependency."
                             echo "This suggests an issue with the dependency resolution."
                             echo "Packages which require the outdated asyncio library are NOT compatible with DataRobot environments."
@@ -62,20 +72,19 @@ pipeline:
                           fi
 
                           if [ "$VAR1" = "$VAR2" ]; then
-                            echo "Requirements.txt<+matrix.ext> is in sync."
+                            echo "pyproject.toml<+matrix.ext> is in sync."
                           else
-                            echo "Requirements.txt<+matrix.ext> differences detected:"
-                            echo "$VAR1" > /tmp/current_requirements.txt<+matrix.ext>
-                            echo "$VAR2" > /tmp/compiled_requirements.txt<+matrix.ext>
-                            diff /tmp/current_requirements.txt<+matrix.ext> /tmp/compiled_requirements.txt<+matrix.ext>  || true
+                            echo "pyproject.toml<+matrix.ext> differences detected:"
+                            echo "$VAR1" > /tmp/pyproject.toml<+matrix.ext>
+                            echo "$VAR2" > /tmp/compiled_pyproject.toml<+matrix.ext>
+                            diff /tmp/pyproject.toml<+matrix.ext> /tmp/compiled_pyproject.toml<+matrix.ext>  || true
 
-                            echo "Requirements.txt<+matrix.ext> is out of sync with requirements.txt<+matrix.ext>."
+                            echo "pyproject.toml<+matrix.ext> is out of sync with compiled template."
                             echo "Please run:"
                             echo ""
-                            echo "cd template/{{agent_app_name}}/docker_context"
-                            echo "uv pip compile --python-version 3.11 --universal --no-annotate --no-emit-index-url --output-file=requirements.txt<+matrix.ext> requirements.in<+matrix.ext>"
+                            echo "task docker_update_reqs"
                             echo ""
-                            echo "And add the updated requirements.txt<+matrix.ext> to your PR."
+                            echo "And add the updated pyproject.toml<+matrix.ext> to your PR."
                             exit 1
                           fi
               sharedPaths:
