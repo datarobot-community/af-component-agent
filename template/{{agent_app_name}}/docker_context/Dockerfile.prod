@@ -96,9 +96,10 @@ ARG EXT=""
 
 COPY ./pyproject.toml${EXT} ${WORKDIR}/pyproject.toml
 
+WORKDIR ${WORKDIR}
 RUN . ${VENV_PATH}/bin/activate && \
-    cd ${WORKDIR} && \
     uv sync --no-cache
+WORKDIR /
 
 # Copy agent runtime into work directory
 COPY ./run_agent.py ${WORKDIR}/
