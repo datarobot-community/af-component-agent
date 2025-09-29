@@ -46,6 +46,7 @@ pipeline:
                         shell: Sh
                         command: |-
                           apt -o Acquire::Check-Valid-Until=false update && apt install -y git
+                          uv sync
 
                           if [ "$ext" = ".nat" ]; then
                             framework="nat"
