@@ -42,11 +42,12 @@ pipeline:
                       identifier: Docker_Requirements_Compile_Test
                       spec:
                         connectorRef: GHCR_HHI
-                        image: ghcr.io/astral-sh/uv:python3.11-bookworm
+                        image: ghcr.io/astral-sh/uv:python3.11-bookworm-slim
                         shell: Sh
                         command: |-
-                          apt -o Acquire::Check-Valid-Until=false update && apt install -y git
-                          uv add jinja2
+                          apt update && apt install -y git
+                          cd t
+                          uv add jinja-cli
 
                           if [ "<+matrix.ext>" = ".nat" ]; then
                             framework="nat"
@@ -82,19 +83,7 @@ pipeline:
                             echo "task docker_update_reqs"
                             echo ""
                             echo "And add the updated pyproject.toml<+matrix.ext> to your PR."
-                            exit 1
-                          fi
-              sharedPaths:
-                - /var/cache/apt/archives
-                - /var/lib/apt/lists
-            strategy:
-              matrix:
-                ext:
-                  - .nat
-                  - ""
-                nodeName: <+matrix.ext>
-        - stage:
-            name: Test Dockerfile
+ name: Test Dockerfile
             identifier: Test_Dockerfile
             description: ""
             type: CI
@@ -136,15 +125,10 @@ pipeline:
                         context: template/{{agent_app_name}}/docker_context
                         baseImageConnectorRefs:
                           - account.dockerhub_datarobot_read
-                        buildArgs:
-                          EXT: <+matrix.ext>
             strategy:
               matrix:
                 dockerfile:
                   - Dockerfile
                   - Dockerfile.prod
                   - Dockerfile.local
-                ext:
-                  - .nat
-                  - ""
-                nodeName: <+matrix.dockerfile><+matrix.ext>
+                nodeName: <+matrix.dockerfile>
