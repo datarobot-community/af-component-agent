@@ -134,11 +134,11 @@ ARG WORKDIR
 ARG VENV_PATH
 ARG EXT=""
 
-COPY ./requirements.txt${EXT} ${WORKDIR}/requirements.txt
+COPY ./pyproject.toml${EXT} ${WORKDIR}/pyproject.toml
 
-# hadolint ignore=DL3013, SC1091
 RUN . ${VENV_PATH}/bin/activate && \
-    uv pip install --no-cache-dir -r ${WORKDIR}/requirements.txt && rm ${WORKDIR}/requirements.txt
+    cd ${WORKDIR} && \
+    uv sync --no-cache
 
 # Copy agent runtime into work directory
 COPY ./run_agent.py ${WORKDIR}/
