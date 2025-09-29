@@ -144,7 +144,7 @@ else:
         )
     else:
         {% if agent_template_framework == "nat" %}
-        raise RuntimeError("Generate docker_context.tar.gz by running `task agent:build-docker`")
+        raise RuntimeError("Generate docker_context.tar.gz first by running `task agent:build-docker`, then try again.")
         {% endif %}
 
         pulumi.info("Using docker_context folder to compile the execution environment")
