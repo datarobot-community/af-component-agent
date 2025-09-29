@@ -1,10 +1,10 @@
 [project]
 
-name = "{{ agent_app_name }}"
+name = "DockerContext"
 version = "0.1.0"
-description = "Implementation of {{ agent_app_name }}"
+description = "Implementation of DockerContext"
 readme = "README.md"
-{% if agent_template_framework == "nat" %}requires-python = ">=3.11, <3.13"{% else %}requires-python = ">=3.10, <3.13"{% endif %}
+requires-python = ">=3.11, <3.13"
 dependencies = [
     "annotated-types>=0.7.0",
     "click>=8.1.8",
@@ -35,14 +35,10 @@ dependencies = [
     "requests>=2.32.4",
     "traceloop-sdk>=0.40.2",
     "uvicorn>=0.32.0",
-    {%- if agent_template_framework == "nat" %}
     "datarobot>=3.8.2", # Auth needs pydantic>=2.11.3, maybe we can reduce this
     # Moderations requires an incompatible llama-index to work
     # "datarobot-moderations>=11.2.3",
-    {% else %}
-    "datarobot[auth]>=3.8.2",
-    "datarobot-moderations>=11.2.3",
-    {% endif %}
+    
     # Docker image requirements (These MUST be included to avoid docker conflicts)
     "ecs-logging>=2.2.0",
     "fastapi[all]==0.115.14",
@@ -59,31 +55,11 @@ dependencies = [
     "uwsgi>=2.0.30",
 
     # Agent framework requirements
-    {%- if agent_template_framework == "nat" %}
     "nvidia-nat; python_version >= '3.11'",
     "nvidia-nat-llama-index; python_version >= '3.11'",
     "nvidia-nat-opentelemetry; python_version >= '3.11'",
     "nvidia-nat-crewai; python_version >= '3.11'",
-    "nvidia-nat-langchain; python_version >= '3.11'",{% endif -%}
-    {% if agent_template_framework == "docker" or agent_template_framework == "crewai" %}
-    "crewai>=0.177.0",
-    "crewai-tools>=0.69.0",
-    "opentelemetry-instrumentation-crewai>=0.40.5",
-    "pybase64>=1.4.2",{% endif -%}
-    {% if agent_template_framework == "docker" or agent_template_framework == "langgraph" %}
-    "langgraph>=0.4.10",
-    "langgraph-prebuilt>=0.2.3",{% endif -%}
-    {% if agent_template_framework == "docker" or agent_template_framework == "llamaindex" %}
-    "llama-index<14.0",
-    "llama-index-core<14.0",
-    "llama-index-llms-langchain>=0.6.1",
-    "llama-index-llms-litellm>=0.4.1",
-    "llama-index-llms-openai>=0.3.38",
-    "opentelemetry-instrumentation-llamaindex>=0.40.5",
-    "pypdf>=6.0.0",{% endif -%}
-    {% if agent_template_framework == "docker" or agent_template_framework == "pydanticai" %}
-    "logfire>=4.6.0",
-    "pydantic-ai>=1.0.5",{% endif %}
+    "nvidia-nat-langchain; python_version >= '3.11'",
 ]
 
 [project.optional-dependencies]
@@ -193,9 +169,9 @@ line_length = 120
 [tool.mypy]
 strict = true
 python_version = "3.11"
-{% if agent_template_framework != 'llamaindex' %}
+
 plugins = "pydantic.mypy"
-{% endif %}
+
 exclude = """(?x)(
     output/ # exclude files starting with "output"
     | deployment_.*/
