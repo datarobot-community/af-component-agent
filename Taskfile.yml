@@ -18,6 +18,7 @@ tasks:
       - uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_template_framework={{.AGENT}} --vcs-ref=HEAD
       - cp ./fixtures/infra/pyproject.toml ./$RENDER_DIR/agent_{{.AGENT}}/infra/pyproject.toml
       - cp ./fixtures/infra/__init__.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/__init__.py
+      - cp ./fixtures/infra/Pulumi.yaml ./$RENDER_DIR/agent_{{.AGENT}}/infra/Pulumi.yaml
   install-dev:
     desc: "Install dev"
     cmds:
@@ -39,6 +40,59 @@ tasks:
     desc: "Build NAT docker image locally (Check container builds)"
     cmds:
       - cd template/\{\{agent_app_name\}\}/docker_context && export EXT=".nat" && docker build -f Dockerfile . -t test --platform linux/amd64
+  install-infra-dev:
+    desc: "Install infra dev"
+    cmds:
+      - echo "Installing infra dev for {{.AGENT}}"
+      - task: render-template
+        vars:
+          AGENT: "{{.AGENT}}"
+      - cd ./$RENDER_DIR/agent_{{.AGENT}}/infra
+      - uv sync --all-extras --all-groups --dev
+  test-infra:
+    desc: "Test infra"
+    cmds:
+      - echo "Linting infra for {{.AGENT}}"
+      - task: install-infra-dev
+        vars:
+          AGENT: "{{.AGENT}}"
+      - cd ./$RENDER_DIR/agent_{{.AGENT}}/infra
+      - uv run ruff format --check --diff .
+      - uv run ruff check --diff .
+      #- uv run mypy --pretty .
+      - pulumi login --local
+      #- pulumi stack init -s organization/unittest/unittest
+      - uv run pytest --disable-warnings -vv ./tests/
+  test-infra-base:
+    desc: "Run infra tests for base agent"
+    cmds:
+      - task: test-infra
+        vars:
+          AGENT: base
+  test-infra-crewai:
+    desc: "Run infra tests for crewai agent"
+    cmds:
+      - task: test-infra
+        vars:
+          AGENT: crewai
+  test-infra-langgraph:
+    desc: "Run infra tests for langgraph agent"
+    cmds:
+      - task: test-infra
+        vars:
+          AGENT: langgraph
+  test-infra-llamaindex:
+    desc: "Run infra tests for llamaindex agent"
+    cmds:
+      - task: test-infra
+        vars:
+          AGENT: llamaindex
+  test-infra-nat:
+    desc: "Run infra tests for nat agent"
+    cmds:
+      - task: test-infra
+        vars:
+          AGENT: nat
   test-agent:
     desc: "Run tests"
     cmds:
