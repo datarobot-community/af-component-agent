@@ -6,6 +6,7 @@ description = "Application Framework Agent Component"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "jinja-cli>=1.2.2",
 ]
 
 [project.optional-dependencies]
