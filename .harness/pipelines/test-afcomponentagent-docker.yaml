@@ -46,7 +46,7 @@ pipeline:
                         shell: Sh
                         command: |-
                           apt -o Acquire::Check-Valid-Until=false update && apt install -y git
-                          uv sync
+                          uv add jinja2
 
                           if [ "<+matrix.ext>" = ".nat" ]; then
                             framework="nat"
