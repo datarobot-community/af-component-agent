@@ -34,11 +34,11 @@ tasks:
   docker_build_local:
     desc: "Build docker image locally (Check container builds)"
     cmds:
-      - docker build -f template/{{agent_app_name}}/docker_context/Dockerfile . -t test --platform linux/amd64
+      - cd template/\{\{agent_app_name\}\}/docker_context && docker build -f Dockerfile . -t test --platform linux/amd64
   docker_build_local_nat:
     desc: "Build NAT docker image locally (Check container builds)"
     cmds:
-      - export EXT="nat" && docker build -f template/{{agent_app_name}}/docker_context/Dockerfile . -t test --platform linux/amd64
+      - cd template/\{\{agent_app_name\}\}/docker_context && export EXT="nat" && docker build -f Dockerfile . -t test --platform linux/amd64
   test-agent:
     desc: "Run tests"
     cmds:
