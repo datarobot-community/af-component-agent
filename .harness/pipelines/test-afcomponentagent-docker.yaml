@@ -55,10 +55,10 @@ pipeline:
                             framework="docker"
                           fi
 
-                          uv run jinja2 -D agent_app_name=DockerContext -D agent_template_framework=$framework template/\{\{agent_app_name\}\}/pyproject.toml.jinja
+                          uv run jinja -D agent_app_name=DockerContext -D agent_template_framework=$framework template/\{\{agent_app_name\}\}/pyproject.toml.jinja
 
                           VAR1=$(cat template/\{\{agent_app_name\}\}/docker_context/pyproject.toml<+matrix.ext>)
-                          VAR2=$(uv run jinja2 -D agent_app_name=DockerContext -D agent_template_framework=$framework template/\{\{agent_app_name\}\}/pyproject.toml.jinja)
+                          VAR2=$(uv run jinja -D agent_app_name=DockerContext -D agent_template_framework=$framework template/\{\{agent_app_name\}\}/pyproject.toml.jinja)
 
                           # Check for asyncio in compiled pyproject.toml (should not be there)
                           if echo "$VAR2" | grep -q "^asyncio=="; then
