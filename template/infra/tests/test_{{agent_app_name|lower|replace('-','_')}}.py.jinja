@@ -104,7 +104,7 @@ def test_execution_environment_not_set_and_docker_context(monkeypatch):
     agent_infra.pulumi.info.reset_mock()
     importlib.reload(agent_infra)
 
-    # Check that pulumi.info was called with the correct message for docker_context.tar.gz
+    # Check that pulumi.info was called with the correct message for docker_context.tar
     agent_infra.pulumi.info.assert_any_call(
         "Using docker_context folder to compile the execution environment"
     )
@@ -126,12 +126,12 @@ def test_execution_environment_not_set_and_docker_context(monkeypatch):
 
 
 def test_execution_environment_not_set_with_docker_image(monkeypatch):
-    """Test execution environment creation when DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT is not set and docker_context.tar.gz exists"""
+    """Test execution environment creation when DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT is not set and docker_context.tar exists"""
     monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
 
-    # Mock os.path.exists to return True for docker_context.tar.gz
+    # Mock os.path.exists to return True for docker_context.tar
     def mock_exists(path):
-        if path.endswith("docker_context.tar.gz"):
+        if path.endswith("docker_context.tar"):
             return True
         return False
 
@@ -145,9 +145,9 @@ def test_execution_environment_not_set_with_docker_image(monkeypatch):
     agent_infra.pulumi.info.reset_mock()
     importlib.reload(agent_infra)
 
-    # Check that pulumi.info was called with the correct message for docker_context.tar.gz
+    # Check that pulumi.info was called with the correct message for docker_context.tar
     agent_infra.pulumi.info.assert_any_call(
-        "Using prebuilt Dockerfile docker_context.tar.gz to run the execution environment"
+        "Using prebuilt Dockerfile docker_context.tar to run the execution environment"
     )
 
     # Check that ExecutionEnvironment constructor was called correctly
