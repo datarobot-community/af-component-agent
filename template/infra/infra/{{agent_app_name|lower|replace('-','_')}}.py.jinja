@@ -100,10 +100,13 @@ def get_custom_model_files(custom_model_folder: str) -> list[tuple[str, str]]:
     ]
     return source_files
 
+
 def synchronize_pyproject_dependencies():
     pyproject_toml_path = os.path.join(str({{agent_app_name}}_application_path), "pyproject.toml")
     custom_model_folder = str(os.path.join(str({{agent_app_name}}_application_path), "custom_model"))
-    docker_context_folder = str(os.path.join(str({{agent_app_name}}_application_path), "docker_context"))
+    docker_context_folder = str(
+        os.path.join(str({{agent_app_name}}_application_path), "docker_context")
+    )
 
     # Check if pyproject.toml exists in the application path
     if not os.path.exists(pyproject_toml_path):
@@ -111,13 +114,18 @@ def synchronize_pyproject_dependencies():
 
     # Copy pyproject.toml to custom_model folder if it exists
     if os.path.exists(custom_model_folder):
-        custom_model_pyproject_path = os.path.join(custom_model_folder, "pyproject.toml")
+        custom_model_pyproject_path = os.path.join(
+            custom_model_folder, "pyproject.toml"
+        )
         shutil.copy2(pyproject_toml_path, custom_model_pyproject_path)
 
     # Copy pyproject.toml to docker_context folder if it exists
     if os.path.exists(docker_context_folder):
-        docker_context_pyproject_path = os.path.join(docker_context_folder, "pyproject.toml")
+        docker_context_pyproject_path = os.path.join(
+            docker_context_folder, "pyproject.toml"
+        )
         shutil.copy2(pyproject_toml_path, docker_context_pyproject_path)
+
 
 synchronize_pyproject_dependencies()
 
@@ -146,9 +154,7 @@ if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
         )
 else:
     {{agent_app_name}}_exec_env_use_cases = ["customModel", "notebook"]
-    if os.path.exists(
-        os.path.join(str({{agent_app_name}}_application_path), "docker_context.tar")
-    ):
+    if os.path.exists(os.path.join(str({{agent_app_name}}_application_path), "docker_context.tar")):
         pulumi.info(
             "Using prebuilt Dockerfile docker_context.tar to run the execution environment"
         )
