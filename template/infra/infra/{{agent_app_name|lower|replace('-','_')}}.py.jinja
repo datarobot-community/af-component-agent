@@ -154,9 +154,9 @@ if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
         )
 else:
     {{agent_app_name}}_exec_env_use_cases = ["customModel", "notebook"]
-    if os.path.exists(os.path.join(str({{agent_app_name}}_application_path), "docker_context.tar")):
+    if os.path.exists(os.path.join(str({{agent_app_name}}_application_path), "docker_context.tar.gz")):
         pulumi.info(
-            "Using prebuilt Dockerfile docker_context.tar to run the execution environment"
+            "Using prebuilt Dockerfile docker_context.tar.gz to run the execution environment"
         )
         {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment(
             resource_name="Execution Environment [docker_context] "
@@ -165,14 +165,14 @@ else:
             description="Execution Environment for " + {{agent_app_name}}_asset_name,
             programming_language="python",
             docker_image=os.path.join(
-                str({{agent_app_name}}_application_path), "docker_context.tar"
+                str({{agent_app_name}}_application_path), "docker_context.tar.gz"
             ),
             use_cases={{agent_app_name}}_exec_env_use_cases,
         )
     else:
         {% if agent_template_framework == "nat" -%}
         raise RuntimeError(
-            "Generate docker_context.tar first by running `task agent:build-docker`, then try again."
+            "Generate docker_context.tar.gz first by running `task agent:build-docker`, then try again."
         )
         {%- else -%}
         pulumi.info("Using docker_context folder to compile the execution environment")

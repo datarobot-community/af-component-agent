@@ -85,5 +85,5 @@ tasks:
       - cp pyproject.toml docker_context/pyproject.toml
       - cd docker_context && docker build {% if agent_template_framework == "nat" %}--build-arg EXT=".nat"{% endif %} --platform linux/amd64 -f Dockerfile -t {{ agent_app_name }}:latest .
       - echo "Saving Docker image"
-      - docker save {{ agent_app_name }}:latest -o docker_context.tar
+      - docker save {{ agent_app_name }}:latest -o docker_context.tar.gz
     silent: true
