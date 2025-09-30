@@ -474,9 +474,7 @@ dependencies = ["requests>=2.0"]
         ).read_text() == pyproject_content
 
     def test_synchronize_pyproject_dependencies_no_pyproject(
-        self,
-        tmp_path,
-        monkeypatch
+        self, tmp_path, monkeypatch
     ):
         import infra.{{agent_app_name}} as agent_infra
 
@@ -495,9 +493,7 @@ dependencies = ["requests>=2.0"]
         assert not (tmp_path / "docker_context" / "pyproject.toml").exists()
 
     def test_synchronize_pyproject_dependencies_missing_custom_model_dir(
-        self,
-        tmp_path,
-        monkeypatch
+        self, tmp_path, monkeypatch
     ):
         import infra.{{agent_app_name}} as agent_infra
 
@@ -522,9 +518,7 @@ name = "test-project"
         ).read_text() == pyproject_content
 
     def test_synchronize_pyproject_dependencies_missing_docker_context_dir(
-        self,
-        tmp_path,
-        monkeypatch
+            self, tmp_path, monkeypatch
     ):
         import infra.{{agent_app_name}} as agent_infra
 
@@ -544,9 +538,7 @@ name = "test-project"
         # Check that pyproject.toml was only copied to custom_model
         assert (tmp_path / "custom_model" / "pyproject.toml").exists()
         assert not (tmp_path / "docker_context").exists()
-        assert (
-            tmp_path / "docker_context" / "pyproject.toml"
-        ).read_text() == pyproject_content
+        assert (tmp_path / "custom_model" / "pyproject.toml").read_text() == pyproject_content
 
     def test_synchronize_pyproject_dependencies_overwrites_existing(
         self,
@@ -583,4 +575,3 @@ name = "old-project"
         assert (
             tmp_path / "docker_context" / "pyproject.toml"
         ).read_text() == new_content
-
