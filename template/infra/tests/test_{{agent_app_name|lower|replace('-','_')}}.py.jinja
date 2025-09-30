@@ -466,12 +466,18 @@ dependencies = ["requests>=2.0"]
         assert (tmp_path / "docker_context" / "pyproject.toml").exists()
 
         # Verify the content is the same
-        assert (tmp_path / "custom_model" / "pyproject.toml").read_text() == pyproject_content
+        assert (
+            tmp_path / "custom_model" / "pyproject.toml"
+        ).read_text() == pyproject_content
         assert (
             tmp_path / "docker_context" / "pyproject.toml"
         ).read_text() == pyproject_content
 
-    def test_synchronize_pyproject_dependencies_no_pyproject(self, tmp_path, monkeypatch):
+    def test_synchronize_pyproject_dependencies_no_pyproject(
+        self,
+        tmp_path,
+        monkeypatch
+    ):
         import infra.{{agent_app_name}} as agent_infra
 
         # Mock the application path to point to our tmp_path
@@ -489,9 +495,9 @@ dependencies = ["requests>=2.0"]
         assert not (tmp_path / "docker_context" / "pyproject.toml").exists()
 
     def test_synchronize_pyproject_dependencies_missing_custom_model_dir(
-            self,
-            tmp_path,
-            monkeypatch
+        self,
+        tmp_path,
+        monkeypatch
     ):
         import infra.{{agent_app_name}} as agent_infra
 
@@ -516,9 +522,9 @@ name = "test-project"
         ).read_text() == pyproject_content
 
     def test_synchronize_pyproject_dependencies_missing_docker_context_dir(
-            self,
-            tmp_path,
-            monkeypatch
+        self,
+        tmp_path,
+        monkeypatch
     ):
         import infra.{{agent_app_name}} as agent_infra
 
@@ -542,7 +548,11 @@ name = "test-project"
             tmp_path / "docker_context" / "pyproject.toml"
         ).read_text() == pyproject_content
 
-    def test_synchronize_pyproject_dependencies_overwrites_existing(self, tmp_path, monkeypatch):
+    def test_synchronize_pyproject_dependencies_overwrites_existing(
+        self,
+        tmp_path,
+        monkeypatch
+    ):
         import infra.{{agent_app_name}} as agent_infra
 
         # Mock the application path to point to our tmp_path
@@ -570,5 +580,7 @@ name = "old-project"
 
         # Check that the old files were overwritten with new content
         assert (tmp_path / "custom_model" / "pyproject.toml").read_text() == new_content
-        assert (tmp_path / "docker_context" / "pyproject.toml").read_text() == new_content
+        assert (
+            tmp_path / "docker_context" / "pyproject.toml"
+        ).read_text() == new_content
 
