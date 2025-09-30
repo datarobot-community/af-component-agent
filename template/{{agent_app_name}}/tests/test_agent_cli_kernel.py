@@ -20,7 +20,7 @@ from unittest.mock import Mock, mock_open, patch
 import pytest
 from openai.types.chat import ChatCompletion
 
-from agent_cli.kernel import Kernel
+from cli import Kernel
 
 
 class TestKernel:

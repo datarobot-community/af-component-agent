@@ -15,8 +15,8 @@
 import os
 from unittest.mock import MagicMock, patch
 
-from agent_cli.environment import Environment
-from agent_cli.kernel import Kernel
+from cli import Environment
+from cli import Kernel
 
 
 class TestEnvironment:
