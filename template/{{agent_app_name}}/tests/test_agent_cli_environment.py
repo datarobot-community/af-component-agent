@@ -15,6 +15,7 @@
 import os
 from unittest.mock import MagicMock, patch
 
+import pytest
 from cli import Environment, Kernel
 
 
@@ -23,11 +24,8 @@ class TestEnvironment:
         """Test initialization with default values."""
         # Clear environment variables to test default behavior
         with patch.dict(os.environ, {}, clear=True):
-            env = Environment()
-
-            # Check default values
-            assert env.api_token is None
-            assert env.base_url == "https://app.datarobot.com"
+            with pytest.raises(ValueError):
+                Environment()
 
     def test_init_with_parameters(self):
         """Test initialization with explicitly provided parameters."""
@@ -72,7 +70,10 @@ class TestEnvironment:
     def test_api_v2_removed_from_base_url(self):
         """Test that '/api/v2' is removed from base_url."""
         with patch.dict(os.environ, {}, clear=True):
-            env = Environment(base_url="https://test.example.com/api/v2")
+            env = Environment(
+                api_token="test-token",
+                base_url="https://test.example.com/api/v2",
+            )
             assert env.base_url == "https://test.example.com"
 
     @patch("cli.Kernel")
@@ -98,19 +99,3 @@ class TestEnvironment:
 
             # Verify interface is the mock kernel
             assert interface == mock_kernel_instance
-
-    def test_str_conversion_for_interface(self):
-        """Test that None values are converted to strings for the Kernel."""
-        with patch.dict(os.environ, {}, clear=True):
-            with patch("cli.Kernel") as mock_kernel:
-                # Create environment with None values
-                env = Environment()
-
-                # Access interface property
-                _ = env.interface
-
-                # Verify values were converted to strings
-                mock_kernel.assert_called_once_with(
-                    api_token="None",
-                    base_url="https://app.datarobot.com",
-                )
