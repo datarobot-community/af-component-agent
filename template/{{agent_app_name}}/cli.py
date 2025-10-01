@@ -245,11 +245,21 @@ class Environment:
         base_url: Optional[str] = None,
     ):
         self.api_token = os.environ.get("DATAROBOT_API_TOKEN") or api_token
+        if not self.api_token:
+            raise ValueError(
+                "Missing DataRobot API token. Set the DATAROBOT_API_TOKEN "
+                "environment variable or provide it explicitly."
+            )
         self.base_url = (
             os.environ.get("DATAROBOT_ENDPOINT")
             or base_url
             or "https://app.datarobot.com"
         )
+        if not self.base_url:
+            raise ValueError(
+                "Missing DataRobot endpoint. Set the DATAROBOT_ENDPOINT environment "
+                "variable or provide it explicitly."
+            )
         self.base_url = self.base_url.replace("/api/v2", "")
 
     @property
