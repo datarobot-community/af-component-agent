@@ -75,7 +75,7 @@ class TestEnvironment:
             env = Environment(base_url="https://test.example.com/api/v2")
             assert env.base_url == "https://test.example.com"
 
-    @patch("agent_cli.environment.Kernel")
+    @patch("cli.Kernel")
     def test_interface_property(self, mock_kernel):
         """Test that the interface property returns an Kernel instance."""
         # Setup mock
@@ -102,7 +102,7 @@ class TestEnvironment:
     def test_str_conversion_for_interface(self):
         """Test that None values are converted to strings for the Kernel."""
         with patch.dict(os.environ, {}, clear=True):
-            with patch("agent_cli.environment.Kernel") as mock_kernel:
+            with patch("cli.Kernel") as mock_kernel:
                 # Create environment with None values
                 env = Environment()
 
