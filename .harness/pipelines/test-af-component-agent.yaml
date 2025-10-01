@@ -65,16 +65,18 @@ pipeline:
                             --user_prompt '{"topic": "Artificial Intelligence"}' \
                             > ./agent/output.log 2>&1
 
-                          # # Check if the log file was created
-                          # if [ $(wc -l <./agent/output.log) -ge 13 ]; then
-                          #   echo "Log file created successfully and file not empty."
-                          #   echo ""
-                          #   echo "Contents of output.log:"
-                          #   cat ./agent/output.log
-                          # else
-                          #   echo "Log file was not created."
-                          #   exit 1
-                          # fi
+                          cat ./agent/output.log
+
+                          # Check if the log file was created
+                          if [ $(wc -l <./agent/output.log) -ge 13 ]; then
+                            echo "Log file created successfully and file not empty."
+                            echo ""
+                            echo "Contents of output.log:"
+                            cat ./agent/output.log
+                          else
+                            echo "Log file was not created."
+                            exit 1
+                          fi
 
                           # echo "-------------------------------"
                           # echo "Printing log file for debugging:"
