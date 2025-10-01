@@ -55,8 +55,8 @@ pipeline:
                         shell: Sh
                         command: |-
                           cd ./copier_context
-                          echo "DATAROBOT_API_KEY=secret" > .env
-                          echo "DATAROBOT_API_URL=https://test.com/api/v2" >> .env
+                          echo "DATAROBOT_API_TOKEN=secret" > .env
+                          echo "DATAROBOT_ENDPOINT=https://test.com/api/v2" >> .env
 
                           # Run the CLI command with a sample user prompt
                           uvx --from go-task-bin task agent:cli -- \
@@ -140,8 +140,8 @@ pipeline:
                         shell: Sh
                         command: |-
                           cd ./copier_context
-                          echo "DATAROBOT_API_KEY=secret" > .env
-                          echo "DATAROBOT_API_URL=https://test.com/api/v2" >> .env
+                          echo "DATAROBOT_API_TOKEN=secret" > .env
+                          echo "DATAROBOT_ENDPOINT=https://test.com/api/v2" >> .env
 
                           # Run the CLI command with a sample user prompt
                           uvx --from go-task-bin task agent:cli -- \
