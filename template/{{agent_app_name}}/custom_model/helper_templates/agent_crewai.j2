@@ -13,7 +13,7 @@
 # limitations under the License.
 import json
 import logging
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 try:
     from crewai.events.base_event_listener import BaseEventListener
@@ -101,6 +101,6 @@ def create_pipeline_interactions_from_events(
     events: list[Union[HumanMessage, AIMessage, ToolMessage]],
 ) -> MultiTurnSample | None:
     """Convert a list of CrewAI events to a MultiTurnSample."""
-    if not events or len(events) == 0:
+    if not events:
         return None
     return MultiTurnSample(user_input=events)

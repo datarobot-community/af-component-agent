@@ -23,6 +23,7 @@ from ragas.integrations.llama_index import convert_to_ragas_messages
 def extract_pipeline_interactions(
     events: Sequence[Event] | None,
 ) -> MultiTurnSample | None:
-
+    if not events:
+        return None
     ragas_trace = convert_to_ragas_messages(events)
     return MultiTurnSample(user_input=ragas_trace)
