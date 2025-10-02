@@ -167,7 +167,7 @@ RUN chown -R $UNAME:$UNAME ${WORKDIR} /home/notebooks
 COPY --from=builder --chown=$UNAME $WORKDIR $WORKDIR
 
 # Warm the heavy dependencies
-RUN source ${VENV_PATH}/bin/activate && python -c "import numpy; import pandas; import PIL; import ragas; import scipy; import scipy.io;";
+RUN . ${VENV_PATH}/bin/activate && python -c "import numpy; import pandas; import PIL; import ragas; import scipy; import scipy.io;";
 
 # This is required for custom models to work with this image
 COPY ./start_server_drum.sh /opt/code/start_server.sh
