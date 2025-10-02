@@ -37,6 +37,7 @@ dependencies = [
     "uvicorn>=0.32.0",
     "datarobot[auth]>=3.8.2",
     "datarobot-moderations>=11.2.3",
+
     # Docker image requirements (These MUST be included to avoid docker conflicts)
     "ecs-logging>=2.2.0",
     "fastapi[all]==0.115.14",
