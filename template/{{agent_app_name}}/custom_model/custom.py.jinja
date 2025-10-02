@@ -135,11 +135,13 @@ def chat(
     agent = MyAgent(**completion_create_params)
 
     # Execute the agent with the inputs
-    response_text, events, usage_metrics = agent.run(completion_create_params=completion_create_params)
+    response_text, events, usage_metrics = agent.run(
+        completion_create_params=completion_create_params
+    )
 
     # Convert agent events to pipeline interactions for moderations and evaluation
     # (e.g. Task Adherence, Agent Goal Accuracy, Tool Call Accuracy)
-    pipeline_interactions = create_pipeline_interactions_from_events(events)    
+    pipeline_interactions = create_pipeline_interactions_from_events(events)
 
     # Convert the text of the LLM response into a chat completion response
     choice = Choice(
