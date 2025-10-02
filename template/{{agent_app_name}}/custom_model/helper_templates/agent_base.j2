@@ -15,8 +15,9 @@ from typing import Any
 
 from ragas import MultiTurnSample
 
+
 def create_pipeline_interactions_from_events(
-    events: list[Any]
+    events: list[Any],
 ) -> MultiTurnSample | None:
     """Convert a list of events into a MultiTurnSample."""
     if not events or len(events) == 0:
