@@ -47,6 +47,8 @@ os.environ["DEEPEVAL_TELEMETRY_OPT_OUT"] = "YES"
 # isort: on
 # ------------------------------------------------------------------------------
 
+from typing import Any, Union, Generator, Iterator
+
 # ruff: noqa: E402
 from agent import MyAgent
 from datarobot_drum import RuntimeParameters
@@ -54,8 +56,20 @@ from helpers import (
     CustomModelChatResponse,
     to_custom_model_response,
 )
-from openai.types.chat import CompletionCreateParams
+from openai.types.chat import (
+    ChatCompletion,
+    ChatCompletionChunk,
+    ChatCompletionMessage,
+    CompletionCreateParams,
+)
 from tools_client import initialize_authorization_context
+
+class CustomModelChatResponse(ChatCompletion):
+    pipeline_interactions: str | None = None
+
+
+class CustomModelStreamingResponse(Iterator[ChatCompletionChunk]):
+    pipeline_interactions: str | None = None
 
 
 def maybe_set_env_from_runtime_parameters(key: str) -> None:
