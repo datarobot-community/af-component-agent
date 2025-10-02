@@ -16,6 +16,7 @@ import re
 from typing import Any, Optional, Union
 
 from crewai import LLM, Agent, Crew, CrewOutput, Task
+from helpers import CrewAIEventListener
 from openai.types.chat import CompletionCreateParams
 from ragas.messages import AIMessage
 
@@ -95,7 +96,7 @@ class MyAgent:
             inputs={"topic": user_prompt_content}
         )
 
-        # Extract the response text from the crew output
+        # Extract the final agent response as the synchronous response
         response_text = str(crew_output.raw)
 
         # Create a list of events from the event listener
@@ -107,9 +108,13 @@ class MyAgent:
         else:
             events = None
 
-        # The `events` variable is used to compute agentic metrics and guardrails
-        # If you are not interested in these metrics, you can also return None instead.
-        return crew_output, events
+        usage_metrics = {
+            "completion_tokens": crew_output.token_usage.completion_tokens,
+            "prompt_tokens": crew_output.token_usage.prompt_tokens,
+            "total_tokens": crew_output.token_usage.total_tokens,
+        }
+
+        return response_text, events, usage_metrics
 
     def run_crew_agentic_workflow(self) -> Crew:
         """Creates and returns a Crew instance with defined agents and tasks."""
@@ -260,59 +265,3 @@ class MyAgent:
             api_key=self.api_key,
             timeout=self.timeout,
         )
-
-
-class CrewAIEventListener(BaseEventListener):  # type: ignore[misc]
-    def __init__(self) -> None:
-        super().__init__()
-        self.messages: list[Union[HumanMessage, AIMessage, ToolMessage]] = []
-
-    def setup_listeners(self, crewai_event_bus: CrewAIEventsBus) -> None:
-        @crewai_event_bus.on(CrewKickoffStartedEvent)  # type: ignore[misc]
-        def on_crew_execution_started(_: Any, event: CrewKickoffStartedEvent) -> None:
-            self.messages.append(
-                HumanMessage(content=f"Working on input '{json.dumps(event.inputs)}'")
-            )
-
-        @crewai_event_bus.on(AgentExecutionStartedEvent)  # type: ignore[misc]
-        def on_agent_execution_started(
-            _: Any, event: AgentExecutionStartedEvent
-        ) -> None:
-            self.messages.append(AIMessage(content=event.task_prompt, tool_calls=[]))
-
-        @crewai_event_bus.on(AgentExecutionCompletedEvent)  # type: ignore[misc]
-        def on_agent_execution_completed(
-            _: Any, event: AgentExecutionCompletedEvent
-        ) -> None:
-            self.messages.append(AIMessage(content=event.output, tool_calls=[]))
-
-        @crewai_event_bus.on(ToolUsageStartedEvent)  # type: ignore[misc]
-        def on_tool_usage_started(_: Any, event: ToolUsageStartedEvent) -> None:
-            # Its a tool call - add tool call to last AIMessage
-            if len(self.messages) == 0:
-                logging.warning("Direct tool usage without agent invocation")
-                return
-            last_message = self.messages[-1]
-            if not isinstance(last_message, AIMessage):
-                logging.warning(
-                    "Tool call must be preceded by an AIMessage somewhere in the conversation."
-                )
-                return
-            tool_call = ToolCall(name=event.tool_name, args=json.loads(event.tool_args))
-            last_message.tool_calls.append(tool_call)
-
-        @crewai_event_bus.on(ToolUsageFinishedEvent)  # type: ignore[misc]
-        def on_tool_usage_finished(_: Any, event: ToolUsageFinishedEvent) -> None:
-            if len(self.messages) == 0:
-                logging.warning("Direct tool usage without agent invocation")
-                return
-            last_message = self.messages[-1]
-            if not isinstance(last_message, AIMessage):
-                logging.warning(
-                    "Tool call must be preceded by an AIMessage somewhere in the conversation."
-                )
-                return
-            if not last_message.tool_calls:
-                logging.warning("No previous tool calls found")
-                return
-            self.messages.append(ToolMessage(content=event.output))

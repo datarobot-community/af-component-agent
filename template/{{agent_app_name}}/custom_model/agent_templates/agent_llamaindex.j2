@@ -135,15 +135,16 @@ class MyAgent:
             self.run_llamaindex_agentic_workflow(input_message)
         )
 
+        # Extract the report_content as the synchronous response
+        response_text = str(result["report_content"])
+
         usage_metrics: dict[str, int] = {
             "completion_tokens": 0,
             "prompt_tokens": 0,
             "total_tokens": 0,
         }
 
-        # The `events` variable is used to compute agentic metrics and guardrails
-        # If you are not interested in these metrics, you can also return None instead.
-        return str(result["report_content"]), usage_metrics, events
+        return response_text, events, usage_metrics
 
     async def run_llamaindex_agentic_workflow(self, user_prompt: str) -> Any:
         agent_workflow = AgentWorkflow(

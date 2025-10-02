@@ -53,8 +53,7 @@ from typing import Any, Union, Generator, Iterator
 from agent import MyAgent
 from datarobot_drum import RuntimeParameters
 from helpers import (
-    CustomModelChatResponse,
-    to_custom_model_response,
+    create_pipeline_interactions_from_events,
 )
 from openai.types.chat import (
     ChatCompletion,
@@ -101,7 +100,7 @@ def load_model(code_dir: str) -> str:
 def chat(
     completion_create_params: CompletionCreateParams,
     model: str,
-) -> CustomModelChatResponse:
+) -> Union[CustomModelChatResponse, CustomModelStreamingResponse]:
     """When using the chat endpoint, this function is called.
 
     Agent inputs are in OpenAI message format and defined as the 'user' portion
@@ -136,8 +135,27 @@ def chat(
     agent = MyAgent(**completion_create_params)
 
     # Execute the agent with the inputs
-    agent_result = agent.run(completion_create_params=completion_create_params)
+    response_text, events, usage_metrics = agent.run(completion_create_params=completion_create_params)
 
-    return to_custom_model_response(
-        *agent_result, model=completion_create_params["model"]
+    # Convert agent events to pipeline interactions for moderations and evaluation
+    # (e.g. Task Adherence, Agent Goal Accuracy, Tool Call Accuracy)
+    pipeline_interactions = create_pipeline_interactions_from_events(events)    
+
+    # Convert the text of the LLM response into a chat completion response
+    choice = Choice(
+        index=0,
+        message=ChatCompletionMessage(role="assistant", content=response_text),
+        finish_reason="stop",
+    )
+
+    return CustomModelChatResponse(
+        id=str(uuid.uuid4()),  # Create a unique completion id
+        object="chat.completion",
+        choices=[choice],
+        created=int(time.time()),  # ChatCompletion created time should be an integer
+        model=completion_create_params["model"],
+        usage=CompletionUsage(**usage_metrics),
+        pipeline_interactions=pipeline_interactions.model_dump_json()
+        if pipeline_interactions
+        else None,
     )

@@ -13,11 +13,7 @@
 # limitations under the License.
 import json
 import logging
-import time
-import uuid
-from typing import Any, Union
-
-from crewai import CrewOutput
+from typing import Any, Optional, Union
 
 try:
     from crewai.events.base_event_listener import BaseEventListener
@@ -41,12 +37,6 @@ except ImportError:
     )
     from crewai.utilities.events.base_event_listener import BaseEventListener
 
-from openai.types import CompletionUsage
-from openai.types.chat import (
-    ChatCompletion,
-    ChatCompletionMessage,
-)
-from openai.types.chat.chat_completion import Choice
 from ragas import MultiTurnSample
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 
@@ -107,28 +97,10 @@ class CrewAIEventListener(BaseEventListener):  # type: ignore[misc]
             self.messages.append(ToolMessage(content=event.output))
 
 
-{% include 'template/{{agent_app_name}}/custom_model/helper_templates/common.j2' %}
-
-
-def to_custom_model_response(
-    crew_output: CrewOutput,
-    events: list[Union[HumanMessage, AIMessage, ToolMessage]] | None,
-    model: str,
-) -> CustomModelChatResponse:
-    """Convert the CrewAI agent output to a custom model response."""
-    usage_metrics: dict[str, int] = {
-        "completion_tokens": crew_output.token_usage.completion_tokens,
-        "prompt_tokens": crew_output.token_usage.prompt_tokens,
-        "total_tokens": crew_output.token_usage.total_tokens,
-    }
-
-    pipeline_interactions = None
-    if events is not None:
-        pipeline_interactions = MultiTurnSample(user_input=events)
-    response = create_completion_from_response_text(
-        response_text=str(crew_output.raw),
-        usage_metrics=usage_metrics,
-        model=model,
-        pipeline_interactions=pipeline_interactions,
-    )
-    return response
+def create_pipeline_interactions_from_events(
+    events: list[Union[HumanMessage, AIMessage, ToolMessage]],
+) -> MultiTurnSample | None:
+    """Convert a list of CrewAI events to a MultiTurnSample."""
+    if not events or len(events) == 0:
+        return None
+    return MultiTurnSample(user_input=events)
