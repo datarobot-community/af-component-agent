@@ -40,8 +40,7 @@ dependencies = [
     # "datarobot-moderations>=11.2.3",
     {% else %}
     "datarobot[auth]>=3.8.2",
-    "datarobot-moderations>=11.2.3",
-    {% endif %}
+    "datarobot-moderations>=11.2.3",{% endif %}
     # Docker image requirements (These MUST be included to avoid docker conflicts)
     "ecs-logging>=2.2.0",
     "fastapi[all]==0.115.14",
