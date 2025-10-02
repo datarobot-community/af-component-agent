@@ -63,6 +63,7 @@ from openai.types.chat import (
 )
 from tools_client import initialize_authorization_context
 
+
 class CustomModelChatResponse(ChatCompletion):
     pipeline_interactions: str | None = None
 
