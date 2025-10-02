@@ -55,13 +55,17 @@ pipeline:
                         shell: Sh
                         command: |-
                           cd ./copier_context
+                          echo "DATAROBOT_API_TOKEN=secret" > .env
+                          echo "DATAROBOT_ENDPOINT=https://test.com/api/v2" >> .env
 
                           # Run the CLI command with a sample user prompt
+                          echo "Initial execution"
                           uvx --from go-task-bin task agent:cli -- \
                             execute \
                             --show_output \
                             --user_prompt '{"topic": "Artificial Intelligence"}' \
                             > ./agent/output.log 2>&1
+                          cat ./agent/output.log
 
                           # Check if the log file was created
                           if [ $(wc -l <./agent/output.log) -ge 13 ]; then
@@ -138,13 +142,17 @@ pipeline:
                         shell: Sh
                         command: |-
                           cd ./copier_context
+                          echo "DATAROBOT_API_TOKEN=secret" > .env
+                          echo "DATAROBOT_ENDPOINT=https://test.com/api/v2" >> .env
 
                           # Run the CLI command with a sample user prompt
+                          echo "Initial execution"
                           uvx --from go-task-bin task agent:cli -- \
                             execute \
                             --show_output \
                             --completion_json "example-completion.json" \
                             > ./agent/output.log 2>&1
+                          cat ./agent/output.log
 
                           # Check if the log file was created
                           if [ $(wc -l <./agent/output.log) -ge 13 ]; then
