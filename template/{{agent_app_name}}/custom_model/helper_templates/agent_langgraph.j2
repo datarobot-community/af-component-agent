@@ -17,7 +17,7 @@ from langchain_core.messages import ToolMessage
 from ragas import MultiTurnSample
 from ragas.integrations.langgraph import convert_to_ragas_messages
 
-def extract_pipeline_interactions(events: list[dict[str, Any]]) -> MultiTurnSample | None:
+def create_pipeline_interactions_from_events(events: list[dict[str, Any]]) -> MultiTurnSample | None:
     """Extract the pipeline interactions from the events."""
     if not events or len(events) == 0:
         return None
