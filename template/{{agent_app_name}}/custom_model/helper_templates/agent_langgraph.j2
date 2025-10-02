@@ -11,17 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Any, Optional
+from typing import Any
 
 from langchain_core.messages import ToolMessage
 from ragas import MultiTurnSample
 from ragas.integrations.langgraph import convert_to_ragas_messages
 
-def create_pipeline_interactions_from_events(events: list[dict[str, Any]]) -> MultiTurnSample | None:
+
+def create_pipeline_interactions_from_events(
+    events: list[dict[str, Any]],
+) -> MultiTurnSample | None:
     """Extract the pipeline interactions from the events."""
     if not events:
         return None
-    
+
     messages = []
     for e in events:
         for k, v in e.items():
