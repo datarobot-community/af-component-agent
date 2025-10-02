@@ -113,14 +113,20 @@ class MyAgent:
             debug=True,
         )
 
-        # Execute the graph and store calls to the agent in events
+        # Extract the final event from the graph stream as the synchronous response
+        last_event = events[-1]
+        node_name = next(iter(last_event))
+        response_text = str(last_event[node_name]["messages"][-1].content)
+
+        # Create a list of events from the event listener
         events = [event for event in graph_stream]
+
         usage_metrics: dict[str, int] = {
             "completion_tokens": 0,
             "prompt_tokens": 0,
             "total_tokens": 0,
         }
-        return events, usage_metrics
+        return response_text, events, usage_metrics
 
     def run_langgraph_agentic_workflow(self) -> Any:
         """Defines the workflow graph for the agent using Langgraph."""

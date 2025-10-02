@@ -87,12 +87,17 @@ class MyAgent:
 
         # Here you would implement the logic of your agent using the inputs.
 
-        usage = {
+        response_text = "success"
+
+        # Create a list of events from the event listener
+        events = []  # This should be populated with the agent's events/messages
+
+        usage_metrics = {
             "completion_tokens": 0,
             "prompt_tokens": 0,
             "total_tokens": 0,
         }
-        return "success", usage
+        return response_text, events, usage_metrics
 
     @property
     def llm(self) -> Any:

@@ -11,31 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import time
-import uuid
+from typing import Any
 
-from openai.types import CompletionUsage
-from openai.types.chat import (
-    ChatCompletion,
-    ChatCompletionMessage,
-)
-from openai.types.chat.chat_completion import Choice
 from ragas import MultiTurnSample
 
-
-{% include 'template/{{agent_app_name}}/custom_model/helper_templates/common.j2' %}
-
-
-def to_custom_model_response(
-    agent_result: str,
-    usage_metrics: dict[str, int],
-    model: str,
-) -> CustomModelChatResponse:
-    """Convert the agent output to a custom model response."""
-    response = create_completion_from_response_text(
-        response_text=agent_result,
-        usage_metrics=usage_metrics,
-        model=model,
-        pipeline_interactions=None,
-    )
-    return response
+def create_pipeline_interactions_from_events(
+        events: list[Any]
+) -> MultiTurnSample | None:
+    """Convert a list of events into a MultiTurnSample."""
+    if not events or len(events) == 0:
+        return None
+    return MultiTurnSample(user_input=events)
