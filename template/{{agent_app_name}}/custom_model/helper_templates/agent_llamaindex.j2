@@ -19,8 +19,7 @@ from ragas import MultiTurnSample
 from ragas.integrations.llama_index import convert_to_ragas_messages
 
 
-
-def extract_pipeline_interactions(
+def create_pipeline_interactions_from_events(
     events: Sequence[Event] | None,
 ) -> MultiTurnSample | None:
     if not events:
