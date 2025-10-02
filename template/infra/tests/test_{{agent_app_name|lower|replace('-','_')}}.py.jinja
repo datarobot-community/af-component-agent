@@ -475,12 +475,8 @@ dependencies = ["requests>=2.0"]
         assert (
             tmp_path / "docker_context" / "pyproject.toml"
         ).read_text() == pyproject_content
-        assert (
-            tmp_path / "custom_model" / "uv.lock"
-        ).read_text() == "test content"
-        assert (
-            tmp_path / "docker_context" / "uv.lock"
-        ).read_text() == "test content"
+        assert (tmp_path / "custom_model" / "uv.lock").read_text() == "test content"
+        assert (tmp_path / "docker_context" / "uv.lock").read_text() == "test content"
 
     def test_synchronize_pyproject_dependencies_no_pyproject(
         self, tmp_path, monkeypatch
