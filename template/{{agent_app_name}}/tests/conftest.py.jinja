@@ -13,7 +13,6 @@
 # limitations under the License.
 import os
 import sys
-from unittest import mock
 
 import pytest
 
@@ -55,56 +54,51 @@ def mock_agent_response(
 
 @pytest.fixture
 def mock_crewai_output():
-    return mock.Mock(
-        raw="agent result",
-        token_usage=mock.Mock(
-            completion_tokens=1,
-            prompt_tokens=2,
-            total_tokens=3,
-        ),
-    ), None
+    return (
+        "agent result",
+        [],
+        {
+            "completion_tokens": 1,
+            "prompt_tokens": 2,
+            "total_tokens": 3,
+        },
+    )
 
 
 @pytest.fixture
 def mock_langgraph_output():
-    from langchain_core.messages import AIMessage
-
-    usage = {
-        "completion_tokens": 1,
-        "prompt_tokens": 2,
-        "total_tokens": 3,
-    }
     return (
-        [
-            {
-                "final_agent": {
-                    "messages": [
-                        AIMessage(content="Intermediate message"),
-                        AIMessage(content="agent result"),
-                    ]
-                }
-            },
-        ],
-        usage,
+        "agent result",
+        [],
+        {
+            "completion_tokens": 1,
+            "prompt_tokens": 2,
+            "total_tokens": 3,
+        },
     )
 
 
 @pytest.fixture
 def mock_generic_output():
-    usage = {
-        "completion_tokens": 1,
-        "prompt_tokens": 2,
-        "total_tokens": 3,
-    }
-
-    return "agent result", usage
+    return (
+        "agent result",
+        [],
+        {
+            "completion_tokens": 1,
+            "prompt_tokens": 2,
+            "total_tokens": 3,
+        },
+    )
 
 
 @pytest.fixture
 def mock_llamaindex_output():
-    usage = {
-        "completion_tokens": 1,
-        "prompt_tokens": 2,
-        "total_tokens": 3,
-    }
-    return "agent result", usage, None
+    return (
+        "agent result",
+        [],
+        {
+            "completion_tokens": 1,
+            "prompt_tokens": 2,
+            "total_tokens": 3,
+        },
+    )

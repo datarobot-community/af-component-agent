@@ -20,6 +20,6 @@ def create_pipeline_interactions_from_events(
     events: list[Any],
 ) -> MultiTurnSample | None:
     """Convert a list of events into a MultiTurnSample."""
-    if not events or len(events) == 0:
+    if not events:
         return None
     return MultiTurnSample(user_input=events)
