@@ -101,7 +101,7 @@ class MyAgent:
 
     def run(
         self, completion_create_params: CompletionCreateParams
-    ) -> Tuple[str, dict[str, int], Sequence[Event] | None]:
+    ) -> tuple[str, list[Any], dict[str, int]]:
         """Run the agent with the provided completion parameters.
 
         [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
@@ -131,6 +131,7 @@ class MyAgent:
             f"information given the current year is {str(datetime.now().year)}."
         )
 
+        # Get the agentic workflow result and create a list of events from the event listener
         result, events = asyncio.run(
             self.run_llamaindex_agentic_workflow(input_message)
         )

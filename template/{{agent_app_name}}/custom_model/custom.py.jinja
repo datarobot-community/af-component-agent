@@ -47,6 +47,8 @@ os.environ["DEEPEVAL_TELEMETRY_OPT_OUT"] = "YES"
 # isort: on
 # ------------------------------------------------------------------------------
 
+import time
+import uuid
 from typing import Iterator, Union
 
 # ruff: noqa: E402
@@ -55,12 +57,14 @@ from datarobot_drum import RuntimeParameters
 from helpers import (
     create_pipeline_interactions_from_events,
 )
+from openai.types import CompletionUsage
 from openai.types.chat import (
     ChatCompletion,
     ChatCompletionChunk,
     ChatCompletionMessage,
     CompletionCreateParams,
 )
+from openai.types.chat.chat_completion import Choice
 from tools_client import initialize_authorization_context
 
 

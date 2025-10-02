@@ -62,7 +62,7 @@ class MyAgent:
 
     def run(
         self, completion_create_params: CompletionCreateParams
-    ) -> tuple[str, dict[str, int]]:
+    ) -> tuple[str, list[Any], dict[str, int]]:
         """Run the agent with the provided completion parameters.
 
         [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
@@ -90,7 +90,9 @@ class MyAgent:
         response_text = "success"
 
         # Create a list of events from the event listener
-        events = []  # This should be populated with the agent's events/messages
+        events: list[
+            Any
+        ] = []  # This should be populated with the agent's events/messages
 
         usage_metrics = {
             "completion_tokens": 0,

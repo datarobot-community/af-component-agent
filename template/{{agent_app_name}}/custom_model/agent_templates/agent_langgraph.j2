@@ -70,7 +70,7 @@ class MyAgent:
 
     def run(
         self, completion_create_params: CompletionCreateParams
-    ) -> tuple[list[Any], dict[str, int]]:
+    ) -> tuple[str, list[Any], dict[str, int]]:
         """Run the agent with the provided completion parameters.
 
         [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
