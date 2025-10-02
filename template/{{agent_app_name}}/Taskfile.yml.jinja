@@ -16,6 +16,8 @@ tasks:
     cmds:
       - echo "Updating local dependencies for {{ agent_app_name }}"
       - uv sync --extra dev --quiet
+      - cp pyproject.toml docker_context/pyproject.toml
+      - cp uv.lock docker_context/uv.lock
     silent: true
     aliases:
       - req
