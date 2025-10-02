@@ -34,8 +34,7 @@ dependencies = [
     "pyarrow<21.0.0",
     "requests>=2.32.4",
     "traceloop-sdk>=0.40.2",
-    "uvicorn>=0.32.0",
-    {%- if agent_template_framework == "nat" %}
+    "uvicorn>=0.32.0",{%- if agent_template_framework == "nat" %}
     "datarobot>=3.8.2", # Auth needs pydantic>=2.11.3, maybe we can reduce this
     # Moderations requires an incompatible llama-index to work
     # "datarobot-moderations>=11.2.3",
