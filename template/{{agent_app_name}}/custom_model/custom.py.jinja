@@ -47,30 +47,19 @@ os.environ["DEEPEVAL_TELEMETRY_OPT_OUT"] = "YES"
 # isort: on
 # ------------------------------------------------------------------------------
 
-import time
-import uuid
-from typing import Iterator, Union
+
+from typing import Union
 
 # ruff: noqa: E402
 from agent import MyAgent
 from datarobot_drum import RuntimeParameters
-from helpers import initialize_authorization_context
-from openai.types import CompletionUsage
-from openai.types.chat import (
-    ChatCompletion,
-    ChatCompletionChunk,
-    ChatCompletionMessage,
-    CompletionCreateParams,
+from helpers import (
+    CustomModelChatResponse,
+    CustomModelStreamingResponse,
+    initialize_authorization_context,
+    to_custom_model_chat_response,
 )
-from openai.types.chat.chat_completion import Choice
-
-
-class CustomModelChatResponse(ChatCompletion):
-    pipeline_interactions: str | None = None
-
-
-class CustomModelStreamingResponse(Iterator[ChatCompletionChunk]):
-    pipeline_interactions: str | None = None
+from openai.types.chat import CompletionCreateParams
 
 
 def maybe_set_env_from_runtime_parameters(key: str) -> None:
@@ -141,21 +130,12 @@ def chat(
         completion_create_params=completion_create_params
     )
 
-    # Convert the text of the LLM response into a chat completion response
-    choice = Choice(
-        index=0,
-        message=ChatCompletionMessage(role="assistant", content=response_text),
-        finish_reason="stop",
-    )
-
-    return CustomModelChatResponse(
-        id=str(uuid.uuid4()),  # Create a unique completion id
-        object="chat.completion",
-        choices=[choice],
-        created=int(time.time()),  # ChatCompletion created time should be an integer
-        model=completion_create_params["model"],
-        usage=CompletionUsage(**usage_metrics),
-        pipeline_interactions=pipeline_interactions.model_dump_json()
-        if pipeline_interactions
-        else None,
-    )
+    if completion_create_params.get("stream"):
+        raise NotImplementedError("Non-streaming responses are not implemented yet.")
+    else:
+        return to_custom_model_chat_response(
+            response_text,
+            pipeline_interactions,
+            usage_metrics,
+            model=completion_create_params.get("model"),
+        )
