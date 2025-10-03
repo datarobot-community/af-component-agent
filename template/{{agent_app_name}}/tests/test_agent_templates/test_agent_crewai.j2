@@ -322,13 +322,20 @@ class TestMyAgentCrewAI:
                 "total_tokens": 15,
             }
 
-    @patch("custom.MyAgent")
-    def test_chat(self, mock_agent):
+    @patch("agent.Agent")
+    def test_chat(self, mock_agent, agent):
         # This test case covers pipeline interactions in the response.  Test with
         # no pipeline interactions is already part of test_custom_model.py::test_chat
         from custom import chat
 
-        response_text = "agent result"
+        crew_output = Mock(
+            raw="agent result",
+            token_usage=Mock(
+                completion_tokens=1,
+                prompt_tokens=2,
+                total_tokens=3,
+            ),
+        )
         events = [
             HumanMessage(content="Hi"),
             AIMessage(
@@ -340,29 +347,21 @@ class TestMyAgentCrewAI:
             ToolMessage(content="Use en"),
             AIMessage(content="How are you today?"),
         ]
-        usage_metrics = Mock(
-            completion_tokens=1,
-            prompt_tokens=2,
-            total_tokens=3,
-        )
+        agent.event_listener = Mock(messages=events)
+
+        run_mock_return = Mock(kickoff=MagicMock(return_value=crew_output))
 
         # Setup mocks
-        mock_agent_instance = MagicMock()
-        mock_agent_instance.run_crew_agentic_workflow = Mock(
-            kickoff=MagicMock(
-                return_value=Mock(raw=response_text, token_usage=usage_metrics)
-            )
-        )
-        mock_agent_instance.event_listener = Mock(messages=events)
-        mock_agent.return_value = mock_agent_instance
+        with patch.object(
+            MyAgent, "run_crew_agentic_workflow", return_value=run_mock_return
+        ):
+            completion_create_params = {
+                "model": "test-model",
+                "messages": [{"role": "user", "content": '{"topic": "test"}'}],
+                "environment_var": True,
+            }
 
-        completion_create_params = {
-            "model": "test-model",
-            "messages": [{"role": "user", "content": '{"topic": "test"}'}],
-            "environment_var": True,
-        }
-
-        response = chat(completion_create_params, model="test-model")
+            response = chat(completion_create_params, model="test-model")
 
         # Assert results - check the pipeline_interactions - other sections of the
         # results are already being checked in test_custom_model.py::test_chat
