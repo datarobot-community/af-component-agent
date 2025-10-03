@@ -54,6 +54,7 @@ from typing import Iterator, Union
 # ruff: noqa: E402
 from agent import MyAgent
 from datarobot_drum import RuntimeParameters
+from helpers import initialize_authorization_context
 from openai.types import CompletionUsage
 from openai.types.chat import (
     ChatCompletion,
@@ -62,7 +63,6 @@ from openai.types.chat import (
     CompletionCreateParams,
 )
 from openai.types.chat.chat_completion import Choice
-from tools_client import initialize_authorization_context
 
 
 class CustomModelChatResponse(ChatCompletion):
