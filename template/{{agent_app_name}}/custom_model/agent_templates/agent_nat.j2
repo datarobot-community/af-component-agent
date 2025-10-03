@@ -79,14 +79,14 @@ class MyAgent:
             result = f"Error: {str(e)}"
 
         # Create a list of events from the event listener
-        events = []  # This should be populated with the agent's events/messages
+        pipeline_interactions = []  # This should be populated with the agent's events/messages
 
         usage_metrics = {
             "completion_tokens": 0,
             "prompt_tokens": 0,
             "total_tokens": 0,
         }
-        return "success", events, usage_metrics
+        return "success", pipeline_interactions, usage_metrics
 
     async def run_nat_workflow(self, config_file: StrPath, input_str: str) -> str:
         """Run the NAT workflow with the provided config file and input string.

@@ -31,6 +31,8 @@ from llama_index.core.base.llms.types import LLMMetadata
 from llama_index.core.workflow import Context
 from llama_index.llms.litellm import LiteLLM
 from openai.types.chat import CompletionCreateParams
+from ragas import MultiTurnSample
+from ragas.integrations.llama_index import convert_to_ragas_messages
 
 
 class DataRobotLiteLLM(LiteLLM):  # type: ignore[misc]
@@ -101,7 +103,7 @@ class MyAgent:
 
     def run(
         self, completion_create_params: CompletionCreateParams
-    ) -> tuple[str, list[Any], dict[str, int]]:
+    ) -> tuple[str, Any | None, dict[str, int]]:
         """Run the agent with the provided completion parameters.
 
         [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
@@ -139,13 +141,15 @@ class MyAgent:
         # Extract the report_content as the synchronous response
         response_text = str(result["report_content"])
 
+        pipeline_interactions = self.create_pipeline_interactions_from_events(events)
+
         usage_metrics: dict[str, int] = {
             "completion_tokens": 0,
             "prompt_tokens": 0,
             "total_tokens": 0,
         }
 
-        return response_text, events, usage_metrics
+        return response_text, pipeline_interactions, usage_metrics
 
     async def run_llamaindex_agentic_workflow(self, user_prompt: str) -> Any:
         agent_workflow = AgentWorkflow(
@@ -329,3 +333,17 @@ class MyAgent:
             api_key=self.api_key,
             timeout=self.timeout,
         )
+
+    @staticmethod
+    def create_pipeline_interactions_from_events(
+        events: Sequence[Event] | None,
+    ) -> MultiTurnSample | None:
+        """Convert a list of events into a MultiTurnSample.
+
+        Creates the pipeline interactions for moderations and evaluation
+        (e.g. Task Adherence, Agent Goal Accuracy, Tool Call Accuracy)
+        """
+        if not events:
+            return None
+        ragas_trace = convert_to_ragas_messages(events)
+        return MultiTurnSample(user_input=ragas_trace)
