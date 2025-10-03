@@ -16,7 +16,7 @@ import re
 from typing import Any, Optional, Union
 
 from crewai import LLM, Agent, Crew, Task
-from helpers import CrewAIEventListener
+from crewai_event_listener import CrewAIEventListener
 from openai.types.chat import CompletionCreateParams
 from ragas import MultiTurnSample
 from ragas.messages import AIMessage, HumanMessage, ToolMessage
