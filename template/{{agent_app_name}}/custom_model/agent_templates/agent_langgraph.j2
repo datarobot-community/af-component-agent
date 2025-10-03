@@ -140,11 +140,31 @@ class MyAgent:
 
     @property
     def llm(self) -> ChatLiteLLM:
-        """Returns a ChatLiteLLM instance configured to use DataRobot's LLM Gateway or a specific deployment."""
+        """Returns a ChatLiteLLM instance configured to use DataRobot's LLM Gateway or a specific deployment.
+
+        For help configuring different LLM backends see:
+        https://github.com/datarobot-community/datarobot-agent-templates/blob/main/docs/developing-agents-llm-providers.md
+        """
         if os.environ.get("LLM_DATAROBOT_DEPLOYMENT_ID"):
-            return self.llm_with_datarobot_deployment
+            # Ensure the API base ends with /api/v2/ for deployments
+            api_base = self.api_base
+            if not api_base.endswith("api/v2/") or not api_base.endswith("api/v2"):
+                api_base += "/api/v2"
+            return ChatLiteLLM(
+                model="datarobot/azure/gpt-4o-mini",
+                api_base=f"{api_base}/deployments/{os.environ.get('LLM_DATAROBOT_DEPLOYMENT_ID')}/",
+                api_key=self.api_key,
+                timeout=self.timeout,
+            )
         else:
-            return self.llm_with_datarobot_llm_gateway
+            # Ensure the API base does not end with /api/v2/ for LLM Gateway
+            api_base = re.sub(r"api/v2/?$", "", self.api_base)
+            return ChatLiteLLM(
+                model="datarobot/azure/gpt-4o-mini",
+                api_base=api_base,
+                api_key=self.api_key,
+                timeout=self.timeout,
+            )
 
     @property
     def agent_planner(self) -> Any:
@@ -258,52 +278,6 @@ class MyAgent:
             " If you are unable to fully answer, that's OK, another assistant with different tools "
             " will help where you left off. Execute what you can to make progress."
             f"\n{suffix}"
-        )
-
-    @property
-    def api_base_litellm(self) -> str:
-        """Returns a modified version of the API base URL suitable for LiteLLM.
-
-        Strips 'api/v2/' or 'api/v2' from the end of the URL if present.
-
-        Returns:
-            str: The modified API base URL.
-        """
-        if self.api_base:
-            return re.sub(r"api/v2/?$", "", self.api_base)
-        return "https://api.datarobot.com"
-
-    @property
-    def llm_with_datarobot_llm_gateway(self) -> ChatLiteLLM:
-        """Returns a ChatLiteLLM instance configured to use DataRobot's LLM Gateway.
-
-        This property can serve as a primary LLM backend for the agents. You can optionally
-        have multiple LLMs configured, such as one for DataRobot's LLM Gateway
-        and another for a specific DataRobot deployment, or even multiple deployments or
-        third-party LLMs.
-        """
-        return ChatLiteLLM(
-            model="datarobot/azure/gpt-4o-mini",
-            api_base=self.api_base_litellm,
-            api_key=self.api_key,
-            timeout=self.timeout,
-        )
-
-    @property
-    def llm_with_datarobot_deployment(self) -> ChatLiteLLM:
-        """Returns a ChatLiteLLM instance configured to use DataRobot's LLM Deployments.
-
-        This property can serve as a primary LLM backend for the agents. You can optionally
-        have multiple LLMs configured, such as one for DataRobot's LLM Gateway
-        and another for a specific DataRobot deployment, or even multiple deployments or
-        third-party LLMs.
-        """
-        deployment_url = f"{self.api_base}/deployments/{os.environ.get('LLM_DATAROBOT_DEPLOYMENT_ID')}/"
-        return ChatLiteLLM(
-            model="openai/gpt-4o-mini",
-            api_base=deployment_url,
-            api_key=self.api_key,
-            timeout=self.timeout,
         )
 
     @staticmethod
