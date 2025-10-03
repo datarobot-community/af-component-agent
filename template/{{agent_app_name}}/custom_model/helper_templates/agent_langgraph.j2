@@ -18,6 +18,7 @@ from ragas import MultiTurnSample
 from ragas.integrations.langgraph import convert_to_ragas_messages
 
 
+@staticmethod
 def create_pipeline_interactions_from_events(
     events: list[dict[str, Any]],
 ) -> MultiTurnSample | None:

@@ -341,10 +341,10 @@ class TestMyAgentCrewAI:
             AIMessage(content="How are you today?"),
         ]
         usage_metrics = Mock(
-                completion_tokens=1,
-                prompt_tokens=2,
-                total_tokens=3,
-            )
+            completion_tokens=1,
+            prompt_tokens=2,
+            total_tokens=3,
+        )
 
         # Setup mocks
         mock_agent_instance = MagicMock()

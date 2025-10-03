@@ -37,7 +37,6 @@ except ImportError:
     )
     from crewai.utilities.events.base_event_listener import BaseEventListener
 
-from ragas import MultiTurnSample
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 
 
@@ -95,12 +94,3 @@ class CrewAIEventListener(BaseEventListener):  # type: ignore[misc]
                 logging.warning("No previous tool calls found")
                 return
             self.messages.append(ToolMessage(content=event.output))
-
-
-def create_pipeline_interactions_from_events(
-    events: list[Union[HumanMessage, AIMessage, ToolMessage]],
-) -> MultiTurnSample | None:
-    """Convert a list of CrewAI events to a MultiTurnSample."""
-    if not events:
-        return None
-    return MultiTurnSample(user_input=events)
