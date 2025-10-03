@@ -315,7 +315,7 @@ class TestMyAgentCrewAI:
             )
 
             assert response_text == mock_result.raw
-            assert len(events) == 0  # No events are being generated in this test
+            assert events is None  # No events are being generated in this test
             assert usage_metrics == {
                 "completion_tokens": 10,
                 "prompt_tokens": 5,
@@ -328,14 +328,7 @@ class TestMyAgentCrewAI:
         # no pipeline interactions is already part of test_custom_model.py::test_chat
         from custom import chat
 
-        crew_output = Mock(
-            raw="agent result",
-            token_usage=Mock(
-                completion_tokens=1,
-                prompt_tokens=2,
-                total_tokens=3,
-            ),
-        )
+        response_text = "agent result"
         events = [
             HumanMessage(content="Hi"),
             AIMessage(
@@ -347,10 +340,15 @@ class TestMyAgentCrewAI:
             ToolMessage(content="Use en"),
             AIMessage(content="How are you today?"),
         ]
+        usage_metrics = Mock(
+                completion_tokens=1,
+                prompt_tokens=2,
+                total_tokens=3,
+            )
 
         # Setup mocks
         mock_agent_instance = MagicMock()
-        mock_agent_instance.run.return_value = (crew_output, events)
+        mock_agent_instance.run.return_value = (response_text, events, usage_metrics)
         mock_agent.return_value = mock_agent_instance
 
         completion_create_params = {
