@@ -13,6 +13,8 @@
 # limitations under the License.
 import json
 import os
+import time
+import uuid
 from typing import Any, Iterator, Optional, Union, cast
 
 import datarobot as dr
@@ -28,8 +30,45 @@ from datarobot_predict.deployment import (
     predict,
     predict_unstructured,
 )
-from openai.types import CompletionCreateParams
-from openai.types.chat import ChatCompletion, ChatCompletionChunk
+from openai.types import CompletionCreateParams, CompletionUsage
+from openai.types.chat import ChatCompletion, ChatCompletionChunk, ChatCompletionMessage
+
+
+class CustomModelChatResponse(ChatCompletion):
+    pipeline_interactions: str | None = None
+
+
+class CustomModelStreamingResponse(Iterator[ChatCompletionChunk]):
+    pipeline_interactions: str | None = None
+
+
+def to_custom_model_chat_response(
+    response_text: str,
+    pipeline_interactions: Optional[Any],
+    usage_metrics: dict[str, int],
+    model: Optional[str] = None,
+) -> CustomModelChatResponse:
+    """Convert the OpenAI ChatCompletion response to CustomModelChatResponse."""
+    from openai.types.chat.chat_completion import Choice
+
+    # Convert the text of the agent response into a chat completion response
+    choice = Choice(
+        index=0,
+        message=ChatCompletionMessage(role="assistant", content=response_text),
+        finish_reason="stop",
+    )
+
+    return CustomModelChatResponse(
+        id=str(uuid.uuid4()),  # Create a unique completion id
+        object="chat.completion",
+        choices=[choice],
+        created=int(time.time()),  # ChatCompletion created time should be an integer
+        model=model,
+        usage=CompletionUsage(**usage_metrics),
+        pipeline_interactions=pipeline_interactions.model_dump_json()
+        if pipeline_interactions
+        else None,
+    )
 
 
 def initialize_authorization_context(
