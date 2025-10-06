@@ -235,7 +235,7 @@ def events() -> list[dict[str, Any]]:
 def test_extract_pipeline_interactions(events: list[dict[str, Any]]) -> None:
     """Test that the pipeline interactions are extracted correctly."""
 
-    result = MyAgent.extract_pipeline_interactions(events)
+    result = MyAgent.create_pipeline_interactions_from_events(events)
     # The check is that with different ToolMessage content types there is no exception
     assert isinstance(result, MultiTurnSample)
     assert len(result.user_input) == 3
