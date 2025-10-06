@@ -15,10 +15,11 @@ import os
 import re
 from typing import Any, Optional, Union
 
-from crewai import LLM, Agent, Crew, CrewOutput, Task
-from helpers import CrewAIEventListener
+from crewai import LLM, Agent, Crew, Task
+from crewai_event_listener import CrewAIEventListener
 from openai.types.chat import CompletionCreateParams
-from ragas.messages import AIMessage
+from ragas import MultiTurnSample
+from ragas.messages import AIMessage, HumanMessage, ToolMessage
 
 
 class MyAgent:
@@ -68,7 +69,7 @@ class MyAgent:
 
     def run(
         self, completion_create_params: CompletionCreateParams
-    ) -> tuple[CrewOutput, list[Any]]:
+    ) -> tuple[str, Any | None, dict[str, int]]:
         """Run the agent with the provided completion parameters.
 
         [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
@@ -96,7 +97,7 @@ class MyAgent:
             inputs={"topic": user_prompt_content}
         )
 
-        # Extract the response text from the crew output
+        # Extract the final agent response as the synchronous response
         response_text = str(crew_output.raw)
 
         # Create a list of events from the event listener
@@ -108,9 +109,15 @@ class MyAgent:
         else:
             events = None
 
-        # The `events` variable is used to compute agentic metrics and guardrails
-        # If you are not interested in these metrics, you can also return None instead.
-        return crew_output, events
+        pipeline_interactions = self.create_pipeline_interactions_from_events(events)
+
+        usage_metrics = {
+            "completion_tokens": crew_output.token_usage.completion_tokens,
+            "prompt_tokens": crew_output.token_usage.prompt_tokens,
+            "total_tokens": crew_output.token_usage.total_tokens,
+        }
+
+        return response_text, pipeline_interactions, usage_metrics
 
     def run_crew_agentic_workflow(self) -> Crew:
         """Creates and returns a Crew instance with defined agents and tasks."""
@@ -261,3 +268,16 @@ class MyAgent:
             api_key=self.api_key,
             timeout=self.timeout,
         )
+
+    @staticmethod
+    def create_pipeline_interactions_from_events(
+        events: list[Union[HumanMessage, AIMessage, ToolMessage]],
+    ) -> MultiTurnSample | None:
+        """Convert a list of events into a MultiTurnSample.
+
+        Creates the pipeline interactions for moderations and evaluation
+        (e.g. Task Adherence, Agent Goal Accuracy, Tool Call Accuracy)
+        """
+        if not events:
+            return None
+        return MultiTurnSample(user_input=events)

@@ -17,11 +17,13 @@ from datetime import datetime
 from typing import Any, Optional, Union
 
 from langchain_community.chat_models import ChatLiteLLM
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, ToolMessage
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import create_react_agent
 from langgraph.types import Command
 from openai.types.chat import CompletionCreateParams
+from ragas import MultiTurnSample
+from ragas.integrations.langgraph import convert_to_ragas_messages
 
 
 class MyAgent:
@@ -70,7 +72,7 @@ class MyAgent:
 
     def run(
         self, completion_create_params: CompletionCreateParams
-    ) -> tuple[list[Any], dict[str, int]]:
+    ) -> tuple[str, Any | None, dict[str, int]]:
         """Run the agent with the provided completion parameters.
 
         [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
@@ -113,14 +115,22 @@ class MyAgent:
             debug=True,
         )
 
-        # Execute the graph and store calls to the agent in events
+        # Create a list of events from the event listener
         events = [event for event in graph_stream]
+
+        pipeline_interactions = self.create_pipeline_interactions_from_events(events)
+
+        # Extract the final event from the graph stream as the synchronous response
+        last_event = events[-1]
+        node_name = next(iter(last_event))
+        response_text = str(last_event[node_name]["messages"][-1].content)
+
         usage_metrics: dict[str, int] = {
             "completion_tokens": 0,
             "prompt_tokens": 0,
             "total_tokens": 0,
         }
-        return events, usage_metrics
+        return response_text, pipeline_interactions, usage_metrics
 
     def run_langgraph_agentic_workflow(self) -> Any:
         """Defines the workflow graph for the agent using Langgraph."""
@@ -299,3 +309,27 @@ class MyAgent:
             api_key=self.api_key,
             timeout=self.timeout,
         )
+
+    @staticmethod
+    def create_pipeline_interactions_from_events(
+        events: list[dict[str, Any]],
+    ) -> MultiTurnSample | None:
+        """Convert a list of events into a MultiTurnSample.
+
+        Creates the pipeline interactions for moderations and evaluation
+        (e.g. Task Adherence, Agent Goal Accuracy, Tool Call Accuracy)
+        """
+        if not events:
+            return None
+
+        messages = []
+        for e in events:
+            for k, v in e.items():
+                messages.extend(v["messages"])
+
+        # Drop the ToolMessages since they may not be compatible with Ragas ToolMessage
+        # that is needed for the MultiTurnSample.
+        messages = [m for m in messages if not isinstance(m, ToolMessage)]
+
+        ragas_trace = convert_to_ragas_messages(messages)
+        return MultiTurnSample(user_input=ragas_trace)
