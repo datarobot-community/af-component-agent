@@ -116,7 +116,9 @@ class MyAgent:
         langgraph_execution_graph = langgraph_workflow.compile()
         graph_stream = langgraph_execution_graph.stream(
             inputs=input_message,
-            config={"recursion_limit": 150},  # Maximum number of steps to take in the graph
+            config={
+                "recursion_limit": 150
+            },  # Maximum number of steps to take in the graph
             debug=True,
         )
 
