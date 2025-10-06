@@ -41,7 +41,7 @@ class MyAgent:
             None
         """
 
-    def run(
+    def invoke(
         self, completion_create_params: CompletionCreateParams
     ) -> tuple[str, list[Any], dict[str, int]]:
         """Run the agent with the provided completion parameters.
@@ -69,7 +69,7 @@ class MyAgent:
         # Get the config file path
         config_file = Path(__file__).parent / "workflow.yaml"
 
-        # Run the NAT workflow
+        # Create and invoke the NAT (Nemo Agent Toolkit) Agentic Workflow with the inputs
         try:
             result = asyncio.run(
                 self.run_nat_workflow(config_file, user_prompt_content)
