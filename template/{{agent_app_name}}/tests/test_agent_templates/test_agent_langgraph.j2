@@ -13,9 +13,12 @@
 # limitations under the License.
 import os
 from unittest.mock import patch
+from typing import Any
 
 import pytest
 from agent import MyAgent
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from ragas import MultiTurnSample
 
 
 class TestMyAgentLanggraph:
@@ -168,3 +171,71 @@ class TestMyAgentLanggraph:
             agent = MyAgent(api_base=api_base)
             result = agent.api_base_litellm
             assert result == expected_result
+
+
+@pytest.fixture
+def events() -> list[dict[str, Any]]:
+    return [
+        {
+            "final_agent": {
+                "messages": [
+                    HumanMessage(content="Hi, tell me about Paris."),
+                    AIMessage(
+                        content="",
+                        additional_kwars={
+                            "tool_calls": [
+                                {
+                                    "id": "call_9Luzq73eFGikbDUnAazwnPep",
+                                    "function": {
+                                        "name": "wikipedia",
+                                        "arguments": '{"city": "Paris"}',
+                                        "type": "function",
+                                    },
+                                },
+                                {
+                                    "id": "call_PvSdV1HLzTd6RnoiwM7lLy5u",
+                                    "function": {
+                                        "name": "weather",
+                                        "arguments": '{"city": "Paris"}',
+                                        "type": "function",
+                                    },
+                                },
+                                {
+                                    "id": "call_mknvGBUMnAY4OzUTZA9yTe4I",
+                                    "function": {
+                                        "name": "events",
+                                        "arguments": '{"city": "Paris"}',
+                                        "type": "function",
+                                    },
+                                },
+                            ]
+                        },
+                    ),
+                    ToolMessage(
+                        content="stuff about paris",
+                        tool_call_id="call_9Luzq73eFGikbDUnAazwnPep",
+                    ),
+                    ToolMessage(
+                        content=[{"temp": 15, "wind": 2, "direction": 215}],
+                        tool_call_id="call_PvSdV1HLzTd6RnoiwM7lLy5u",
+                    ),
+                    ToolMessage(
+                        content=["a", "b", "c"],
+                        tool_call_id="call_mknvGBUMnAY4OzUTZA9yTe4I",
+                    ),
+                    AIMessage(
+                        content="Here is the information you requested about Paris....."
+                    ),
+                ]
+            }
+        }
+    ]
+
+
+def test_extract_pipeline_interactions(events: list[dict[str, Any]]) -> None:
+    """Test that the pipeline interactions are extracted correctly."""
+
+    result = MyAgent.extract_pipeline_interactions(events)
+    # The check is that with different ToolMessage content types there is no exception
+    assert isinstance(result, MultiTurnSample)
+    assert len(result.user_input) == 3
