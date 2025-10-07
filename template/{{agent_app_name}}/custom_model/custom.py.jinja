@@ -126,7 +126,7 @@ def chat(
     agent = MyAgent(**completion_create_params)
 
     # Execute the agent with the inputs
-    response_text, pipeline_interactions, usage_metrics = agent.run(
+    response_text, pipeline_interactions, usage_metrics = agent.invoke(
         completion_create_params=completion_create_params
     )
 
