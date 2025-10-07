@@ -101,7 +101,7 @@ class MyAgent:
         elif isinstance(verbose, bool):
             self.verbose = verbose
 
-    def run(
+    def invoke(
         self, completion_create_params: CompletionCreateParams
     ) -> tuple[str, Any | None, dict[str, int]]:
         """Run the agent with the provided completion parameters.
@@ -133,7 +133,7 @@ class MyAgent:
             f"information given the current year is {str(datetime.now().year)}."
         )
 
-        # Get the agentic workflow result and create a list of events from the event listener
+        # Create and invoke the LlamaIndex Agentic Workflow with the inputs
         result, events = asyncio.run(
             self.run_llamaindex_agentic_workflow(input_message)
         )

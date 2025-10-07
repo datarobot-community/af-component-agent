@@ -282,13 +282,14 @@ class TestMyAgentCrewAI:
                 agent=ANY,
             )
 
+    @patch("agent.Crew")
     @patch("agent.CrewAIEventListener")
     @patch("agent.Agent")
-    def test_chat(self, mock_agent, mock_event_listener, agent):
+    def test_chat(self, mock_agent, mock_event_listener, mock_crew, agent):
         # This test case covers testing that the agent invoke runs with the llm interactions mocked
         from custom import chat
 
-        _ = mock_agent
+        _ = mock_agent, agent  # Uncalled but left for global test setup
 
         crew_output = Mock(
             raw="agent result",
@@ -298,6 +299,8 @@ class TestMyAgentCrewAI:
                 total_tokens=3,
             ),
         )
+        mock_crew.return_value = Mock(kickoff=MagicMock(return_value=crew_output))
+
         events = [
             HumanMessage(content="Hi"),
             AIMessage(
@@ -311,18 +314,18 @@ class TestMyAgentCrewAI:
         ]
         mock_event_listener.return_value = Mock(messages=events)
 
-        run_mock_return = Mock(kickoff=MagicMock(return_value=crew_output))
-
         # Setup mocks
-        with patch.object(
-            MyAgent, "run_crew_agentic_workflow", return_value=run_mock_return
-        ):
-            completion_create_params = {
-                "model": "test-model",
-                "messages": [{"role": "user", "content": '{"topic": "test"}'}],
-                "environment_var": True,
-            }
+        completion_create_params = {
+            "model": "test-model",
+            "messages": [{"role": "user", "content": '{"topic": "test"}'}],
+            "environment_var": True,
+        }
 
+        with (
+            patch.object(MyAgent, "task_plan"),
+            patch.object(MyAgent, "task_write"),
+            patch.object(MyAgent, "task_edit"),
+        ):
             response = chat(completion_create_params, model="test-model")
 
         # Assert results - check the pipeline_interactions - other sections of the
