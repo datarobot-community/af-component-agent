@@ -14,6 +14,7 @@
 import os
 import re
 from typing import Any, Optional, Union
+from urllib.parse import urljoin, urlparse
 
 from crewai import LLM, Agent, Crew, Task
 from crewai_event_listener import CrewAIEventListener
@@ -58,7 +59,11 @@ class MyAgent:
             None
         """
         self.api_key = api_key or os.environ.get("DATAROBOT_API_TOKEN")
-        self.api_base = api_base or os.environ.get("DATAROBOT_ENDPOINT") or "https://api.datarobot.com"
+        self.api_base = (
+            api_base
+            or os.environ.get("DATAROBOT_ENDPOINT")
+            or "https://api.datarobot.com"
+        )
         self.model = model
         self.timeout = timeout
         if isinstance(verbose, str):
@@ -131,23 +136,39 @@ class MyAgent:
         For help configuring different LLM backends see:
         https://github.com/datarobot-community/datarobot-agent-templates/blob/main/docs/developing-agents-llm-providers.md
         """
+        api_base = urlparse(self.api_base)
         if os.environ.get("LLM_DATAROBOT_DEPLOYMENT_ID"):
-            # Ensure the API base ends with /api/v2/ for deployments
-            api_base = self.api_base
-            if not api_base.endswith("api/v2/") or not api_base.endswith("api/v2"):
-                api_base += "/api/v2"
+            path = api_base.path
+            if "/api/v2/deployments" not in path and "api/v2/genai" not in path:
+                # Ensure the API base ends with /api/v2/ for deployments
+                if not path.endswith("/api/v2/") and not path.endswith("/api/v2"):
+                    path = urljoin(path + "/", "api/v2/")
+                if not path.endswith("/"):
+                    path += "/"
+                api_base = api_base._replace(path=path)
+                deployment_url = urljoin(
+                    api_base.geturl(),
+                    f"deployments/{os.environ.get('LLM_DATAROBOT_DEPLOYMENT_ID')}/",
+                )
+            else:
+                # If user specifies a likely deployment URL then leave it alone
+                deployment_url = api_base.geturl()
             return LLM(
                 model="openai/gpt-4o-mini",
-                api_base=f"{api_base}/deployments/{os.environ.get('LLM_DATAROBOT_DEPLOYMENT_ID')}/",
+                api_base=deployment_url,
                 api_key=self.api_key,
                 timeout=self.timeout,
             )
         else:
             # Ensure the API base does not end with /api/v2/ for LLM Gateway
-            api_base = re.sub(r"api/v2/?$", "", self.api_base)
+            # Remove only '/api/v2' or '/api/v2/' from the path portion, if present
+            path = api_base.path
+            if path.endswith("api/v2/") or path.endswith("api/v2"):
+                path = re.sub(r"/api/v2/?$", "/", path)
+            api_base = api_base._replace(path=path)
             return LLM(
                 model="datarobot/azure/gpt-4o-mini",
-                api_base=api_base,
+                api_base=api_base.geturl(),
                 api_key=self.api_key,
                 timeout=self.timeout,
             )
