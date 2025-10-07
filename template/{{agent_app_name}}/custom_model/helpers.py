@@ -70,6 +70,58 @@ def to_custom_model_chat_response(
         else None,
     )
 
+def to_custom_model_streaming_response(
+    streaming_response_iterator: callable,
+    model: Optional[str] = None,
+) -> Iterator[CustomModelStreamingResponse]:
+    """Convert the OpenAI ChatCompletionChunk response to CustomModelStreamingResponse."""
+    from openai.types.chat.chat_completion_chunk import ChoiceDelta
+    from openai.types.chat.chat_completion_chunk import Choice
+
+    completion_id = str(uuid.uuid4())
+    created = int(time.time())
+
+    pipeline_interactions = None
+    usage_metrics = None
+    for response_text, chunk_pipeline_interactions, chunk_usage_metrics in enumerate(streaming_response_iterator):
+        pipeline_interactions = chunk_pipeline_interactions
+        usage_metrics = chunk_usage_metrics
+        delta = ChoiceDelta(role="assistant", content=response_text)
+        choice = Choice(
+            index=0,
+            delta=delta,
+            finish_reason=None,
+        )
+        
+        chunk = ChatCompletionChunk(
+            id=completion_id,
+            object="chat.completion.chunk",
+            created=created,
+            model=model,
+            choices=[choice],
+            usage=CompletionUsage(**usage_metrics) if usage_metrics else None,
+        )
+        yield chunk
+    
+    delta = ChoiceDelta(role="assistant")
+    choice = Choice(
+        index=0,
+        delta=delta,
+        finish_reason="stop",
+    )
+    
+    chunk = ChatCompletionChunk(
+        id=completion_id,
+        object="chat.completion.chunk",
+        created=created,
+        model=model,
+        choices=[choice],
+    )
+    if pipeline_interactions:
+        setattr(chunk, 'pipeline_interactions', pipeline_interactions)
+    
+    yield chunk
+
 
 def initialize_authorization_context(
     completion_create_params: CompletionCreateParams,

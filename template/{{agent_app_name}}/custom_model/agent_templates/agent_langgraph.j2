@@ -77,7 +77,7 @@ class MyAgent:
 
     def invoke(
         self, completion_create_params: CompletionCreateParams
-    ) -> tuple[str, Any | None, dict[str, int]]:
+    ) -> Union[callable, tuple[str, Any | None, dict[str, int]]]:
         """Run the agent with the provided completion parameters.
 
         [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
@@ -119,6 +119,7 @@ class MyAgent:
         langgraph_workflow.add_node("editor_node", self.task_edit)
         langgraph_workflow.add_edge(START, "planner_node")
         langgraph_execution_graph = langgraph_workflow.compile()
+
         graph_stream = langgraph_execution_graph.stream(
             input=input_message,
             config={
@@ -127,21 +128,46 @@ class MyAgent:
             debug=True,
         )
 
-        # Create a list of events from the event listener
-        events = [event for event in graph_stream]
-        pipeline_interactions = self.create_pipeline_interactions_from_events(events)
+        if completion_create_params.get("stream"):
+            def stream_generator():
+                usage_metrics: dict[str, int] = {
+                    "completion_tokens": 0,
+                    "prompt_tokens": 0,
+                    "total_tokens": 0,
+                }
 
-        # Extract the final event from the graph stream as the synchronous response
-        last_event = events[-1]
-        node_name = next(iter(last_event))
-        response_text = str(last_event[node_name]["messages"][-1].content)
+                # For each event in the graph stream, yield the latest message content
+                # along with updated usage metrics.
+                events = []
+                for event in graph_stream:
+                    events.append(event)
+                    yield str(event[next(iter(event))]["messages"][-1].content), None, usage_metrics
 
-        usage_metrics: dict[str, int] = {
-            "completion_tokens": 0,
-            "prompt_tokens": 0,
-            "total_tokens": 0,
-        }
-        return response_text, pipeline_interactions, usage_metrics
+                
+                # Create a list of events from the event listener
+                pipeline_interactions = self.create_pipeline_interactions_from_events(
+                    events
+                )
+
+                # yield the final response indicating completion
+                yield "Agent execution completed", pipeline_interactions, usage_metrics
+            return stream_generator()
+        else:
+            # Execute events synchronously
+            events = [event for event in graph_stream]
+            pipeline_interactions = self.create_pipeline_interactions_from_events(events)
+
+            # Extract the final event from the graph stream as the synchronous response
+            last_event = events[-1]
+            node_name = next(iter(last_event))
+            response_text = str(last_event[node_name]["messages"][-1].content)
+
+            usage_metrics: dict[str, int] = {
+                "completion_tokens": 0,
+                "prompt_tokens": 0,
+                "total_tokens": 0,
+            }
+            return response_text, pipeline_interactions, usage_metrics
 
     @property
     def llm(self) -> ChatLiteLLM:
