@@ -70,7 +70,7 @@ class MyAgent:
         elif isinstance(verbose, bool):
             self.verbose = verbose
 
-    def run(
+    def invoke(
         self, completion_create_params: CompletionCreateParams
     ) -> tuple[str, Any | None, dict[str, int]]:
         """Run the agent with the provided completion parameters.
@@ -107,17 +107,23 @@ class MyAgent:
             goto="writer_node",
         )
 
-        # Graph stream is a generator that will execute the graph
-        graph_stream = self.run_langgraph_agentic_workflow().stream(
-            input_message,
-            # Maximum number of steps to take in the graph
-            {"recursion_limit": 150},
+        # Create and invoke the Langgraph Agentic Workflow with the inputs
+        langgraph_workflow = StateGraph(MessagesState)
+        langgraph_workflow.add_node("planner_node", self.task_plan)
+        langgraph_workflow.add_node("writer_node", self.task_write)
+        langgraph_workflow.add_node("editor_node", self.task_edit)
+        langgraph_workflow.add_edge(START, "planner_node")
+        langgraph_execution_graph = langgraph_workflow.compile()
+        graph_stream = langgraph_execution_graph.stream(
+            input=input_message,
+            config={
+                "recursion_limit": 150
+            },  # Maximum number of steps to take in the graph
             debug=True,
         )
 
         # Create a list of events from the event listener
         events = [event for event in graph_stream]
-
         pipeline_interactions = self.create_pipeline_interactions_from_events(events)
 
         # Extract the final event from the graph stream as the synchronous response
@@ -131,16 +137,6 @@ class MyAgent:
             "total_tokens": 0,
         }
         return response_text, pipeline_interactions, usage_metrics
-
-    def run_langgraph_agentic_workflow(self) -> Any:
-        """Defines the workflow graph for the agent using Langgraph."""
-        workflow = StateGraph(MessagesState)
-        workflow.add_node("planner_node", self.task_plan)
-        workflow.add_node("writer_node", self.task_write)
-        workflow.add_node("editor_node", self.task_edit)
-        workflow.add_edge(START, "planner_node")
-        execution_graph = workflow.compile()
-        return execution_graph
 
     @property
     def llm(self) -> ChatLiteLLM:
