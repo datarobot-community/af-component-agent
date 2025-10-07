@@ -15,7 +15,7 @@ import json
 import os
 import time
 import uuid
-from typing import Any, Iterator, Optional, Union, cast
+from typing import Any, Callable, Generator, Iterator, Optional, Union, cast
 
 import datarobot as dr
 import openai
@@ -38,7 +38,7 @@ class CustomModelChatResponse(ChatCompletion):
     pipeline_interactions: str | None = None
 
 
-class CustomModelStreamingResponse(Iterator[ChatCompletionChunk]):
+class CustomModelStreamingResponse(ChatCompletionChunk):
     pipeline_interactions: str | None = None
 
 
@@ -70,20 +70,26 @@ def to_custom_model_chat_response(
         else None,
     )
 
+
 def to_custom_model_streaming_response(
-    streaming_response_iterator: callable,
+    streaming_response_iterator: Callable[
+        [], Generator[tuple[str, Any | None, dict[str, int]], None, None]
+    ],
     model: Optional[str] = None,
 ) -> Iterator[CustomModelStreamingResponse]:
     """Convert the OpenAI ChatCompletionChunk response to CustomModelStreamingResponse."""
-    from openai.types.chat.chat_completion_chunk import ChoiceDelta
-    from openai.types.chat.chat_completion_chunk import Choice
+    from openai.types.chat.chat_completion_chunk import Choice, ChoiceDelta
 
     completion_id = str(uuid.uuid4())
     created = int(time.time())
 
     pipeline_interactions = None
     usage_metrics = None
-    for response_text, chunk_pipeline_interactions, chunk_usage_metrics in enumerate(streaming_response_iterator):
+    for (
+        response_text,
+        chunk_pipeline_interactions,
+        chunk_usage_metrics,
+    ) in streaming_response_iterator():
         pipeline_interactions = chunk_pipeline_interactions
         usage_metrics = chunk_usage_metrics
         delta = ChoiceDelta(role="assistant", content=response_text)
@@ -92,8 +98,8 @@ def to_custom_model_streaming_response(
             delta=delta,
             finish_reason=None,
         )
-        
-        chunk = ChatCompletionChunk(
+
+        chunk = CustomModelStreamingResponse(
             id=completion_id,
             object="chat.completion.chunk",
             created=created,
@@ -102,24 +108,25 @@ def to_custom_model_streaming_response(
             usage=CompletionUsage(**usage_metrics) if usage_metrics else None,
         )
         yield chunk
-    
+
+    # Yield a final chunk indicating the end of the stream
     delta = ChoiceDelta(role="assistant")
     choice = Choice(
         index=0,
         delta=delta,
         finish_reason="stop",
     )
-    
-    chunk = ChatCompletionChunk(
+
+    chunk = CustomModelStreamingResponse(
         id=completion_id,
         object="chat.completion.chunk",
         created=created,
         model=model,
         choices=[choice],
+        usage=CompletionUsage(**usage_metrics) if usage_metrics else None,
+        pipeline_interactions=pipeline_interactions,
     )
-    if pipeline_interactions:
-        setattr(chunk, 'pipeline_interactions', pipeline_interactions)
-    
+
     yield chunk
 
 
