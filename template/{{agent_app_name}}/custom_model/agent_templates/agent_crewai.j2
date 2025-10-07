@@ -58,7 +58,7 @@ class MyAgent:
             None
         """
         self.api_key = api_key or os.environ.get("DATAROBOT_API_TOKEN")
-        self.api_base = api_base or os.environ.get("DATAROBOT_ENDPOINT")
+        self.api_base = api_base or os.environ.get("DATAROBOT_ENDPOINT") or "https://api.datarobot.com"
         self.model = model
         self.timeout = timeout
         if isinstance(verbose, str):
