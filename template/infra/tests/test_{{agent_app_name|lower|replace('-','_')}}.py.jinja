@@ -270,10 +270,13 @@ def test_custom_model_created_llm_deployment_id(monkeypatch):
     monkeypatch.setenv("LLM_DATAROBOT_DEPLOYMENT_ID", "model_id")
 
     import importlib
+    import infra.llm
     import infra.{{agent_app_name}} as agent_infra
 
     # Reset the mock to clear calls from the initial import
     agent_infra.pulumi_datarobot.CustomModel.reset_mock()
+    # Reload llm module first to pick up the new environment variable
+    importlib.reload(infra.llm)
     importlib.reload(agent_infra)
 
     agent_infra.pulumi_datarobot.CustomModel.assert_called_once()
