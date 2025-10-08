@@ -46,7 +46,9 @@ class TestMyAgentBase:
                 "messages": [{"role": "user", "content": "Artificial Intelligence"}],
                 "environment_var": True,
             }
-            result, usage = agent.invoke(completion_create_params)
+            result, pipeline_interactions, usage = agent.invoke(
+                completion_create_params
+            )
 
             # Verify run_nat_workflow was called with the right inputs
             agent.run_nat_workflow.assert_called_once_with(
@@ -55,6 +57,7 @@ class TestMyAgentBase:
             )
 
             assert result == "success"
+            assert pipeline_interactions == []
             assert usage == {
                 "completion_tokens": 0,
                 "prompt_tokens": 0,
