@@ -199,6 +199,7 @@ pipeline:
                   - python3.10
                   - python3.11
                   - python3.12
+                  - python3.13
                 nodeName: <+matrix.python>
         - stage:
             name: Test Component CrewAI
@@ -278,6 +279,7 @@ pipeline:
                   - python3.10
                   - python3.11
                   - python3.12
+                  - python3.13
                 nodeName: <+matrix.python>
         - stage:
             name: Test Component Langgraph
@@ -357,6 +359,7 @@ pipeline:
                   - python3.10
                   - python3.11
                   - python3.12
+                  - python3.13
                 nodeName: <+matrix.python>
         - stage:
             name: Test Component LlamaIndex
@@ -436,6 +439,7 @@ pipeline:
                   - python3.10
                   - python3.11
                   - python3.12
+                  - python3.13
                 nodeName: <+matrix.python>
         - stage:
             name: Test Component Infra
