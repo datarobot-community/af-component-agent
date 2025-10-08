@@ -34,10 +34,6 @@ tasks:
     desc: "Build docker image locally (Check container builds)"
     cmds:
       - cd template/\{\{agent_app_name\}\}/docker_context && docker build -f Dockerfile . -t test --platform linux/amd64
-  docker_build_local_nat:
-    desc: "Build NAT docker image locally (Check container builds)"
-    cmds:
-      - cd template/\{\{agent_app_name\}\}/docker_context && docker build --build-arg EXT=".nat" -f Dockerfile . -t test --platform linux/amd64
   test-agent:
     desc: "Run tests"
     cmds:
