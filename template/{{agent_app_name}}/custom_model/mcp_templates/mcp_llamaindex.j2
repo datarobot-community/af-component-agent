@@ -1,0 +1,212 @@
+# Copyright 2025 DataRobot, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""
+MCP (Model Context Protocol) integration for DataRobot LlamaIndex agents.
+
+Uses fastmcp for client connections.
+"""
+
+import asyncio
+import logging
+import os
+import re
+from typing import Any, Callable, Dict, List, Optional
+
+from fastmcp import FastMCP
+from llama_index.core.tools import FunctionTool
+
+logger = logging.getLogger(__name__)
+
+
+class MCPConfig:
+    """Configuration for MCP server connection."""
+
+    def __init__(self, url: str):
+        self.raw_url = url
+        self.url = self._normalize_url(url)
+        self.is_datarobot = self._is_datarobot_url(url)
+        self.deployment_id = (
+            self._extract_deployment_id(url) if self.is_datarobot else None
+        )
+
+    @staticmethod
+    def _is_datarobot_url(url: str) -> bool:
+        return bool(re.search(r"/deployments/[a-f0-9]{24}", url))
+
+    @staticmethod
+    def _extract_deployment_id(url: str) -> Optional[str]:
+        match = re.search(r"/deployments/([a-f0-9]{24})", url)
+        return match.group(1) if match else None
+
+    def _normalize_url(self, url: str) -> str:
+        url = url.rstrip("/")
+        if self._is_datarobot_url(url) and not url.endswith("/mcp"):
+            url += "/mcp"
+        return url
+
+    @classmethod
+    def from_env(cls) -> Optional["MCPConfig"]:
+        url = os.environ.get("MCP_URL")
+        return cls(url) if url else None
+
+
+class MCPToolLoader:
+    """
+    Load tools from MCP server using fastmcp.
+
+    This class provides controlled access to MCP tools by:
+    - Discovering available tools from the MCP server
+    - Caching tool metadata for performance
+    - Allowing selective tool loading (filter by name)
+    - Managing the MCP client connection lifecycle
+
+    Why use this instead of loading all tools directly?
+    - **Performance**: Avoid loading unnecessary tools into agent context
+    - **Control**: Give agents only the tools they need for their specific task
+    - **Security**: Limit agent capabilities by restricting tool access
+    - **Debugging**: Easier to trace which tools are being used
+
+    Example:
+        >>> config = MCPConfig.from_env()
+        >>> loader = MCPToolLoader(config)
+        >>>
+        >>> # Discover what's available
+        >>> all_tools = loader.list_tools()
+        >>> print(f"Available: {all_tools}")
+        >>>
+        >>> # Load only search-related tools for a research agent
+        >>> search_tools = load_mcp_tools_for_llamaindex(
+        ...     config,
+        ...     tool_names=['web_search', 'document_search']
+        ... )
+    """
+
+    def __init__(self, config: MCPConfig):
+        self.config = config
+        self._client: Optional[FastMCP] = None
+        self._tools_cache: Optional[Dict[str, Dict[str, Any]]] = None
+
+    def _get_client(self) -> FastMCP:
+        """Get or create FastMCP client."""
+        if self._client is None:
+            self._client = FastMCP("mcp-client")
+        return self._client
+
+    def list_tools(self) -> List[str]:
+        """List available tools from MCP server."""
+        if self._tools_cache is not None:
+            return list(self._tools_cache.keys())
+
+        try:
+            client = self._get_client()
+            # Connect to the MCP server and list tools
+            tools_list = asyncio.run(client._list_tools())
+
+            self._tools_cache = {}
+            for tool in tools_list:
+                self._tools_cache[tool.name] = {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "schema": getattr(tool, "input_schema", {}),
+                }
+
+            logger.info(f"Discovered {len(self._tools_cache)} MCP tools")
+            return list(self._tools_cache.keys())
+        except Exception as e:
+            logger.error(f"Failed to list MCP tools: {e}")
+            return []
+
+    def get_tool_schema(self, tool_name: str) -> Optional[Dict[str, Any]]:
+        """Get schema for a specific tool."""
+        if self._tools_cache is None:
+            self.list_tools()
+
+        return self._tools_cache.get(tool_name) if self._tools_cache else None
+
+    def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Any:
+        """Call a tool on the MCP server."""
+        try:
+            client = self._get_client()
+            result = asyncio.run(client._call_tool(tool_name, **arguments))
+            return result
+        except Exception as e:
+            logger.error(f"Failed to call MCP tool '{tool_name}': {e}")
+            raise
+
+
+def load_mcp_tools(
+    config: Optional[MCPConfig] = None, tool_names: Optional[List[str]] = None
+) -> Dict[str, Any]:
+    """
+    Load MCP tools as callable functions.
+
+    Returns dict mapping tool names to callable functions.
+    """
+    if config is None:
+        config = MCPConfig.from_env()
+        if config is None:
+            return {}
+
+    try:
+        loader = MCPToolLoader(config)
+        available = loader.list_tools()
+
+        if not available:
+            return {}
+
+        tools_to_load = tool_names if tool_names else available
+        tools = {}
+
+        for tool_name in tools_to_load:
+            if tool_name not in available:
+                logger.warning(f"Tool '{tool_name}' not available on MCP server")
+                continue
+
+            # Create a callable function for this tool
+            def make_tool_func(name: str) -> Callable[..., Any]:
+                def tool_func(**kwargs: Any) -> Any:
+                    return loader.call_tool(name, kwargs)
+
+                tool_func.__name__ = name
+                schema = loader.get_tool_schema(name)
+                tool_func.__doc__ = (
+                    schema.get("description", f"MCP tool: {name}")
+                    if schema
+                    else f"MCP tool: {name}"
+                )
+                return tool_func
+
+            tools[tool_name] = make_tool_func(tool_name)
+
+        logger.info(f"Loaded {len(tools)} MCP tools")
+        return tools
+    except Exception as e:
+        logger.error(f"Failed to load MCP tools: {e}")
+        return {}
+
+
+def load_mcp_tools_for_llamaindex(
+    config: Optional[MCPConfig] = None, tool_names: Optional[List[str]] = None
+) -> List[FunctionTool]:
+    """Load MCP tools as LlamaIndex FunctionTools."""
+    base_tools = load_mcp_tools(config, tool_names)
+
+    llamaindex_tools = []
+    for name, func in base_tools.items():
+        tool = FunctionTool.from_defaults(
+            fn=func, name=name, description=func.__doc__ or f"MCP tool: {name}"
+        )
+        llamaindex_tools.append(tool)
+
+    return llamaindex_tools
