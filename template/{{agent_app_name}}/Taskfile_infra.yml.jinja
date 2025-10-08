@@ -33,28 +33,31 @@ tasks:
       - uv run ruff format --check .
       - uv run ruff check .
       - uv run mypy --pretty .
-  init:
+  ensure-pulumi-stack-variable-presence:
     silent: true
-    # desc: "🆕 Initialize a new Pulumi stack"
+    # desc: "Ensure pulumi stack variable is initialized in the .env file"
     cmds:
-      - uv run pulumi stack init
-  select:
-    silent: true
-    # desc: "🚂 Select a Stack"
-    cmds:
-      - uv run pulumi stack select
+      - uv run ../setup_dotenv_variable.py --restart --var-name PULUMI_STACK --prompt-message "Enter your your project name" --default "dev"       
   info:
     silent: true
     # desc: "ℹ️ Show Pulumi stack info"
     cmds:
+      - task: ensure-pulumi-stack-variable-presence
       - uv run pulumi stack
+  info-build:
+    silent: true
+    # desc: "ℹ️ Show Pulumi stack info for the build stack"
+    cmds:
+      - task: ensure-pulumi-stack-variable-presence
+      - "uv run pulumi stack --stack {% raw %}{{.PULUMI_STACK}}{% endraw %}-build
   build:
     desc: "🔵 Deploy only playground testing resources with pulumi"
     env:
       AGENT_DEPLOY: 0
     cmds:
       - echo "[infra] Running pulumi up with [BUILD] mode"
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi up {% raw %}{{.CLI_ARGS}}{% endraw %}"
+      - task: ensure-pulumi-stack-variable-presence
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi up --stack {% raw %}{{.PULUMI_STACK}}{% endraw %}-build {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   deploy:
     desc: "🟢 Deploy all resources with pulumi"
@@ -62,17 +65,28 @@ tasks:
       AGENT_DEPLOY: 1
     cmds:
       - echo "Running pulumi up with [DEPLOY] mode"
+      - task: ensure-pulumi-stack-variable-presence
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi up {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   refresh:
     desc: "⚪️ Refresh and sync local pulumi state"
     cmds:
       - echo "Running pulumi refresh"
+      - task: ensure-pulumi-stack-variable-presence
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi refresh {% raw %}{{.CLI_ARGS}}{% endraw %}"
+    silent: true
+  refresh-build:
+    desc: "⚪️ Refresh and sync local pulumi state for the build stack"
+    cmds:
+      - echo "Running pulumi refresh for the build stack"
+      - task: ensure-pulumi-stack-variable-presence
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi refresh --stack {% raw %}{{.PULUMI_STACK}}{% endraw %}-build {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   destroy:
     desc: "🔴 Teardown all deployed resources with pulumi"
     cmds:
       - echo "Running pulumi destroy"
+      - task: ensure-pulumi-stack-variable-presence
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi destroy {% raw %}{{.CLI_ARGS}}{% endraw %}"
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi destroy --stack {% raw %}{{.PULUMI_STACK}}{% endraw %}-build {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
