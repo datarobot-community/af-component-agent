@@ -140,7 +140,7 @@ def chat(
             streaming_response_generator, model=completion_create_params.get("model")
         )
     else:
-        # Execute the agent with the inputs
+        # Synchronous non-streaming response, execute the agent with the inputs
         response_text, pipeline_interactions, usage_metrics = agent.invoke(
             completion_create_params=completion_create_params
         )
