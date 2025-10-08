@@ -49,7 +49,7 @@ tasks:
     # desc: "ℹ️ Show Pulumi stack info for the build stack"
     cmds:
       - task: ensure-pulumi-stack-variable-presence
-      - "uv run pulumi stack --stack {% raw %}{{.PULUMI_STACK}}{% endraw %}-build
+      - "uv run pulumi stack --stack {% raw %}{{.PULUMI_STACK}}{% endraw %}-build"
   build:
     desc: "🔵 Deploy only playground testing resources with pulumi"
     env:
