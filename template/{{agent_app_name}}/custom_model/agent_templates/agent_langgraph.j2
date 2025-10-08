@@ -14,7 +14,7 @@
 import os
 import re
 from datetime import datetime
-from typing import Any, Optional, Union
+from typing import Any, Generator, Optional, Union
 from urllib.parse import urljoin, urlparse
 
 from langchain_community.chat_models import ChatLiteLLM
@@ -77,7 +77,10 @@ class MyAgent:
 
     def invoke(
         self, completion_create_params: CompletionCreateParams
-    ) -> tuple[str, Any | None, dict[str, int]]:
+    ) -> Union[
+        Generator[tuple[str, Any | None, dict[str, int]], None, None],
+        tuple[str, Any | None, dict[str, int]],
+    ]:
         """Run the agent with the provided completion parameters.
 
         [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
@@ -85,7 +88,11 @@ class MyAgent:
         Args:
             completion_create_params: The completion request parameters including input topic and settings.
         Returns:
-            tuple[list[Any], dict[str, int]]: The langgraph output and usage_statistics for agentic metrics.
+            Union[
+                Generator[tuple[str, Any | None, dict[str, int]], None, None],
+                tuple[str, Any | None, dict[str, int]],
+            ]: For streaming requests, returns a generator yielding tuples of (response_text, pipeline_interactions, usage_metrics).
+               For non-streaming requests, returns a single tuple of (response_text, pipeline_interactions, usage_metrics).
         """
         # Retrieve the starting user prompt from the CompletionCreateParams
         user_messages = [
@@ -105,7 +112,7 @@ class MyAgent:
             update={
                 "messages": (
                     "user",
-                    f"The topic is '{user_prompt_content}'. Make sure you find any interesting and relevant"
+                    f"The topic is '{user_prompt_content}'. Make sure you find any interesting and relevant "
                     f"information given the current year is {str(datetime.now().year)}.",
                 ),
             },
@@ -119,6 +126,7 @@ class MyAgent:
         langgraph_workflow.add_node("editor_node", self.task_edit)
         langgraph_workflow.add_edge(START, "planner_node")
         langgraph_execution_graph = langgraph_workflow.compile()
+
         graph_stream = langgraph_execution_graph.stream(
             input=input_message,
             config={
@@ -127,21 +135,72 @@ class MyAgent:
             debug=True,
         )
 
-        # Create a list of events from the event listener
-        events = [event for event in graph_stream]
-        pipeline_interactions = self.create_pipeline_interactions_from_events(events)
-
-        # Extract the final event from the graph stream as the synchronous response
-        last_event = events[-1]
-        node_name = next(iter(last_event))
-        response_text = str(last_event[node_name]["messages"][-1].content)
-
         usage_metrics: dict[str, int] = {
             "completion_tokens": 0,
             "prompt_tokens": 0,
             "total_tokens": 0,
         }
-        return response_text, pipeline_interactions, usage_metrics
+
+        # The following code demonstrate both a synchronous and streaming response.
+        # You can choose one or the other based on your use case, they function the same.
+        # The main difference is returning a generator for streaming or a final response for sync.
+        if completion_create_params.get("stream"):
+            # Streaming response: yield each message as it is generated
+            def stream_generator() -> Generator[
+                tuple[str, Any | None, dict[str, int]], None, None
+            ]:
+                # For each event in the graph stream, yield the latest message content
+                # along with updated usage metrics.
+                events = []
+                for event in graph_stream:
+                    events.append(event)
+                    current_node = next(iter(event))
+                    yield (
+                        str(event[current_node]["messages"][-1].content),
+                        None,
+                        usage_metrics,
+                    )
+                    current_usage = event[current_node].get("usage", {})
+                    if current_usage:
+                        usage_metrics["total_tokens"] += current_usage.get(
+                            "total_tokens", 0
+                        )
+                        usage_metrics["prompt_tokens"] += current_usage.get(
+                            "prompt_tokens", 0
+                        )
+                        usage_metrics["completion_tokens"] += current_usage.get(
+                            "completion_tokens", 0
+                        )
+
+                # Create a list of events from the event listener
+                pipeline_interactions = self.create_pipeline_interactions_from_events(
+                    events
+                )
+
+                # yield the final response indicating completion
+                yield "", pipeline_interactions, usage_metrics
+
+            return stream_generator()
+        else:
+            # Synchronous response: collect all events and return the final message
+            events = [event for event in graph_stream]
+            pipeline_interactions = self.create_pipeline_interactions_from_events(
+                events
+            )
+
+            # Extract the final event from the graph stream as the synchronous response
+            last_event = events[-1]
+            node_name = next(iter(last_event))
+            response_text = str(last_event[node_name]["messages"][-1].content)
+            current_usage = last_event[node_name].get("usage", {})
+            if current_usage:
+                usage_metrics["total_tokens"] += current_usage.get("total_tokens", 0)
+                usage_metrics["prompt_tokens"] += current_usage.get("prompt_tokens", 0)
+                usage_metrics["completion_tokens"] += current_usage.get(
+                    "completion_tokens", 0
+                )
+
+            return response_text, pipeline_interactions, usage_metrics
 
     @property
     def llm(self) -> ChatLiteLLM:
