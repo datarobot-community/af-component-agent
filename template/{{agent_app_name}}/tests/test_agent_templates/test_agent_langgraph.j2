@@ -13,7 +13,7 @@
 # limitations under the License.
 import os
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from agent import MyAgent
@@ -306,3 +306,33 @@ def test_extract_pipeline_interactions(events: list[dict[str, Any]]) -> None:
     # The check is that with different ToolMessage content types there is no exception
     assert isinstance(result, MultiTurnSample)
     assert len(result.user_input) == 3
+
+@patch("agent.StateGraph")
+def test_langgraph_non_streaming(mock_state_graph, agent):
+
+    def mock_stream_generator():
+        yield {
+            "final_agent": {
+                "messages": [
+                    HumanMessage(content="Hi, tell me about Paris."),
+                    AIMessage(
+                        content="Here is the information you requested about Paris....."
+                    ),
+                ]
+            }
+        }
+    
+    mock_graph_stream = Mock()
+    mock_graph_stream.stream.return_value = mock_stream_generator()
+    mock_state_graph.return_value = Mock(
+        compile=Mock(stream=mock_graph_stream)
+    )
+
+    completion_create_params = {
+        "model": "test-model",
+        "messages": [
+            {"role": "user", "content": '{"topic": "Artificial Intelligence"}'}
+        ],
+        "environment_var": True,
+    }
+    response_text, pipeline_interactions, usage_metrics = agent.invoke(completion_create_params)
