@@ -41,7 +41,7 @@ dependencies = [
     # "datarobot-moderations>=11.2.3",
 {% else %}
     "datarobot[auth]>=3.8.2",
-    "datarobot-moderations>=11.2.3",
+    #"datarobot-moderations>=11.2.3",
 {% endif %}
     # Docker image requirements (These MUST be included to avoid docker conflicts)
     "ecs-logging>=2.2.0",
@@ -58,13 +58,13 @@ dependencies = [
     "ujson<5.8.0",
     "uwsgi>=2.0.30",
 
-    # Agent framework requirements
-    {%- if agent_template_framework == "nat" %}
     "nvidia-nat==1.3.0rc2; python_version >= '3.11'",
     "nvidia-nat-llama-index==1.3.0rc2; python_version >= '3.11'",
     "nvidia-nat-opentelemetry==1.3.0rc2; python_version >= '3.11'",
     "nvidia-nat-crewai==1.3.0rc2; python_version >= '3.11'",
-    "nvidia-nat-langchain==1.3.0rc2; python_version >= '3.11'",{% endif -%}
+    "nvidia-nat-langchain==1.3.0rc2; python_version >= '3.11'",
+
+    # Agent framework requirements
     {% if agent_template_framework == "docker" or agent_template_framework == "crewai" %}
     "crewai>=0.177.0",
     "crewai-tools>=0.69.0",
@@ -80,8 +80,7 @@ dependencies = [
     "llama-index-llms-langchain>=0.6.1",
     "llama-index-llms-litellm>=0.4.1",
     "llama-index-llms-openai>=0.3.38",
-    "opentelemetry-instrumentation-llamaindex>=0.40.5",
-    "pypdf>=6.0.0",{% endif -%}
+    "opentelemetry-instrumentation-llamaindex>=0.40.5",{% endif -%}
     {% if agent_template_framework == "docker" or agent_template_framework == "pydanticai" %}
     "logfire>=4.6.0",
     "pydantic-ai>=1.0.5",{% endif %}
