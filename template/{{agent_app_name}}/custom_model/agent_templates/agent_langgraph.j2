@@ -131,6 +131,12 @@ class MyAgent:
             debug=True,
         )
 
+        usage_metrics: dict[str, int] = {
+            "completion_tokens": 0,
+            "prompt_tokens": 0,
+            "total_tokens": 0,
+        }
+
         # The following code demonstrate both a synchronous and streaming response.
         # You can choose one or the other based on your use case, they function the same.
         # The main difference is returning a generator for streaming or a final response for sync.
@@ -139,12 +145,6 @@ class MyAgent:
             def stream_generator() -> Generator[
                 tuple[str, Any | None, dict[str, int]], None, None
             ]:
-                usage_metrics: dict[str, int] = {
-                    "completion_tokens": 0,
-                    "prompt_tokens": 0,
-                    "total_tokens": 0,
-                }
-
                 # For each event in the graph stream, yield the latest message content
                 # along with updated usage metrics.
                 events = []
@@ -155,6 +155,9 @@ class MyAgent:
                         None,
                         usage_metrics,
                     )
+                    usage_metrics["total_tokens"] += event[next(iter(event))]["usage"]["total_tokens"]
+                    usage_metrics["prompt_tokens"] += event[next(iter(event))]["usage"]["prompt_tokens"]
+                    usage_metrics["completion_tokens"] += event[next(iter(event))]["usage"]["completion_tokens"]
 
                 # Create a list of events from the event listener
                 pipeline_interactions = self.create_pipeline_interactions_from_events(
@@ -176,12 +179,10 @@ class MyAgent:
             last_event = events[-1]
             node_name = next(iter(last_event))
             response_text = str(last_event[node_name]["messages"][-1].content)
+            usage_metrics["total_tokens"] += last_event[node_name]["usage"]["total_tokens"]
+            usage_metrics["prompt_tokens"] += last_event[node_name]["usage"]["prompt_tokens"]
+            usage_metrics["completion_tokens"] += last_event[node_name]["usage"]["completion_tokens"]
 
-            usage_metrics: dict[str, int] = {
-                "completion_tokens": 0,
-                "prompt_tokens": 0,
-                "total_tokens": 0,
-            }
             return response_text, pipeline_interactions, usage_metrics
 
     @property
