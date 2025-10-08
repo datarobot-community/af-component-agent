@@ -42,11 +42,13 @@ def get_env_var_from_lines(lines: list[str], var_name: str) -> Optional[str]:
     return None
 
 
-def update_env_var_in_lines(lines: list[str], var_name: str, new_value: str) -> list[str]:
+def update_env_var_in_lines(
+    lines: list[str], var_name: str, new_value: str
+) -> list[str]:
     """Update or add environment variable in the lines, preserving file structure."""
     updated_lines = []
     var_found = False
-    
+
     for line in lines:
         new_line = line
         if line.strip().startswith(f"{var_name}="):
@@ -54,11 +56,11 @@ def update_env_var_in_lines(lines: list[str], var_name: str, new_value: str) -> 
             new_line = f"{var_name}={new_value}\n"
             var_found = True
         updated_lines.append(new_line)
-    
+
     # If variable wasn't found, append it at the end
     if not var_found:
         updated_lines.append(f"{var_name}={new_value}\n")
-    
+
     return updated_lines
 
 
@@ -90,21 +92,20 @@ def parse_arguments():
     )
     parser.add_argument(
         "--var-name",
-        help="Name of the environment variable to check/set (e.g., PULUMI_STACK)"
+        help="Name of the environment variable to check/set (e.g., PULUMI_STACK)",
     )
     parser.add_argument(
-        "--prompt-message",
-        help="Message to display when prompting user for input"
+        "--prompt-message", help="Message to display when prompting user for input"
     )
     parser.add_argument(
         "--default",
         default=None,
-        help="Default value to use if user provides empty input"
+        help="Default value to use if user provides empty input",
     )
     parser.add_argument(
         "--restart",
         action="store_true",
-        help="Exit with code 1 if the .env file was updated (prompting a restart is needed)"
+        help="Exit with code 1 if the .env file was updated (prompting a restart is needed)",
     )
     return parser.parse_args()
 
@@ -112,22 +113,21 @@ def parse_arguments():
 def main():
     """Main function to ensure environment variable is present and non-empty in .env file."""
     args = parse_arguments()
-    
+
     lines = read_env_file_lines()
     current_value = get_env_var_from_lines(lines, args.var_name)
-    
+
     if not current_value:
         new_value = prompt_for_value(args.prompt_message, args.default)
-        updated_lines = update_env_var_in_lines(lines, args.var_name, new_value)        
+        updated_lines = update_env_var_in_lines(lines, args.var_name, new_value)
         write_env_file_lines(updated_lines)
-        
+
         if args.restart:
             print(
                 "Environment file was updated based on your input, "
                 "please restart the command for the changes to take effect."
             )
             sys.exit(1)
-
 
 
 if __name__ == "__main__":
