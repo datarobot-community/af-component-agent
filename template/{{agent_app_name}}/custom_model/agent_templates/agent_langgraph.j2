@@ -150,14 +150,17 @@ class MyAgent:
                 events = []
                 for event in graph_stream:
                     events.append(event)
+                    current_node = next(iter(event))
                     yield (
-                        str(event[next(iter(event))]["messages"][-1].content),
+                        str(event[current_node]["messages"][-1].content),
                         None,
                         usage_metrics,
                     )
-                    usage_metrics["total_tokens"] += event[next(iter(event))]["usage"]["total_tokens"]
-                    usage_metrics["prompt_tokens"] += event[next(iter(event))]["usage"]["prompt_tokens"]
-                    usage_metrics["completion_tokens"] += event[next(iter(event))]["usage"]["completion_tokens"]
+                    current_usage = event[current_node].get("usage", {})
+                    if current_usage:
+                        usage_metrics["total_tokens"] += current_usage.get("total_tokens", 0)
+                        usage_metrics["prompt_tokens"] += current_usage.get("prompt_tokens", 0)
+                        usage_metrics["completion_tokens"] += current_usage.get("completion_tokens", 0)
 
                 # Create a list of events from the event listener
                 pipeline_interactions = self.create_pipeline_interactions_from_events(
@@ -179,9 +182,11 @@ class MyAgent:
             last_event = events[-1]
             node_name = next(iter(last_event))
             response_text = str(last_event[node_name]["messages"][-1].content)
-            usage_metrics["total_tokens"] += last_event[node_name]["usage"]["total_tokens"]
-            usage_metrics["prompt_tokens"] += last_event[node_name]["usage"]["prompt_tokens"]
-            usage_metrics["completion_tokens"] += last_event[node_name]["usage"]["completion_tokens"]
+            current_usage = last_event[node_name].get("usage", {})
+            if current_usage:
+                usage_metrics["total_tokens"] += current_usage.get("total_tokens", 0)
+                usage_metrics["prompt_tokens"] += current_usage.get("prompt_tokens", 0)
+                usage_metrics["completion_tokens"] += current_usage.get("completion_tokens", 0)
 
             return response_text, pipeline_interactions, usage_metrics
 
