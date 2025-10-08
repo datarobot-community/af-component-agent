@@ -131,8 +131,11 @@ class MyAgent:
             debug=True,
         )
 
+        # The following code demonstrate both a synchronous and streaming response.
+        # You can choose one or the other based on your use case, they function the same.
+        # The main difference is returning a generator for streaming or a final response for sync.
         if completion_create_params.get("stream"):
-
+            # Streaming response: yield each message as it is generated
             def stream_generator() -> Generator[
                 tuple[str, Any | None, dict[str, int]], None, None
             ]:
@@ -163,7 +166,7 @@ class MyAgent:
 
             return stream_generator()
         else:
-            # Execute events synchronously
+            # Synchronous response: collect all events and return the final message
             events = [event for event in graph_stream]
             pipeline_interactions = self.create_pipeline_interactions_from_events(
                 events
