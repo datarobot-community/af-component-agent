@@ -37,7 +37,7 @@ tasks:
     silent: true
     # desc: "Ensure pulumi stack variable is initialized in the .env file"
     cmds:
-      - uv run ../setup_dotenv_variable.py --restart --var-name PULUMI_STACK --prompt-message "Enter your your project name" --default "dev"       
+      - uv run ../infra/setup_dotenv_variable.py --restart --var-name PULUMI_STACK --prompt-message "Enter your your project name" --default "dev"       
   info:
     silent: true
     # desc: "ℹ️ Show Pulumi stack info"
