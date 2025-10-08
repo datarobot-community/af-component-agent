@@ -158,9 +158,15 @@ class MyAgent:
                     )
                     current_usage = event[current_node].get("usage", {})
                     if current_usage:
-                        usage_metrics["total_tokens"] += current_usage.get("total_tokens", 0)
-                        usage_metrics["prompt_tokens"] += current_usage.get("prompt_tokens", 0)
-                        usage_metrics["completion_tokens"] += current_usage.get("completion_tokens", 0)
+                        usage_metrics["total_tokens"] += current_usage.get(
+                            "total_tokens", 0
+                        )
+                        usage_metrics["prompt_tokens"] += current_usage.get(
+                            "prompt_tokens", 0
+                        )
+                        usage_metrics["completion_tokens"] += current_usage.get(
+                            "completion_tokens", 0
+                        )
 
                 # Create a list of events from the event listener
                 pipeline_interactions = self.create_pipeline_interactions_from_events(
@@ -186,7 +192,9 @@ class MyAgent:
             if current_usage:
                 usage_metrics["total_tokens"] += current_usage.get("total_tokens", 0)
                 usage_metrics["prompt_tokens"] += current_usage.get("prompt_tokens", 0)
-                usage_metrics["completion_tokens"] += current_usage.get("completion_tokens", 0)
+                usage_metrics["completion_tokens"] += current_usage.get(
+                    "completion_tokens", 0
+                )
 
             return response_text, pipeline_interactions, usage_metrics
 
