@@ -82,6 +82,7 @@ class MyAgent:
             result = f"Error: {str(e)}"
 
         # Create a list of events from the event listener
+        pipeline_interactions: list[Any]
         pipeline_interactions = []  # This should be populated with the agent's events/messages
 
         usage_metrics = {
