@@ -109,7 +109,7 @@ class MyAgent:
             def stream_generator() -> Generator[
                 tuple[str, Any | None, dict[str, int]], None, None
             ]:
-                yield "success", None, usage_metrics
+                yield "streaming success", None, usage_metrics
 
                 # Create a list of events from the event listener
                 events: list[

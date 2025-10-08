@@ -209,7 +209,7 @@ pipeline:
                           fi
 
                           # Check the chat completion returned
-                          if cat ./agent/output.log | grep -q '"content": "success"'; then
+                          if cat ./agent/output.log | grep -q '"content": "streaming success"'; then
                             echo "Test passed: cli.py returned chat completion success"
                           else
                             echo "Test failed: cli.py did not return chat completion success"
