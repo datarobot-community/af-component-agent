@@ -55,10 +55,6 @@ def to_custom_model_chat_response(
     """Convert the OpenAI ChatCompletion response to CustomModelChatResponse."""
     from openai.types.chat.chat_completion import Choice
 
-    pipeline_interactions_json = (
-        pipeline_interactions.model_dump_json() if pipeline_interactions else None
-    )
-
     # Convert the text of the agent response into a chat completion response
     choice = Choice(
         index=0,
@@ -73,7 +69,7 @@ def to_custom_model_chat_response(
         created=int(time.time()),  # ChatCompletion created time should be an integer
         model=model,
         usage=CompletionUsage(**usage_metrics),
-        pipeline_interactions=pipeline_interactions_json
+        pipeline_interactions=pipeline_interactions.model_dump_json()
         if pipeline_interactions
         else None,
     )
@@ -91,24 +87,24 @@ def to_custom_model_streaming_response(
     completion_id = str(uuid.uuid4())
     created = int(time.time())
 
-    pipeline_interactions = None
-    usage_metrics = None
+    last_pipeline_interactions = None
+    last_usage_metrics = None
+
     for (
         response_text,
-        chunk_pipeline_interactions,
-        chunk_usage_metrics,
+        pipeline_interactions,
+        usage_metrics,
     ) in streaming_response_generator:
-        pipeline_interactions = chunk_pipeline_interactions
-        usage_metrics = chunk_usage_metrics
+        last_pipeline_interactions = pipeline_interactions
+        last_usage_metrics = usage_metrics
+
         if response_text:
-            delta = ChoiceDelta(role="assistant", content=response_text)
             choice = Choice(
                 index=0,
-                delta=delta,
+                delta=ChoiceDelta(role="assistant", content=response_text),
                 finish_reason=None,
             )
-
-            chunk = CustomModelStreamingResponse(
+            yield CustomModelStreamingResponse(
                 id=completion_id,
                 object="chat.completion.chunk",
                 created=created,
@@ -116,31 +112,24 @@ def to_custom_model_streaming_response(
                 choices=[choice],
                 usage=CompletionUsage(**usage_metrics) if usage_metrics else None,
             )
-            yield chunk
 
-    # Yield a final chunk indicating the end of the stream
-    pipeline_interactions_json = (
-        pipeline_interactions.model_dump_json() if pipeline_interactions else None
-    )
-
-    delta = ChoiceDelta(role="assistant")
+    # Yield final chunk indicating end of stream
     choice = Choice(
         index=0,
-        delta=delta,
+        delta=ChoiceDelta(role="assistant"),
         finish_reason="stop",
     )
-
-    chunk = CustomModelStreamingResponse(
+    yield CustomModelStreamingResponse(
         id=completion_id,
         object="chat.completion.chunk",
         created=created,
         model=model,
         choices=[choice],
-        usage=CompletionUsage(**usage_metrics) if usage_metrics else None,
-        pipeline_interactions=pipeline_interactions_json,
+        usage=CompletionUsage(**last_usage_metrics) if last_usage_metrics else None,
+        pipeline_interactions=last_pipeline_interactions.model_dump_json()
+        if last_pipeline_interactions
+        else None,
     )
-
-    yield chunk
 
 
 def initialize_authorization_context(
