@@ -73,8 +73,14 @@ class MyAgent:
 
         Args:
             completion_create_params: The completion request parameters including input topic and settings.
+        Args:
+            completion_create_params: The completion request parameters including input topic and settings.
         Returns:
-            tuple[list[Any], dict[str, int]]: A tuple containing a list of messages (events) and usage_statistics for agentic metrics.
+            Union[
+                Generator[tuple[str, Any | None, dict[str, int]], None, None],
+                tuple[str, Any | None, dict[str, int]],
+            ]: For streaming requests, returns a generator yielding tuples of (response_text, pipeline_interactions, usage_metrics).
+               For non-streaming requests, returns a single tuple of (response_text, pipeline_interactions, usage_metrics).
         """
         # Retrieve the starting user prompt from the CompletionCreateParams
         user_messages = [
