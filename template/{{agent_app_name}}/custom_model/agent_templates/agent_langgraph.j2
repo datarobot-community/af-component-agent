@@ -14,7 +14,7 @@
 import os
 import re
 from datetime import datetime
-from typing import Any, Callable, Generator, Optional, Union
+from typing import Any, Generator, Optional, Union
 from urllib.parse import urljoin, urlparse
 
 from langchain_community.chat_models import ChatLiteLLM
@@ -78,7 +78,7 @@ class MyAgent:
     def invoke(
         self, completion_create_params: CompletionCreateParams
     ) -> Union[
-        Callable[[], Generator[tuple[str, Any | None, dict[str, int]], None, None]],
+        Generator[tuple[str, Any | None, dict[str, int]], None, None],
         tuple[str, Any | None, dict[str, int]],
     ]:
         """Run the agent with the provided completion parameters.
@@ -132,7 +132,10 @@ class MyAgent:
         )
 
         if completion_create_params.get("stream"):
-            def stream_generator():
+
+            def stream_generator() -> Generator[
+                tuple[str, Any | None, dict[str, int]], None, None
+            ]:
                 usage_metrics: dict[str, int] = {
                     "completion_tokens": 0,
                     "prompt_tokens": 0,
@@ -144,21 +147,27 @@ class MyAgent:
                 events = []
                 for event in graph_stream:
                     events.append(event)
-                    yield str(event[next(iter(event))]["messages"][-1].content), None, usage_metrics
+                    yield (
+                        str(event[next(iter(event))]["messages"][-1].content),
+                        None,
+                        usage_metrics,
+                    )
 
-                
                 # Create a list of events from the event listener
                 pipeline_interactions = self.create_pipeline_interactions_from_events(
                     events
                 )
 
                 # yield the final response indicating completion
-                yield "Agent execution completed", pipeline_interactions, usage_metrics
+                yield "", pipeline_interactions, usage_metrics
+
             return stream_generator()
         else:
             # Execute events synchronously
             events = [event for event in graph_stream]
-            pipeline_interactions = self.create_pipeline_interactions_from_events(events)
+            pipeline_interactions = self.create_pipeline_interactions_from_events(
+                events
+            )
 
             # Extract the final event from the graph stream as the synchronous response
             last_event = events[-1]

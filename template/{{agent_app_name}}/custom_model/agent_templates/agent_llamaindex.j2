@@ -109,7 +109,7 @@ class MyAgent:
     def invoke(
         self, completion_create_params: CompletionCreateParams
     ) -> Union[
-        Callable[[], Generator[tuple[str, Any | None, dict[str, int]], None, None]],
+        Generator[tuple[str, Any | None, dict[str, int]], None, None],
         tuple[str, Any | None, dict[str, int]],
     ]:
         """Run the agent with the provided completion parameters.

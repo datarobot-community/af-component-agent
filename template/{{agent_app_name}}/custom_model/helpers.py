@@ -15,7 +15,7 @@ import json
 import os
 import time
 import uuid
-from typing import Any, Callable, Generator, Iterator, Optional, Union, cast
+from typing import Any, Generator, Iterator, Optional, Union, cast
 
 import datarobot as dr
 import openai
@@ -32,6 +32,10 @@ from datarobot_predict.deployment import (
 )
 from openai.types import CompletionCreateParams, CompletionUsage
 from openai.types.chat import ChatCompletion, ChatCompletionChunk, ChatCompletionMessage
+from openai.types.chat.completion_create_params import (
+    CompletionCreateParamsNonStreaming,
+    CompletionCreateParamsStreaming,
+)
 
 
 class CustomModelChatResponse(ChatCompletion):
@@ -51,6 +55,10 @@ def to_custom_model_chat_response(
     """Convert the OpenAI ChatCompletion response to CustomModelChatResponse."""
     from openai.types.chat.chat_completion import Choice
 
+    pipeline_interactions_json = (
+        pipeline_interactions.model_dump_json() if pipeline_interactions else None
+    )
+
     # Convert the text of the agent response into a chat completion response
     choice = Choice(
         index=0,
@@ -65,15 +73,15 @@ def to_custom_model_chat_response(
         created=int(time.time()),  # ChatCompletion created time should be an integer
         model=model,
         usage=CompletionUsage(**usage_metrics),
-        pipeline_interactions=pipeline_interactions.model_dump_json()
+        pipeline_interactions=pipeline_interactions_json
         if pipeline_interactions
         else None,
     )
 
 
 def to_custom_model_streaming_response(
-    streaming_response_iterator: Callable[
-        [], Generator[tuple[str, Any | None, dict[str, int]], None, None]
+    streaming_response_generator: Generator[
+        tuple[str, Any | None, dict[str, int]], None, None
     ],
     model: Optional[str] = None,
 ) -> Iterator[CustomModelStreamingResponse]:
@@ -89,27 +97,32 @@ def to_custom_model_streaming_response(
         response_text,
         chunk_pipeline_interactions,
         chunk_usage_metrics,
-    ) in streaming_response_iterator():
+    ) in streaming_response_generator:
         pipeline_interactions = chunk_pipeline_interactions
         usage_metrics = chunk_usage_metrics
-        delta = ChoiceDelta(role="assistant", content=response_text)
-        choice = Choice(
-            index=0,
-            delta=delta,
-            finish_reason=None,
-        )
+        if response_text:
+            delta = ChoiceDelta(role="assistant", content=response_text)
+            choice = Choice(
+                index=0,
+                delta=delta,
+                finish_reason=None,
+            )
 
-        chunk = CustomModelStreamingResponse(
-            id=completion_id,
-            object="chat.completion.chunk",
-            created=created,
-            model=model,
-            choices=[choice],
-            usage=CompletionUsage(**usage_metrics) if usage_metrics else None,
-        )
-        yield chunk
+            chunk = CustomModelStreamingResponse(
+                id=completion_id,
+                object="chat.completion.chunk",
+                created=created,
+                model=model,
+                choices=[choice],
+                usage=CompletionUsage(**usage_metrics) if usage_metrics else None,
+            )
+            yield chunk
 
     # Yield a final chunk indicating the end of the stream
+    pipeline_interactions_json = (
+        pipeline_interactions.model_dump_json() if pipeline_interactions else None
+    )
+
     delta = ChoiceDelta(role="assistant")
     choice = Choice(
         index=0,
@@ -124,14 +137,16 @@ def to_custom_model_streaming_response(
         model=model,
         choices=[choice],
         usage=CompletionUsage(**usage_metrics) if usage_metrics else None,
-        pipeline_interactions=pipeline_interactions,
+        pipeline_interactions=pipeline_interactions_json,
     )
 
     yield chunk
 
 
 def initialize_authorization_context(
-    completion_create_params: CompletionCreateParams,
+    completion_create_params: CompletionCreateParams
+    | CompletionCreateParamsNonStreaming
+    | CompletionCreateParamsStreaming,
 ) -> None:
     """Sets the authorization context for the agent.
 
