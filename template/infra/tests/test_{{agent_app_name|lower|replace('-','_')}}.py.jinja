@@ -295,7 +295,7 @@ def test_custom_model_created_llm_deployment_id(monkeypatch):
     assert isinstance(kwargs["files"], list)
     assert kwargs["runtime_parameter_values"] == [
         agent_infra.pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-            key="LLM_DATAROBOT_DEPLOYMENT_ID",
+            key="LLM_DATAROBOT_ID",
             type="string",
             value="model_id",
         ),
