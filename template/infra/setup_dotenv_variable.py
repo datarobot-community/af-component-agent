@@ -21,8 +21,8 @@ if sys.version_info[0] < 3 or (sys.version_info[0] >= 3 and sys.version_info[1] 
     print("Must be using Python version 3.10 or higher")
     exit(1)
 
-work_dir = Path(os.path.dirname(__file__))
-dot_env_file = work_dir / ".env"
+project_root = Path(os.path.dirname(__file__)).parent
+dot_env_file = project_root / ".env"
 
 
 def read_env_file_lines() -> list[str]:
