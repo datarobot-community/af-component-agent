@@ -267,7 +267,7 @@ def test_custom_model_created(monkeypatch):
 def test_custom_model_created_llm_deployment_id(monkeypatch):
     """Test that pulumi_datarobot.CustomModel is created with correct arguments when llm deployment id is set."""
     monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
-    monkeypatch.setenv("LLM_DATAROBOT_DEPLOYMENT_ID", "model_id")
+    monkeypatch.setenv("LLM_DEPLOYMENT_ID", "model_id")
 
     import importlib
     import infra.llm

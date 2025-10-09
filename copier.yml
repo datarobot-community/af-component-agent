@@ -8,15 +8,21 @@ agent_template_framework:
   type: str
   default: "base"
   help: "The agentic framework template to start with. Supported frameworks: base, crewai, langgraph, llamaindex"
-  
+
 base_answers_file:
   type: str
   default: ".datarobot/answers/base.yml"
   help: "Path to the base component answers file"
 
+llm_answers_file:
+  type: str
+  default: ".datarobot/answers/llm-llm.yml"
+  help: "Path to the llm component answers file"
+
 # Grab the base component answers to re-use answers
 _external_data:
   base: "{{ base_answers_file }}"
+  llm: "{{ llm_answers_file }}"
 
 _subdirectory: template
 _answers_file: ".datarobot/answers/agent-{{ agent_app_name }}.yml"
