@@ -116,7 +116,9 @@ class MyAgent:
                     Any
                 ] = []  # This should be populated with the agent's events/messages
 
-                pipeline_interactions = self.create_pipeline_interactions_from_events(events)
+                pipeline_interactions = self.create_pipeline_interactions_from_events(
+                    events
+                )
                 # Final response after streaming is complete
                 yield "", pipeline_interactions, usage_metrics
             return stream_generator()
@@ -129,7 +131,9 @@ class MyAgent:
                 Any
             ] = []  # This should be populated with the agent's events/messages
 
-            pipeline_interactions = self.create_pipeline_interactions_from_events(events)
+            pipeline_interactions = self.create_pipeline_interactions_from_events(
+                events
+            )
 
             return response_text, pipeline_interactions, usage_metrics
 
