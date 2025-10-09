@@ -23,11 +23,12 @@ pipeline:
                         shell: Sh
                         command: |-
                           apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
+                          mkdir -p ./copier_context/.datarobot/answers/
+                          cp ./fixtures/.datarobot/answers/llm-llm.yml ./copier_context/.datarobot/answers/llm-llm.yml
                           uvx copier copy . ./copier_context --defaults
                           cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
                           cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
                           cp ./fixtures/infra/llm.py ./copier_context/infra/infra/llm.py
-                          cp ./fixtures/.datarobot/answers/llm-llm.yml ./copier_context/.datarobot/answers/llm-llm.yml
                           cd ./copier_context
                           uvx --from go-task-bin task agent:install
                         envVariables:
