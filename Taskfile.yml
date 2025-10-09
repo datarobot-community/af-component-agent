@@ -87,6 +87,7 @@ tasks:
         vars:
           AGENT: "base"
       - echo "Running tests for {{.AGENT}}"
+      - cd $RENDER_DIR/agent_base && echo "DATAROBOT_API_TOKEN=secret" > .env && echo "DATAROBOT_ENDPOINT=https://test.com/api/v2" >> .env
       - task agent:cli --dir $RENDER_DIR/agent_base -- execute --show_output --user_prompt "Artificial Intelligence" > $RENDER_DIR/agent_base/agent/output.log 2>&1
   test-cli:
     desc: "Test CLI"
@@ -107,6 +108,7 @@ tasks:
         vars:
           AGENT: "base"
       - echo "Running tests for {{.AGENT}}"
+      - cd $RENDER_DIR/agent_base && echo "DATAROBOT_API_TOKEN=secret" > .env && echo "DATAROBOT_ENDPOINT=https://test.com/api/v2" >> .env
       - task agent:cli --dir $RENDER_DIR/agent_base -- execute --show_output --completion_json example-completion.json > $RENDER_DIR/agent_base/agent/output.log 2>&1
   test-cli-json:
     desc: "Test CLI with JSON"
@@ -120,6 +122,7 @@ tasks:
         vars:
           AGENT: "base"
       - echo "Running tests for {{.AGENT}}"
+      - cd $RENDER_DIR/agent_base && echo "DATAROBOT_API_TOKEN=secret" > .env && echo "DATAROBOT_ENDPOINT=https://test.com/api/v2" >> .env
       - task agent:cli --dir $RENDER_DIR/agent_base -- execute --show_output --user_prompt "Artificial Intelligence" --stream > $RENDER_DIR/agent_base/agent/output.log 2>&1
   test-cli-streaming:
     desc: "Test CLI with Streaming"
