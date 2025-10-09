@@ -13,7 +13,7 @@
 # limitations under the License.
 import os
 import re
-from typing import Any, Optional, Union
+from typing import Any, Generator, Optional, Union
 from urllib.parse import urljoin, urlparse
 
 from crewai import LLM, Agent, Crew, Task
@@ -74,7 +74,10 @@ class MyAgent:
 
     def invoke(
         self, completion_create_params: CompletionCreateParams
-    ) -> tuple[str, Any | None, dict[str, int]]:
+    ) -> Union[
+        Generator[tuple[str, Any | None, dict[str, int]], None, None],
+        tuple[str, Any | None, dict[str, int]],
+    ]:
         """Run the agent with the provided completion parameters.
 
         [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
@@ -82,7 +85,11 @@ class MyAgent:
         Args:
             completion_create_params: The completion request parameters including input topic and settings.
         Returns:
-            tuple[CrewOutput, list[Any]]: The crew output and list of events for agentic metrics.
+            Union[
+                Generator[tuple[str, Any | None, dict[str, int]], None, None],
+                tuple[str, Any | None, dict[str, int]],
+            ]: For streaming requests, returns a generator yielding tuples of (response_text, pipeline_interactions, usage_metrics).
+               For non-streaming requests, returns a single tuple of (response_text, pipeline_interactions, usage_metrics).
         """
         # Retrieve the starting user prompt from the CompletionCreateParams
         user_messages = [
