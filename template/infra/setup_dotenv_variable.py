@@ -74,12 +74,14 @@ def prompt_for_value(prompt_message: str, default_value: Optional[str] = None) -
     """Prompt the user for a value."""
     while True:
         if default_value is not None:
-            value = input(f"{prompt_message} (default: {default_value}): ").strip()
+            print(f"{prompt_message} (default: {default_value}): ")
+            value = input().strip()
             if not value:
                 return default_value
             return value
         else:
-            value = input(prompt_message).strip()
+            print(prompt_message)
+            value = input().strip()
             if value:
                 return value
             print("Value cannot be empty. Please try again.")
