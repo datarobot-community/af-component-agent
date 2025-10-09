@@ -112,24 +112,51 @@ def parse_arguments():
     return parser.parse_args()
 
 
-def main():
-    """Main function to ensure environment variable is present and non-empty in .env file."""
-    args = parse_arguments()
+def ensure_env_variable(
+    var_name: str,
+    prompt_message: str,
+    default_value: str = None,
+    restart_on_update: bool = False,
+):
+    """
+    Ensure an environment variable is present and non-empty in .env file.
 
+    Args:
+        var_name: Name of the environment variable
+        prompt_message: Message to display when prompting user for input
+        default_value: Default value to use if user provides empty input
+        restart_on_update: If True, exit with code 1 when file is updated
+
+    Returns:
+        True if variable was set/updated, False if it already existed
+    """
     lines = read_env_file_lines()
-    current_value = get_env_var_from_lines(lines, args.var_name)
+    current_value = get_env_var_from_lines(lines, var_name)
 
     if not current_value:
-        new_value = prompt_for_value(args.prompt_message, args.default)
-        updated_lines = update_env_var_in_lines(lines, args.var_name, new_value)
+        new_value = prompt_for_value(prompt_message, default_value)
+
+        updated_lines = update_env_var_in_lines(lines, var_name, new_value)
         write_env_file_lines(updated_lines)
 
-        if args.restart:
+        if restart_on_update:
             print(
                 "Environment file was updated based on your input, "
                 "please restart the command for the changes to take effect."
             )
             sys.exit(1)
+
+
+def main():
+    """Main function to ensure environment variable is present and non-empty in .env file."""
+    args = parse_arguments()
+
+    ensure_env_variable(
+        var_name=args.var_name,
+        prompt_message=args.prompt_message,
+        default_value=args.default,
+        restart_on_update=args.restart,
+    )
 
 
 if __name__ == "__main__":
