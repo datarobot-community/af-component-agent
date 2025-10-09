@@ -80,6 +80,9 @@ tasks:
       - task: test-crewai
       - task: test-langgraph
       - task: test-llamaindex
+      - task: test-cli
+      - task: test-cli-json
+      - task: test-cli-streaming
   run-cli:
     desc: "Run CLI"
     cmds:
