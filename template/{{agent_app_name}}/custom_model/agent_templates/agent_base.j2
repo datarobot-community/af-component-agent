@@ -109,6 +109,9 @@ class MyAgent:
             def stream_generator() -> Generator[
                 tuple[str, Any | None, dict[str, int]], None, None
             ]:
+                # -----------------------------------------------------------
+                # Here you would implement the logic of your agent using the inputs.
+                # -----------------------------------------------------------
                 yield "streaming success", None, usage_metrics
 
                 # Create a list of events from the event listener
@@ -124,7 +127,9 @@ class MyAgent:
 
             return stream_generator()
         else:
+            # -----------------------------------------------------------
             # Here you would implement the logic of your agent using the inputs.
+            # -----------------------------------------------------------
             response_text = "success"
 
             # Create a list of events from the event listener
