@@ -121,6 +121,7 @@ class MyAgent:
                 )
                 # Final response after streaming is complete
                 yield "", pipeline_interactions, usage_metrics
+
             return stream_generator()
         else:
             # Here you would implement the logic of your agent using the inputs.
