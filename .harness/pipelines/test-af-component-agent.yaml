@@ -208,7 +208,7 @@ pipeline:
                             exit 1
                           fi
 
-                          # Check the chat completion returned
+                          # Check the streaming returned
                           if cat ./agent/output.log | grep -q '"content": "streaming success"'; then
                             echo "Test passed: cli.py returned streaming success"
                           else
