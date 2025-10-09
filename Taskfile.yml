@@ -113,6 +113,19 @@ tasks:
     cmds:
       - task: run-cli-json
       - task: check-output
+  run-cli-streaming:
+    desc: "Run CLI with Streaming"
+    cmds:
+      - task: install-dev
+        vars:
+          AGENT: "base"
+      - echo "Running tests for {{.AGENT}}"
+      - task agent:cli --dir $RENDER_DIR/agent_base -- execute --show_output --user_prompt "Artificial Intelligence" --stream > $RENDER_DIR/agent_base/agent/output.log 2>&1
+  test-cli-streaming:
+    desc: "Test CLI with Streaming"
+    cmds:
+      - task: run-cli-streaming
+      - task: check-output
   build-docker:
     desc: "Build docker image"
     cmds:
