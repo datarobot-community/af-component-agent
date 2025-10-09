@@ -95,23 +95,53 @@ class MyAgent:
         # Print commands may need flush=True to ensure they are displayed in real-time.
         print("Running agent with user prompt:", user_prompt_content, flush=True)
 
-        # Here you would implement the logic of your agent using the inputs.
-
-        response_text = "success"
-
-        # Create a list of events from the event listener
-        events: list[
-            Any
-        ] = []  # This should be populated with the agent's events/messages
-
-        pipeline_interactions = self.create_pipeline_interactions_from_events(events)
-
         usage_metrics = {
             "completion_tokens": 0,
             "prompt_tokens": 0,
             "total_tokens": 0,
         }
-        return response_text, pipeline_interactions, usage_metrics
+
+        # The following code demonstrate both a synchronous and streaming response.
+        # You can choose one or the other based on your use case, they function the same.
+        # The main difference is returning a generator for streaming or a final response for sync.
+        if completion_create_params.get("stream"):
+            # Streaming response: yield each message as it is generated
+            def stream_generator() -> Generator[
+                tuple[str, Any | None, dict[str, int]], None, None
+            ]:
+                # -----------------------------------------------------------
+                # Here you would implement the streaming logic of your agent using the inputs.
+                # -----------------------------------------------------------
+                yield "streaming success", None, usage_metrics
+
+                # Create a list of events from the event listener
+                events: list[
+                    Any
+                ] = []  # This should be populated with the agent's events/messages
+
+                pipeline_interactions = self.create_pipeline_interactions_from_events(
+                    events
+                )
+                # Final response after streaming is complete
+                yield "", pipeline_interactions, usage_metrics
+
+            return stream_generator()
+        else:
+            # -----------------------------------------------------------
+            # Here you would implement the logic of your agent using the inputs.
+            # -----------------------------------------------------------
+            response_text = "success"
+
+            # Create a list of events from the event listener
+            events: list[
+                Any
+            ] = []  # This should be populated with the agent's events/messages
+
+            pipeline_interactions = self.create_pipeline_interactions_from_events(
+                events
+            )
+
+            return response_text, pipeline_interactions, usage_metrics
 
     @property
     def llm(self) -> Any:

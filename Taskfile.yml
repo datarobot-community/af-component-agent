@@ -80,6 +80,9 @@ tasks:
       - task: test-crewai
       - task: test-langgraph
       - task: test-llamaindex
+      - task: test-cli
+      - task: test-cli-json
+      - task: test-cli-streaming
   run-cli:
     desc: "Run CLI"
     cmds:
@@ -87,19 +90,22 @@ tasks:
         vars:
           AGENT: "base"
       - echo "Running tests for {{.AGENT}}"
+      - cd $RENDER_DIR/agent_base && echo "DATAROBOT_API_TOKEN=secret" > .env && echo "DATAROBOT_ENDPOINT=https://test.com/api/v2" >> .env
       - task agent:cli --dir $RENDER_DIR/agent_base -- execute --show_output --user_prompt "Artificial Intelligence" > $RENDER_DIR/agent_base/agent/output.log 2>&1
   test-cli:
     desc: "Test CLI"
     cmds:
       - task: run-cli
       - task: check-output
+        vars:
+          ASSERTION: "success"
   check-output:
       - if [ $(wc -l < $RENDER_DIR/agent_base/agent/output.log) -lt 13 ]; then exit 1; fi
       - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "Running CLI execute"; then exit 1; fi
       - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "INFO - Parsing args"; then exit 1; fi
       - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "INFO - Starting DRUM runner"; then exit 1; fi
       - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "Running agent with user prompt"; then exit 1; fi
-      - 'if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "\"content\": \"success\""; then exit 1; fi'
+      - 'if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "\"content\": \"{{.ASSERTION}}\""; then exit 1; fi'
   run-cli-json:
     desc: "Run CLI with JSON"
     cmds:
@@ -107,12 +113,31 @@ tasks:
         vars:
           AGENT: "base"
       - echo "Running tests for {{.AGENT}}"
+      - cd $RENDER_DIR/agent_base && echo "DATAROBOT_API_TOKEN=secret" > .env && echo "DATAROBOT_ENDPOINT=https://test.com/api/v2" >> .env
       - task agent:cli --dir $RENDER_DIR/agent_base -- execute --show_output --completion_json example-completion.json > $RENDER_DIR/agent_base/agent/output.log 2>&1
   test-cli-json:
     desc: "Test CLI with JSON"
     cmds:
       - task: run-cli-json
       - task: check-output
+        vars:
+          ASSERTION: "success"
+  run-cli-streaming:
+    desc: "Run CLI with Streaming"
+    cmds:
+      - task: install-dev
+        vars:
+          AGENT: "base"
+      - echo "Running tests for {{.AGENT}}"
+      - cd $RENDER_DIR/agent_base && echo "DATAROBOT_API_TOKEN=secret" > .env && echo "DATAROBOT_ENDPOINT=https://test.com/api/v2" >> .env
+      - task agent:cli --dir $RENDER_DIR/agent_base -- execute --show_output --user_prompt "Artificial Intelligence" --stream > $RENDER_DIR/agent_base/agent/output.log 2>&1
+  test-cli-streaming:
+    desc: "Test CLI with Streaming"
+    cmds:
+      - task: run-cli-streaming
+      - task: check-output
+        vars:
+          ASSERTION: "streaming success"
   build-docker:
     desc: "Build docker image"
     cmds:
