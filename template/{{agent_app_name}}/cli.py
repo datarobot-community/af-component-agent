@@ -397,6 +397,9 @@ def execute(
     # Run the agent with a string user prompt
     > task cli -- execute --user_prompt "Artificial Intelligence"
 
+    # Run the agent with streaming enabled
+    > task cli -- execute --user_prompt "Artificial Intelligence" --stream
+
     # Run the agent with a string user prompt and show full output
     > task cli -- execute --user_prompt "Artificial Intelligence" --show_output
 
