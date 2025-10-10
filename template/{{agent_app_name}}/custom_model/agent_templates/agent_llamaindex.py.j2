@@ -14,10 +14,9 @@
 # mypy: disable-error-code=attr-defined
 import asyncio
 import os
-import re
 from datetime import datetime
 from typing import Any, Generator, Optional, Sequence, Union
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse
 
 from config import Config
 from llama_index.core.agent.workflow import (
@@ -226,7 +225,7 @@ class MyAgent:
 
         If a model is provided, it will be used. Otherwise, the default model will be used.
         If use_deployment is True, the model will be used with the deployment ID
-        from the config/environment variable {{  }}_DEPLOYMENT_ID. If False, it will use the
+        from the config/environment variable {{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEPLOYMENT_ID. If False, it will use the
         LLM Gateway.
 
         Args:
@@ -241,11 +240,13 @@ class MyAgent:
             str: The model to use.
         """
         parsed_api_base = urlparse(self.api_base)
+        base_url = f"{parsed_api_base.scheme}://{parsed_api_base.netloc}"
         api_base = (
-            f"{self.parsed_api_base}/api/v2/deployments/{self.config.llm_deployment_id}/chat/completions"
-            if use_deployment and self.config.llm_deployment_id
-            else f"{parsed_api_base.scheme}://{parsed_api_base.netloc}"
+            f"{base_url}/api/v2/deployments/{self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id}/chat/completions"
+            if use_deployment and self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id
+            else base_url
         )
+
         if model is None:
             model = self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:

@@ -18,6 +18,7 @@
 from pydantic import model_validator
 from datarobot.core.config import DataRobotAppFrameworkBaseSettings
 
+
 class Config(DataRobotAppFrameworkBaseSettings):
     """
     This class finds variables in the priority order of: env
@@ -29,8 +30,8 @@ class Config(DataRobotAppFrameworkBaseSettings):
     llm_default_model: str = "datarobot/azure/gpt-4o-mini"
     use_datarobot_llm_gateway: bool = False
 
-    @model_validator(mode='after')
-    def replace_placeholder_values(self):
+    @model_validator(mode="after")
+    def replace_placeholder_values(self) -> "Config":
         if self.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id == "SET_VIA_PULUMI_OR_MANUALLY":
             self.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id = None
         return self

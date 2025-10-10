@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-import re
 from typing import Any, Generator, Optional, Union
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urlparse
 
 from config import Config
 from crewai import LLM, Agent, Crew, Task
@@ -69,7 +68,7 @@ class MyAgent:
         self.default_model = self.config.llm_default_model
         if not self.default_model.startswith("datarobot/"):
             self.default_model = f"datarobot/{self.default_model}"
-        self.model = model. # TODO: Why don't we use this for llm?
+        self.model = model  # TODO: Why don't we use this for llm?
         self.timeout = timeout
         if isinstance(verbose, str):
             self.verbose = verbose.lower() == "true"
@@ -147,11 +146,11 @@ class MyAgent:
         use_deployment: bool = True,
         auto_model_override: bool = True,
     ) -> LLM:
-        """Returns the LLM to use for a given LLM model.
+        """Returns the LLM to use for a given model.
 
         If a model is provided, it will be used. Otherwise, the default model will be used.
         If use_deployment is True, the model will be used with the deployment ID
-        from the config/environment variable {{  }}_DEPLOYMENT_ID. If False, it will use the
+        from the config/environment variable {{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEPLOYMENT_ID. If False, it will use the
         LLM Gateway.
 
         Args:
@@ -167,8 +166,8 @@ class MyAgent:
         """
         parsed_api_base = urlparse(self.api_base)
         api_base = (
-            f"{self.parsed_api_base}/api/v2/deployments/{self.config.llm_deployment_id}/chat/completions"
-            if use_deployment and self.config.llm_deployment_id
+            f"{parsed_api_base}/api/v2/deployments/{self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id}/chat/completions"
+            if use_deployment and self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id
             else f"{parsed_api_base.scheme}://{parsed_api_base.netloc}"
         )
         if model is None:
