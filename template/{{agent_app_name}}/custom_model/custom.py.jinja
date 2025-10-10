@@ -127,7 +127,9 @@ def chat(
     # access tokens for external services.
     initialize_authorization_context(completion_create_params)
 
-    maybe_set_env_from_runtime_parameters("LLM_DATAROBOT_DEPLOYMENT_ID")
+    # Change working directory to the directory containing this file.
+    # Some agent frameworks expect this for expected pathing.
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     # Instantiate the agent, all fields from the completion_create_params are passed to the agent
     # allowing environment variables to be passed during execution

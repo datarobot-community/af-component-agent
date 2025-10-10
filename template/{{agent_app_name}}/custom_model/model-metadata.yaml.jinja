@@ -3,6 +3,6 @@ name: {{ agent_app_name }}
 type: inference
 targetType: agenticworkflow
 runtimeParameterDefinitions:
-  - fieldName: LLM_DATAROBOT_DEPLOYMENT_ID
+  - fieldName: {{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEPLOYMENT_ID
     defaultValue: SET_VIA_PULUMI_OR_MANUALLY
     type: string

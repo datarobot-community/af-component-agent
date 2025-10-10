@@ -19,6 +19,7 @@ from datetime import datetime
 from typing import Any, Generator, Optional, Sequence, Union
 from urllib.parse import urljoin, urlparse
 
+from config import Config
 from llama_index.core.agent.workflow import (
     AgentInput,
     AgentOutput,
@@ -99,6 +100,10 @@ class MyAgent:
             or os.environ.get("DATAROBOT_ENDPOINT")
             or "https://app.datarobot.com"
         )
+        self.config = Config()
+        self.default_model = self.config.llm_default_model
+        if not self.default_model.startswith("datarobot/"):
+            self.default_model = f"datarobot/{self.default_model}"
         self.model = model
         self.timeout = timeout
         if isinstance(verbose, str):
@@ -211,57 +216,61 @@ class MyAgent:
 
         return await handler.ctx.get("state"), events  # type: ignore[union-attr]
 
+    def llm_factory(
+        self,
+        model: str | None = None,
+        use_deployment: bool = True,
+        auto_model_override: bool = True,
+    ) -> DataRobotLiteLLM:
+        """Returns the DataRobotLiteLLM to use for a given model.
+
+        If a model is provided, it will be used. Otherwise, the default model will be used.
+        If use_deployment is True, the model will be used with the deployment ID
+        from the config/environment variable {{  }}_DEPLOYMENT_ID. If False, it will use the
+        LLM Gateway.
+
+        Args:
+            model: Optional[str]: The model to use. If none, it defaults to config.llm_default_model.
+            use_deployment: Optional[bool]: Whether to use the deployment ID from the config.
+                Defaults to True.
+            auto_model_override: Optional[bool]: If True, it will try and use the model
+                specified in the request but automatically back out if the LLM Gateway is
+                not available.
+
+        Returns:
+            str: The model to use.
+        """
+        parsed_api_base = urlparse(self.api_base)
+        api_base = (
+            f"{self.parsed_api_base}/api/v2/deployments/{self.config.llm_deployment_id}/chat/completions"
+            if use_deployment and self.config.llm_deployment_id
+            else f"{parsed_api_base.scheme}://{parsed_api_base.netloc}"
+        )
+        if model is None:
+            model = self.default_model
+        if auto_model_override and not self.config.use_datarobot_llm_gateway:
+            model = self.default_model
+        if self.verbose:
+            print(f"Using model: {model}")
+        return DataRobotLiteLLM(
+            model=model,
+            api_base=api_base,
+            api_key=self.api_key,
+            timeout=self.timeout,
+        )
+
     @property
     def llm(self) -> DataRobotLiteLLM:
-        """Returns a LlamaIndex LiteLLM instance configured to use DataRobot's LLM Gateway or a specific deployment.
+        """Returns a DataRobotLiteLLM instance configured to use DataRobot's LLM Gateway or a specific deployment.
 
         For help configuring different LLM backends see:
         https://github.com/datarobot-community/datarobot-agent-templates/blob/main/docs/developing-agents-llm-providers.md
         """
-
-        # NOTE: LlamaIndex tool encodings are sensitive to the LLM model used and may need to be re-written
-        # to work with different models. This example assumes the model is a GPT compatible model.
-
-        api_base = urlparse(self.api_base)
-        if os.environ.get("LLM_DATAROBOT_DEPLOYMENT_ID"):
-            path = api_base.path
-            if "/api/v2/deployments" not in path and "api/v2/genai" not in path:
-                # Ensure the API base ends with /api/v2/ for deployments
-                if not path.endswith("/api/v2/") and not path.endswith("/api/v2"):
-                    path = urljoin(path + "/", "api/v2/")
-                if not path.endswith("/"):
-                    path += "/"
-                api_base = api_base._replace(path=path)
-                deployment_url = urljoin(
-                    api_base.geturl(),
-                    f"deployments/{os.environ.get('LLM_DATAROBOT_DEPLOYMENT_ID')}/",
-                )
-            else:
-                # If user specifies a likely deployment URL then leave it alone
-                deployment_url = api_base.geturl()
-            if not deployment_url.endswith("/"):
-                deployment_url += "/"
-            return DataRobotLiteLLM(
-                model="openai/gpt-4o-mini",
-                api_base=deployment_url,
-                api_key=self.api_key,
-                timeout=self.timeout,
-            )
-        else:
-            # Ensure the API base does not end with /api/v2/ for LLM Gateway
-            # Remove only '/api/v2' or '/api/v2/' from the path portion, if present
-            path = api_base.path
-            if path.endswith("api/v2/") or path.endswith("api/v2"):
-                path = re.sub(r"/api/v2/?$", "/", path)
-            if not path.endswith("/"):
-                path += "/"
-            api_base = api_base._replace(path=path)
-            return DataRobotLiteLLM(
-                model="datarobot/azure/gpt-4o-mini",
-                api_base=api_base.geturl(),
-                api_key=self.api_key,
-                timeout=self.timeout,
-            )
+        return self.llm_factory(
+            model=self.default_model,
+            use_deployment=not self.config.use_datarobot_llm_gateway,
+            auto_model_override=True,
+        )
 
     @property
     def research_agent(self) -> FunctionAgent:

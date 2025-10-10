@@ -14,6 +14,7 @@
 import os
 from typing import Any, Generator, Optional, Union
 
+from config import Config
 from openai.types.chat import CompletionCreateParams
 from ragas import MultiTurnSample
 
@@ -57,6 +58,7 @@ class MyAgent:
             or os.environ.get("DATAROBOT_ENDPOINT")
             or "https://app.datarobot.com"
         )
+        self.config = Config()
         self.model = model
         self.timeout = timeout
         if isinstance(verbose, str):
