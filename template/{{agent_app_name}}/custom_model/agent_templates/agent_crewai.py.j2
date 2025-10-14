@@ -13,11 +13,11 @@
 # limitations under the License.
 import os
 from typing import Any, Generator, Optional, Union
-from urllib.parse import urlparse
 
 from config import Config
 from crewai import LLM, Agent, Crew, Task
 from crewai_event_listener import CrewAIEventListener
+from helpers import get_api_base
 from openai.types.chat import CompletionCreateParams
 from ragas import MultiTurnSample
 from ragas.messages import AIMessage, HumanMessage, ToolMessage
@@ -66,8 +66,6 @@ class MyAgent:
         )
         self.config = Config()
         self.default_model = self.config.llm_default_model
-        if not self.default_model.startswith("datarobot/"):
-            self.default_model = f"datarobot/{self.default_model}"
         self.model = model  # TODO: Why don't we use this for llm?
         self.timeout = timeout
         if isinstance(verbose, str):
@@ -164,11 +162,10 @@ class MyAgent:
         Returns:
             str: The model to use.
         """
-        parsed_api_base = urlparse(self.api_base)
-        api_base = (
-            f"{parsed_api_base}/api/v2/deployments/{self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id}/chat/completions"
-            if use_deployment and self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id
-            else f"{parsed_api_base.scheme}://{parsed_api_base.netloc}"
+        api_base = get_api_base(
+            self.api_base,
+            self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id,
+            use_deployment,
         )
         if model is None:
             model = self.default_model

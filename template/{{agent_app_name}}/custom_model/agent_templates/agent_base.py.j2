@@ -15,6 +15,7 @@ import os
 from typing import Any, Generator, Optional, Union
 
 from config import Config
+from helpers import get_api_base
 from openai.types.chat import CompletionCreateParams
 from ragas import MultiTurnSample
 
@@ -53,7 +54,7 @@ class MyAgent:
             None
         """
         self.api_key = api_key or os.environ.get("DATAROBOT_API_TOKEN")
-        self.api_base = (
+        self.api_base: str = (
             api_base
             or os.environ.get("DATAROBOT_ENDPOINT")
             or "https://app.datarobot.com"
