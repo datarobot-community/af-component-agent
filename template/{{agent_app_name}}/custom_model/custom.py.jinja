@@ -42,6 +42,7 @@ instrument_llamaindex = LlamaIndexInstrumentor().instrument()  # type: ignore[no
 import os
 
 # Some libraries collect telemetry data by default. Let's disable that.
+{%- if agent_template_framework == "crewai" %}os.environ["CREWAI_TESTING"] = "true"{% endif -%}
 os.environ["RAGAS_DO_NOT_TRACK"] = "true"
 os.environ["DEEPEVAL_TELEMETRY_OPT_OUT"] = "YES"
 # isort: on
