@@ -14,9 +14,9 @@
 import os
 from datetime import datetime
 from typing import Any, Generator, Optional, Union
-from urllib.parse import urlparse
 
 from config import Config
+from helpers import get_api_base
 from langchain_community.chat_models import ChatLiteLLM
 from langchain_core.messages import HumanMessage, ToolMessage
 from langgraph.graph import END, START, MessagesState, StateGraph
@@ -70,8 +70,6 @@ class MyAgent:
         )
         self.config = Config()
         self.default_model = self.config.llm_default_model
-        if not self.default_model.startswith("datarobot/"):
-            self.default_model = f"datarobot/{self.default_model}"
         self.model = model
         self.timeout = timeout
         if isinstance(verbose, str):
@@ -230,14 +228,11 @@ class MyAgent:
         Returns:
             str: The model to use.
         """
-        parsed_api_base = urlparse(self.api_base)
-        base_url = f"{parsed_api_base.scheme}://{parsed_api_base.netloc}"
-        api_base = (
-            f"{base_url}/api/v2/deployments/{self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id}/chat/completions"
-            if use_deployment and self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id
-            else base_url
+        api_base = get_api_base(
+            self.api_base,
+            self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id,
+            use_deployment,
         )
-
         if model is None:
             model = self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:

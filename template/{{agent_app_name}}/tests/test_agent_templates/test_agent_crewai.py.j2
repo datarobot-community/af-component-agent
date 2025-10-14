@@ -161,7 +161,7 @@ class TestMyAgentCrewAI:
             ),
             (
                 "https://example.com/api/v2/genai/llmgw/chat/completions/",
-                "https://example.com/api/v2/genai/llmgw/chat/completions/",
+                "https://example.com/api/v2/genai/llmgw/chat/completions",
             ),
             (None, "https://app.datarobot.com/"),
         ],
@@ -218,7 +218,7 @@ class TestMyAgentCrewAI:
             ),
             (
                 "https://example.com/api/v2/genai/llmgw/chat/completions/",
-                "https://example.com/api/v2/genai/llmgw/chat/completions/",
+                "https://example.com/api/v2/genai/llmgw/chat/completions",
             ),
             (None, "https://app.datarobot.com/api/v2/deployments/test-id/"),
         ],
@@ -226,13 +226,11 @@ class TestMyAgentCrewAI:
     @patch("agent.LLM")
     def test_llm_deployment_with_api_base(self, mock_llm, api_base, expected_result):
         """Test api_base_litellm property with various URL formats."""
-        with patch.dict(
-            os.environ, {"LLM_DATAROBOT_DEPLOYMENT_ID": "test-id"}, clear=True
-        ):
+        with patch.dict(os.environ, {"{{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEPLOYMENT_ID": "test-id"}, clear=True):
             agent = MyAgent(api_base=api_base)
             _ = agent.llm
             mock_llm.assert_called_once_with(
-                model="openai/gpt-4o-mini",
+                model="datarobot/azure/gpt-4o-mini",
                 api_base=expected_result,
                 api_key=None,
                 timeout=90,
