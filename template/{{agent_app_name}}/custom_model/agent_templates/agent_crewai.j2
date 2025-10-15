@@ -13,14 +13,17 @@
 # limitations under the License.
 import os
 import re
-from typing import Any, Generator, Optional, Union
+from typing import Any, Generator, List, Optional, Union
 from urllib.parse import urljoin, urlparse
 
 from crewai import LLM, Agent, Crew, Task
+from crewai.tools import BaseTool
 from crewai_event_listener import CrewAIEventListener
 from openai.types.chat import CompletionCreateParams
 from ragas import MultiTurnSample
 from ragas.messages import AIMessage, HumanMessage, ToolMessage
+
+from custom_model.mcp_client import MCPConfig, load_mcp_tools
 
 
 class MyAgent:
@@ -182,6 +185,7 @@ class MyAgent:
 
     @property
     def agent_planner(self) -> Agent:
+        tools = get_mcp_tools_for_agent(tool_names=["list_tools"])
         return Agent(
             role="Content Planner",
             goal="Plan engaging and factually accurate content on {topic}",
@@ -191,10 +195,12 @@ class MyAgent:
             allow_delegation=False,
             verbose=self.verbose,
             llm=self.llm,
+            tools=tools,
         )
 
     @property
     def agent_writer(self) -> Agent:
+        tools = get_mcp_tools_for_agent()
         return Agent(
             role="Content Writer",
             goal="Write insightful and factually accurate opinion piece about the topic: {topic}",
@@ -207,10 +213,12 @@ class MyAgent:
             allow_delegation=False,
             verbose=self.verbose,
             llm=self.llm,
+            tools=tools,
         )
 
     @property
     def agent_editor(self) -> Agent:
+        tools = get_mcp_tools_for_agent()
         return Agent(
             role="Editor",
             goal="Edit a given blog post to align with the writing style of the organization.",
@@ -221,6 +229,7 @@ class MyAgent:
             allow_delegation=False,
             verbose=self.verbose,
             llm=self.llm,
+            tools=tools,
         )
 
     @property
@@ -276,3 +285,20 @@ class MyAgent:
         if not events:
             return None
         return MultiTurnSample(user_input=events)
+
+
+def get_mcp_tools_for_agent(tool_names: Optional[List[str]] = None) -> List[BaseTool]:
+    """Load MCP tools for an agent.
+
+    Args:
+        tool_names: Optional list of specific tool names to load.
+                   If None, loads all available tools from MCP server.
+
+    Returns:
+        List of CrewAI Tool objects loaded from MCP server.
+    """
+    config = MCPConfig.from_env()
+    if config is None:
+        return []
+
+    return load_mcp_tools(config=config, tool_names=tool_names)
