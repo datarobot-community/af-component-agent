@@ -244,7 +244,7 @@ class TestMyAgentCrewAI:
         agent.llm
         mock_llm.assert_called_once_with(
             model="datarobot/azure/gpt-4o-mini",
-            api_base="test_base",
+            api_base="test_base/",
             api_key="test_key",
             timeout=90,
         )
