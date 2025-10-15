@@ -250,11 +250,11 @@ datarobot_url = (
 
 
 # Export the IDs of the created resources
+pulumi.export("NOTE: [unknown] values will be populated after performing an update.")  # fmt: skip
 pulumi.export(
     "Agent Execution Environment ID " + {{agent_app_name}}_asset_name,
     {{agent_app_name}}_execution_environment.id,
 )
-pulumi.export("Agent Custom Model ID " + {{agent_app_name}}_asset_name, {{agent_app_name}}_custom_model.id)
 pulumi.export(
     "Agent Custom Model Chat Endpoint " + {{agent_app_name}}_asset_name,
     {{agent_app_name}}_custom_model_endpoint,
@@ -309,10 +309,6 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/chat/completions"
     )
 
-    pulumi.export(
-        "Agent Deployment ID " + {{agent_app_name}}_asset_name,
-        {{agent_app_name}}_agent_deployment.id,
-    )
     export(
         {{agent_app_name}}_application_name.upper() + "_DEPLOYMENT_ID",
         {{agent_app_name}}_agent_deployment.id,
