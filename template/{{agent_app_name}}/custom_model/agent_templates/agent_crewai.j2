@@ -62,7 +62,7 @@ class MyAgent:
         self.api_base = (
             api_base
             or os.environ.get("DATAROBOT_ENDPOINT")
-            or "https://api.datarobot.com"
+            or "https://app.datarobot.com"
         )
         self.model = model
         self.timeout = timeout
@@ -160,6 +160,8 @@ class MyAgent:
             else:
                 # If user specifies a likely deployment URL then leave it alone
                 deployment_url = api_base.geturl()
+            if not deployment_url.endswith("/"):
+                deployment_url += "/"
             return LLM(
                 model="openai/gpt-4o-mini",
                 api_base=deployment_url,
@@ -172,6 +174,8 @@ class MyAgent:
             path = api_base.path
             if path.endswith("api/v2/") or path.endswith("api/v2"):
                 path = re.sub(r"/api/v2/?$", "/", path)
+            if not path.endswith("/"):
+                path += "/"
             api_base = api_base._replace(path=path)
             return LLM(
                 model="datarobot/azure/gpt-4o-mini",
