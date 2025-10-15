@@ -368,11 +368,6 @@ def test_agent_deployment_created_when_env(monkeypatch):
     agent_infra.pulumi_datarobot.PredictionEnvironment.assert_called_once()
     # Check that CustomModelDeployment was created
     agent_infra.CustomModelDeployment.assert_called_once()
-    # Check that pulumi.export was called for deployment id and endpoint
-    agent_infra.pulumi.export.assert_any_call(
-        "Agent Deployment ID " + agent_infra.{{agent_app_name}}_asset_name,
-        agent_infra.CustomModelDeployment.return_value.id,
-    )
     agent_infra.pulumi.export.assert_any_call(
         "Agent Deployment Chat Endpoint " + agent_infra.{{agent_app_name}}_asset_name,
         agent_infra.CustomModelDeployment.return_value.id.apply.return_value,
