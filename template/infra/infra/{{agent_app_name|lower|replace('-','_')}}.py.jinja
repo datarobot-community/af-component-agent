@@ -162,7 +162,7 @@ else:
         {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment(
             resource_name={{agent_app_name}}_asset_name + "Execution Environment",
             name={{agent_app_name}}_asset_name + "Execution Environment",
-            description="Execution Environment for " + {{agent_app_name}}_asset_name.strip()    ,
+            description="Execution Environment for " + {{agent_app_name}}_asset_name.strip(),
             programming_language="python",
             docker_image=os.path.join(
                 str({{agent_app_name}}_application_path), "docker_context.tar.gz"
