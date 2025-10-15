@@ -30,8 +30,10 @@ class Config(DataRobotAppFrameworkBaseSettings):
     llm_default_model: str = "datarobot/azure/gpt-4o-mini"
     use_datarobot_llm_gateway: bool = False
 
-    @model_validator(mode="after")
-    def replace_placeholder_values(self) -> "Config":
-        if self.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id == "SET_VIA_PULUMI_OR_MANUALLY":
-            self.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id = None
-        return self
+    @model_validator(mode="before")
+    def replace_placeholder_values(cls, data):
+        if isinstance(data, dict):
+            for field_name, field_info in cls.model_fields.items():
+                if data.get(field_name) == "SET_VIA_PULUMI_OR_MANUALLY":
+                    data[field_name] = field_info.default
+        return data
