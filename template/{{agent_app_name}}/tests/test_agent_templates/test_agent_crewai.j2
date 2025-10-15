@@ -127,7 +127,7 @@ class TestMyAgentCrewAI:
 
         # Assert - Additional kwargs should be accepted but not stored as attributes
         assert agent.api_key is None  # Should fallback to env var or None
-        assert agent.api_base == "https://api.datarobot.com"  # Default value
+        assert agent.api_base == "https://app.datarobot.com"  # Default value
         assert agent.model is None
         assert agent.verbose is True
 
@@ -163,7 +163,7 @@ class TestMyAgentCrewAI:
                 "https://example.com/api/v2/genai/llmgw/chat/completions/",
                 "https://example.com/api/v2/genai/llmgw/chat/completions/",
             ),
-            (None, "https://api.datarobot.com"),
+            (None, "https://app.datarobot.com"),
         ],
     )
     @patch("agent.LLM")
@@ -220,7 +220,7 @@ class TestMyAgentCrewAI:
                 "https://example.com/api/v2/genai/llmgw/chat/completions/",
                 "https://example.com/api/v2/genai/llmgw/chat/completions/",
             ),
-            (None, "https://api.datarobot.com/api/v2/deployments/test-id/"),
+            (None, "https://app.datarobot.com/api/v2/deployments/test-id/"),
         ],
     )
     @patch("agent.LLM")
@@ -257,7 +257,7 @@ class TestMyAgentCrewAI:
             agent.llm
             mock_llm.assert_called_once_with(
                 model="datarobot/azure/gpt-4o-mini",
-                api_base="https://api.datarobot.com",
+                api_base="https://app.datarobot.com",
                 api_key="test_key",
                 timeout=90,
             )
