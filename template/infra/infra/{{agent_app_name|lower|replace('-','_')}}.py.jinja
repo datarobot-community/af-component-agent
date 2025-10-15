@@ -126,6 +126,7 @@ def synchronize_pyproject_dependencies():
 
 
 synchronize_pyproject_dependencies()
+pulumi.info("NOTE: [unknown] values will be populated after performing an update.")  # fmt: skip
 
 # Start of Pulumi settings and application infrastructure
 if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
@@ -250,7 +251,6 @@ datarobot_url = (
 
 
 # Export the IDs of the created resources
-pulumi.export("NOTE: [unknown] values will be populated after performing an update.")  # fmt: skip
 pulumi.export(
     "Agent Execution Environment ID " + {{agent_app_name}}_asset_name,
     {{agent_app_name}}_execution_environment.id,
