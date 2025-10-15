@@ -115,7 +115,7 @@ def test_execution_environment_not_set_and_docker_context(monkeypatch):
 
     assert kwargs["resource_name"] == "[unittest] [{{agent_app_name}}] Execution Environment"
     assert kwargs["programming_language"] == "python"
-    assert kwargs["name"] == "[unittest] {{agent_app_name}}"
+    assert kwargs["name"] == "[unittest] [{{agent_app_name}}] Execution Environment"
     assert kwargs["description"] == "Execution Environment for [unittest] {{agent_app_name}}"  # fmt: skip
     assert "docker_context_path" in kwargs
     assert "docker_image" not in kwargs
