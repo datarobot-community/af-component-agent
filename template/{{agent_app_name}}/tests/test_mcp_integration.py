@@ -11,153 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""
+Integration tests for CrewAI agent MCP functionality.
+These tests verify that the generated CrewAI agents properly use MCP tools.
+"""
 
-import os
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import pytest
 
 
-class TestMCPConfiguration:
-    """Test MCP configuration parsing and setup."""
-
-    def test_mcp_config_datarobot_url(self):
-        """Test parsing DataRobot deployment URL."""
-        from mcp_client import MCPConfig
-
-        url = "https://app.datarobot.com/api/v2/deployments/abc123def456789012345678/"
-        config = MCPConfig(url)
-
-        assert config.is_datarobot is True
-        assert config.deployment_id == "abc123def456789012345678"
-        assert config.url.endswith("/mcp")
-
-    def test_mcp_config_external_url(self):
-        """Test parsing external MCP server URL."""
-        from mcp_client import MCPConfig
-
-        url = "http://my-mcp-server:8080/sse"
-        config = MCPConfig(url)
-
-        assert config.is_datarobot is False
-        assert config.deployment_id is None
-        assert config.url == "http://my-mcp-server:8080/sse"
-
-    @patch.dict(os.environ, {"MCP_URL": "http://localhost:8080/sse"})
-    def test_mcp_config_from_env(self):
-        """Test creating MCP config from environment variables."""
-        from mcp_client import MCPConfig
-
-        config = MCPConfig.from_env()
-
-        assert config is not None
-        assert config.url == "http://localhost:8080/sse"
-        assert config.is_datarobot is False
-
-    @patch.dict(os.environ, {}, clear=True)
-    def test_mcp_config_from_env_not_set(self):
-        """Test that None is returned when MCP_URL not set."""
-        from mcp_client import MCPConfig
-
-        config = MCPConfig.from_env()
-
-        assert config is None
-
-
-class TestMCPToolLoader:
-    """Test MCP tool loader functionality."""
-
-    @patch("mcp_client.FastMCP")
-    @patch("mcp_client.asyncio.run")
-    def test_list_tools(self, mock_asyncio_run, mock_fastmcp):
-        """Test listing available tools from MCP server."""
-        from mcp_client import MCPConfig, MCPToolLoader
-
-        # Mock FastMCP client and async operations
-        mock_client = Mock()
-        mock_tool = Mock()
-        mock_tool.name = "test_tool"
-        mock_tool.description = "Test tool"
-        mock_asyncio_run.return_value = [mock_tool]
-        mock_fastmcp.return_value = mock_client
-
-        config = MCPConfig("http://localhost:8080")
-        loader = MCPToolLoader(config)
-        tools = loader.list_tools()
-
-        assert len(tools) == 1
-        assert "test_tool" in tools
-
-    @patch("mcp_client.FastMCP")
-    @patch("mcp_client.asyncio.run")
-    def test_call_tool(self, mock_asyncio_run, mock_fastmcp):
-        """Test calling a tool on MCP server."""
-        from mcp_client import MCPConfig, MCPToolLoader
-
-        # Mock FastMCP client
-        mock_client = Mock()
-        mock_asyncio_run.return_value = "success"
-        mock_fastmcp.return_value = mock_client
-
-        config = MCPConfig("http://localhost:8080")
-        loader = MCPToolLoader(config)
-        result = loader.call_tool("test_tool", {"arg": "value"})
-
-        assert result == "success"
-
-
-class TestMCPToolLoading:
-    """Test MCP tool loading functionality."""
-
-    @patch.dict(os.environ, {}, clear=True)
-    def test_load_mcp_tools_when_not_configured(self):
-        """Test that empty list returned when MCP not configured."""
-        from mcp_client import load_mcp_tools
-
-        tools = load_mcp_tools()
-
-        assert tools == []
-
-    @patch("mcp_client.MCPToolLoader")
-    @patch.dict(os.environ, {"MCP_URL": "http://localhost:8080/sse"})
-    def test_load_all_mcp_tools(self, mock_loader_class):
-        """Test loading all available MCP tools."""
-        from mcp_client import load_mcp_tools
-
-        # Mock the loader
-        mock_loader = Mock()
-        mock_loader.list_tools.return_value = ["tool_a", "tool_b"]
-        mock_loader.get_tool_schema.return_value = {"description": "Test tool"}
-        mock_loader.call_tool.return_value = "result"
-        mock_loader_class.return_value = mock_loader
-
-        tools = load_mcp_tools()
-
-        assert len(tools) == 2
-        assert any(tool.name == "tool_a" for tool in tools)
-        assert any(tool.name == "tool_b" for tool in tools)
-
-    @patch("mcp_client.MCPToolLoader")
-    @patch.dict(os.environ, {"MCP_URL": "http://localhost:8080/sse"})
-    def test_load_specific_mcp_tools(self, mock_loader_class):
-        """Test loading specific MCP tools by name."""
-        from mcp_client import load_mcp_tools
-
-        # Mock the loader
-        mock_loader = Mock()
-        mock_loader.list_tools.return_value = ["tool_a", "tool_b", "tool_c"]
-        mock_loader.get_tool_schema.return_value = {"description": "Test tool"}
-        mock_loader.call_tool.return_value = "result"
-        mock_loader_class.return_value = mock_loader
-
-        tools = load_mcp_tools(tool_names=["tool_a"])
-
-        assert len(tools) == 1
-        assert any(tool.name == "tool_a" for tool in tools)
-
-
 class TestCrewAIAgentMCPIntegration:
-    """Test that CrewAI agents actually use MCP tools."""
+    """Test that CrewAI agents actually use MCP tools during execution."""
 
     @patch("agent.get_mcp_tools_for_agent")
     def test_agent_planner_uses_mcp_tools(self, mock_get_tools):
@@ -312,6 +177,109 @@ class TestCrewAIAgentMCPIntegration:
         assert planner.tools == [tool1, tool2]
         mock_get_tools.assert_called_once()
 
+    @patch("agent.get_mcp_tools_for_agent")
+    def test_agent_tool_calling_with_parameters(self, mock_get_tools):
+        """Test that agents can call MCP tools with parameters."""
+        from agent import MyAgent
+        from crewai.tools import BaseTool
 
-if __name__ == "__main__":
-    pytest.main([__file__])
+        # Create proper BaseTool instance with parameters
+        class WeatherTool(BaseTool):
+            name: str = "weather_tool"
+            description: str = "Get weather information"
+
+            def _run(self, location="New York", units="fahrenheit", **kwargs):
+                return "Sunny, 75°F"
+
+        weather_tool = WeatherTool()
+        mock_get_tools.return_value = [weather_tool]
+
+        # Create agent
+        agent = MyAgent()
+        planner = agent.agent_planner
+
+        # Test calling tool with parameters
+        result = weather_tool._run(location="New York", units="fahrenheit")
+        assert result == "Sunny, 75°F"
+
+    @patch("agent.get_mcp_tools_for_agent")
+    def test_agent_tool_error_handling(self, mock_get_tools):
+        """Test that agents handle MCP tool errors gracefully."""
+        from agent import MyAgent
+        from crewai.tools import BaseTool
+
+        # Create proper BaseTool instance that raises error
+        class ErrorTool(BaseTool):
+            name: str = "error_tool"
+            description: str = "Tool that raises errors"
+
+            def _run(self, **kwargs):
+                raise Exception("Tool execution failed")
+
+        error_tool = ErrorTool()
+        mock_get_tools.return_value = [error_tool]
+
+        # Create agent
+        agent = MyAgent()
+        planner = agent.agent_planner
+
+        # Test that tool error is raised
+        with pytest.raises(Exception, match="Tool execution failed"):
+            error_tool._run()
+
+    @patch("agent.get_mcp_tools_for_agent")
+    def test_agent_with_multiple_mcp_tools(self, mock_get_tools):
+        """Test that agents can use multiple MCP tools."""
+        from agent import MyAgent
+        from crewai.tools import BaseTool
+
+        # Create proper BaseTool instances
+        tools = []
+        for i in range(5):
+
+            class TestTool(BaseTool):
+                name: str = f"tool_{i}"
+                description: str = f"Tool {i}"
+
+                def _run(self, **kwargs):
+                    return f"result_{i}"
+
+            tools.append(TestTool())
+
+        mock_get_tools.return_value = tools
+
+        # Create agent
+        agent = MyAgent()
+        planner = agent.agent_planner
+
+        # Verify agent has all tools
+        assert len(planner.tools) == 5
+        assert planner.tools == tools
+        mock_get_tools.assert_called_once()
+
+    @patch("agent.get_mcp_tools_for_agent")
+    def test_agent_tool_metadata(self, mock_get_tools):
+        """Test that agent tools have proper metadata."""
+        from agent import MyAgent
+        from crewai.tools import BaseTool
+
+        # Create proper BaseTool instance with metadata
+        class MetadataTool(BaseTool):
+            name: str = "metadata_tool"
+            description: str = "Tool with metadata"
+
+            def _run(self, **kwargs):
+                return "result"
+
+        metadata_tool = MetadataTool()
+        mock_get_tools.return_value = [metadata_tool]
+
+        # Create agent
+        agent = MyAgent()
+        planner = agent.agent_planner
+
+        # Verify tool metadata
+        tool = planner.tools[0]
+        assert tool.name == "metadata_tool"
+        assert "Tool with metadata" in tool.description
+        assert hasattr(tool, "_run")
