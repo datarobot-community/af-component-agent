@@ -125,7 +125,7 @@ class TestMyAgentBase:
 
         # Assert - Additional kwargs should be accepted but not stored as attributes
         assert agent.api_key is None  # Should fallback to env var or None
-        assert agent.api_base is None  # Should fallback to env var or None
+        assert agent.api_base == "https://app.datarobot.com"  # Default value
         assert agent.model is None
         assert agent.verbose is True
 
