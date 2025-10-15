@@ -399,3 +399,196 @@ class TestMyAgentCrewAI:
         for expected_message, actual_message in zip(events, actual_events):
             assert expected_message.content == actual_message["content"]
             assert expected_message.type == actual_message["type"]
+
+
+class TestMyAgentMCPIntegration:
+    """Test MCP tool integration for CrewAI agents."""
+
+    @pytest.fixture
+    def agent(self):
+        return MyAgent(api_key="test_key", api_base="test_base", verbose=True)
+
+    @patch("agent.get_mcp_tools_for_agent")
+    def test_agent_planner_with_mcp_tools(self, mock_get_tools, agent):
+        """Test that planner agent uses MCP tools when configured."""
+        from crewai.tools import BaseTool
+
+        # Create mock MCP tools
+        class MockTool(BaseTool):
+            name: str = "test_mcp_tool"
+            description: str = "Test MCP tool"
+
+            def _run(self, **kwargs):
+                return "mcp_result"
+
+        mock_tools = [MockTool()]
+        mock_get_tools.return_value = mock_tools
+
+        # Test planner agent
+        planner = agent.agent_planner
+        assert planner.tools == mock_tools
+        mock_get_tools.assert_called_once()
+
+    @patch("agent.get_mcp_tools_for_agent")
+    def test_agent_writer_with_mcp_tools(self, mock_get_tools, agent):
+        """Test that writer agent uses MCP tools when configured."""
+        from crewai.tools import BaseTool
+
+        # Create mock MCP tools
+        class MockTool(BaseTool):
+            name: str = "test_mcp_tool"
+            description: str = "Test MCP tool"
+
+            def _run(self, **kwargs):
+                return "mcp_result"
+
+        mock_tools = [MockTool()]
+        mock_get_tools.return_value = mock_tools
+
+        # Test writer agent
+        writer = agent.agent_writer
+        assert writer.tools == mock_tools
+        mock_get_tools.assert_called_once()
+
+    @patch("agent.get_mcp_tools_for_agent")
+    def test_agent_editor_with_mcp_tools(self, mock_get_tools, agent):
+        """Test that editor agent uses MCP tools when configured."""
+        from crewai.tools import BaseTool
+
+        # Create mock MCP tools
+        class MockTool(BaseTool):
+            name: str = "test_mcp_tool"
+            description: str = "Test MCP tool"
+
+            def _run(self, **kwargs):
+                return "mcp_result"
+
+        mock_tools = [MockTool()]
+        mock_get_tools.return_value = mock_tools
+
+        # Test editor agent
+        editor = agent.agent_editor
+        assert editor.tools == mock_tools
+        mock_get_tools.assert_called_once()
+
+    @patch("agent.get_mcp_tools_for_agent")
+    def test_agent_with_no_mcp_tools(self, mock_get_tools, agent):
+        """Test that agents work when no MCP tools are available."""
+        # Mock no MCP tools available
+        mock_get_tools.return_value = []
+
+        # Test all agents have no tools
+        planner = agent.agent_planner
+        writer = agent.agent_writer
+        editor = agent.agent_editor
+
+        assert planner.tools == []
+        assert writer.tools == []
+        assert editor.tools == []
+
+        # Should be called 3 times (once for each agent)
+        assert mock_get_tools.call_count == 3
+
+    @patch("agent.get_mcp_tools_for_agent")
+    def test_agent_with_specific_mcp_tools(self, mock_get_tools, agent):
+        """Test that agents can use specific MCP tools."""
+        from crewai.tools import BaseTool
+
+        # Create multiple mock MCP tools
+        class Tool1(BaseTool):
+            name: str = "tool1"
+            description: str = "Tool 1"
+
+            def _run(self, **kwargs):
+                return "result1"
+
+        class Tool2(BaseTool):
+            name: str = "tool2"
+            description: str = "Tool 2"
+
+            def _run(self, **kwargs):
+                return "result2"
+
+        mock_tools = [Tool1(), Tool2()]
+        mock_get_tools.return_value = mock_tools
+
+        # Test planner agent with specific tools
+        planner = agent.agent_planner
+        assert len(planner.tools) == 2
+        assert planner.tools == mock_tools
+
+    @patch("agent.get_mcp_tools_for_agent")
+    def test_agent_planner_specific_tool_names(self, mock_get_tools, agent):
+        """Test that planner agent requests specific tool names."""
+        from crewai.tools import BaseTool
+
+        # Create mock tool for list_tools
+        class ListToolsTool(BaseTool):
+            name: str = "list_tools"
+            description: str = "List available tools"
+
+            def _run(self, **kwargs):
+                return "available_tools"
+
+        mock_tools = [ListToolsTool()]
+        mock_get_tools.return_value = mock_tools
+
+        # Test planner agent (should request list_tools specifically)
+        planner = agent.agent_planner
+        assert planner.tools == mock_tools
+        
+        # Verify get_mcp_tools_for_agent was called with specific tool names
+        mock_get_tools.assert_called_once_with(tool_names=["list_tools"])
+
+    @patch("agent.get_mcp_tools_for_agent")
+    def test_agent_writer_all_tools(self, mock_get_tools, agent):
+        """Test that writer agent requests all available tools."""
+        from crewai.tools import BaseTool
+
+        # Create mock tools
+        class Tool1(BaseTool):
+            name: str = "tool1"
+            description: str = "Tool 1"
+
+            def _run(self, **kwargs):
+                return "result1"
+
+        class Tool2(BaseTool):
+            name: str = "tool2"
+            description: str = "Tool 2"
+
+            def _run(self, **kwargs):
+                return "result2"
+
+        mock_tools = [Tool1(), Tool2()]
+        mock_get_tools.return_value = mock_tools
+
+        # Test writer agent (should request all tools)
+        writer = agent.agent_writer
+        assert writer.tools == mock_tools
+        
+        # Verify get_mcp_tools_for_agent was called without specific tool names
+        mock_get_tools.assert_called_once_with(tool_names=None)
+
+    @patch("agent.get_mcp_tools_for_agent")
+    def test_agent_editor_all_tools(self, mock_get_tools, agent):
+        """Test that editor agent requests all available tools."""
+        from crewai.tools import BaseTool
+
+        # Create mock tools
+        class Tool1(BaseTool):
+            name: str = "tool1"
+            description: str = "Tool 1"
+
+            def _run(self, **kwargs):
+                return "result1"
+
+        mock_tools = [Tool1()]
+        mock_get_tools.return_value = mock_tools
+
+        # Test editor agent (should request all tools)
+        editor = agent.agent_editor
+        assert editor.tools == mock_tools
+        
+        # Verify get_mcp_tools_for_agent was called without specific tool names
+        mock_get_tools.assert_called_once_with(tool_names=None)
