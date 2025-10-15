@@ -536,7 +536,7 @@ class TestMyAgentMCPIntegration:
         # Test planner agent (should request list_tools specifically)
         planner = agent.agent_planner
         assert planner.tools == mock_tools
-        
+
         # Verify get_mcp_tools_for_agent was called with specific tool names
         mock_get_tools.assert_called_once_with(tool_names=["list_tools"])
 
@@ -566,9 +566,9 @@ class TestMyAgentMCPIntegration:
         # Test writer agent (should request all tools)
         writer = agent.agent_writer
         assert writer.tools == mock_tools
-        
+
         # Verify get_mcp_tools_for_agent was called without specific tool names
-        mock_get_tools.assert_called_once_with(tool_names=None)
+        mock_get_tools.assert_called_once_with()
 
     @patch("agent.get_mcp_tools_for_agent")
     def test_agent_editor_all_tools(self, mock_get_tools, agent):
@@ -589,6 +589,6 @@ class TestMyAgentMCPIntegration:
         # Test editor agent (should request all tools)
         editor = agent.agent_editor
         assert editor.tools == mock_tools
-        
+
         # Verify get_mcp_tools_for_agent was called without specific tool names
-        mock_get_tools.assert_called_once_with(tool_names=None)
+        mock_get_tools.assert_called_once_with()
