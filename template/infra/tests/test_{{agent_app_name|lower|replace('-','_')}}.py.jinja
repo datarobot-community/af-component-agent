@@ -156,7 +156,7 @@ def test_execution_environment_not_set_with_docker_image(monkeypatch):
 
     assert kwargs["resource_name"] == "[unittest] [{{agent_app_name}}] Execution Environment"
     assert kwargs["programming_language"] == "python"
-    assert kwargs["name"] == "[unittest] {{agent_app_name}}"
+    assert kwargs["name"] == "[unittest] [{{agent_app_name}}] Execution Environment"
     assert kwargs["description"] == "Execution Environment for [unittest] {{agent_app_name}}"  # fmt: skip
     assert "docker_image" in kwargs
     assert "docker_context_path" not in kwargs
@@ -317,16 +317,16 @@ def test_agentic_playground_and_blueprint_created(monkeypatch):
     # Check that Agentic Playground was created
     agent_infra.pulumi_datarobot.Playground.assert_called_once()
     args, kwargs = agent_infra.pulumi_datarobot.Playground.call_args
-    assert kwargs["resource_name"].startswith("Agentic Playground")
-    assert kwargs["name"] == "[unittest] {{agent_app_name}}"
+    assert kwargs["resource_name"] == "[unittest] [{{agent_app_name}}] Agentic Playground"
+    assert kwargs["name"] == "[unittest] [{{agent_app_name}}] Agentic Playground"
     assert kwargs["use_case_id"] == agent_infra.use_case.id
     assert kwargs["playground_type"] == "agentic"
 
     # Check that LlmBlueprint was created and points to the created custom model
     agent_infra.pulumi_datarobot.LlmBlueprint.assert_called_once()
     args, kwargs = agent_infra.pulumi_datarobot.LlmBlueprint.call_args
-    assert kwargs["resource_name"].startswith("LLM Blueprint")
-    assert kwargs["name"] == "[unittest] {{agent_app_name}}"
+    assert kwargs["resource_name"] == "[unittest] [{{agent_app_name}}] LLM Blueprint"
+    assert kwargs["name"] == "[unittest] [{{agent_app_name}}] LLM Blueprint"
     assert kwargs["llm_id"] == "chat-interface-custom-model"
     assert kwargs["prompt_type"] == "ONE_TIME_PROMPT"
     assert kwargs[
