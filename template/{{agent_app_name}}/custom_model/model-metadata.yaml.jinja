@@ -6,3 +6,12 @@ runtimeParameterDefinitions:
   - fieldName: {{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEPLOYMENT_ID
     defaultValue: SET_VIA_PULUMI_OR_MANUALLY
     type: string
+  - fieldName: {{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEFAULT_MODEL
+    defaultValue: SET_VIA_PULUMI_OR_MANUALLY
+    type: string
+  - fieldName: {{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEFAULT_MODEL_FRIENDLY_NAME
+    defaultValue: SET_VIA_PULUMI_OR_MANUALLY
+    type: string
+  - fieldName: USE_DATAROBOT_LLM_GATEWAY
+    defaultValue: SET_VIA_PULUMI_OR_MANUALLY
+    type: string
