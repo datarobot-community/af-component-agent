@@ -113,7 +113,7 @@ def test_execution_environment_not_set_and_docker_context(monkeypatch):
     agent_infra.pulumi_datarobot.ExecutionEnvironment.assert_called_once()
     args, kwargs = agent_infra.pulumi_datarobot.ExecutionEnvironment.call_args
 
-    assert kwargs["resource_name"] == "Execution Environment [docker_context] [{{agent_app_name}}]"
+    assert kwargs["resource_name"] == "[unittest] [{{agent_app_name}}] Execution Environment"
     assert kwargs["programming_language"] == "python"
     assert kwargs["name"] == "[unittest] {{agent_app_name}}"
     assert kwargs["description"] == "Execution Environment for [unittest] {{agent_app_name}}"  # fmt: skip
@@ -154,7 +154,7 @@ def test_execution_environment_not_set_with_docker_image(monkeypatch):
     agent_infra.pulumi_datarobot.ExecutionEnvironment.assert_called_once()
     args, kwargs = agent_infra.pulumi_datarobot.ExecutionEnvironment.call_args
 
-    assert kwargs["resource_name"] == "Execution Environment [docker_context] [{{agent_app_name}}]"
+    assert kwargs["resource_name"] == "[unittest] [{{agent_app_name}}] Execution Environment"
     assert kwargs["programming_language"] == "python"
     assert kwargs["name"] == "[unittest] {{agent_app_name}}"
     assert kwargs["description"] == "Execution Environment for [unittest] {{agent_app_name}}"  # fmt: skip
@@ -188,7 +188,7 @@ def test_execution_environment_default_set(monkeypatch):
     args, kwargs = agent_infra.pulumi_datarobot.ExecutionEnvironment.get.call_args
 
     assert kwargs["id"] == "python-311-genai-agents-id"
-    assert kwargs["resource_name"] == "Execution Environment [PRE-EXISTING] [{{agent_app_name}}]"
+    assert kwargs["resource_name"] == "[unittest] [{{agent_app_name}}] Execution Environment"
 
     # ExecutionEnvironment constructor should not be called when using default env
     agent_infra.pulumi_datarobot.ExecutionEnvironment.assert_not_called()
@@ -215,7 +215,7 @@ def test_execution_environment_custom_set(monkeypatch):
     args, kwargs = agent_infra.pulumi_datarobot.ExecutionEnvironment.get.call_args
 
     assert kwargs["id"] == "Custom Execution Environment"
-    assert kwargs["resource_name"] == "Execution Environment [PRE-EXISTING] [{{agent_app_name}}]"
+    assert kwargs["resource_name"] == "[unittest] [{{agent_app_name}}] Execution Environment"
 
     # ExecutionEnvironment constructor should not be called when using custom env
     agent_infra.pulumi_datarobot.ExecutionEnvironment.assert_not_called()
