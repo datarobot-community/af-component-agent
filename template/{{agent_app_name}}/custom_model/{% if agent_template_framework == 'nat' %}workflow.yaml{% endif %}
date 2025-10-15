@@ -71,7 +71,7 @@ llms:
     model_name: anthropic/claude-sonnet-4-20250514
     temperature: 0.0
     api_key: ${DATAROBOT_API_TOKEN}
-    base_url: https://app.datarobot.com/api/v2/genai/llmgw
+    base_url: ${DATAROBOT_ENDPOINT}/genai/llmgw
 workflow:
   _type: react_agent
   tool_names: [planner, writer, editor]
