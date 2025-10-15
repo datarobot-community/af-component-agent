@@ -90,7 +90,7 @@ class MyAgent:
             "prompt_tokens": 0,
             "total_tokens": 0,
         }
-        return "success", pipeline_interactions, usage_metrics
+        return result, pipeline_interactions, usage_metrics
 
     async def run_nat_workflow(self, config_file: StrPath, input_str: str) -> str:
         """Run the NAT workflow with the provided config file and input string.
