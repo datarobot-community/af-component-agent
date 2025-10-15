@@ -250,7 +250,6 @@ datarobot_url = (
 
 
 # Export the IDs of the created resources
-pulumi.export("Agent Use Case ID " + {{agent_app_name}}_asset_name, use_case.id)
 pulumi.export(
     "Agent Execution Environment ID " + {{agent_app_name}}_asset_name,
     {{agent_app_name}}_execution_environment.id,
