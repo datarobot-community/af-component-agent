@@ -312,6 +312,113 @@ class TestCrewAIAgentMCPIntegration:
         assert planner.tools == [tool1, tool2]
         mock_get_tools.assert_called_once()
 
+    @patch("agent.get_mcp_tools_for_agent")
+    def test_agent_tool_calling_with_parameters(self, mock_get_tools):
+        """Test that agents can call MCP tools with parameters."""
+        from agent import MyAgent
+        from crewai.tools import BaseTool
+
+        # Create proper BaseTool instance with parameters
+        class WeatherTool(BaseTool):
+            name: str = "weather_tool"
+            description: str = "Get weather information"
+
+            def _run(self, location="New York", units="fahrenheit", **kwargs):
+                return "Sunny, 75°F"
+
+        weather_tool = WeatherTool()
+        mock_get_tools.return_value = [weather_tool]
+
+        # Create agent
+        agent = MyAgent()
+        planner = agent.agent_planner
+
+        # Test calling tool with parameters
+        result = weather_tool._run(location="New York", units="fahrenheit")
+        assert result == "Sunny, 75°F"
+
+    @patch("agent.get_mcp_tools_for_agent")
+    def test_agent_tool_error_handling(self, mock_get_tools):
+        """Test that agents handle MCP tool errors gracefully."""
+        from agent import MyAgent
+        from crewai.tools import BaseTool
+
+        # Create proper BaseTool instance that raises error
+        class ErrorTool(BaseTool):
+            name: str = "error_tool"
+            description: str = "Tool that raises errors"
+
+            def _run(self, **kwargs):
+                raise Exception("Tool execution failed")
+
+        error_tool = ErrorTool()
+        mock_get_tools.return_value = [error_tool]
+
+        # Create agent
+        agent = MyAgent()
+        planner = agent.agent_planner
+
+        # Test that tool error is raised
+        with pytest.raises(Exception, match="Tool execution failed"):
+            error_tool._run()
+
+    @patch("agent.get_mcp_tools_for_agent")
+    def test_agent_with_multiple_mcp_tools(self, mock_get_tools):
+        """Test that agents can use multiple MCP tools."""
+        from agent import MyAgent
+        from crewai.tools import BaseTool
+
+        # Create proper BaseTool instances
+        tools = []
+        for i in range(5):
+
+            class TestTool(BaseTool):
+                name: str = f"tool_{i}"
+                description: str = f"Tool {i}"
+
+                def _run(self, **kwargs):
+                    return f"result_{i}"
+
+            tools.append(TestTool())
+
+        mock_get_tools.return_value = tools
+
+        # Create agent
+        agent = MyAgent()
+        planner = agent.agent_planner
+
+        # Verify agent has all tools
+        assert len(planner.tools) == 5
+        assert planner.tools == tools
+        mock_get_tools.assert_called_once()
+
+    @patch("agent.get_mcp_tools_for_agent")
+    def test_agent_tool_metadata(self, mock_get_tools):
+        """Test that agent tools have proper metadata."""
+        from agent import MyAgent
+        from crewai.tools import BaseTool
+
+        # Create proper BaseTool instance with metadata
+        class MetadataTool(BaseTool):
+            name: str = "metadata_tool"
+            description: str = "Tool with metadata"
+
+            def _run(self, **kwargs):
+                return "result"
+
+        metadata_tool = MetadataTool()
+        mock_get_tools.return_value = [metadata_tool]
+
+        # Create agent
+        agent = MyAgent()
+        planner = agent.agent_planner
+
+        # Verify tool metadata
+        tool = planner.tools[0]
+        assert tool.name == "metadata_tool"
+        assert "Tool with metadata" in tool.description
+        assert hasattr(tool, "_run")
+
 
 if __name__ == "__main__":
     pytest.main([__file__])
