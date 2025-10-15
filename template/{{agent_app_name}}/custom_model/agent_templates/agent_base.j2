@@ -156,19 +156,6 @@ class MyAgent:
         """
         return None
 
-    @property
-    def api_base_litellm(self) -> str:
-        """Returns a modified version of the API base URL suitable for LiteLLM.
-
-        Strips 'api/v2/' or 'api/v2' from the end of the URL if present.
-
-        Returns:
-            str: The modified API base URL.
-        """
-        if self.api_base:
-            return re.sub(r"api/v2/?$", "", self.api_base)
-        return "https://app.datarobot.com"
-
     @staticmethod
     def create_pipeline_interactions_from_events(
         events: list[Any],

@@ -145,11 +145,11 @@ class TestMyAgentLanggraph:
     @pytest.mark.parametrize(
         "api_base,expected_result",
         [
-            ("https://example.com", "https://example.com"),
+            ("https://example.com", "https://example.com/"),
             ("https://example.com/", "https://example.com/"),
             ("https://example.com/api/v2", "https://example.com/"),
             ("https://example.com/api/v2/", "https://example.com/"),
-            ("https://example.com/other-path", "https://example.com/other-path"),
+            ("https://example.com/other-path", "https://example.com/other-path/"),
             (
                 "https://custom.example.com:8080/path/to/api/v2/",
                 "https://custom.example.com:8080/path/to/",
@@ -160,11 +160,11 @@ class TestMyAgentLanggraph:
             ),
             (
                 "https://example.com/api/v2/deployment",
-                "https://example.com/api/v2/deployment",
+                "https://example.com/api/v2/deployment/",
             ),
             (
                 "https://example.com/api/v2/genai/llmgw/chat/completions",
-                "https://example.com/api/v2/genai/llmgw/chat/completions",
+                "https://example.com/api/v2/genai/llmgw/chat/completions/",
             ),
             (
                 "https://example.com/api/v2/genai/llmgw/chat/completions/",
@@ -217,11 +217,11 @@ class TestMyAgentLanggraph:
             ),
             (
                 "https://example.com/api/v2/deployments",
-                "https://example.com/api/v2/deployments",
+                "https://example.com/api/v2/deployments/",
             ),
             (
                 "https://example.com/api/v2/genai/llmgw/chat/completions",
-                "https://example.com/api/v2/genai/llmgw/chat/completions",
+                "https://example.com/api/v2/genai/llmgw/chat/completions/",
             ),
             (
                 "https://example.com/api/v2/genai/llmgw/chat/completions/",

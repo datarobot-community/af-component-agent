@@ -177,39 +177,3 @@ class TestMyAgentBase:
             "Artificial Intelligence",
             flush=True,
         )
-
-    @pytest.mark.parametrize(
-        "api_base,expected_result",
-        [
-            ("https://example.com/api/v2/", "https://example.com/"),
-            ("https://example.com/api/v2", "https://example.com/"),
-            ("https://example.com/other-path", "https://example.com/other-path"),
-            (
-                "https://custom.example.com:8080/path/to/api/v2/",
-                "https://custom.example.com:8080/path/to/",
-            ),
-            (
-                "https://example.com/api/v2/deployment/",
-                "https://example.com/api/v2/deployment/",
-            ),
-            (
-                "https://example.com/api/v2/deployment",
-                "https://example.com/api/v2/deployment",
-            ),
-            (
-                "https://example.com/api/v2/genai/llmgw/chat/completions",
-                "https://example.com/api/v2/genai/llmgw/chat/completions",
-            ),
-            (
-                "https://example.com/api/v2/genai/llmgw/chat/completions/",
-                "https://example.com/api/v2/genai/llmgw/chat/completions/",
-            ),
-            (None, "https://app.datarobot.com"),
-        ],
-    )
-    def test_api_base_litellm_variations(self, api_base, expected_result):
-        """Test api_base_litellm property with various URL formats."""
-        with patch.dict(os.environ, {}, clear=True):
-            agent = MyAgent(api_base=api_base)
-            result = agent.api_base_litellm
-            assert result == expected_result
