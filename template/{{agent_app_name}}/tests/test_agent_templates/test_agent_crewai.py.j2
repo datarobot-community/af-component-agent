@@ -163,11 +163,7 @@ class TestMyAgentCrewAI:
                 "https://example.com/api/v2/genai/llmgw/chat/completions/",
                 "https://example.com/api/v2/genai/llmgw/chat/completions",
             ),
-<<<<<<< HEAD
             (None, "https://app.datarobot.com/"),
-=======
-            (None, "https://api.datarobot.com/"),
->>>>>>> 80c32e4 (Updated to single base_url method with support for multiple llm configurations)
         ],
     )
     @patch("agent.LLM")
@@ -259,11 +255,7 @@ class TestMyAgentCrewAI:
             agent.llm
             mock_llm.assert_called_once_with(
                 model="datarobot/azure/gpt-4o-mini",
-<<<<<<< HEAD
                 api_base="https://app.datarobot.com/",
-=======
-                api_base="https://api.datarobot.com/",
->>>>>>> 80c32e4 (Updated to single base_url method with support for multiple llm configurations)
                 api_key="test_key",
                 timeout=90,
             )
