@@ -210,9 +210,9 @@ if os.environ.get("MCP_URL"):
             value=mcp_url,
         )
     )
-    
+
     # Check if this is a DataRobot deployment URL for lineage tracking
-    mcp_deployment_match = re.search(r'/deployments/([a-f0-9]{24})', mcp_url)
+    mcp_deployment_match = re.search(r"/deployments/([a-f0-9]{24})", mcp_url)
     if mcp_deployment_match:
         deployment_id = mcp_deployment_match.group(1)
         {{agent_app_name}}_runtime_parameters.extend(
