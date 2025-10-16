@@ -57,7 +57,17 @@ class MCPConfig:
     @classmethod
     def from_env(cls) -> Optional["MCPConfig"]:
         url = os.environ.get("MCP_URL")
-        return cls(url) if url else None
+        if not url:
+            return None
+
+        config = cls(url)
+        # If we have MCP_DEPLOYMENT_ID from runtime parameters, use it
+        deployment_id = os.environ.get("MCP_DEPLOYMENT_ID")
+        if deployment_id and not config.deployment_id:
+            config.deployment_id = deployment_id
+            config.is_datarobot = True
+
+        return config
 
 
 class MCPToolLoader:

@@ -221,11 +221,6 @@ if os.environ.get("MCP_URL"):
                 type="string",
                 value=deployment_id,
             ),
-            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-                key="MCP_IS_DATAROBOT",
-                type="string",
-                value="true",
-            ),
         ])
         pulumi.info(f"MCP configured with DataRobot deployment: {deployment_id}")
     else:

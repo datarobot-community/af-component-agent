@@ -131,7 +131,6 @@ def chat(
     # Load MCP runtime parameters if configured
     maybe_set_env_from_runtime_parameters("MCP_URL")
     maybe_set_env_from_runtime_parameters("MCP_DEPLOYMENT_ID")
-    maybe_set_env_from_runtime_parameters("MCP_IS_DATAROBOT")
 
     # Instantiate the agent, all fields from the completion_create_params are passed to the agent
     # allowing environment variables to be passed during execution

@@ -63,6 +63,24 @@ class TestMCPConfiguration:
 
         assert config is None
 
+    @patch.dict(
+        os.environ,
+        {
+            "MCP_URL": "http://external-server:8080/sse",
+            "MCP_DEPLOYMENT_ID": "507f1f77bcf86cd799439011",
+        },
+    )
+    def test_mcp_config_with_deployment_id_override(self):
+        """Test that MCP_DEPLOYMENT_ID from runtime parameters overrides URL detection."""
+        from mcp_client import MCPConfig
+
+        config = MCPConfig.from_env()
+
+        assert config is not None
+        assert config.url == "http://external-server:8080/sse"
+        assert config.is_datarobot is True
+        assert config.deployment_id == "507f1f77bcf86cd799439011"
+
 
 class TestMCPToolLoader:
     """Test MCP tool loader functionality."""
