@@ -12,11 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ------------------------------------------------------------------------------
-# THIS SECTION OF CODE IS REQUIRED TO SETUP TRACING AND TELEMETRY FOR THE AGENTS.
-# REMOVING THIS CODE WILL DISABLE ALL MONITORING, TRACING AND TELEMETRY.
-# isort: off
-from pydantic import model_validator
+"""
+All configuration for the agent application. The config class handles
+loading variables from environment, .env files, Pulumi outputs, and
+DataRobot credentials automatically.
+"""
+
+from typing import Any
+
 from datarobot.core.config import DataRobotAppFrameworkBaseSettings
+from pydantic import model_validator
 
 
 class Config(DataRobotAppFrameworkBaseSettings):
@@ -27,11 +32,12 @@ class Config(DataRobotAppFrameworkBaseSettings):
     """
 
     {{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id: str | None = None
-    llm_default_model: str = "datarobot/azure/gpt-4o-mini"
+    {{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model: str = "datarobot/azure/gpt-4o-mini"
     use_datarobot_llm_gateway: bool = False
 
     @model_validator(mode="before")
-    def replace_placeholder_values(cls, data):
+    @classmethod
+    def replace_placeholder_values(cls, data: Any) -> Any:
         if isinstance(data, dict):
             for field_name, field_info in cls.model_fields.items():
                 if data.get(field_name) == "SET_VIA_PULUMI_OR_MANUALLY":

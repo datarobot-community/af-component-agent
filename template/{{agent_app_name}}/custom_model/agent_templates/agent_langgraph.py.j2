@@ -69,7 +69,7 @@ class MyAgent:
             or "https://app.datarobot.com"
         )
         self.config = Config()
-        self.default_model = self.config.llm_default_model
+        self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
         self.model = model
         self.timeout = timeout
         if isinstance(verbose, str):
@@ -204,36 +204,32 @@ class MyAgent:
 
             return response_text, pipeline_interactions, usage_metrics
 
-    def llm_factory(
+    def llm(
         self,
-        model: str | None = None,
-        use_deployment: bool = True,
+        preferred_model: str | None = None,
         auto_model_override: bool = True,
     ) -> ChatLiteLLM:
         """Returns the ChatLiteLLM to use for a given model.
 
-        If a model is provided, it will be used. Otherwise, the default model will be used.
-        If use_deployment is True, the model will be used with the deployment ID
-        from the config/environment variable {{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEPLOYMENT_ID. If False, it will use the
-        LLM Gateway.
+        If a `preferred_model` is provided, it will be used. Otherwise, the default model will be used.
+        If auto_model_override is True, it will try and use the model specified in the request
+        but automatically back out to the default model if the LLM Gateway is not configured
 
         Args:
-            model: Optional[str]: The model to use. If none, it defaults to config.llm_default_model.
-            use_deployment: Optional[bool]: Whether to use the deployment ID from the config.
-                Defaults to True.
+            preferred_model: Optional[str]: The model to use. If none, it defaults to config.llm_default_model.
             auto_model_override: Optional[bool]: If True, it will try and use the model
                 specified in the request but automatically back out if the LLM Gateway is
                 not available.
 
         Returns:
-            str: The model to use.
+            ChatLiteLLM: The model to use.
         """
         api_base = get_api_base(
             self.api_base,
             self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id,
-            use_deployment,
         )
-        if model is None:
+        model = preferred_model
+        if preferred_model is None:
             model = self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:
             model = self.default_model
@@ -247,22 +243,9 @@ class MyAgent:
         )
 
     @property
-    def llm(self) -> ChatLiteLLM:
-        """Returns a ChatLiteLLM instance configured to use DataRobot's LLM Gateway or a specific deployment.
-
-        For help configuring different LLM backends see:
-        https://github.com/datarobot-community/datarobot-agent-templates/blob/main/docs/developing-agents-llm-providers.md
-        """
-        return self.llm_factory(
-            model=self.default_model,
-            use_deployment=not self.config.use_datarobot_llm_gateway,
-            auto_model_override=True,
-        )
-
-    @property
     def agent_planner(self) -> Any:
         return create_react_agent(
-            self.llm,
+            self.llm(preferred_model="datarobot/azure/gpt-4o-mini"),
             tools=[],
             prompt=self.make_system_prompt(
                 "You are a content planner. You are working with a content writer and editor colleague.\n"
@@ -283,7 +266,9 @@ class MyAgent:
     @property
     def agent_writer(self) -> Any:
         return create_react_agent(
-            self.llm,
+            self.llm(
+                preferred_model="datarobot/bedrock/anthropic.claude-sonnet-4-20250514-v1:0",
+            ),
             tools=[],
             prompt=self.make_system_prompt(
                 "You are a content writer. You are working with a planner and editor colleague.\n"
@@ -308,7 +293,7 @@ class MyAgent:
     @property
     def agent_editor(self) -> Any:
         return create_react_agent(
-            self.llm,
+            self.llm(),
             tools=[],
             prompt=self.make_system_prompt(
                 "You are a content editor. You are working with a planner and writer colleague.\n"

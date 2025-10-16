@@ -171,7 +171,7 @@ class TestMyAgentCrewAI:
         """Test api_base_litellm property with various URL formats."""
         with patch.dict(os.environ, {}, clear=True):
             agent = MyAgent(api_base=api_base)
-            _ = agent.llm
+            _ = agent.llm(preferred_model="datarobot/azure/gpt-4o-mini")
             mock_llm.assert_called_once_with(
                 model="datarobot/azure/gpt-4o-mini",
                 api_base=expected_result,
@@ -182,27 +182,33 @@ class TestMyAgentCrewAI:
     @pytest.mark.parametrize(
         "api_base,expected_result",
         [
-            ("https://example.com", "https://example.com/api/v2/deployments/test-id/"),
-            ("https://example.com/", "https://example.com/api/v2/deployments/test-id/"),
+            (
+                "https://example.com",
+                "https://example.com/api/v2/deployments/test-id/chat/completions",
+            ),
+            (
+                "https://example.com/",
+                "https://example.com/api/v2/deployments/test-id/chat/completions",
+            ),
             (
                 "https://example.com/api/v2/",
-                "https://example.com/api/v2/deployments/test-id/",
+                "https://example.com/api/v2/deployments/test-id/chat/completions",
             ),
             (
                 "https://example.com/api/v2",
-                "https://example.com/api/v2/deployments/test-id/",
+                "https://example.com/api/v2/deployments/test-id/chat/completions",
             ),
             (
                 "https://example.com/other-path",
-                "https://example.com/other-path/api/v2/deployments/test-id/",
+                "https://example.com/other-path/api/v2/deployments/test-id/chat/completions",
             ),
             (
                 "https://custom.example.com:8080/path/to",
-                "https://custom.example.com:8080/path/to/api/v2/deployments/test-id/",
+                "https://custom.example.com:8080/path/to/api/v2/deployments/test-id/chat/completions",
             ),
             (
                 "https://custom.example.com:8080/path/to/api/v2/",
-                "https://custom.example.com:8080/path/to/api/v2/deployments/test-id/",
+                "https://custom.example.com:8080/path/to/api/v2/deployments/test-id/chat/completions",
             ),
             (
                 "https://example.com/api/v2/deployments/",
@@ -220,7 +226,10 @@ class TestMyAgentCrewAI:
                 "https://example.com/api/v2/genai/llmgw/chat/completions/",
                 "https://example.com/api/v2/genai/llmgw/chat/completions",
             ),
-            (None, "https://app.datarobot.com/api/v2/deployments/test-id/"),
+            (
+                None,
+                "https://api.datarobot.com/api/v2/deployments/test-id/chat/completions",
+            ),
         ],
     )
     @patch("agent.LLM")
@@ -228,7 +237,10 @@ class TestMyAgentCrewAI:
         """Test api_base_litellm property with various URL formats."""
         with patch.dict(os.environ, {"{{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEPLOYMENT_ID": "test-id"}, clear=True):
             agent = MyAgent(api_base=api_base)
-            _ = agent.llm
+            agent.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model = (
+                "datarobot/bedrock/anthropic.claude-sonnet-4-20250514-v1:0"
+            )
+            _ = agent.llm(preferred_model="datarobot/azure/gpt-4o-mini")
             mock_llm.assert_called_once_with(
                 model="datarobot/azure/gpt-4o-mini",
                 api_base=expected_result,
@@ -237,9 +249,9 @@ class TestMyAgentCrewAI:
             )
 
     @patch("agent.LLM")
-    def test_llm_property(self, mock_llm, agent):
+    def test_llm(self, mock_llm, agent):
         # Test that LLM is created with correct parameters
-        agent.llm
+        agent.llm()
         mock_llm.assert_called_once_with(
             model="datarobot/azure/gpt-4o-mini",
             api_base="test_base/",
@@ -252,7 +264,7 @@ class TestMyAgentCrewAI:
         # Test that LLM is created with correct parameters
         with patch.dict(os.environ, {}, clear=True):
             agent = MyAgent(api_key="test_key", verbose=True)
-            agent.llm
+            agent.llm()
             mock_llm.assert_called_once_with(
                 model="datarobot/azure/gpt-4o-mini",
                 api_base="https://app.datarobot.com/",

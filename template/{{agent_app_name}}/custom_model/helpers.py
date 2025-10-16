@@ -48,9 +48,7 @@ class CustomModelStreamingResponse(ChatCompletionChunk):
     pipeline_interactions: str | None = None
 
 
-def get_api_base(
-    api_base: str, deployment_id: str | None, use_deployment: bool = True
-) -> str:
+def get_api_base(api_base: str, deployment_id: str | None) -> str:
     """
     Constructs the LiteLLM API base URL based on the provided api_base and deployment_id.
     Args:
@@ -85,8 +83,8 @@ def get_api_base(
         return f"{base_url}/" if not base_url.endswith("/") else base_url
 
     # For all other cases (including custom base paths), apply deployment logic if needed.
-    if use_deployment and deployment_id:
-        return f"{base_url}/api/v2/deployments/{deployment_id}/"
+    if deployment_id:
+        return f"{base_url}/api/v2/deployments/{deployment_id}/chat/completions"
     # Otherwise, just return the base URL with a trailing slash for normalization.
     return f"{base_url}/"
 
@@ -214,7 +212,7 @@ class ToolClient:
         base_url = (
             base_url or os.getenv("DATAROBOT_ENDPOINT") or "https://app.datarobot.com"
         )
-        base_url = get_api_base(base_url, deployment_id=None, use_deployment=False)
+        base_url = get_api_base(base_url, deployment_id=None)
         self.base_url = base_url
 
     @property
