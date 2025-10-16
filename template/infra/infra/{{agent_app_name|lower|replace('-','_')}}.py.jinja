@@ -215,13 +215,15 @@ if os.environ.get("MCP_URL"):
     mcp_deployment_match = re.search(r'/deployments/([a-f0-9]{24})', mcp_url)
     if mcp_deployment_match:
         deployment_id = mcp_deployment_match.group(1)
-        {{agent_app_name}}_runtime_parameters.extend([
-            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-                key="MCP_DEPLOYMENT_ID",
-                type="string",
-                value=deployment_id,
-            ),
-        ])
+        {{agent_app_name}}_runtime_parameters.extend(
+            [
+                pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+                    key="MCP_DEPLOYMENT_ID",
+                    type="string",
+                    value=deployment_id,
+                ),
+            ]
+        )
         pulumi.info(f"MCP configured with DataRobot deployment: {deployment_id}")
     else:
         pulumi.info(f"MCP configured with external server: {mcp_url}")
