@@ -33,8 +33,12 @@ application_base_url = "https://example.com"
 def test_tool_client_config(base_url, api_key):
     def _assert(tool_client):
         assert tool_client.api_key == api_key
-        assert tool_client.base_url == application_base_url
-        assert tool_client.datarobot_api_endpoint == f"{application_base_url}/api/v2"
+        # When base_url contains /api/v2, it gets stripped completely
+        expected_base_url = application_base_url.rstrip("/")
+        assert tool_client.base_url == expected_base_url
+        # The datarobot_api_endpoint adds /api/v2 back
+        expected_endpoint = expected_base_url + "/api/v2"
+        assert tool_client.datarobot_api_endpoint == expected_endpoint
 
     _assert(ToolClient(api_key=api_key, base_url=base_url))
 
