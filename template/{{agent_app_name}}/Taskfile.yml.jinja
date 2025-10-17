@@ -2,7 +2,7 @@
 # https://taskfile.dev
 version: '3'
 env:
-  UV_PROJECT: "{{.TASKFILE_DIR}}"
+  UV_PROJECT: "{% raw %}{{.TASKFILE_DIR}}{% endraw %}"
 vars:
   # Cross-platform environment cleaning - uses 'env -u' on Unix systems, falls back to empty string on Windows
   CLEAN_PYTHON_ENV:
