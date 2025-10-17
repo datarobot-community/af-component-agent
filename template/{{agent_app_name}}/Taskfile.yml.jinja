@@ -1,6 +1,8 @@
 ---
 # https://taskfile.dev
 version: '3'
+env:
+  UV_PROJECT: "{{.TASKFILE_DIR}}"
 vars:
   # Cross-platform environment cleaning - uses 'env -u' on Unix systems, falls back to empty string on Windows
   CLEAN_PYTHON_ENV:
@@ -27,6 +29,12 @@ tasks:
     cmds:
       - echo "Updating local dependencies"
       - uv sync --extra dev -U
+    silent: true
+  add-dependency:
+    desc: 🛠️ [{{ agent_app_name}}] Add provided packages as a new dependency to an agent
+    cmds:
+      - echo "Adding new dependency for {{ agent_app_name }} into 'extras' dependency group"
+      - uv add --no-upgrade --group extras {% raw %}{{.CLI_ARGS}}{% endraw %}
     silent: true
   lint:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
