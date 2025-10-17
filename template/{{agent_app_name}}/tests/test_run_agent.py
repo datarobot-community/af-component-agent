@@ -635,7 +635,7 @@ class TestInstallExtraDependencies:
         # THEN subprocess is called with correct args
         subprocess_mock.assert_called_once_with(
             # Ensure command.
-            "time uv sync --frozen --active --no-progress --no-cache --group extras".split(),
+            "uv sync --frozen --active --no-progress --no-cache --group extras".split(),
             # Ensure bytecode compilation is disable and default UV_PROJECT is set
             env={
                 "UV_COMPILE_BYTECODE": "0",
@@ -660,7 +660,7 @@ class TestInstallExtraDependencies:
         # THEN subprocess is called with correct args
         subprocess_mock.assert_called_once_with(
             # Ensure command.
-            "time uv sync --frozen --active --no-progress --no-cache --group extras".split(),
+            "uv sync --frozen --active --no-progress --no-cache --group extras".split(),
             # Ensure bytecode compilation is disabled anyway, but UV_PROJECT is respected
             env={
                 "UV_COMPILE_BYTECODE": "0",
