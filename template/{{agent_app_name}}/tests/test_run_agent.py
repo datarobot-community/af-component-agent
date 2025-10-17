@@ -30,6 +30,7 @@ from run_agent import (
     DEFAULT_OUTPUT_LOG_PATH,
     argparse_args,
     construct_prompt,
+    install_extra_dependencies,
     main,
     main_stdout_redirect,
     run_agent_procedure,
@@ -623,14 +624,69 @@ class TestRunAgentProcedure:
         )
 
 
+class TestInstallExtraDependencies:
+    @patch("subprocess.run")
+    @patch.dict(os.environ, {}, clear=True)
+    def test_dependency_installation_setup(self, subprocess_mock):
+        """Test dependency installation setup."""
+        # WHEN install_extra_dependencies is called
+        install_extra_dependencies()
+
+        # THEN subprocess is called with correct args
+        subprocess_mock.assert_called_once_with(
+            # Ensure command.
+            "time uv sync --frozen --active --no-progress --no-cache --group extras".split(),
+            # Ensure bytecode compilation is disable and default UV_PROJECT is set
+            env={
+                "UV_COMPILE_BYTECODE": "0",
+                "UV_PROJECT": "/home/notebooks/storage/",
+            },
+            # Ensure subprocess output respects redirects (uses sys.stdout/sys.stderr)
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+            # Ensure errors are ignored, in case subprocess fails.
+            check=False,
+        )
+
+    @patch("subprocess.run")
+    @patch.dict(
+        os.environ, {"UV_COMPILE_BYTECODE": "1", "UV_PROJECT": "/foo/bar"}, clear=True
+    )
+    def test_dependency_installation_setup_handles_env_correctly(self, subprocess_mock):
+        """Test dependency installation setup handles env vars correctly."""
+        # WHEN install_extra_dependencies is called
+        install_extra_dependencies()
+
+        # THEN subprocess is called with correct args
+        subprocess_mock.assert_called_once_with(
+            # Ensure command.
+            "time uv sync --frozen --active --no-progress --no-cache --group extras".split(),
+            # Ensure bytecode compilation is disabled anyway, but UV_PROJECT is respected
+            env={
+                "UV_COMPILE_BYTECODE": "0",
+                "UV_PROJECT": "/foo/bar",
+            },
+            # Ensure subprocess output respects redirects (uses sys.stdout/sys.stderr)
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+            # Ensure errors are ignored, in case subprocess fails.
+            check=False,
+        )
+
+
 class TestMain:
     """This procedure alone is trivial, and does not require unit tests. Therefore we
     use it to test the integration of the other procedures."""
 
+    @patch("run_agent.install_extra_dependencies")
     @patch("run_agent.argparse_args")
     @patch("run_agent.execute_drum_inline")
     def test_main_integration(
-        self, mock_execute_drum_inline, mock_argparse_args, tempdir_and_cleanup
+        self,
+        mock_execute_drum_inline,
+        mock_argparse_args,
+        mock_install_extra_dependencies,
+        tempdir_and_cleanup,
     ):
         """Test main function with a more integrated approach."""
         # GIVEN valid input arguments
@@ -651,6 +707,9 @@ class TestMain:
 
         # WHEN main is called
         main()
+
+        # THEN extra dependencies installation was called
+        mock_install_extra_dependencies.assert_called_once_with()
 
         # THEN execute_drum was called with correct parsed parameters
         mock_execute_drum_inline.assert_called_once_with(
@@ -675,6 +734,7 @@ class TestMain:
 
 
 class TestMainStdoutRedirect:
+    @patch("run_agent.install_extra_dependencies")
     @patch("run_agent.argparse_args")
     @patch("run_agent.run_agent_procedure")
     @patch("run_agent.setup_logging")
@@ -687,6 +747,7 @@ class TestMainStdoutRedirect:
         mock_setup_logging,
         mock_run_agent_procedure,
         mock_argparse_args,
+        mock_install_extra_dependencies,
     ):
         # GIVEN valid input arguments
         mock_args = MagicMock()
@@ -710,6 +771,9 @@ class TestMainStdoutRedirect:
             ]
         )
 
+        # THEN extra dependencies installation was called
+        mock_install_extra_dependencies.assert_called_once_with()
+
         # THEN run_agent_procedure was called with the parsed arguments
         mock_run_agent_procedure.assert_called_once_with(mock_args)
 
@@ -720,6 +784,7 @@ class TestMainStdoutRedirect:
         # THEN f.flush was called 2 times
         assert f.flush.call_count == 2
 
+    @patch("run_agent.install_extra_dependencies")
     @patch("run_agent.argparse_args")
     @patch("run_agent.run_agent_procedure")
     @patch("run_agent.setup_logging")
@@ -732,6 +797,7 @@ class TestMainStdoutRedirect:
         mock_setup_logging,
         mock_run_agent_procedure,
         mock_argparse_args,
+        mock_install_extra_dependencies,
     ):
         # GIVEN valid input arguments
         mock_args = MagicMock()
@@ -755,6 +821,9 @@ class TestMainStdoutRedirect:
             ]
         )
 
+        # THEN extra dependencies installation was called
+        mock_install_extra_dependencies.assert_called_once_with()
+
         # THEN run_agent_procedure was called with the parsed arguments
         mock_run_agent_procedure.assert_called_once_with(mock_args)
 
@@ -765,6 +834,7 @@ class TestMainStdoutRedirect:
         # THEN f.flush was called 2 times
         assert f.flush.call_count == 2
 
+    @patch("run_agent.install_extra_dependencies")
     @patch("run_agent.argparse_args")
     @patch("run_agent.run_agent_procedure")
     @patch("run_agent.setup_logging")
@@ -777,6 +847,7 @@ class TestMainStdoutRedirect:
         mock_setup_logging,
         mock_run_agent_procedure,
         mock_argparse_args,
+        mock_install_extra_dependencies,
     ):
         # GIVEN argparse_args raises an exception
         mock_argparse_args.side_effect = Exception("Test exception 1")
@@ -796,6 +867,9 @@ class TestMainStdoutRedirect:
             logger=mock_root, stream=f, log_level=logging.INFO
         )
 
+        # THEN extra dependencies installation was called
+        mock_install_extra_dependencies.assert_not_called()
+
         # THEN run_agent_procedure was not called
         mock_run_agent_procedure.assert_not_called()
 
@@ -810,6 +884,7 @@ class TestMainStdoutRedirect:
             "Error parsing arguments: Test exception 1"
         )
 
+    @patch("run_agent.install_extra_dependencies")
     @patch("run_agent.argparse_args")
     @patch("run_agent.run_agent_procedure")
     @patch("run_agent.setup_logging")
@@ -822,6 +897,7 @@ class TestMainStdoutRedirect:
         mock_setup_logging,
         mock_run_agent_procedure,
         mock_argparse_args,
+        mock_install_extra_dependencies,
     ):
         # GIVEN valid input arguments
         mock_args = MagicMock()
@@ -849,6 +925,9 @@ class TestMainStdoutRedirect:
             ]
         )
 
+        # THEN extra dependencies installation was called
+        mock_install_extra_dependencies.assert_called_once_with()
+
         # THEN run_agent_procedure was called with the parsed arguments
         mock_run_agent_procedure.assert_called_once_with(mock_args)
 
@@ -864,10 +943,15 @@ class TestMainStdoutRedirect:
         # THEN f.flush was called 2 times
         assert f.flush.call_count == 2
 
+    @patch("run_agent.install_extra_dependencies")
     @patch("run_agent.argparse_args")
     @patch("run_agent.execute_drum_inline")
     def test_main_stdout_redirect_integration(
-        self, mock_execute_drum_inline, mock_argparse_args, tempdir_and_cleanup
+        self,
+        mock_execute_drum_inline,
+        mock_argparse_args,
+        mock_install_extra_dependencies,
+        tempdir_and_cleanup,
     ):
         """Test main function with a more integrated approach."""
         # GIVEN valid input arguments
@@ -888,6 +972,9 @@ class TestMainStdoutRedirect:
 
         # WHEN main is called
         main_stdout_redirect()
+
+        # THEN extra dependencies installation was called
+        mock_install_extra_dependencies.assert_called_once_with()
 
         # THEN execute_drum was called with correct parsed parameters
         mock_execute_drum_inline.assert_called_once_with(
