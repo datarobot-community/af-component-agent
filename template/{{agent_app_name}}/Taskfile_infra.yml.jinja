@@ -50,10 +50,18 @@ tasks:
     # desc: "🚂 Select a Stack"
     cmds:
       - uv run pulumi stack select
+  select-env-stack:
+    silent: true
+    cmds:
+      - |
+        if [ -n "${PULUMI_STACK_NAME:-}" ]; then
+          {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi stack select -c $PULUMI_STACK_NAME
+        fi
   info:
     silent: true
     # desc: "ℹ️ Show Pulumi stack info"
     cmds:
+      - task: select-env-stack
       - uv run pulumi stack {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %}
   build:
     desc: "🔵 Deploy only playground testing resources with pulumi"
@@ -61,6 +69,7 @@ tasks:
       AGENT_DEPLOY: 0
     cmds:
       - echo "[infra] Running pulumi up with [BUILD] mode"
+      - task: select-env-stack
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi up {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %} {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   deploy:
@@ -69,17 +78,20 @@ tasks:
       AGENT_DEPLOY: 1
     cmds:
       - echo "Running pulumi up with [DEPLOY] mode"
+      - task: select-env-stack
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi up {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %} {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   refresh:
     desc: "⚪️ Refresh and sync local pulumi state"
     cmds:
       - echo "Running pulumi refresh"
+      - task: select-env-stack
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi refresh {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %} {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   destroy:
     desc: "🔴 Teardown all deployed resources with pulumi"
     cmds:
       - echo "Running pulumi destroy"
+      - task: select-env-stack
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi destroy {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %} {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
