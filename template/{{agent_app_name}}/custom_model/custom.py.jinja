@@ -132,6 +132,10 @@ def chat(
     # Some agent frameworks expect this for expected pathing.
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
+    # Load MCP runtime parameters if configured
+    maybe_set_env_from_runtime_parameters("MCP_URL")
+    maybe_set_env_from_runtime_parameters("MCP_DEPLOYMENT_ID")
+
     # Instantiate the agent, all fields from the completion_create_params are passed to the agent
     # allowing environment variables to be passed during execution
     agent = MyAgent(**completion_create_params)
