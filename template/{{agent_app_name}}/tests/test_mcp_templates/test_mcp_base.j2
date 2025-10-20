@@ -1,0 +1,179 @@
+# Copyright 2025 DataRobot, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import os
+from unittest.mock import Mock, patch
+
+import pytest
+
+
+class TestMCPConfiguration:
+    """Test MCP configuration parsing and setup."""
+
+    def test_mcp_config_datarobot_url(self):
+        """Test parsing DataRobot deployment URL."""
+        from mcp_client import MCPConfig
+
+        url = "https://app.datarobot.com/api/v2/deployments/abc123def456789012345678/"
+        config = MCPConfig(url)
+
+        assert config.is_datarobot is True
+        assert config.deployment_id == "abc123def456789012345678"
+        assert config.url.endswith("/mcp")
+
+    def test_mcp_config_external_url(self):
+        """Test parsing external MCP server URL."""
+        from mcp_client import MCPConfig
+
+        url = "http://my-mcp-server:8080/sse"
+        config = MCPConfig(url)
+
+        assert config.is_datarobot is False
+        assert config.deployment_id is None
+        assert config.url == "http://my-mcp-server:8080/sse"
+
+    @patch.dict(os.environ, {"MCP_URL": "http://localhost:8080/sse"})
+    def test_mcp_config_from_env(self):
+        """Test creating MCP config from environment variables."""
+        from mcp_client import MCPConfig
+
+        config = MCPConfig.from_env()
+
+        assert config is not None
+        assert config.url == "http://localhost:8080/sse"
+        assert config.is_datarobot is False
+
+    @patch.dict(os.environ, {}, clear=True)
+    def test_mcp_config_from_env_not_set(self):
+        """Test that None is returned when MCP_URL not set."""
+        from mcp_client import MCPConfig
+
+        config = MCPConfig.from_env()
+
+        assert config is None
+
+    @patch.dict(
+        os.environ,
+        {
+            "MCP_URL": "http://external-server:8080/sse",
+            "MCP_DEPLOYMENT_ID": "507f1f77bcf86cd799439011",
+        },
+    )
+    def test_mcp_config_with_deployment_id_override(self):
+        """Test that MCP_DEPLOYMENT_ID from runtime parameters overrides URL detection."""
+        from mcp_client import MCPConfig
+
+        config = MCPConfig.from_env()
+
+        assert config is not None
+        assert config.url == "http://external-server:8080/sse"
+        assert config.is_datarobot is True
+        assert config.deployment_id == "507f1f77bcf86cd799439011"
+
+
+class TestMCPToolLoader:
+    """Test MCP tool loader functionality."""
+
+    @patch("mcp_client.FastMCP")
+    @patch("mcp_client.asyncio.run")
+    def test_list_tools(self, mock_asyncio_run, mock_fastmcp):
+        """Test listing available tools from MCP server."""
+        from mcp_client import MCPConfig, MCPToolLoader
+
+        # Mock FastMCP client and async operations
+        mock_client = Mock()
+        mock_tool = Mock()
+        mock_tool.name = "test_tool"
+        mock_tool.description = "Test tool"
+        mock_asyncio_run.return_value = [mock_tool]
+        mock_fastmcp.return_value = mock_client
+
+        config = MCPConfig("http://localhost:8080")
+        loader = MCPToolLoader(config)
+        tools = loader.list_tools()
+
+        assert len(tools) == 1
+        assert "test_tool" in tools
+
+    @patch("mcp_client.FastMCP")
+    @patch("mcp_client.asyncio.run")
+    def test_call_tool(self, mock_asyncio_run, mock_fastmcp):
+        """Test calling a tool on MCP server."""
+        from mcp_client import MCPConfig, MCPToolLoader
+
+        # Mock FastMCP client
+        mock_client = Mock()
+        mock_asyncio_run.return_value = "success"
+        mock_fastmcp.return_value = mock_client
+
+        config = MCPConfig("http://localhost:8080")
+        loader = MCPToolLoader(config)
+        result = loader.call_tool("test_tool", {"arg": "value"})
+
+        assert result == "success"
+
+
+class TestMCPToolLoading:
+    """Test MCP tool loading functionality."""
+
+    @patch.dict(os.environ, {}, clear=True)
+    def test_load_mcp_tools_when_not_configured(self):
+        """Test that empty dict returned when MCP not configured."""
+        from mcp_client import load_mcp_tools
+
+        tools = load_mcp_tools()
+
+        assert tools == {}
+
+    @patch("mcp_client.MCPToolLoader")
+    @patch.dict(os.environ, {"MCP_URL": "http://localhost:8080/sse"})
+    def test_load_all_mcp_tools(self, mock_loader_class):
+        """Test loading all available MCP tools."""
+        from mcp_client import load_mcp_tools
+
+        # Mock the loader
+        mock_loader = Mock()
+        mock_loader.list_tools.return_value = ["tool_a", "tool_b"]
+        mock_loader.get_tool_schema.return_value = {"description": "Test tool"}
+        mock_loader.call_tool.return_value = "result"
+        mock_loader_class.return_value = mock_loader
+
+        tools = load_mcp_tools()
+
+        assert len(tools) == 2
+        assert "tool_a" in tools
+        assert "tool_b" in tools
+        assert callable(tools["tool_a"])
+
+    @patch("mcp_client.MCPToolLoader")
+    @patch.dict(os.environ, {"MCP_URL": "http://localhost:8080/sse"})
+    def test_load_specific_mcp_tools(self, mock_loader_class):
+        """Test loading specific MCP tools by name."""
+        from mcp_client import load_mcp_tools
+
+        # Mock the loader
+        mock_loader = Mock()
+        mock_loader.list_tools.return_value = ["tool_a", "tool_b", "tool_c"]
+        mock_loader.get_tool_schema.return_value = {"description": "Test tool"}
+        mock_loader.call_tool.return_value = "result"
+        mock_loader_class.return_value = mock_loader
+
+        tools = load_mcp_tools(tool_names=["tool_a"])
+
+        assert len(tools) == 1
+        assert "tool_a" in tools
+
+
+if __name__ == "__main__":
+    pytest.main([__file__])
