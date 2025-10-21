@@ -32,6 +32,38 @@ def pulumi_mocks(monkeypatch):
     monkeypatch.setattr("infra.use_case", mock_use_case)
     monkeypatch.setattr("infra.project_dir", mock_project_dir)
 
+    # Import the real llm fixture module to get custom_model_runtime_parameters
+    import infra.{{ _external_data.llm.llm_app_name }} as llm_fixture
+    import importlib
+    importlib.reload(llm_fixture)
+
+    # Create a mock module that will raise exceptions if any attribute other than
+    # custom_model_runtime_parameters is accessed
+    class MockLlmModule:
+        def __init__(self):
+            self.custom_model_runtime_parameters = llm_fixture.custom_model_runtime_parameters
+
+        def __getattr__(self, name):
+            if name == "custom_model_runtime_parameters":
+                return self.custom_model_runtime_parameters
+            raise AttributeError(
+                f"Mock llm module should only expose 'custom_model_runtime_parameters', "
+                f"but '{name}' was accessed. This indicates the test is using internal "
+                f"implementation details that should be mocked."
+            )
+
+    mock_llm_module = MockLlmModule()
+    
+    # Verify the mock raises exceptions for internal attributes
+    with pytest.raises(AttributeError, match="Mock llm module should only expose"):
+        _ = mock_llm_module._internal_function
+    with pytest.raises(AttributeError, match="Mock llm module should only expose"):
+        _ = mock_llm_module._internal_variable
+    
+    # Patch the llm module in sys.modules so imports work correctly
+    monkeypatch.setitem(sys.modules, "infra.{{ _external_data.llm.llm_app_name }}", mock_llm_module)
+
+
     # Mock pulumi_datarobot resources
     monkeypatch.setattr("pulumi_datarobot.ExecutionEnvironment", MagicMock())
     monkeypatch.setattr("pulumi_datarobot.CustomModel", MagicMock())
@@ -66,12 +98,6 @@ def pulumi_mocks(monkeypatch):
     monkeypatch.setattr("pulumi.export", MagicMock())
     monkeypatch.setattr("pulumi.info", MagicMock())
 
-    # Mock DataRobot client to prevent configuration errors
-    mock_datarobot = MagicMock()
-    mock_datarobot.enums.PredictionEnvironmentPlatform.DATAROBOT_SERVERLESS = (
-        "datarobot-serverless"
-    )
-    monkeypatch.setattr("datarobot", mock_datarobot)
 
     # Mock CustomModelDeployment
     monkeypatch.setattr(

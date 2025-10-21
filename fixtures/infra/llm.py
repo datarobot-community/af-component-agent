@@ -15,3 +15,22 @@ if os.environ.get("LLM_DEPLOYMENT_ID"):
             value=os.environ["LLM_DEPLOYMENT_ID"],
         )
     )
+
+
+# These internal implementation details should never be accessed by tests
+# If accessed, they will raise exceptions to validate the mock is working
+def _internal_function():
+    raise RuntimeError(
+        "Internal llm module function accessed. Tests should only use "
+        "custom_model_runtime_parameters."
+    )
+
+
+_internal_variable = property(
+    lambda self: (_ for _ in ()).throw(
+        RuntimeError(
+            "Internal llm module variable accessed. Tests should only use "
+            "custom_model_runtime_parameters."
+        )
+    )
+)
