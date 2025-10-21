@@ -17,7 +17,6 @@ from pathlib import Path
 import pytest
 from unittest.mock import patch, MagicMock, PropertyMock
 
-
 # Ensure the test directory is in sys.path for proper imports
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -32,28 +31,11 @@ def pulumi_mocks(monkeypatch):
     monkeypatch.setattr("infra.use_case", mock_use_case)
     monkeypatch.setattr("infra.project_dir", mock_project_dir)
 
-    # Create a mock llm module with custom_model_runtime_parameters
-    # This function mimics the logic from the real llm module
-    def get_mock_runtime_parameters():
-        runtime_parameters = []
-        llm_deployment_id = os.environ.get("{{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEPLOYMENT_ID")
-        if llm_deployment_id:
-            from pulumi_datarobot import CustomModelRuntimeParameterValueArgs
-            runtime_parameters.append(
-                CustomModelRuntimeParameterValueArgs(
-                    key="LLM_DEPLOYMENT_ID",
-                    type="string",
-                    value=llm_deployment_id,
-                )
-            )
-        return runtime_parameters
-
+    # Mock out the LLM and just expose the runtime parameters as it is the only public
+    # interface required for this module.
     mock_llm_module = MagicMock()
-    mock_llm_module.custom_model_runtime_parameters = get_mock_runtime_parameters()
-
-    # Patch the llm module in sys.modules so imports work correctly
+    mock_llm_module.custom_model_runtime_parameters = []
     monkeypatch.setitem(sys.modules, "infra.{{ _external_data.llm.llm_app_name }}", mock_llm_module)
-
     # Mock pulumi_datarobot resources
     monkeypatch.setattr("pulumi_datarobot.ExecutionEnvironment", MagicMock())
     monkeypatch.setattr("pulumi_datarobot.CustomModel", MagicMock())
@@ -87,7 +69,6 @@ def pulumi_mocks(monkeypatch):
     # Mock pulumi functions
     monkeypatch.setattr("pulumi.export", MagicMock())
     monkeypatch.setattr("pulumi.info", MagicMock())
-
 
     # Mock CustomModelDeployment
     monkeypatch.setattr(
@@ -285,41 +266,6 @@ def test_custom_model_created(monkeypatch):
     assert kwargs["use_case_ids"] == [agent_infra.use_case.id]
     assert isinstance(kwargs["files"], list)
     assert kwargs["runtime_parameter_values"] == []
-
-
-def test_custom_model_created_llm_deployment_id(monkeypatch):
-    """Test that pulumi_datarobot.CustomModel is created with correct arguments when llm deployment id is set."""
-    monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
-    monkeypatch.setenv("{{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEPLOYMENT_ID", "model_id")
-
-    import importlib
-    import infra.{{ _external_data.llm.llm_app_name }} as llm
-    import infra.{{agent_app_name}} as agent_infra
-
-    # Reset the mock to clear calls from the initial import
-    agent_infra.pulumi_datarobot.CustomModel.reset_mock()
-    # Reload llm module first to pick up the new environment variable
-    importlib.reload(llm)
-    importlib.reload(agent_infra)
-
-    agent_infra.pulumi_datarobot.CustomModel.assert_called_once()
-    args, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
-    assert kwargs["resource_name"] == "[unittest] [{{agent_app_name}}] Custom Model"
-    assert kwargs["name"] == "[unittest] [{{agent_app_name}}] Custom Model"
-    assert kwargs["base_environment_id"] == agent_infra.{{agent_app_name}}_execution_environment.id  # fmt: skip
-    assert (
-        kwargs["base_environment_version_id"]
-        == agent_infra.{{agent_app_name}}_execution_environment.version_id
-    )
-    assert kwargs["target_type"] == "AgenticWorkflow"
-    assert kwargs["target_name"] == "response"
-    assert kwargs["language"] == "python"
-    assert kwargs["use_case_ids"] == [agent_infra.use_case.id]
-    assert isinstance(kwargs["files"], list)
-    runtime_param = kwargs["runtime_parameter_values"][0]
-    assert runtime_param.key == "LLM_DEPLOYMENT_ID"
-    assert runtime_param.type == "string"
-    assert runtime_param.value == "model_id"
 
 
 def test_agentic_playground_and_blueprint_created(monkeypatch):
