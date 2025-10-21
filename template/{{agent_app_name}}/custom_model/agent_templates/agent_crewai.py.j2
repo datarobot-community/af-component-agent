@@ -117,10 +117,7 @@ class MyAgent:
         with mcp_tools_context(
             api_base=self.api_base, api_key=self.api_key
         ) as mcp_tools:
-            if len(mcp_tools) > 0:
-                print(f"Connected to MCP with {len(mcp_tools)} tools", flush=True)
-
-            # Set MCP tools for all agents
+            # Set MCP tools for all agents if mcp is not configured this is effectivelya no-op
             self.set_mcp_tools(mcp_tools)
 
             # Create and invoke the CrewAI Agentic Workflow with the inputs
