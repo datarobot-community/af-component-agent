@@ -66,6 +66,13 @@ def pulumi_mocks(monkeypatch):
     monkeypatch.setattr("pulumi.export", MagicMock())
     monkeypatch.setattr("pulumi.info", MagicMock())
 
+    # Mock DataRobot client to prevent configuration errors
+    mock_datarobot = MagicMock()
+    mock_datarobot.enums.PredictionEnvironmentPlatform.DATAROBOT_SERVERLESS = (
+        "datarobot-serverless"
+    )
+    monkeypatch.setattr("datarobot", mock_datarobot)
+
     # Mock CustomModelDeployment
     monkeypatch.setattr(
         "datarobot_pulumi_utils.pulumi.custom_model_deployment.CustomModelDeployment",
