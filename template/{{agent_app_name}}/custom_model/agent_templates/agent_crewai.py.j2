@@ -12,13 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-import re
 from typing import Any, Generator, List, Optional, Union
-from urllib.parse import urljoin, urlparse
 
 from config import Config
 from crewai import LLM, Agent, Crew, Task
-from crewai.tools import BaseTool
 from crewai_event_listener import CrewAIEventListener
 from helpers import get_api_base
 from openai.types.chat import CompletionCreateParams
@@ -118,7 +115,9 @@ class MyAgent:
         print("Running agent with user prompt:", user_prompt_content, flush=True)
 
         # Use MCP context manager to handle connection lifecycle
-        with mcp_tools_context(api_base=self.api_base, api_key=self.api_key) as mcp_tools:
+        with mcp_tools_context(
+            api_base=self.api_base, api_key=self.api_key
+        ) as mcp_tools:
             print(f"Connected to MCP with {len(mcp_tools)} tools", flush=True)
 
             # Set MCP tools for all agents
@@ -210,7 +209,7 @@ class MyAgent:
             allow_delegation=False,
             verbose=self.verbose,
             llm=self.llm(preferred_model="datarobot/azure/gpt-4o-mini"),
-            tools=tools,
+            tools=self._mcp_tools,
         )
 
     @property
@@ -230,7 +229,7 @@ class MyAgent:
             llm=self.llm(
                 preferred_model="datarobot/bedrock/anthropic.claude-sonnet-4-20250514-v1:0"
             ),
-            tools=tools,
+            tools=self._mcp_tools,
         )
 
     @property
@@ -246,7 +245,7 @@ class MyAgent:
             allow_delegation=False,
             verbose=self.verbose,
             llm=self.llm(),
-            tools=tools,
+            tools=self._mcp_tools,
         )
 
     @property
