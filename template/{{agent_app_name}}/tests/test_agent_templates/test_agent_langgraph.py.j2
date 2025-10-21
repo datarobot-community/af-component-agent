@@ -164,11 +164,11 @@ class TestMyAgentLanggraph:
             ),
             (
                 "https://example.com/api/v2/genai/llmgw/chat/completions",
-                "https://example.com/api/v2/genai/llmgw/chat/completions/",
+                "https://example.com/api/v2/genai/llmgw/chat/completions",
             ),
             (
                 "https://example.com/api/v2/genai/llmgw/chat/completions/",
-                "https://example.com/api/v2/genai/llmgw/chat/completions/",
+                "https://example.com/api/v2/genai/llmgw/chat/completions",
             ),
             (None, "https://app.datarobot.com/"),
         ],
@@ -178,9 +178,12 @@ class TestMyAgentLanggraph:
         """Test api_base_litellm property with various URL formats."""
         with patch.dict(os.environ, {}, clear=True):
             agent = MyAgent(api_base=api_base)
-            _ = agent.llm
+            agent.config.use_datarobot_llm_gateway = True
+            _ = agent.llm(
+                preferred_model="datarobot/bedrock/anthropic.claude-sonnet-4-20250514-v1:0"
+            )
             mock_llm.assert_called_once_with(
-                model="datarobot/azure/gpt-4o-mini",
+                model="datarobot/bedrock/anthropic.claude-sonnet-4-20250514-v1:0",
                 api_base=expected_result,
                 api_key=None,
                 timeout=90,
@@ -189,27 +192,33 @@ class TestMyAgentLanggraph:
     @pytest.mark.parametrize(
         "api_base,expected_result",
         [
-            ("https://example.com", "https://example.com/api/v2/deployments/test-id/"),
-            ("https://example.com/", "https://example.com/api/v2/deployments/test-id/"),
+            (
+                "https://example.com",
+                "https://example.com/api/v2/deployments/test-id/chat/completions",
+            ),
+            (
+                "https://example.com/",
+                "https://example.com/api/v2/deployments/test-id/chat/completions",
+            ),
             (
                 "https://example.com/api/v2/",
-                "https://example.com/api/v2/deployments/test-id/",
+                "https://example.com/api/v2/deployments/test-id/chat/completions",
             ),
             (
                 "https://example.com/api/v2",
-                "https://example.com/api/v2/deployments/test-id/",
+                "https://example.com/api/v2/deployments/test-id/chat/completions",
             ),
             (
                 "https://example.com/other-path",
-                "https://example.com/other-path/api/v2/deployments/test-id/",
+                "https://example.com/other-path/api/v2/deployments/test-id/chat/completions",
             ),
             (
                 "https://custom.example.com:8080/path/to",
-                "https://custom.example.com:8080/path/to/api/v2/deployments/test-id/",
+                "https://custom.example.com:8080/path/to/api/v2/deployments/test-id/chat/completions",
             ),
             (
                 "https://custom.example.com:8080/path/to/api/v2/",
-                "https://custom.example.com:8080/path/to/api/v2/deployments/test-id/",
+                "https://custom.example.com:8080/path/to/api/v2/deployments/test-id/chat/completions",
             ),
             (
                 "https://example.com/api/v2/deployments/",
@@ -221,25 +230,30 @@ class TestMyAgentLanggraph:
             ),
             (
                 "https://example.com/api/v2/genai/llmgw/chat/completions",
-                "https://example.com/api/v2/genai/llmgw/chat/completions/",
+                "https://example.com/api/v2/genai/llmgw/chat/completions",
             ),
             (
                 "https://example.com/api/v2/genai/llmgw/chat/completions/",
-                "https://example.com/api/v2/genai/llmgw/chat/completions/",
+                "https://example.com/api/v2/genai/llmgw/chat/completions",
             ),
-            (None, "https://app.datarobot.com/api/v2/deployments/test-id/"),
+            (
+                None,
+                "https://app.datarobot.com/api/v2/deployments/test-id/chat/completions",
+            ),
         ],
     )
     @patch("agent.ChatLiteLLM")
     def test_llm_deployment_with_api_base(self, mock_llm, api_base, expected_result):
         """Test api_base_litellm property with various URL formats."""
-        with patch.dict(
-            os.environ, {"LLM_DATAROBOT_DEPLOYMENT_ID": "test-id"}, clear=True
-        ):
+        with patch.dict(os.environ, {"{{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEPLOYMENT_ID": "test-id"}, clear=True):
             agent = MyAgent(api_base=api_base)
-            _ = agent.llm
+            agent.config.use_datarobot_llm_gateway = False
+            agent.default_model = (
+                "datarobot/bedrock/anthropic.claude-sonnet-4-20250514-v1:0"
+            )
+            _ = agent.llm(preferred_model="datarobot/azure/gpt-4o-mini")
             mock_llm.assert_called_once_with(
-                model="datarobot/azure/gpt-4o-mini",
+                model="datarobot/bedrock/anthropic.claude-sonnet-4-20250514-v1:0",
                 api_base=expected_result,
                 api_key=None,
                 timeout=90,

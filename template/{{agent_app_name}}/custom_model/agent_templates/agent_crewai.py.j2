@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-import re
 from typing import Any, Generator, Optional, Union
-from urllib.parse import urljoin, urlparse
 
+from config import Config
 from crewai import LLM, Agent, Crew, Task
 from crewai_event_listener import CrewAIEventListener
+from helpers import get_api_base
 from openai.types.chat import CompletionCreateParams
 from ragas import MultiTurnSample
 from ragas.messages import AIMessage, HumanMessage, ToolMessage
@@ -64,6 +64,8 @@ class MyAgent:
             or os.environ.get("DATAROBOT_ENDPOINT")
             or "https://app.datarobot.com"
         )
+        self.config = Config()
+        self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
         self.model = model
         self.timeout = timeout
         if isinstance(verbose, str):
@@ -136,53 +138,43 @@ class MyAgent:
 
         return response_text, pipeline_interactions, usage_metrics
 
-    @property
-    def llm(self) -> LLM:
-        """Returns a CrewAI LLM instance configured to use DataRobot's LLM Gateway or a specific deployment.
+    def llm(
+        self,
+        preferred_model: str | None = None,
+        auto_model_override: bool = True,
+    ) -> LLM:
+        """Returns the LLM to use for a given model.
 
-        For help configuring different LLM backends see:
-        https://github.com/datarobot-community/datarobot-agent-templates/blob/main/docs/developing-agents-llm-providers.md
+        If a `preferred_model` is provided, it will be used. Otherwise, the default model will be used.
+        If auto_model_override is True, it will try and use the model specified in the request
+        but automatically back out to the default model if the LLM Gateway is not configured
+
+        Args:
+            preferred_model: Optional[str]: The model to use. If none, it defaults to config.llm_default_model.
+            auto_model_override: Optional[bool]: If True, it will try and use the model
+                specified in the request but automatically back out if the LLM Gateway is
+                not available.
+
+        Returns:
+            LLM: The model to use.
         """
-        api_base = urlparse(self.api_base)
-        if os.environ.get("LLM_DATAROBOT_DEPLOYMENT_ID"):
-            path = api_base.path
-            if "/api/v2/deployments" not in path and "api/v2/genai" not in path:
-                # Ensure the API base ends with /api/v2/ for deployments
-                if not path.endswith("/api/v2/") and not path.endswith("/api/v2"):
-                    path = urljoin(path + "/", "api/v2/")
-                if not path.endswith("/"):
-                    path += "/"
-                api_base = api_base._replace(path=path)
-                deployment_url = urljoin(
-                    api_base.geturl(),
-                    f"deployments/{os.environ.get('LLM_DATAROBOT_DEPLOYMENT_ID')}/",
-                )
-            else:
-                # If user specifies a likely deployment URL then leave it alone
-                deployment_url = api_base.geturl()
-            if not deployment_url.endswith("/"):
-                deployment_url += "/"
-            return LLM(
-                model="openai/gpt-4o-mini",
-                api_base=deployment_url,
-                api_key=self.api_key,
-                timeout=self.timeout,
-            )
-        else:
-            # Ensure the API base does not end with /api/v2/ for LLM Gateway
-            # Remove only '/api/v2' or '/api/v2/' from the path portion, if present
-            path = api_base.path
-            if path.endswith("api/v2/") or path.endswith("api/v2"):
-                path = re.sub(r"/api/v2/?$", "/", path)
-            if not path.endswith("/"):
-                path += "/"
-            api_base = api_base._replace(path=path)
-            return LLM(
-                model="datarobot/azure/gpt-4o-mini",
-                api_base=api_base.geturl(),
-                api_key=self.api_key,
-                timeout=self.timeout,
-            )
+        api_base = get_api_base(
+            self.api_base,
+            self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id,
+        )
+        model = preferred_model
+        if preferred_model is None:
+            model = self.default_model
+        if auto_model_override and not self.config.use_datarobot_llm_gateway:
+            model = self.default_model
+        if self.verbose:
+            print(f"Using model: {model}")
+        return LLM(
+            model=model,
+            api_base=api_base,
+            api_key=self.api_key,
+            timeout=self.timeout,
+        )
 
     @property
     def agent_planner(self) -> Agent:
@@ -194,7 +186,7 @@ class MyAgent:
             "the basis for the Content Writer to write an article on this topic.",
             allow_delegation=False,
             verbose=self.verbose,
-            llm=self.llm,
+            llm=self.llm(preferred_model="datarobot/azure/gpt-4o-mini"),
         )
 
     @property
@@ -210,7 +202,9 @@ class MyAgent:
             "to objective statements.",
             allow_delegation=False,
             verbose=self.verbose,
-            llm=self.llm,
+            llm=self.llm(
+                preferred_model="datarobot/bedrock/anthropic.claude-sonnet-4-20250514-v1:0"
+            ),
         )
 
     @property
@@ -224,7 +218,7 @@ class MyAgent:
             "possible.",
             allow_delegation=False,
             verbose=self.verbose,
-            llm=self.llm,
+            llm=self.llm(),
         )
 
     @property

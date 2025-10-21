@@ -13,9 +13,11 @@
 # limitations under the License.
 import json
 import os
+import re
 import time
 import uuid
 from typing import Any, Generator, Iterator, Optional, Union, cast
+from urllib.parse import urlparse, urlunparse
 
 import datarobot as dr
 import openai
@@ -44,6 +46,47 @@ class CustomModelChatResponse(ChatCompletion):
 
 class CustomModelStreamingResponse(ChatCompletionChunk):
     pipeline_interactions: str | None = None
+
+
+def get_api_base(api_base: str, deployment_id: str | None) -> str:
+    """
+    Constructs the LiteLLM API base URL based on the provided api_base and deployment_id.
+    Args:
+        api_base (str | None): The base URL for the LiteLLM API.
+        deployment_id (str | None): The ID of the deployment.
+
+    Returns:
+        str: The LiteLLM URL for the given deployment normalized to have a trailing slash unless
+                it ends in chat/completions or has a meaningful path component.
+    """
+    # Normalize the URL and drop a trailing /api/v2 if present
+    parsed = urlparse(api_base)
+    path = re.sub(r"/api/v2/?$", "", parsed.path)
+    base_url = urlunparse(
+        (
+            parsed.scheme,
+            parsed.netloc,
+            path,
+            parsed.params,
+            parsed.query,
+            parsed.fragment,
+        )
+    )
+    base_url = base_url.rstrip("/")
+
+    # If the base_url already ends with chat/completions, return it.
+    if base_url.endswith("chat/completions"):
+        return base_url
+
+    # If the path contains deployments or genai, it's already a complete API path preserve it.
+    if path and ("deployments" in path or "genai" in path):
+        return f"{base_url}/" if not base_url.endswith("/") else base_url
+
+    # For all other cases (including custom base paths), apply deployment logic if needed.
+    if deployment_id:
+        return f"{base_url}/api/v2/deployments/{deployment_id}/chat/completions"
+    # Otherwise, just return the base URL with a trailing slash for normalization.
+    return f"{base_url}/"
 
 
 def to_custom_model_chat_response(
@@ -167,21 +210,14 @@ class ToolClient:
         """
         self.api_key = api_key or os.getenv("DATAROBOT_API_TOKEN")
         base_url = (
-            cast(
-                str,
-                (
-                    base_url
-                    or os.getenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com")
-                ),
-            )
-            .rstrip("/")
-            .removesuffix("/api/v2")
+            base_url or os.getenv("DATAROBOT_ENDPOINT") or "https://app.datarobot.com"
         )
+        base_url = get_api_base(base_url, deployment_id=None)
         self.base_url = base_url
 
     @property
     def datarobot_api_endpoint(self) -> str:
-        return self.base_url + "/api/v2"
+        return self.base_url + "api/v2"
 
     def get_deployment(self, deployment_id: str) -> dr.Deployment:
         """Retrieve a deployment by its ID.

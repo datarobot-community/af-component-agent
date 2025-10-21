@@ -17,7 +17,7 @@ from unittest.mock import patch
 import pytest
 from helpers import ToolClient
 
-application_base_url = "https://example.com"
+application_base_url = "https://example.com/"
 
 
 @pytest.mark.parametrize(
@@ -34,7 +34,7 @@ def test_tool_client_config(base_url, api_key):
     def _assert(tool_client):
         assert tool_client.api_key == api_key
         assert tool_client.base_url == application_base_url
-        assert tool_client.datarobot_api_endpoint == f"{application_base_url}/api/v2"
+        assert tool_client.datarobot_api_endpoint == f"{application_base_url}api/v2"
 
     _assert(ToolClient(api_key=api_key, base_url=base_url))
 
@@ -46,5 +46,5 @@ def test_tool_client_config(base_url, api_key):
 def test_tool_client_config_defaults():
     tool_client = ToolClient()
     assert tool_client.api_key is None
-    assert tool_client.base_url == "https://app.datarobot.com"
+    assert tool_client.base_url == "https://app.datarobot.com/"
     assert tool_client.datarobot_api_endpoint == "https://app.datarobot.com/api/v2"

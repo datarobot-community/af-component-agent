@@ -23,9 +23,12 @@ pipeline:
                         shell: Sh
                         command: |-
                           apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
+                          mkdir -p ./copier_context/.datarobot/answers/
+                          cp ./fixtures/.datarobot/answers/llm-llm.yml ./copier_context/.datarobot/answers/llm-llm.yml
                           uvx copier copy . ./copier_context --defaults
                           cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
                           cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+                          cp ./fixtures/infra/llm.py ./copier_context/infra/infra/llm.py
                           cd ./copier_context
                           uvx --from go-task-bin task agent:install
                         envVariables:
@@ -262,10 +265,16 @@ pipeline:
                         shell: Sh
                         command: |-
                           apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
+                          mkdir -p ./copier_context/.datarobot/answers/
+                          cp ./fixtures/.datarobot/answers/llm-llm.yml ./copier_context/.datarobot/answers/llm-llm.yml
                           uvx copier copy . ./copier_context \
+                            --defaults \
                             --data agent_app_name=agent_crewai \
                             --data agent_template_framework=crewai \
                             --data base_answers_file=.datarobot/answers/base.yml
+                          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+                          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+                          cp ./fixtures/infra/llm.py ./copier_context/infra/infra/llm.py
                           cd ./copier_context/agent_crewai
                           uvx --from go-task-bin task install
                         envVariables:
@@ -341,10 +350,16 @@ pipeline:
                         shell: Sh
                         command: |-
                           apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
+                          mkdir -p ./copier_context/.datarobot/answers/
+                          cp ./fixtures/.datarobot/answers/llm-llm.yml ./copier_context/.datarobot/answers/llm-llm.yml
                           uvx copier copy . ./copier_context \
+                            --defaults \
                             --data agent_app_name=agent_langgraph \
                             --data agent_template_framework=langgraph \
                             --data base_answers_file=.datarobot/answers/base.yml
+                          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+                          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+                          cp ./fixtures/infra/llm.py ./copier_context/infra/infra/llm.py
                           cd ./copier_context/agent_langgraph
                           uvx --from go-task-bin task install
                         envVariables:
@@ -420,10 +435,16 @@ pipeline:
                         shell: Sh
                         command: |-
                           apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
+                          mkdir -p ./copier_context/.datarobot/answers/
+                          cp ./fixtures/.datarobot/answers/llm-llm.yml ./copier_context/.datarobot/answers/llm-llm.yml
                           uvx copier copy . ./copier_context \
+                            --defaults \
                             --data agent_app_name=agent_llamaindex \
                             --data agent_template_framework=llamaindex \
                             --data base_answers_file=.datarobot/answers/base.yml
+                          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+                          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+                          cp ./fixtures/infra/llm.py ./copier_context/infra/infra/llm.py
                           cd ./copier_context/agent_llamaindex
                           uvx --from go-task-bin task install
                         envVariables:
@@ -499,10 +520,16 @@ pipeline:
                         shell: Sh
                         command: |-
                           apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
+                          mkdir -p ./copier_context/.datarobot/answers/
+                          cp ./fixtures/.datarobot/answers/llm-llm.yml ./copier_context/.datarobot/answers/llm-llm.yml
                           uvx copier copy . ./copier_context \
+                            --defaults \
                             --data agent_app_name=agent_nat \
                             --data agent_template_framework=nat \
                             --data base_answers_file=.datarobot/answers/base.yml
+                          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+                          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+                          cp ./fixtures/infra/llm.py ./copier_context/infra/infra/llm.py
                           cd ./copier_context/agent_nat
                           uvx --from go-task-bin task install
                         envVariables:
@@ -577,10 +604,13 @@ pipeline:
                         shell: Sh
                         command: |-
                           apt update --allow-releaseinfo-change && apt install -y git --no-install-recommends
+                          mkdir -p ./copier_context/.datarobot/answers/
+                          cp ./fixtures/.datarobot/answers/llm-llm.yml ./copier_context/.datarobot/answers/llm-llm.yml
                           uvx copier copy . ./copier_context --defaults
                           cp ./fixtures/infra/Pulumi.yaml ./copier_context/infra/Pulumi.yaml
                           cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
                           cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+                          cp ./fixtures/infra/llm.py ./copier_context/infra/infra/llm.py
                           cd ./copier_context/infra
                           uv sync --all-extras --all-groups --dev
                         envVariables:

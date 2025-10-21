@@ -267,13 +267,16 @@ def test_custom_model_created(monkeypatch):
 def test_custom_model_created_llm_deployment_id(monkeypatch):
     """Test that pulumi_datarobot.CustomModel is created with correct arguments when llm deployment id is set."""
     monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
-    monkeypatch.setenv("LLM_DATAROBOT_DEPLOYMENT_ID", "model_id")
+    monkeypatch.setenv("{{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEPLOYMENT_ID", "model_id")
 
     import importlib
+    import infra.llm
     import infra.{{agent_app_name}} as agent_infra
 
     # Reset the mock to clear calls from the initial import
     agent_infra.pulumi_datarobot.CustomModel.reset_mock()
+    # Reload llm module first to pick up the new environment variable
+    importlib.reload(infra.llm)
     importlib.reload(agent_infra)
 
     agent_infra.pulumi_datarobot.CustomModel.assert_called_once()
@@ -290,13 +293,10 @@ def test_custom_model_created_llm_deployment_id(monkeypatch):
     assert kwargs["language"] == "python"
     assert kwargs["use_case_ids"] == [agent_infra.use_case.id]
     assert isinstance(kwargs["files"], list)
-    assert kwargs["runtime_parameter_values"] == [
-        agent_infra.pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-            key="LLM_DATAROBOT_DEPLOYMENT_ID",
-            type="string",
-            value="model_id",
-        ),
-    ]
+    runtime_param = kwargs["runtime_parameter_values"][0]
+    assert runtime_param.key == "LLM_DEPLOYMENT_ID"
+    assert runtime_param.type == "string"
+    assert runtime_param.value == "model_id"
 
 
 def test_agentic_playground_and_blueprint_created(monkeypatch):

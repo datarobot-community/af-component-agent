@@ -14,11 +14,11 @@
 # mypy: disable-error-code=attr-defined
 import asyncio
 import os
-import re
 from datetime import datetime
 from typing import Any, Generator, Optional, Sequence, Union
-from urllib.parse import urljoin, urlparse
 
+from config import Config
+from helpers import get_api_base
 from llama_index.core.agent.workflow import (
     AgentInput,
     AgentOutput,
@@ -99,6 +99,8 @@ class MyAgent:
             or os.environ.get("DATAROBOT_ENDPOINT")
             or "https://app.datarobot.com"
         )
+        self.config = Config()
+        self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
         self.model = model
         self.timeout = timeout
         if isinstance(verbose, str):
@@ -211,57 +213,43 @@ class MyAgent:
 
         return await handler.ctx.get("state"), events  # type: ignore[union-attr]
 
-    @property
-    def llm(self) -> DataRobotLiteLLM:
-        """Returns a LlamaIndex LiteLLM instance configured to use DataRobot's LLM Gateway or a specific deployment.
+    def llm(
+        self,
+        preferred_model: str | None = None,
+        auto_model_override: bool = True,
+    ) -> DataRobotLiteLLM:
+        """Returns the DataRobotLiteLLM to use for a given model.
 
-        For help configuring different LLM backends see:
-        https://github.com/datarobot-community/datarobot-agent-templates/blob/main/docs/developing-agents-llm-providers.md
+        If a `preferred_model` is provided, it will be used. Otherwise, the default model will be used.
+        If auto_model_override is True, it will try and use the model specified in the request
+        but automatically back out to the default model if the LLM Gateway is not configured
+
+        Args:
+            preferred_model: Optional[str]: The model to use. If none, it defaults to config.llm_default_model.
+            auto_model_override: Optional[bool]: If True, it will try and use the model
+                specified in the request but automatically back out if the LLM Gateway is
+                not available.
+
+        Returns:
+            DataRobotLiteLLM: The model to use.
         """
-
-        # NOTE: LlamaIndex tool encodings are sensitive to the LLM model used and may need to be re-written
-        # to work with different models. This example assumes the model is a GPT compatible model.
-
-        api_base = urlparse(self.api_base)
-        if os.environ.get("LLM_DATAROBOT_DEPLOYMENT_ID"):
-            path = api_base.path
-            if "/api/v2/deployments" not in path and "api/v2/genai" not in path:
-                # Ensure the API base ends with /api/v2/ for deployments
-                if not path.endswith("/api/v2/") and not path.endswith("/api/v2"):
-                    path = urljoin(path + "/", "api/v2/")
-                if not path.endswith("/"):
-                    path += "/"
-                api_base = api_base._replace(path=path)
-                deployment_url = urljoin(
-                    api_base.geturl(),
-                    f"deployments/{os.environ.get('LLM_DATAROBOT_DEPLOYMENT_ID')}/",
-                )
-            else:
-                # If user specifies a likely deployment URL then leave it alone
-                deployment_url = api_base.geturl()
-            if not deployment_url.endswith("/"):
-                deployment_url += "/"
-            return DataRobotLiteLLM(
-                model="openai/gpt-4o-mini",
-                api_base=deployment_url,
-                api_key=self.api_key,
-                timeout=self.timeout,
-            )
-        else:
-            # Ensure the API base does not end with /api/v2/ for LLM Gateway
-            # Remove only '/api/v2' or '/api/v2/' from the path portion, if present
-            path = api_base.path
-            if path.endswith("api/v2/") or path.endswith("api/v2"):
-                path = re.sub(r"/api/v2/?$", "/", path)
-            if not path.endswith("/"):
-                path += "/"
-            api_base = api_base._replace(path=path)
-            return DataRobotLiteLLM(
-                model="datarobot/azure/gpt-4o-mini",
-                api_base=api_base.geturl(),
-                api_key=self.api_key,
-                timeout=self.timeout,
-            )
+        api_base = get_api_base(
+            self.api_base,
+            self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id,
+        )
+        model = preferred_model
+        if preferred_model is None:
+            model = self.default_model
+        if auto_model_override and not self.config.use_datarobot_llm_gateway:
+            model = self.default_model
+        if self.verbose:
+            print(f"Using model: {model}")
+        return DataRobotLiteLLM(
+            model=model,
+            api_base=api_base,
+            api_key=self.api_key,
+            timeout=self.timeout,
+        )
 
     @property
     def research_agent(self) -> FunctionAgent:
@@ -274,7 +262,7 @@ class MyAgent:
                 "WriteAgent to write a report on the topic. You should have at least some notes on a topic "
                 "before handing off control to the WriteAgent."
             ),
-            llm=self.llm,
+            llm=self.llm(preferred_model="datarobot/azure/gpt-4o-mini"),
             tools=[self.record_notes],
             can_handoff_to=["WriteAgent"],
         )
@@ -289,7 +277,9 @@ class MyAgent:
                 "Your report should be in a markdown format. The content should be grounded in the research notes. "
                 "Once the report is written, you should get feedback at least once from the ReviewAgent."
             ),
-            llm=self.llm,
+            llm=self.llm(
+                preferred_model="datarobot/bedrock/anthropic.claude-sonnet-4-20250514-v1:0",
+            ),
             tools=[self.write_report],
             can_handoff_to=["ReviewAgent", "ResearchAgent"],
         )
@@ -305,7 +295,7 @@ class MyAgent:
                 "WriteAgent to implement.  If you have feedback that requires changes, you should hand "
                 "off control to the WriteAgent to implement the changes after submitting the review."
             ),
-            llm=self.llm,
+            llm=self.llm(),
             tools=[self.review_report],
             can_handoff_to=["WriteAgent"],
         )

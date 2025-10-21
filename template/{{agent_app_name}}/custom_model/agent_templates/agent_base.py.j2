@@ -14,6 +14,8 @@
 import os
 from typing import Any, Generator, Optional, Union
 
+from config import Config
+from helpers import get_api_base
 from openai.types.chat import CompletionCreateParams
 from ragas import MultiTurnSample
 
@@ -52,11 +54,12 @@ class MyAgent:
             None
         """
         self.api_key = api_key or os.environ.get("DATAROBOT_API_TOKEN")
-        self.api_base = (
+        self.api_base: str = (
             api_base
             or os.environ.get("DATAROBOT_ENDPOINT")
             or "https://app.datarobot.com"
         )
+        self.config = Config()
         self.model = model
         self.timeout = timeout
         if isinstance(verbose, str):
@@ -154,6 +157,17 @@ class MyAgent:
         https://github.com/datarobot-community/datarobot-agent-templates/blob/main/docs/developing-agents-llm-providers.md
         """
         return None
+
+    @property
+    def api_base_litellm(self) -> str:
+        """Returns a modified version of the API base URL suitable for LiteLLM.
+
+        Strips 'api/v2/' or 'api/v2' from the end of the URL if present.
+
+        Returns:
+            str: The modified API base URL.
+        """
+        return get_api_base(self.api_base, self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id)  # type: ignore[no-any-return]
 
     @staticmethod
     def create_pipeline_interactions_from_events(
