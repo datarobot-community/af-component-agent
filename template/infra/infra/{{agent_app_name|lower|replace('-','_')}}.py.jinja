@@ -199,32 +199,31 @@ elif os.environ.get("USE_DATAROBOT_LLM_GATEWAY") in [0, "0", False, "false", "Fa
     {{agent_app_name}}_runtime_parameters = app_runtime_parameters  # type: ignore
 
 # Add MCP runtime parameters if configured
-if os.environ.get("MCP_URL"):
-    mcp_url = os.environ["MCP_URL"].rstrip("/")
+if os.environ.get("MCP_DEPLOYMENT_ID"):
+    mcp_deployment_id = os.environ["MCP_DEPLOYMENT_ID"]
     {{agent_app_name}}_runtime_parameters.append(
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-            key="MCP_URL",
+            key="MCP_DEPLOYMENT_ID",
             type="string",
-            value=mcp_url,
+            value=mcp_deployment_id,
         )
     )
+    pulumi.info(f"MCP configured with DataRobot MCP Server: {mcp_deployment_id}")
 
-    # Check if this is a DataRobot deployment URL for lineage tracking
-    mcp_deployment_match = re.search(r"/deployments/([a-f0-9]{24})", mcp_url)
-    if mcp_deployment_match:
-        deployment_id = mcp_deployment_match.group(1)
-        {{agent_app_name}}_runtime_parameters.extend(
-            [
-                pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-                    key="MCP_DEPLOYMENT_ID",
-                    type="string",
-                    value=deployment_id,
-                ),
-            ]
+# Allow external mcp server.  Currently code will use MCP_DEPLOYMENT_ID first and if that is empty
+# then use the EXTERNAL_MCP_URL
+if os.environ.get("EXTERNAL_MCP_URL"):
+    external_mcp_url = os.environ["EXTERNAL_MCP_URL"].rstrip("/")
+    {{agent_app_name}}_runtime_parameters.append(
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key="EXTERNAL_MCP_URL",
+            type="string",
+            value=external_mcp_url,
         )
-        pulumi.info(f"MCP configured with DataRobot deployment: {deployment_id}")
-    else:
-        pulumi.info(f"MCP configured with external server: {mcp_url}")
+    )
+    pulumi.info(f"MCP configured with external server: {external_mcp_url}")
+
+
 
 {{agent_app_name}}_custom_model = pulumi_datarobot.CustomModel(
     resource_name={{agent_app_name}}_asset_name + " Custom Model",

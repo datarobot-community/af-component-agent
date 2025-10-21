@@ -25,7 +25,8 @@ from openai.types.chat import CompletionCreateParams
 from ragas import MultiTurnSample
 from ragas.messages import AIMessage, HumanMessage, ToolMessage
 
-from custom_model.mcp_client import MCPConfig, load_mcp_tools
+from custom_model.crewai_event_listener import CrewAIEventListener
+from custom_model.mcp_client import mcp_tools_context
 
 
 class MyAgent:
@@ -78,6 +79,11 @@ class MyAgent:
         elif isinstance(verbose, bool):
             self.verbose = verbose
         self.event_listener = CrewAIEventListener()
+        self._mcp_tools: List[Any] = []  # Default to empty tools list
+
+    def set_mcp_tools(self, tools: List[Any]) -> None:
+        """Set MCP tools for all agents."""
+        self._mcp_tools = tools
 
     def invoke(
         self, completion_create_params: CompletionCreateParams
@@ -111,37 +117,48 @@ class MyAgent:
         # Print commands may need flush=True to ensure they are displayed in real-time.
         print("Running agent with user prompt:", user_prompt_content, flush=True)
 
-        # Create and invoke the CrewAI Agentic Workflow with the inputs
-        crewai_agentic_workflow = Crew(
-            agents=[self.agent_planner, self.agent_writer, self.agent_editor],
-            tasks=[self.task_plan, self.task_write, self.task_edit],
-            verbose=self.verbose,
-        )
-        crew_output = crewai_agentic_workflow.kickoff(
-            inputs={"topic": user_prompt_content}
-        )
+        # Use MCP context manager to handle connection lifecycle
+        with mcp_tools_context(api_base=self.api_base, api_key=self.api_key) as mcp_tools:
+            print(f"Connected to MCP with {len(mcp_tools)} tools", flush=True)
 
-        # Extract the final agent response as the synchronous response
-        response_text = str(crew_output.raw)
+            # Set MCP tools for all agents
+            self.set_mcp_tools(mcp_tools)
 
-        # Create a list of events from the event listener
-        events = self.event_listener.messages
-        if len(events) > 0:
-            last_message = events[-1].content
-            if last_message != response_text:
-                events.append(AIMessage(content=response_text))
-        else:
-            events = None
+            # Create and invoke the CrewAI Agentic Workflow with the inputs
+            crewai_agentic_workflow = Crew(
+                agents=[self.agent_planner, self.agent_writer, self.agent_editor],
+                tasks=[self.task_plan, self.task_write, self.task_edit],
+                verbose=self.verbose,
+            )
+            crew_output = crewai_agentic_workflow.kickoff(
+                inputs={"topic": user_prompt_content}
+            )
 
-        pipeline_interactions = self.create_pipeline_interactions_from_events(events)
+            # Extract the final agent response as the synchronous response
+            response_text = str(crew_output.raw)
 
-        usage_metrics = {
-            "completion_tokens": crew_output.token_usage.completion_tokens,
-            "prompt_tokens": crew_output.token_usage.prompt_tokens,
-            "total_tokens": crew_output.token_usage.total_tokens,
-        }
+            # Create a list of events from the event listener
+            events: Optional[List[Union[HumanMessage, AIMessage, ToolMessage]]] = (
+                self.event_listener.messages
+            )
+            if events and len(events) > 0:
+                last_message = events[-1].content
+                if last_message != response_text:
+                    events.append(AIMessage(content=response_text))
+            else:
+                events = None
 
-        return response_text, pipeline_interactions, usage_metrics
+            pipeline_interactions = self.create_pipeline_interactions_from_events(
+                events
+            )
+
+            usage_metrics = {
+                "completion_tokens": crew_output.token_usage.completion_tokens,
+                "prompt_tokens": crew_output.token_usage.prompt_tokens,
+                "total_tokens": crew_output.token_usage.total_tokens,
+            }
+
+            return response_text, pipeline_interactions, usage_metrics
 
     def llm(
         self,
@@ -183,7 +200,7 @@ class MyAgent:
 
     @property
     def agent_planner(self) -> Agent:
-        tools = get_mcp_tools_for_agent(tool_names=["list_tools"])
+        """Content Planner agent."""
         return Agent(
             role="Content Planner",
             goal="Plan engaging and factually accurate content on {topic}",
@@ -198,7 +215,7 @@ class MyAgent:
 
     @property
     def agent_writer(self) -> Agent:
-        tools = get_mcp_tools_for_agent()
+        """Content Writer agent."""
         return Agent(
             role="Content Writer",
             goal="Write insightful and factually accurate opinion piece about the topic: {topic}",
@@ -218,7 +235,7 @@ class MyAgent:
 
     @property
     def agent_editor(self) -> Agent:
-        tools = get_mcp_tools_for_agent()
+        """Editor agent."""
         return Agent(
             role="Editor",
             goal="Edit a given blog post to align with the writing style of the organization.",
@@ -275,7 +292,7 @@ class MyAgent:
 
     @staticmethod
     def create_pipeline_interactions_from_events(
-        events: list[Union[HumanMessage, AIMessage, ToolMessage]],
+        events: Optional[list[Union[HumanMessage, AIMessage, ToolMessage]]],
     ) -> MultiTurnSample | None:
         """Convert a list of events into a MultiTurnSample.
 
@@ -285,20 +302,3 @@ class MyAgent:
         if not events:
             return None
         return MultiTurnSample(user_input=events)
-
-
-def get_mcp_tools_for_agent(tool_names: Optional[List[str]] = None) -> List[BaseTool]:
-    """Load MCP tools for an agent.
-
-    Args:
-        tool_names: Optional list of specific tool names to load.
-                   If None, loads all available tools from MCP server.
-
-    Returns:
-        List of CrewAI Tool objects loaded from MCP server.
-    """
-    config = MCPConfig.from_env()
-    if config is None:
-        return []
-
-    return load_mcp_tools(config=config, tool_names=tool_names)
