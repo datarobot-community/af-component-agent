@@ -27,9 +27,7 @@ class TestCustomModel:
 
     @patch("custom.MyAgent")
     @patch.dict(os.environ, {"LLM_DATAROBOT_DEPLOYMENT_ID": "TEST_VALUE"}, clear=True)
-    @pytest.mark.parametrize(
-        "stream", [False, True]
-    )
+    @pytest.mark.parametrize("stream", [False, True])
     def test_chat(self, mock_agent, mock_agent_response, stream):
         from custom import chat
 
