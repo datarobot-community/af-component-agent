@@ -1,8 +1,6 @@
 ---
 # https://taskfile.dev
 version: '3'
-env:
-  UV_PROJECT: "{% raw %}{{.TASKFILE_DIR}}{% endraw %}"
 vars:
   # Cross-platform environment cleaning - uses 'env -u' on Unix systems, falls back to empty string on Windows
   CLEAN_PYTHON_ENV:
@@ -76,7 +74,7 @@ tasks:
     desc: 🖥️ [{{ agent_app_name }}] Run the CLI with provided arguments
     cmds:
       - echo "Running CLI {% raw %}{{.CLI_ARGS}}{% endraw %}"
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run cli.py {% raw %}{{.CLI_ARGS}}{% endraw %}"
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} UV_PROJECT={% raw %}{{.TASKFILE_DIR}}{% endraw %} uv run cli.py {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   dev:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
