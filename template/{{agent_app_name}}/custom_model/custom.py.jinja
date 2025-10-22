@@ -138,7 +138,7 @@ def chat(
 
     # Invoke the agent and check if it returns a generator or a tuple
     result = agent.invoke(completion_create_params=completion_create_params)
-    
+
     # Check if the result is a generator (streaming response)
     if isinstance(result, Generator):
         # Streaming response
