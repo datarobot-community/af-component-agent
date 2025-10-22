@@ -95,9 +95,21 @@ class TestCustomModel:
 
         # Create a generator that yields streaming responses
         def mock_streaming_generator():
-            yield ("chunk1", None, {"completion_tokens": 1, "prompt_tokens": 2, "total_tokens": 3})
-            yield ("chunk2", None, {"completion_tokens": 2, "prompt_tokens": 2, "total_tokens": 4})
-            yield ("", {"interactions": "data"}, {"completion_tokens": 3, "prompt_tokens": 2, "total_tokens": 5})
+            yield (
+                "chunk1",
+                None,
+                {"completion_tokens": 1, "prompt_tokens": 2, "total_tokens": 3},
+            )
+            yield (
+                "chunk2",
+                None,
+                {"completion_tokens": 2, "prompt_tokens": 2, "total_tokens": 4},
+            )
+            yield (
+                "",
+                {"interactions": "data"},
+                {"completion_tokens": 3, "prompt_tokens": 2, "total_tokens": 5},
+            )
 
         # Setup mocks
         mock_agent_instance = MagicMock()
@@ -119,7 +131,7 @@ class TestCustomModel:
 
         # Collect all chunks
         chunks = list(response)
-        
+
         # Should have 3 chunks (2 with content + 1 final)
         assert len(chunks) == 3
 
