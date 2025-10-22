@@ -184,7 +184,6 @@ else:
     str(os.path.join(str({{agent_app_name}}_application_path), "custom_model"))
 )
 
-
 {{agent_app_name}}_custom_model = pulumi_datarobot.CustomModel(
     resource_name={{agent_app_name}}_asset_name + " Custom Model",
     name={{agent_app_name}}_asset_name + " Custom Model",
