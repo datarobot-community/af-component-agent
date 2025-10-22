@@ -14,8 +14,9 @@
 
 import json
 import os
-import pytest
 from unittest.mock import ANY, MagicMock, Mock, patch
+
+import pytest
 
 
 class TestCustomModel:
