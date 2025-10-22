@@ -14,7 +14,7 @@
 
 import json
 import os
-from unittest.mock import ANY, MagicMock, patch
+from unittest.mock import ANY, MagicMock, Mock, patch
 
 
 class TestCustomModel:
@@ -107,7 +107,7 @@ class TestCustomModel:
             )
             yield (
                 "",
-                {"interactions": "data"},
+                Mock(model_dump_json=MagicMock(return_value={"interactions": "data"})),
                 {"completion_tokens": 3, "prompt_tokens": 2, "total_tokens": 5},
             )
 
