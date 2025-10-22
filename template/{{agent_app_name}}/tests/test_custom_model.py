@@ -14,6 +14,7 @@
 
 import json
 import os
+import pytest
 from unittest.mock import ANY, MagicMock, Mock, patch
 
 
@@ -26,7 +27,10 @@ class TestCustomModel:
 
     @patch("custom.MyAgent")
     @patch.dict(os.environ, {"LLM_DATAROBOT_DEPLOYMENT_ID": "TEST_VALUE"}, clear=True)
-    def test_chat(self, mock_agent, mock_agent_response):
+    @pytest.mark.parametrize(
+        "stream", [False, True]
+    )
+    def test_chat(self, mock_agent, mock_agent_response, stream):
         from custom import chat
 
         # Setup mocks
@@ -38,6 +42,7 @@ class TestCustomModel:
             "model": "test-model",
             "messages": [{"role": "user", "content": '{"topic": "test"}'}],
             "environment_var": True,
+            "stream": stream,
         }
 
         response = chat(completion_create_params, model="test-model")
@@ -107,7 +112,7 @@ class TestCustomModel:
             )
             yield (
                 "",
-                Mock(model_dump_json=MagicMock(return_value={"interactions": "data"})),
+                Mock(model_dump_json=MagicMock(return_value="interactions")),
                 {"completion_tokens": 3, "prompt_tokens": 2, "total_tokens": 5},
             )
 
@@ -151,7 +156,7 @@ class TestCustomModel:
         final_chunk = json.loads(chunks[2].model_dump_json())
         assert final_chunk["choices"][0]["delta"]["content"] is None
         assert final_chunk["choices"][0]["finish_reason"] == "stop"
-        assert final_chunk["pipeline_interactions"] is not None
+        assert final_chunk["pipeline_interactions"] == "interactions"
         assert final_chunk["usage"]["total_tokens"] == 5
 
         # Verify mocks were called correctly
