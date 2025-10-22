@@ -89,6 +89,7 @@ class TestCustomModel:
                 "model": "test-model",
                 "messages": [{"role": "user", "content": '{"topic": "test"}'}],
                 "environment_var": True,
+                "stream": stream,
             }
         )
 
