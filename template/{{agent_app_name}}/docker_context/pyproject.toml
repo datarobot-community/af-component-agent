@@ -62,7 +62,7 @@ dependencies = [
     # Agent framework requirements
     
     "crewai>=0.193.2",
-    "crewai-tools[mcp]>=0.69.0",
+    "crewai-tools>=0.69.0",
     "fastmcp>2.12.0",
     "opentelemetry-instrumentation-crewai>=0.40.5",
     "pybase64>=1.4.2",
