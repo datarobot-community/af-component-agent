@@ -45,6 +45,11 @@ tasks:
     # desc: "🆕 Initialize a new Pulumi stack"
     cmds:
       - uv run pulumi stack init
+  pulumi:
+    silent: true
+    # desc: "Generic pulumi execution command with env variables"
+    cmds:
+      - uv run pulumi {% raw %}{{.CLI_ARGS}}{% endraw %}
   select:
     silent: true
     # desc: "🚂 Select a Stack"
