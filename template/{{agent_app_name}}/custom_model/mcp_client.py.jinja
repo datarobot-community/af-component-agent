@@ -1,0 +1,2 @@
+{% if agent_template_framework == "crewai" %}{% include 'template/{{agent_app_name}}/custom_model/mcp_templates/mcp_crewai.j2' -%}
+{% else %}{% include 'template/{{agent_app_name}}/custom_model/mcp_templates/mcp_base.j2' %}{% endif -%}
