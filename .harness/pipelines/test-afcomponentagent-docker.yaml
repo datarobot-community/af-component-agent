@@ -182,5 +182,4 @@ pipeline:
                 dockerfile:
                   - Dockerfile
                   - Dockerfile.prod
-                  - Dockerfile.local
                 nodeName: <+matrix.dockerfile>
