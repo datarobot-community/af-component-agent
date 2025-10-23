@@ -130,9 +130,7 @@ pipeline:
                         connectorRef: GHCR_HHI
                         image: ghcr.io/hadolint/hadolint:2.11.0-debian
                         shell: Sh
-                        command: |-
-                          cd ./copier_context
-                          hadolint --config .hadolint.yaml template/{{agent_app_name}}/docker_context/<+matrix.dockerfile>
+                        command: hadolint --config .hadolint.yaml copier_context/agent/docker_context/<+matrix.dockerfile>
                   - step:
                       type: BuildAndPushDockerRegistry
                       name: Build Dockerfile
@@ -143,8 +141,8 @@ pipeline:
                         tags:
                           - latest
                         caching: true
-                        dockerfile: copier_context/template/{{agent_app_name}}/docker_context/<+matrix.dockerfile>
-                        context: copier_context/template/{{agent_app_name}}/docker_context
+                        dockerfile: copier_context/agent/docker_context/<+matrix.dockerfile>
+                        context: copier_context/agent/docker_context
                         baseImageConnectorRefs:
                           - account.dockerhub_datarobot_read
             strategy:
