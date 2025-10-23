@@ -156,13 +156,7 @@ pipeline:
                         connectorRef: GHCR_HHI
                         image: ghcr.io/hadolint/hadolint:2.11.0-debian
                         shell: Sh
-                        command: |-
-                          ls -la
-                          ls -la copier_context
-                          ls -la copier_context/agent
-                          ls -la copier_context/agent/docker_context
-
-                          hadolint --config .hadolint.yaml copier_context/agent/docker_context/<+matrix.dockerfile>
+                        command: hadolint --config .hadolint.yaml copier_context/agent/docker_context/<+matrix.dockerfile>
                   - step:
                       type: BuildAndPushDockerRegistry
                       name: Build Dockerfile
