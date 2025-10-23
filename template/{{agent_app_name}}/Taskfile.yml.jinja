@@ -98,6 +98,9 @@ tasks:
       - cd docker_context_temp && git pull origin master
       - cp -r docker_context_temp/public_dropin_environments/python311_genai_agents ./docker_context
       - rm -rf docker_context_temp
+      # We need to rename these from their production variants to their local variants
+      - mv ./docker_context/Dockerfile ./docker_context/Dockerfile.prod
+      - mv ./docker_context/Dockerfile.local ./docker_context/Dockerfile
       - echo "Docker context created inside {{ agent_app_name }}/docker_context"
   build-docker-context:
     desc: 🐳 [{{ agent_app_name }}] Build the Docker image
