@@ -106,6 +106,24 @@ pipeline:
                 steps:
                   - step:
                       type: Run
+                      name: Create docker_context for testing
+                      identifier: Create_docker_context_for_testing
+                      spec:
+                        connectorRef: GHCR_HHI
+                        image: ghcr.io/astral-sh/uv:python3.11-bookworm
+                        shell: Bash
+                        command: |-
+                          apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
+                          mkdir -p ./copier_context/.datarobot/answers/
+                          cp ./fixtures/.datarobot/answers/llm-llm.yml ./copier_context/.datarobot/answers/llm-llm.yml
+                          uvx copier copy . ./copier_context --defaults
+                          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+                          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+                          cd ./copier_context
+
+                          uvx --from go-task-bin task agent:create-docker-context
+                  - step:
+                      type: Run
                       name: Lint Dockerfile
                       identifier: Lint_Dockerfile
                       spec:
