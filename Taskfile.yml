@@ -30,8 +30,19 @@ tasks:
       - task agent:install --dir $RENDER_DIR/agent_{{.AGENT}}
   docker_update_reqs:
     desc: "Update Docker requirements pyproject.toml from jinja template"
+    vars:
+      genai_agents_path: "{{.AGENT_PATH}}"
     cmds:
-      - uv run jinja -D agent_app_name DockerContext -D agent_template_framework docker template/\{\{agent_app_name\}\}/pyproject.toml.jinja -o template/\{\{agent_app_name\}\}/docker_context/pyproject.toml
+      - |
+        if [ -z "{{.AGENT_PATH}}" ]; then
+          echo "AGENT_PATH is not set. Please set AGENT_PATH to the path of the genai-agents repository."
+          echo "task docker_update_reqs AGENT_PATH=/path/to/datarobot-user-models/public_dropin_environments/python311_genai_agents"
+          exit 1
+        fi
+      - uv run jinja -D agent_app_name DockerContext -D agent_template_framework docker template/\{\{agent_app_name\}\}/pyproject.toml.jinja -o /Users/matt.nitzken/workspaces/datarobot-user-models/public_dropin_environments/python311_genai_agents/pyproject.toml
+      - cd /Users/matt.nitzken/workspaces/datarobot-user-models/public_dropin_environments/python311_genai_agents
+      - uv lock --no-upgrade
+      - uv pip freeze > requirements.txt
   docker_build_local:
     desc: "Build docker image locally (Check container builds)"
     cmds:
