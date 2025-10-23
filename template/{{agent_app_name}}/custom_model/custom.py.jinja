@@ -49,6 +49,7 @@ os.environ["DEEPEVAL_TELEMETRY_OPT_OUT"] = "YES"
 # ------------------------------------------------------------------------------
 
 
+from collections.abc import Generator
 from typing import Iterator, Union
 
 # ruff: noqa: E402
@@ -139,18 +140,18 @@ def chat(
     # allowing environment variables to be passed during execution
     agent = MyAgent(**completion_create_params)
 
-    if completion_create_params.get("stream"):
-        streaming_response_generator = agent.invoke(
-            completion_create_params=completion_create_params
-        )
+    # Invoke the agent and check if it returns a generator or a tuple
+    result = agent.invoke(completion_create_params=completion_create_params)
+
+    # Check if the result is a generator (streaming response)
+    if isinstance(result, Generator):
+        # Streaming response
         return to_custom_model_streaming_response(
-            streaming_response_generator, model=completion_create_params.get("model")
+            result, model=completion_create_params.get("model")
         )
     else:
-        # Synchronous non-streaming response, execute the agent with the inputs
-        response_text, pipeline_interactions, usage_metrics = agent.invoke(
-            completion_create_params=completion_create_params
-        )
+        # Non-streaming response
+        response_text, pipeline_interactions, usage_metrics = result
 
         return to_custom_model_chat_response(
             response_text,
