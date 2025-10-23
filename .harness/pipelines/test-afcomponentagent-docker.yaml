@@ -148,6 +148,7 @@ pipeline:
                           cd ./copier_context
 
                           uvx --from go-task-bin task agent:create-docker-context
+                          sed -i 's/datarobot\/mirror_chainguard_datarobot/datarobotdev\/mirror_chainguard_datarobot/g' ./agent/docker_context/Dockerfile.prod
                   - step:
                       type: Run
                       name: Lint Dockerfile
