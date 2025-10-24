@@ -3,8 +3,9 @@ Tests for MCP CrewAI integration using MCPServerAdapter.
 """
 
 import os
+from unittest.mock import MagicMock, patch
+
 import pytest
-from unittest.mock import patch, MagicMock
 
 from custom_model.mcp_client import MCPConfig, mcp_tools_context
 
@@ -178,7 +179,7 @@ class TestMCPToolsContext:
         test_url = "https://mcp-server.example.com/mcp"
         with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}):
             with mcp_tools_context() as tools:
-        assert tools == []
+                assert tools == []
 
     def test_mcp_tools_context_with_parameters(self):
         """Test context manager with explicit api_base and api_key parameters."""
@@ -187,10 +188,6 @@ class TestMCPToolsContext:
         with patch.dict(os.environ, {
             "MCP_DEPLOYMENT_ID": deployment_id
         }, clear=True):
-            with mcp_tools_context(api_base="https://custom.datarobot.com/api/v2", api_key="custom-key") as tools:
+            with mcp_tools_context(api_base="https://custom.datarobot.com/api/v2", api_key="custom-key"):
                 # Should use the provided parameters instead of environment variables
                 pass  # The test passes if no exception is raised
-
-
-if __name__ == "__main__":
-    pytest.main([__file__, "-v"])
