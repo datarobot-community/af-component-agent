@@ -18,11 +18,10 @@ from config import Config
 from crewai import LLM, Agent, Crew, Task
 from crewai_event_listener import CrewAIEventListener
 from helpers import get_api_base
+from mcp_client import mcp_tools_context
 from openai.types.chat import CompletionCreateParams
 from ragas import MultiTurnSample
 from ragas.messages import AIMessage, HumanMessage, ToolMessage
-
-from custom_model.mcp_client import mcp_tools_context
 
 
 class MyAgent:
