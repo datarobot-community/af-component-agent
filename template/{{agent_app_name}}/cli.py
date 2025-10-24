@@ -250,6 +250,7 @@ class Kernel:
             base_url=chat_api_url,
             api_key=self.api_token,
             _strict_response_validation=False,
+            timeout=360,
         )
 
         print(f'Querying deployment with prompt: "{completion_create_params}"')
