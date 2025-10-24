@@ -238,7 +238,7 @@ class TestMyAgentCrewAI:
         with patch.dict(os.environ, {"{{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEPLOYMENT_ID": "test-id"}, clear=True):
             agent = MyAgent(api_base=api_base)
             agent.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model = (
-                "datarobot/bedrock/anthropic.claude-sonnet-4-20250514-v1:0"
+                "datarobot/azure/gpt-4o-mini"
             )
             _ = agent.llm(preferred_model="datarobot/azure/gpt-4o-mini")
             mock_llm.assert_called_once_with(
