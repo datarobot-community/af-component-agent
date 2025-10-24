@@ -222,9 +222,7 @@ class MyAgent:
             "to objective statements.",
             allow_delegation=False,
             verbose=self.verbose,
-            llm=self.llm(
-                preferred_model="datarobot/bedrock/anthropic.claude-sonnet-4-20250514-v1:0"
-            ),
+            llm=self.llm(preferred_model="datarobot/azure/gpt-4o-mini"),
             tools=self._mcp_tools,
         )
 

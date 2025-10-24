@@ -179,9 +179,7 @@ class TestMyAgentLanggraph:
         with patch.dict(os.environ, {}, clear=True):
             agent = MyAgent(api_base=api_base)
             agent.config.use_datarobot_llm_gateway = True
-            _ = agent.llm(
-                preferred_model="datarobot/azure/gpt-4o-mini"
-            )
+            _ = agent.llm(preferred_model="datarobot/azure/gpt-4o-mini")
             mock_llm.assert_called_once_with(
                 model="datarobot/azure/gpt-4o-mini",
                 api_base=expected_result,
