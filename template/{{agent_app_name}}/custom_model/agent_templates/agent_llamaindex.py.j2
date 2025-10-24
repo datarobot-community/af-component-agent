@@ -277,9 +277,7 @@ class MyAgent:
                 "Your report should be in a markdown format. The content should be grounded in the research notes. "
                 "Once the report is written, you should get feedback at least once from the ReviewAgent."
             ),
-            llm=self.llm(
-                preferred_model="datarobot/bedrock/anthropic.claude-sonnet-4-20250514-v1:0",
-            ),
+            llm=self.llm(preferred_model="datarobot/azure/gpt-4o-mini"),
             tools=[self.write_report],
             can_handoff_to=["ReviewAgent", "ResearchAgent"],
         )
