@@ -73,8 +73,5 @@ llms:
     api_key: ${DATAROBOT_API_TOKEN}
     base_url: ${DATAROBOT_ENDPOINT}/genai/llmgw
 workflow:
-  _type: react_agent
-  tool_names: [planner, writer, editor]
-  llm_name: datarobot_llm
-  verbose: true
-  parse_agent_response_max_retries: 3
+  _type: sequential_executor
+  tool_list: [planner, writer, editor]
