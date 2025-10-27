@@ -38,6 +38,24 @@ pipeline:
                 steps:
                   - step:
                       type: Run
+                      name: Create docker_context
+                      identifier: Create_docker_context
+                      spec:
+                        connectorRef: GHCR_HHI
+                        image: ghcr.io/astral-sh/uv:python3.11-bookworm
+                        shell: Bash
+                        command: |-
+                          apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
+                          mkdir -p ./copier_context/.datarobot/answers/
+                          cp ./fixtures/.datarobot/answers/llm-llm.yml ./copier_context/.datarobot/answers/llm-llm.yml
+                          uvx copier copy . ./copier_context --defaults
+                          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+                          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+                          cd ./copier_context
+
+                          uvx --from go-task-bin task agent:create-docker-context
+                  - step:
+                      type: Run
                       name: Docker Requirements Compile Test
                       identifier: Docker_Requirements_Compile_Test
                       spec:
@@ -53,7 +71,9 @@ pipeline:
                           uv run jinja -D agent_app_name DockerContext -D agent_template_framework docker template/\{\{agent_app_name\}\}/pyproject.toml.jinja
 
                           # Comparison renders
-                          VAR1=$(cat template/\{\{agent_app_name\}\}/docker_context/pyproject.toml)
+                          # This is the docker_context created by task create_docker_context
+                          VAR1=$(cat copier_context/agent/docker_context/pyproject.toml)
+                          # This is the expected pyproject.toml that should exist
                           VAR2=$(uv run jinja -D agent_app_name DockerContext -D agent_template_framework docker template/\{\{agent_app_name\}\}/pyproject.toml.jinja)
 
                           # Check for asyncio in compiled pyproject.toml (should not be there)
@@ -68,17 +88,27 @@ pipeline:
                           if [ "$VAR1" = "$VAR2" ]; then
                             echo "pyproject.toml is in sync."
                           else
+                            echo ""
+                            echo "-------------------------------------------------"
                             echo "pyproject.toml differences detected:"
                             echo "$VAR1" > /tmp/pyproject.toml
                             echo "$VAR2" > /tmp/compiled_pyproject.toml
                             diff /tmp/pyproject.toml /tmp/compiled_pyproject.toml  || true
-
+                            echo "-------------------------------------------------"
+                            echo "ERROR:"
                             echo "pyproject.toml is out of sync with compiled template."
-                            echo "Please run:"
+                            echo "-------------------------------------------------"
+                            echo "Please see:"
+                            echo "https://github.com/datarobot/datarobot-user-models/tree/master/public_dropin_environments/python311_genai_agents"
                             echo ""
-                            echo "task docker_update_reqs"
+                            echo "To update requirements in python311_genai_agents:"
+                            echo "1. Create a new branch in datarobot-user-models"
+                            echo "2. Run the following commands:"
+                            echo "  cd /path/to-af-component-agent"
+                            echo "  task docker_update_reqs AGENT_PATH=/path/to/datarobot-user-models/public_dropin_environments/python311_genai_agents"
+                            echo "3. Commit the changes to datarobot-user-models"
                             echo ""
-                            echo "And add the updated pyproject.toml to your PR."
+                            echo "Once the files are updated in python311_genai_agents this PR will pass."
                             exit 1
                           fi
               sharedPaths:
@@ -106,13 +136,35 @@ pipeline:
                 steps:
                   - step:
                       type: Run
+                      name: Create docker_context for testing
+                      identifier: Create_docker_context_for_testing
+                      spec:
+                        connectorRef: GHCR_HHI
+                        image: ghcr.io/astral-sh/uv:python3.11-bookworm
+                        shell: Bash
+                        command: |-
+                          apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
+                          mkdir -p ./copier_context/.datarobot/answers/
+                          cp ./fixtures/.datarobot/answers/llm-llm.yml ./copier_context/.datarobot/answers/llm-llm.yml
+                          uvx copier copy . ./copier_context --defaults
+                          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+                          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+                          cd ./copier_context
+
+                          uvx --from go-task-bin task agent:create-docker-context
+
+                          # We need to replace datarobot with datarobotdev because we can't see this image during testing
+                          sed -i 's/datarobot\/mirror_chainguard_datarobot/datarobotdev\/mirror_chainguard_datarobot/g' ./agent/docker_context/Dockerfile.prod
+                          cat ./agent/docker_context/Dockerfile.prod
+                  - step:
+                      type: Run
                       name: Lint Dockerfile
                       identifier: Lint_Dockerfile
                       spec:
                         connectorRef: GHCR_HHI
                         image: ghcr.io/hadolint/hadolint:2.11.0-debian
                         shell: Sh
-                        command: hadolint --config .hadolint.yaml template/{{agent_app_name}}/docker_context/<+matrix.dockerfile>
+                        command: hadolint --config .hadolint.yaml copier_context/agent/docker_context/<+matrix.dockerfile>
                   - step:
                       type: BuildAndPushDockerRegistry
                       name: Build Dockerfile
@@ -123,8 +175,8 @@ pipeline:
                         tags:
                           - latest
                         caching: true
-                        dockerfile: template/{{agent_app_name}}/docker_context/<+matrix.dockerfile>
-                        context: template/{{agent_app_name}}/docker_context
+                        dockerfile: copier_context/agent/docker_context/<+matrix.dockerfile>
+                        context: copier_context/agent/docker_context
                         baseImageConnectorRefs:
                           - account.dockerhub_datarobot_read
             strategy:
@@ -132,5 +184,4 @@ pipeline:
                 dockerfile:
                   - Dockerfile
                   - Dockerfile.prod
-                  - Dockerfile.local
                 nodeName: <+matrix.dockerfile>
