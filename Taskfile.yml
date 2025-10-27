@@ -40,10 +40,12 @@ tasks:
           exit 1
         fi
       - uv run jinja -D agent_app_name DockerContext -D agent_template_framework docker template/\{\{agent_app_name\}\}/pyproject.toml.jinja -o {{.AGENT_PATH}}/pyproject.toml
-      - cd {{.AGENT_PATH}} && uv lock --no-upgrade
-      - cd {{.AGENT_PATH}} && uv export --format requirements-txt --no-hashes --no-annotate --no-header --no-emit-local -o requirements.txt
-      - cd {{.AGENT_PATH}} && sed -i '' "/== 'win32'/d" requirements.txt
-      - cd {{.AGENT_PATH}} && awk '{print $1}' FS=' ;' requirements.txt > requirements_temp.txt && mv requirements_temp.txt requirements.txt
+      - cd {{.AGENT_PATH}} && uv lock --no-upgrade && uv sync
+      # This command is temporary. It is using pip compile to produce a truncated requirements.txt without dependencies to avoid overloading the HHI installer.
+      - cd {{.AGENT_PATH}} && uv pip compile --python=3.11 --python-platform=linux --no-header --no-annotate --no-deps --output-file=requirements.txt pyproject.toml
+      # Need to extend support for larger requirements.txt files to enable this.
+      # - cd {{.AGENT_PATH}} && uv pip freeze > {{.AGENT_PATH}}/requirements.txt
+      # - cat {{.AGENT_PATH}}/requirements.txt
   docker_build_local:
     desc: "Build docker image locally (Check container builds)"
     cmds:
