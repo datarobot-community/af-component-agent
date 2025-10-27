@@ -15,7 +15,7 @@
 import asyncio
 import os
 from datetime import datetime
-from typing import Any, Generator, Optional, Sequence, Union
+from typing import Any, Generator, List, Optional, Sequence, Union
 
 from config import Config
 from helpers import get_api_base
@@ -31,6 +31,7 @@ from llama_index.core.agent.workflow import (
 from llama_index.core.base.llms.types import LLMMetadata
 from llama_index.core.workflow import Context, Event
 from llama_index.llms.litellm import LiteLLM
+from mcp_client import load_mcp_tools
 from openai.types.chat import CompletionCreateParams
 from ragas import MultiTurnSample
 from ragas.integrations.llama_index import convert_to_ragas_messages
@@ -100,6 +101,7 @@ class MyAgent:
             or "https://app.datarobot.com"
         )
         self.config = Config()
+        self._mcp_tools: List[Any] = []
         self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
         self.model = model
         self.timeout = timeout
@@ -146,6 +148,10 @@ class MyAgent:
             f"information given the current year is {str(datetime.now().year)}."
         )
 
+        # Load MCP tools (if configured) asynchronously before building agents
+        self._mcp_tools = asyncio.run(
+            load_mcp_tools(api_base=self.api_base, api_key=self.api_key)
+        )
         # Create and invoke the LlamaIndex Agentic Workflow with the inputs
         result, events = asyncio.run(
             self.run_llamaindex_agentic_workflow(input_message)
@@ -263,7 +269,7 @@ class MyAgent:
                 "before handing off control to the WriteAgent."
             ),
             llm=self.llm(preferred_model="datarobot/azure/gpt-4o-mini"),
-            tools=[self.record_notes],
+            tools=[self.record_notes, *self._mcp_tools],
             can_handoff_to=["WriteAgent"],
         )
 
@@ -278,7 +284,7 @@ class MyAgent:
                 "Once the report is written, you should get feedback at least once from the ReviewAgent."
             ),
             llm=self.llm(preferred_model="datarobot/azure/gpt-4o-mini"),
-            tools=[self.write_report],
+            tools=[self.write_report, *self._mcp_tools],
             can_handoff_to=["ReviewAgent", "ResearchAgent"],
         )
 
@@ -294,7 +300,7 @@ class MyAgent:
                 "off control to the WriteAgent to implement the changes after submitting the review."
             ),
             llm=self.llm(),
-            tools=[self.review_report],
+            tools=[self.review_report, *self._mcp_tools],
             can_handoff_to=["WriteAgent"],
         )
 
