@@ -106,4 +106,12 @@ class MyAgent:
         """
         async with load_workflow(config_file) as workflow:
             async with workflow.run(input_str) as runner:
-                return await runner.result(to_type=str)  # type: ignore[no-any-return]
+                runner_outputs = await runner.result(to_type=str)  # type: ignore[no-any-return]
+
+        line = f"{'-' * 50}"
+        prefix = f"{line}\nWorkflow Result:\n"
+        suffix = f"\n{line}"
+
+        print(f"{prefix}{runner_outputs}{suffix}")
+
+        return runner_outputs
