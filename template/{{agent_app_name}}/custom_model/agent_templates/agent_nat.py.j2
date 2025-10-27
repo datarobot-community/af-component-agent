@@ -73,13 +73,9 @@ class MyAgent:
         config_file = Path(__file__).parent / "workflow.yaml"
 
         # Create and invoke the NAT (Nemo Agent Toolkit) Agentic Workflow with the inputs
-        try:
-            result = asyncio.run(
-                self.run_nat_workflow(config_file, user_prompt_content)
-            )
-        except Exception as e:
-            print(f"Error running NAT workflow: {e}", flush=True)
-            result = f"Error: {str(e)}"
+        result = asyncio.run(
+            self.run_nat_workflow(config_file, user_prompt_content)
+        )
 
         # Create a list of events from the event listener
         pipeline_interactions: list[Any]
