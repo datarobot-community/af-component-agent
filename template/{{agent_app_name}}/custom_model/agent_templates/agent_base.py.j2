@@ -15,7 +15,7 @@ import os
 from typing import Any, Generator, Optional, Union
 
 from config import Config
-from helpers import get_api_base
+from datarobot_genai.utils import get_api_base
 from openai.types.chat import CompletionCreateParams
 from ragas import MultiTurnSample
 
@@ -167,7 +167,7 @@ class MyAgent:
         Returns:
             str: The modified API base URL.
         """
-        return get_api_base(self.api_base, self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id)  # type: ignore[no-any-return]
+        return get_api_base(self.api_base, self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id)
 
     @staticmethod
     def create_pipeline_interactions_from_events(

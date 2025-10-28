@@ -57,7 +57,7 @@ class TestMyAgentBase:
             )
 
             assert result == "success"
-            assert pipeline_interactions == []
+            assert pipeline_interactions is None
             assert usage == {
                 "completion_tokens": 0,
                 "prompt_tokens": 0,
