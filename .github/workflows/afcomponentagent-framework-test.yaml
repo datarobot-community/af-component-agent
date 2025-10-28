@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   test-frameworks:
-    name: "Test Component ${{ matrix.framework }}"
+    name: "Test ${{ matrix.framework.name }} (${{ matrix.python }})"
     runs-on: "ubuntu-latest"
     container:
       image: ghcr.io/astral-sh/uv:${{ matrix.python }}-bookworm
