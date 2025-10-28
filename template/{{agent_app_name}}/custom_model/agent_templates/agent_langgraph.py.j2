@@ -16,7 +16,7 @@ from datetime import datetime
 from typing import Any, Generator, Optional, Union
 
 from config import Config
-from helpers import get_api_base
+from datarobot_genai.utils import get_api_base
 from langchain_community.chat_models import ChatLiteLLM
 from langchain_core.messages import HumanMessage, ToolMessage
 from langgraph.graph import END, START, MessagesState, StateGraph
