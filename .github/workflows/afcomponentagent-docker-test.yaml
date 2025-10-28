@@ -65,7 +65,7 @@ jobs:
             echo "To update requirements in python311_genai_agents:"
             echo "1. Create a new branch in datarobot-user-models"
             echo "2. Run the following commands:"
-            echo "  cd /path/to-af-component-agent"
+            echo "  cd /path/to/af-component-agent"
             echo "  task docker_update_reqs AGENT_PATH=/path/to/datarobot-user-models/public_dropin_environments/python311_genai_agents"
             echo "3. Commit the changes to datarobot-user-models"
             echo ""
