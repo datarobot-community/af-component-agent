@@ -1,0 +1,39 @@
+name: 'Create default instance'
+description: 'Creates default copier instances using copier and task'
+inputs:
+  container-image:
+    description: 'Container image to use for setup'
+    required: false
+    default: 'ghcr.io/astral-sh/uv:python3.11-bookworm'
+  working-directory:
+    description: 'Working directory to run commands in'
+    required: false
+    default: '.'
+runs:
+  using: 'composite'
+  steps:
+    - name: Create default instance context
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        if [ "${{ inputs.container-image }}" = "ghcr.io/astral-sh/uv:python3.11-bookworm" ] && [ "$RUNNER_OS" = "Linux" ]; then
+          # Running in container, execute directly
+          apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
+          mkdir -p ./copier_context/.datarobot/answers/
+          cp ./fixtures/.datarobot/answers/llm-llm.yml ./copier_context/.datarobot/answers/llm-llm.yml
+          uvx copier copy . ./copier_context --defaults
+          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+          cd ./copier_context
+        else
+          # Running on host, use docker container
+          docker run --rm -v "$(pwd):/workspace" -w /workspace ${{ inputs.container-image }} bash -c "
+            apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
+            mkdir -p ./copier_context/.datarobot/answers/
+            cp ./fixtures/.datarobot/answers/llm-llm.yml ./copier_context/.datarobot/answers/llm-llm.yml
+            uvx copier copy . ./copier_context --defaults
+            cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
+            cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
+            cd ./copier_context
+          "
+        fi

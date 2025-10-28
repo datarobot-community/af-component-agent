@@ -17,16 +17,12 @@ jobs:
     steps:
       - name: Checkout
         uses: "actions/checkout@v4"
+      - name: Create default instance context
+        uses: ./.github/actions/setup-docker-context
       - name: Create docker_context
+        shell: sh
         run: |
-          apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
-          mkdir -p ./copier_context/.datarobot/answers/
-          cp ./fixtures/.datarobot/answers/llm-llm.yml ./copier_context/.datarobot/answers/llm-llm.yml
-          uvx copier copy . ./copier_context --defaults
-          cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
-          cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
-          cd ./copier_context
-          uvx --from go-task-bin task agent:create-docker-context
+            uvx --from go-task-bin task agent:create-docker-context
       - name: Docker Requirements Compile Test
         shell: sh
         run: |
@@ -88,19 +84,12 @@ jobs:
     steps:
       - name: Checkout
         uses: "actions/checkout@v4"
-      - name: Create docker_context for testing
+      - name: Create default instance context
+        uses: ./.github/actions/setup-docker-context
+      - name: Create docker_context
+        shell: sh
         run: |
-          # Use the same UV container logic
-          docker run --rm -v "$(pwd):/workspace" -w /workspace ghcr.io/astral-sh/uv:python3.11-bookworm bash -c "
-            apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
-            mkdir -p ./copier_context/.datarobot/answers/
-            cp ./fixtures/.datarobot/answers/llm-llm.yml ./copier_context/.datarobot/answers/llm-llm.yml
-            uvx copier copy . ./copier_context --defaults
-            cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
-            cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
-            cd ./copier_context
             uvx --from go-task-bin task agent:create-docker-context
-          "
       - name: Lint Dockerfile
         uses: hadolint/hadolint-action@v3.1.0
         with:
