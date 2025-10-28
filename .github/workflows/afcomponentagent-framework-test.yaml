@@ -60,3 +60,52 @@ jobs:
           uvx --from go-task-bin task test-coverage
         env:
           UV_CACHE_DIR: /.uv_cache
+  test-infra:
+    name: "Test Infra"
+    runs-on: "ubuntu-latest"
+    container:
+      image: ghcr.io/astral-sh/uv:python3.11-bookworm
+    steps:
+      - name: Checkout
+        uses: "actions/checkout@v4"
+      - name: Setup caching
+        uses: ./.github/actions/setup-caching
+        id: setup-cache
+        with:
+          python-version: python3.11
+          cache-key-suffix: infra
+      - name: Render copier instance
+        if: steps.setup-cache.outputs.cache-hit != 'true'
+        uses: ./.github/actions/render-copier-instance
+        with:
+          copier-args: '--defaults'
+      
+      - name: Setup infra files and install dependencies
+        shell: sh
+        run: |
+          cd ./rendered
+          uvx --from go-task-bin task infra:install
+          cd ./infra
+          uv sync --extra dev
+        env:
+          UV_CACHE_DIR: /.uv_cache
+      - name: Run linter
+        shell: sh
+        run: |
+          cd ./rendered
+          uvx --from go-task-bin task infra:lint-check
+        env:
+          UV_CACHE_DIR: /.uv_cache
+      - name: Run unit tests
+        shell: sh
+        run: |
+          apt update --allow-releaseinfo-change && apt install -y curl --no-install-recommends
+          curl -fsSL https://get.pulumi.com | sh
+          export PATH=/root/.pulumi/bin:$PATH
+          cd ./rendered/infra
+          pulumi login --local
+          pulumi stack init -s organization/unittest/unittest
+          task infra:test-coverage
+        env:
+          UV_CACHE_DIR: /.uv_cache
+          PULUMI_CONFIG_PASSPHRASE: "123"
