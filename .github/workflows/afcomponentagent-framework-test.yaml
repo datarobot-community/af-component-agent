@@ -18,6 +18,8 @@ jobs:
       matrix:
         python: [python3.10, python3.11, python3.12]
         framework:
+          - name: base
+            agent_name: agent_generic_base
           - name: crewai
             agent_name: agent_crewai
           - name: langgraph  

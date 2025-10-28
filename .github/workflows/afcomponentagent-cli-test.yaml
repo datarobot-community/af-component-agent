@@ -1,0 +1,118 @@
+---
+name: Test af-component-agent CLI
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  test-cli:
+    name: "Test CLI"
+    runs-on: "ubuntu-latest"
+    container:
+      image: ghcr.io/astral-sh/uv:python3.11-bookworm
+    steps:
+      - name: Checkout
+        uses: "actions/checkout@v4"
+      - name: Setup caching
+        uses: ./.github/actions/setup-caching
+        id: setup-cache
+        with:
+          python-version: python3.11
+          cache-key-suffix: infra
+      - name: Render copier instance
+        if: steps.setup-cache.outputs.cache-hit != 'true'
+        uses: ./.github/actions/render-copier-instance
+        with:
+          copier-args: '--defaults'
+      - name: Setup infra files and install dependencies
+        shell: sh
+        run: |
+          cd ./rendered
+          uvx --from go-task-bin task install
+        env:
+          UV_CACHE_DIR: /.uv_cache
+      - name: Run CLI Tests with DRUM using serverless mode
+        shell: sh
+        run: |
+          cd ./rendered
+          echo "DATAROBOT_API_TOKEN=secret" > .env
+          echo "DATAROBOT_ENDPOINT=https://test.com/api/v2" >> .env
+
+          # Run the CLI command with a sample user prompt
+          echo "Initial execution"
+          uvx --from go-task-bin task agent:cli -- \
+            execute \
+            --show_output \
+            --user_prompt '{"topic": "Artificial Intelligence"}' \
+            > ./agent/output.log 2>&1
+          cat ./agent/output.log
+
+          # Check if the log file was created
+          if [ $(wc -l <./agent/output.log) -ge 13 ]; then
+            echo "Log file created successfully and file not empty."
+            echo ""
+            echo "Contents of output.log:"
+            cat ./agent/output.log
+          else
+            echo "Log file was not created."
+            exit 1
+          fi
+
+          echo "-------------------------------"
+          echo "Printing log file for debugging:"
+          cat ./agent/output.log
+          echo "-------------------------------"
+
+          # Check the logger showed the first command
+          if cat ./agent/output.log | grep -q 'Running CLI execute'; then
+            echo "Test passed: cli.py returned log for starting cli"
+          else
+            echo "Test failed: cli.py did not return log for starting cli"
+            exit 1
+          fi
+
+          # Check the logger showed the startup commands
+          if cat ./agent/output.log | grep -q 'INFO - Parsing args'; then
+            echo "Test passed: cli.py returned log for argparse"
+          else
+            echo "Test failed: cli.py did not return log for argparse"
+            exit 1
+          fi
+
+          # Check the chat completion returned
+          if cat ./agent/output.log | grep -q 'INFO - Starting DRUM runner'; then
+            echo "Test passed: cli.py returned log for starting DRUM runner"
+          else
+            echo "Test failed: cli.py did not return log for starting DRUM runner"
+            exit 1
+          fi
+
+          # Check the chat completion returned
+          if cat ./agent/output.log | grep -q 'Running agent with user'; then
+            echo "Test passed: cli.py returned log containing in-agent messaging"
+          else
+            echo "Test failed: cli.py did not return log containing in-agent messaging"
+            exit 1
+          fi
+
+          # Check the chat completion returned
+          if cat ./agent/output.log | grep -q 'Stored execution result'; then
+            echo "Test passed: cli.py returned log containing stored execution result"
+          else
+            echo "Test failed: cli.py did not return log containing stored execution result"
+            exit 1
+          fi
+
+          # Check the chat completion returned
+          if cat ./agent/output.log | grep -q '"content": "success"'; then
+            echo "Test passed: cli.py returned chat completion success"
+          else
+            echo "Test failed: cli.py did not return chat completion success"
+            exit 1
+          fi
+        env:
+          UV_CACHE_DIR: /.uv_cache
