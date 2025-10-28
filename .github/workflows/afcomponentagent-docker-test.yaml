@@ -70,6 +70,7 @@ jobs:
             echo "3. Commit the changes to datarobot-user-models"
             echo ""
             echo "Once the files are updated in python311_genai_agents this PR will pass."
+            echo "You can re-run just this job to verify the fix by using the Re-run jobs button."
             exit 1
           fi
 
