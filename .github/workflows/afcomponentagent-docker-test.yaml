@@ -22,7 +22,8 @@ jobs:
       - name: Create docker_context
         shell: sh
         run: |
-            uvx --from go-task-bin task agent:create-docker-context
+          git config --global --add safe.directory /__w/af-component-agent/af-component-agent
+          uvx --from go-task-bin task agent:create-docker-context
       - name: Docker Requirements Compile Test
         shell: sh
         run: |
@@ -78,6 +79,8 @@ jobs:
   test-dockerfile:
     name: "Test Dockerfile"
     runs-on: "ubuntu-latest"
+    container:
+      image: ghcr.io/astral-sh/uv:python3.11-bookworm
     strategy:
       matrix:
         dockerfile: [Dockerfile]
@@ -89,7 +92,8 @@ jobs:
       - name: Create docker_context
         shell: sh
         run: |
-            uvx --from go-task-bin task agent:create-docker-context
+          git config --global --add safe.directory /__w/af-component-agent/af-component-agent
+          uvx --from go-task-bin task agent:create-docker-context
       - name: Lint Dockerfile
         uses: hadolint/hadolint-action@v3.1.0
         with:
