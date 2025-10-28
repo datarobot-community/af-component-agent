@@ -101,4 +101,11 @@ jobs:
           config: .hadolint.yaml
       - name: Build Dockerfile
         run: |
+          ls -la
+          cd ./rendered
+          ls -la
+          cd agent
+          ls -la
+          cd docker_context
+          ls -la
           docker build --platform linux/amd64 -f .rendered/agent/docker_context/${{ matrix.dockerfile }} -t test-agent:latest .
