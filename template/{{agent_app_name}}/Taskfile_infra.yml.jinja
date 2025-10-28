@@ -42,14 +42,14 @@ tasks:
       - uv run mypy --pretty .
   test:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
-    # desc: 🧪 [{{ agent_app_name }}] Run tests
+    # desc: 🧪 [infra] Run tests
     cmds:
       - echo "Running pytest on tests"
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pytest -vv ./tests/"
     silent: true
   test-coverage:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
-    # desc: 🧪 [{{ agent_app_name }}] Run tests with coverage
+    # desc: 🧪 [infra] Run tests with coverage
     cmds:
       - echo "Running pytest on tests"
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/"

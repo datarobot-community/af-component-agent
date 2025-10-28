@@ -104,7 +104,7 @@ jobs:
           cd ./rendered/infra
           pulumi login --local
           pulumi stack init -s organization/unittest/unittest
-          task infra:test-coverage
+          uvx --from go-task-bin task infra:test-coverage
         env:
           UV_CACHE_DIR: /.uv_cache
           PULUMI_CONFIG_PASSPHRASE: "123"
