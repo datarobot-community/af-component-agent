@@ -3,12 +3,8 @@ name: Test af-component-agent Docker
 on:
   push:
     branches: ["main"]
-    paths:
-      - 'template/**'
   pull_request:
     branches: ["main"]
-    paths:
-      - 'template/**'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
