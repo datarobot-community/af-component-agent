@@ -106,6 +106,8 @@ jobs:
         run: |
           pulumi login --local
           pulumi stack init -s organization/unittest/unittest
+        env:
+          PULUMI_CONFIG_PASSPHRASE: "123"
       - name: Run unit tests
         shell: sh
         working-directory: ./rendered
