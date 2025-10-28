@@ -1,5 +1,5 @@
 ---
-name: Test af-component-agent Frameworks
+name: Test af-component-agent Infrastructure
 on:
   push:
     branches: ["main"]
@@ -9,21 +9,11 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
-  test-frameworks:
-    name: "Test ${{ matrix.framework.name }} (${{ matrix.python }})"
+  test-infra:
+    name: "Test Infrastructure"
     runs-on: "ubuntu-latest"
     container:
-      image: ghcr.io/astral-sh/uv:${{ matrix.python }}-bookworm
-    strategy:
-      matrix:
-        python: [python3.10, python3.11, python3.12]
-        framework:
-          - name: crewai
-            agent_name: agent_crewai
-          - name: langgraph  
-            agent_name: agent_langgraph
-          - name: llamaindex
-            agent_name: agent_llamaindex
+      image: ghcr.io/astral-sh/uv:python3.11-bookworm
     steps:
       - name: Checkout
         uses: "actions/checkout@v4"
@@ -31,32 +21,38 @@ jobs:
         uses: ./.github/actions/setup-caching
         id: setup-cache
         with:
-          python-version: ${{ matrix.python }}
-          cache-key-suffix: ${{ matrix.framework.name }}
+          python-version: python3.11
+          cache-key-suffix: infra
       - name: Render copier instance
         if: steps.setup-cache.outputs.cache-hit != 'true'
         uses: ./.github/actions/render-copier-instance
         with:
-          copier-args: '--defaults --data agent_app_name=${{ matrix.framework.agent_name }} --data agent_template_framework=${{ matrix.framework.name }} --data base_answers_file=.datarobot/answers/base.yml'
+          copier-args: '--defaults'
       
-      - name: Install dependencies
+      - name: Setup infra files and install dependencies
         shell: sh
         run: |
-          cd ./rendered/${{ matrix.framework.agent_name }}
-          uvx --from go-task-bin task install
+          cd ./rendered
+          uvx --from go-task-bin task infra:install
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: Run linter
         shell: sh
         run: |
-          cd ./rendered/${{ matrix.framework.agent_name }}
-          uvx --from go-task-bin task lint-check
+          cd ./rendered
+          uvx --from go-task-bin task infra:lint-check
         env:
           UV_CACHE_DIR: /.uv_cache
-      - name: Run unit tests
-        shell: sh
-        run: |
-          cd ./rendered/${{ matrix.framework.agent_name }}
-          uvx --from go-task-bin task test-coverage
-        env:
-          UV_CACHE_DIR: /.uv_cache
+      # - name: Run unit tests
+      #   shell: sh
+      #   run: |
+      #     apt update --allow-releaseinfo-change && apt install -y curl --no-install-recommends
+      #     curl -fsSL https://get.pulumi.com | sh
+      #     export PATH=/root/.pulumi/bin:$PATH
+      #     cd ./rendered/infra
+      #     pulumi login --local
+      #     pulumi stack init -s organization/unittest/unittest
+      #     uv run pytest --disable-warnings -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/
+      #   env:
+      #     UV_CACHE_DIR: /.uv_cache
+      #     PULUMI_CONFIG_PASSPHRASE: "123"

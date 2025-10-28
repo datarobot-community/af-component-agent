@@ -23,11 +23,14 @@ runs:
           mkdir -p ./rendered/.datarobot/answers/
           cp ./fixtures/.datarobot/answers/llm-llm.yml ./rendered/.datarobot/answers/llm-llm.yml
           uvx copier copy . ./rendered ${{ inputs.copier-args }}
+          # Overwrite the infra Taskfile.yml
+          cp .rendered/agent/Taskfile_infra.yml ./rendered/infra/Taskfile.yml
+
+          # For infra testing
           cp ./fixtures/infra/pyproject.toml ./rendered/infra/pyproject.toml
           cp ./fixtures/infra/__init__.py ./rendered/infra/infra/__init__.py
-          # For infra testing
-          cp ./fixtures/infra/Pulumi.yaml ./copier_context/infra/Pulumi.yaml
-          cp ./fixtures/infra/llm.py ./copier_context/infra/infra/llm.py
+          cp ./fixtures/infra/Pulumi.yaml ./rendered/infra/Pulumi.yaml
+          cp ./fixtures/infra/llm.py ./rendered/infra/infra/llm.py
         else
           # Running on host, use docker container
           docker run --rm -v "$(pwd):/workspace" -w /workspace ghcr.io/astral-sh/uv:python3.11-bookworm bash -c "
@@ -39,7 +42,7 @@ runs:
             cp ./fixtures/infra/pyproject.toml ./rendered/infra/pyproject.toml
             cp ./fixtures/infra/__init__.py ./rendered/infra/infra/__init__.py
             # For infra testing
-            cp ./fixtures/infra/Pulumi.yaml ./copier_context/infra/Pulumi.yaml
-            cp ./fixtures/infra/llm.py ./copier_context/infra/infra/llm.py
+            cp ./fixtures/infra/Pulumi.yaml ./rendered/infra/Pulumi.yaml
+            cp ./fixtures/infra/llm.py ./rendered/infra/infra/llm.py
           "
         fi
