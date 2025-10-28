@@ -16,6 +16,7 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
+        git config --global --add safe.directory /__w/af-component-agent/af-component-agent
         apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
         mkdir -p ./copier_context/.datarobot/answers/
         cp ./fixtures/.datarobot/answers/llm-llm.yml ./copier_context/.datarobot/answers/llm-llm.yml
