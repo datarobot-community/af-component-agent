@@ -22,7 +22,7 @@ jobs:
       - name: Create docker_context
         shell: sh
         run: |
-          cd ./copier_context
+          cd ./rendered
           uvx --from go-task-bin task agent:create-docker-context
       - name: Docker Requirements Compile Test
         shell: sh
@@ -36,7 +36,7 @@ jobs:
           
           # Comparison renders
           # This is the docker_context created by task create_docker_context
-          VAR1=$(cat copier_context/agent/docker_context/pyproject.toml)
+          VAR1=$(cat rendered/agent/docker_context/pyproject.toml)
           # This is the expected pyproject.toml that should exist
           VAR2=$(uv run jinja -D agent_app_name DockerContext -D agent_template_framework docker template/\{\{agent_app_name\}\}/pyproject.toml.jinja)
           
@@ -92,14 +92,13 @@ jobs:
       - name: Create docker_context
         shell: sh
         run: |
-          cd ./copier_context
+          cd ./rendered
           uvx --from go-task-bin task agent:create-docker-context
       - name: Lint Dockerfile
         uses: hadolint/hadolint-action@v3.1.0
         with:
-          dockerfile: copier_context/agent/docker_context/${{ matrix.dockerfile }}
+          dockerfile: ./rendered/agent/docker_context/${{ matrix.dockerfile }}
           config: .hadolint.yaml
       - name: Build Dockerfile
         run: |
-          cd copier_context/agent/docker_context
-          docker build --platform linux/amd64 -f ${{ matrix.dockerfile }} -t test-agent:latest .
+          docker build --platform linux/amd64 -f .rendered/agent/docker_context/${{ matrix.dockerfile }} -t test-agent:latest .

@@ -18,9 +18,9 @@ runs:
       run: |
         git config --global --add safe.directory /__w/af-component-agent/af-component-agent
         apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
-        mkdir -p ./copier_context/.datarobot/answers/
-        cp ./fixtures/.datarobot/answers/llm-llm.yml ./copier_context/.datarobot/answers/llm-llm.yml
-        uvx copier copy . ./copier_context ${{ inputs.copier-args }}
-        cp ./fixtures/infra/pyproject.toml ./copier_context/infra/pyproject.toml
-        cp ./fixtures/infra/__init__.py ./copier_context/infra/infra/__init__.py
-        cd ./copier_context
+        mkdir -p ./rendered/.datarobot/answers/
+        cp ./fixtures/.datarobot/answers/llm-llm.yml ./rendered/.datarobot/answers/llm-llm.yml
+        uvx copier copy . ./rendered ${{ inputs.copier-args }}
+        cp ./fixtures/infra/pyproject.toml ./rendered/infra/pyproject.toml
+        cp ./fixtures/infra/__init__.py ./rendered/infra/infra/__init__.py
+        cd ./rendered
