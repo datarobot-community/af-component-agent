@@ -1,0 +1,45 @@
+name: 'Setup Caching'
+description: 'Sets up comprehensive caching for UV dependencies, APT packages, and rendered instances'
+inputs:
+  python-version:
+    description: 'Python version for cache key'
+    required: true
+  cache-key-suffix:
+    description: 'Suffix for the rendered cache key (e.g., crewai, langgraph)'
+    required: true
+  dependency-files:
+    description: 'Files to hash for UV cache key'
+    required: false
+    default: 'template/{{agent_app_name}}/pyproject.toml.jinja fixtures/**/*.toml'
+runs:
+  using: 'composite'
+  steps:
+    - name: Cache UV dependencies
+      uses: actions/cache@v4
+      with:
+        path: /.uv_cache
+        key: uv-${{ inputs.python-version }}-${{ hashFiles(inputs.dependency-files) }}
+        restore-keys: |
+          uv-${{ inputs.python-version }}-
+          uv-
+    
+    - name: Cache APT packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          /var/cache/apt/archives
+          /var/lib/apt/lists
+        key: apt-${{ runner.os }}-${{ hashFiles('.github/actions/render-copier-instance/action.yml') }}
+        restore-keys: |
+          apt-${{ runner.os }}-
+    
+    - name: Cache rendered copier instance
+      uses: actions/cache@v4
+      id: cache-rendered
+      with:
+        path: ./rendered
+        key: rendered-${{ inputs.cache-key-suffix }}-${{ hashFiles('template/**', 'fixtures/**', 'copier.yml') }}
+outputs:
+  cache-hit:
+    description: 'Whether the rendered cache was hit'
+    value: ${{ steps.cache-rendered.outputs.cache-hit }}

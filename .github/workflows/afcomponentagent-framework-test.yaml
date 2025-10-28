@@ -20,10 +20,18 @@ jobs:
     steps:
       - name: Checkout
         uses: "actions/checkout@v4"
+      - name: Setup caching
+        uses: ./.github/actions/setup-caching
+        id: setup-cache
+        with:
+          python-version: ${{ matrix.python }}
+          cache-key-suffix: 'crewai'
       - name: Render copier instance
+        if: steps.setup-cache.outputs.cache-hit != 'true'
         uses: ./.github/actions/render-copier-instance
         with:
           copier-args: '--defaults --data agent_app_name=agent_crewai --data agent_template_framework=crewai --data base_answers_file=.datarobot/answers/base.yml'
+      
       - name: Install dependencies
         shell: sh
         run: |
