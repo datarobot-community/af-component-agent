@@ -30,15 +30,15 @@ jobs:
           copier-args: '--defaults'
       - name: Setup infra files and install dependencies
         shell: sh
+        working-directory: ./rendered
         run: |
-          cd ./rendered
           uvx --from go-task-bin task install
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: Run CLI Tests with DRUM using serverless mode
         shell: sh
+        working-directory: ./rendered
         run: |
-          cd ./rendered
           echo "DATAROBOT_API_TOKEN=secret" > .env
           echo "DATAROBOT_ENDPOINT=https://test.com/api/v2" >> .env
 
@@ -118,8 +118,8 @@ jobs:
           UV_CACHE_DIR: /.uv_cache
       - name: Run CLI Tests with JSON input
         shell: sh
+        working-directory: ./rendered
         run: |
-          cd ./rendered
           echo "DATAROBOT_API_TOKEN=secret" > .env
           echo "DATAROBOT_ENDPOINT=https://test.com/api/v2" >> .env
 
@@ -154,8 +154,8 @@ jobs:
           UV_CACHE_DIR: /.uv_cache
       - name: Run CLI Tests with streaming enabled
         shell: sh
+        working-directory: ./rendered
         run: |
-          cd ./rendered
           echo "DATAROBOT_API_TOKEN=secret" > .env
           echo "DATAROBOT_ENDPOINT=https://test.com/api/v2" >> .env
 

@@ -43,22 +43,22 @@ jobs:
       
       - name: Install dependencies
         shell: sh
+        working-directory: ./rendered/${{ matrix.framework.agent_name }}
         run: |
-          cd ./rendered/${{ matrix.framework.agent_name }}
           uvx --from go-task-bin task install
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: Run linter
         shell: sh
+        working-directory: ./rendered/${{ matrix.framework.agent_name }}
         run: |
-          cd ./rendered/${{ matrix.framework.agent_name }}
           uvx --from go-task-bin task lint-check
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: Run unit tests
         shell: sh
+        working-directory: ./rendered/${{ matrix.framework.agent_name }}
         run: |
-          cd ./rendered/${{ matrix.framework.agent_name }}
           uvx --from go-task-bin task test-coverage
         env:
           UV_CACHE_DIR: /.uv_cache
@@ -76,6 +76,10 @@ jobs:
         with:
           python-version: python3.11
           cache-key-suffix: infra
+      - name: Install pulumi
+        run: |
+          curl -fsSL https://get.pulumi.com | sh
+          echo "/github/home/.pulumi/bin" >> $GITHUB_PATH
       - name: Render copier instance
         if: steps.setup-cache.outputs.cache-hit != 'true'
         uses: ./.github/actions/render-copier-instance
@@ -83,8 +87,8 @@ jobs:
           copier-args: '--defaults'
       - name: Setup infra files and install dependencies
         shell: sh
+        working-directory: ./rendered
         run: |
-          cd ./rendered
           uvx --from go-task-bin task infra:install
           cd ./infra
           uv sync --extra dev
@@ -92,20 +96,20 @@ jobs:
           UV_CACHE_DIR: /.uv_cache
       - name: Run linter
         shell: sh
+        working-directory: ./rendered
         run: |
-          cd ./rendered
           uvx --from go-task-bin task infra:lint-check
         env:
           UV_CACHE_DIR: /.uv_cache
-      - name: Run unit tests
-        shell: sh
+      - name: Create pulumi stack
+        working-directory: ./rendered/infra
         run: |
-          apt update --allow-releaseinfo-change && apt install -y curl --no-install-recommends
-          curl -fsSL https://get.pulumi.com | sh
-          export PATH=/github/home/.pulumi/bin:$PATH
-          cd ./rendered/infra
           pulumi login --local
           pulumi stack init -s organization/unittest/unittest
+      - name: Run unit tests
+        shell: sh
+        working-directory: ./rendered
+        run: |
           uvx --from go-task-bin task infra:test-coverage
         env:
           UV_CACHE_DIR: /.uv_cache
