@@ -35,7 +35,7 @@ jobs:
           cd ./rendered
           uvx --from go-task-bin task infra:install
           cd ./infra
-          uv sync --all
+          uv sync --extra dev
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: Run linter
