@@ -30,8 +30,22 @@ tasks:
       - task agent:install --dir $RENDER_DIR/agent_{{.AGENT}}
   docker_update_reqs:
     desc: "Update Docker requirements pyproject.toml from jinja template"
+    vars:
+      genai_agents_path: "{{.AGENT_PATH}}"
     cmds:
-      - uv run jinja -D agent_app_name DockerContext -D agent_template_framework docker template/\{\{agent_app_name\}\}/pyproject.toml.jinja -o template/\{\{agent_app_name\}\}/docker_context/pyproject.toml
+      - |
+        if [ -z "{{.AGENT_PATH}}" ]; then
+          echo "AGENT_PATH is not set. Please set AGENT_PATH to the path of the genai-agents repository."
+          echo "task docker_update_reqs AGENT_PATH=/path/to/datarobot-user-models/public_dropin_environments/python311_genai_agents"
+          exit 1
+        fi
+      - uv run jinja -D agent_app_name DockerContext -D agent_template_framework docker template/\{\{agent_app_name\}\}/pyproject.toml.jinja -o {{.AGENT_PATH}}/pyproject.toml
+      - cd {{.AGENT_PATH}} && uv lock --no-upgrade && uv sync
+      # This command is temporary. It is using pip compile to produce a truncated requirements.txt without dependencies to avoid overloading the HHI installer.
+      - cd {{.AGENT_PATH}} && uv pip compile --python=3.11 --python-platform=linux --no-header --no-annotate --no-deps --output-file=requirements.txt pyproject.toml
+      # Need to extend support for larger requirements.txt files to enable this.
+      # - cd {{.AGENT_PATH}} && uv pip freeze > {{.AGENT_PATH}}/requirements.txt
+      # - cat {{.AGENT_PATH}}/requirements.txt
   docker_build_local:
     desc: "Build docker image locally (Check container builds)"
     cmds:

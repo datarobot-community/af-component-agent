@@ -16,8 +16,8 @@ tasks:
     cmds:
       - echo "Updating local dependencies for {{ agent_app_name }}"
       - uv sync --extra dev --quiet
-      - cp pyproject.toml docker_context/pyproject.toml
-      - cp uv.lock docker_context/uv.lock
+      - if [ -f pyproject.toml ] && [ -d docker_context ]; then cp pyproject.toml docker_context/pyproject.toml; fi
+      - if [ -f uv.lock ] && [ -d docker_context ]; then cp uv.lock docker_context/uv.lock; fi
     silent: true
     aliases:
       - req
@@ -86,7 +86,23 @@ tasks:
       - echo "Running development server on http://localhost:8842"
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run drum server -cd custom_model --address localhost:8842 --target-type agenticworkflow"
       - wait
-  build-docker:
+  create-docker-context:
+    desc: 🐳 [{{ agent_app_name }}] Create the template for a local docker_context image
+    cmds:
+      - echo "Creating docker_context folder inside agent."
+      - git init docker_context_temp
+      - echo "Initializing docker_context with Dockerfile template."
+      - cd docker_context_temp && git remote add origin "https://github.com/datarobot/datarobot-user-models"
+      - cd docker_context_temp && git sparse-checkout init --cone
+      - cd docker_context_temp && git sparse-checkout set "public_dropin_environments/python311_genai_agents"
+      - cd docker_context_temp && git pull origin master
+      - cp -r docker_context_temp/public_dropin_environments/python311_genai_agents ./docker_context
+      - rm -rf docker_context_temp
+      # We need to rename these from their production variants to their local variants
+      - mv ./docker_context/Dockerfile ./docker_context/Dockerfile.prod
+      - mv ./docker_context/Dockerfile.local ./docker_context/Dockerfile
+      - echo "Docker context created inside {{ agent_app_name }}/docker_context"
+  build-docker-context:
     desc: 🐳 [{{ agent_app_name }}] Build the Docker image
     cmds:
       - echo "Building Docker image"
