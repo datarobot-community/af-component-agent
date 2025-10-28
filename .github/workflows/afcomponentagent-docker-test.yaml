@@ -19,11 +19,8 @@ jobs:
         uses: "actions/checkout@v4"
       - name: Render copier instance
         uses: ./.github/actions/render-copier-instance
-      - name: Create docker_context
-        shell: sh
-        run: |
-          cd ./rendered
-          uvx --from go-task-bin task agent:create-docker-context
+      - name: Create docker context
+        uses: ./.github/actions/create-docker-context
       - name: Docker Requirements Compile Test
         shell: sh
         run: |
@@ -79,8 +76,6 @@ jobs:
   test-dockerfile:
     name: "Test Dockerfile"
     runs-on: "ubuntu-latest"
-    container:
-      image: ghcr.io/astral-sh/uv:python3.11-bookworm
     strategy:
       matrix:
         dockerfile: [Dockerfile]
@@ -89,11 +84,8 @@ jobs:
         uses: "actions/checkout@v4"
       - name: Render copier instance
         uses: ./.github/actions/render-copier-instance
-      - name: Create docker_context
-        shell: sh
-        run: |
-          cd ./rendered
-          uvx --from go-task-bin task agent:create-docker-context
+      - name: Create docker context
+        uses: ./.github/actions/create-docker-context
       - name: Lint Dockerfile
         uses: hadolint/hadolint-action@v3.1.0
         with:
@@ -101,11 +93,5 @@ jobs:
           config: .hadolint.yaml
       - name: Build Dockerfile
         run: |
-          ls -la
-          cd ./rendered
-          ls -la
-          cd agent
-          ls -la
-          cd docker_context
-          ls -la
-          docker build --platform linux/amd64 -f .rendered/agent/docker_context/${{ matrix.dockerfile }} -t test-agent:latest .
+          cd ./rendered/agent/docker_context
+          docker build --platform linux/amd64 -f ${{ matrix.dockerfile }} -t test-agent:latest .

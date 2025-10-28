@@ -16,11 +16,26 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        git config --global --add safe.directory /__w/af-component-agent/af-component-agent
-        apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
-        mkdir -p ./rendered/.datarobot/answers/
-        cp ./fixtures/.datarobot/answers/llm-llm.yml ./rendered/.datarobot/answers/llm-llm.yml
-        uvx copier copy . ./rendered ${{ inputs.copier-args }}
-        cp ./fixtures/infra/pyproject.toml ./rendered/infra/pyproject.toml
-        cp ./fixtures/infra/__init__.py ./rendered/infra/infra/__init__.py
-        cd ./rendered
+        if command -v apt >/dev/null 2>&1; then
+          # Running in container, execute directly
+          git config --global --add safe.directory /__w/af-component-agent/af-component-agent
+          apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
+          mkdir -p ./rendered/.datarobot/answers/
+          cp ./fixtures/.datarobot/answers/llm-llm.yml ./rendered/.datarobot/answers/llm-llm.yml
+          uvx copier copy . ./rendered ${{ inputs.copier-args }}
+          cp ./fixtures/infra/pyproject.toml ./rendered/infra/pyproject.toml
+          cp ./fixtures/infra/__init__.py ./rendered/infra/infra/__init__.py
+          cd ./rendered
+        else
+          # Running on host, use docker container
+          docker run --rm -v "$(pwd):/workspace" -w /workspace ghcr.io/astral-sh/uv:python3.11-bookworm bash -c "
+            git config --global --add safe.directory /workspace
+            apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
+            mkdir -p ./rendered/.datarobot/answers/
+            cp ./fixtures/.datarobot/answers/llm-llm.yml ./rendered/.datarobot/answers/llm-llm.yml
+            uvx copier copy . ./rendered ${{ inputs.copier-args }}
+            cp ./fixtures/infra/pyproject.toml ./rendered/infra/pyproject.toml
+            cp ./fixtures/infra/__init__.py ./rendered/infra/infra/__init__.py
+            cd ./rendered
+          "
+        fi
