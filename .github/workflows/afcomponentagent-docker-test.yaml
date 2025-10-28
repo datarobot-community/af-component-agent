@@ -9,7 +9,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
-  docker-requirements-compile-test:
+  test-compile-docker-requirements:
     name: "Docker Requirements Compile Test"
     runs-on: "ubuntu-latest"
     container:
@@ -17,6 +17,12 @@ jobs:
     steps:
       - name: Checkout
         uses: "actions/checkout@v4"
+      - name: Setup caching
+        uses: ./.github/actions/setup-caching
+        id: setup-cache
+        with:
+          python-version: python3.11
+          cache-key-suffix: docker-requirements-compile-test
       - name: Render copier instance
         uses: ./.github/actions/render-copier-instance
       - name: Create docker context
@@ -74,8 +80,8 @@ jobs:
             exit 1
           fi
 
-  test-dockerfile:
-    name: "Test Dockerfile"
+  test-build-dockerfile:
+    name: "Test Build Dockerfile"
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
@@ -83,6 +89,12 @@ jobs:
     steps:
       - name: Checkout
         uses: "actions/checkout@v4"
+      - name: Setup caching
+        uses: ./.github/actions/setup-caching
+        id: setup-cache
+        with:
+          python-version: python3.11
+          cache-key-suffix: docker-build-test
       - name: Render copier instance
         uses: ./.github/actions/render-copier-instance
       - name: Create docker context

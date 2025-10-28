@@ -9,14 +9,21 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
-  test-crewai:
-    name: "Test Component CrewAI"
+  test-frameworks:
+    name: "Test Component ${{ matrix.framework }}"
     runs-on: "ubuntu-latest"
     container:
       image: ghcr.io/astral-sh/uv:${{ matrix.python }}-bookworm
     strategy:
       matrix:
         python: [python3.10, python3.11, python3.12]
+        framework:
+          - name: crewai
+            agent_name: agent_crewai
+          - name: langgraph  
+            agent_name: agent_langgraph
+          - name: llamaindex
+            agent_name: agent_llamaindex
     steps:
       - name: Checkout
         uses: "actions/checkout@v4"
@@ -25,31 +32,31 @@ jobs:
         id: setup-cache
         with:
           python-version: ${{ matrix.python }}
-          cache-key-suffix: 'crewai'
+          cache-key-suffix: ${{ matrix.framework.name }}
       - name: Render copier instance
         if: steps.setup-cache.outputs.cache-hit != 'true'
         uses: ./.github/actions/render-copier-instance
         with:
-          copier-args: '--defaults --data agent_app_name=agent_crewai --data agent_template_framework=crewai --data base_answers_file=.datarobot/answers/base.yml'
+          copier-args: '--defaults --data agent_app_name=${{ matrix.framework.agent_name }} --data agent_template_framework=${{ matrix.framework.name }} --data base_answers_file=.datarobot/answers/base.yml'
       
       - name: Install dependencies
         shell: sh
         run: |
-          cd ./rendered/agent_crewai
+          cd ./rendered/${{ matrix.framework.agent_name }}
           uvx --from go-task-bin task install
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: Run linter
         shell: sh
         run: |
-          cd ./rendered/agent_crewai
+          cd ./rendered/${{ matrix.framework.agent_name }}
           uvx --from go-task-bin task lint-check
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: Run unit tests
         shell: sh
         run: |
-          cd ./rendered/agent_crewai
+          cd ./rendered/${{ matrix.framework.agent_name }}
           uvx --from go-task-bin task test-coverage
         env:
           UV_CACHE_DIR: /.uv_cache
