@@ -17,8 +17,8 @@ jobs:
     steps:
       - name: Checkout
         uses: "actions/checkout@v4"
-      - name: Create default instance context
-        uses: ./.github/actions/setup-docker-context
+      - name: Render copier instance
+        uses: ./.github/actions/render-copier-instance
       - name: Create docker_context
         shell: sh
         run: |
@@ -84,8 +84,8 @@ jobs:
     steps:
       - name: Checkout
         uses: "actions/checkout@v4"
-      - name: Create default instance context
-        uses: ./.github/actions/setup-docker-context
+      - name: Render copier instance
+        uses: ./.github/actions/render-copier-instance
       - name: Create docker_context
         shell: sh
         run: |
