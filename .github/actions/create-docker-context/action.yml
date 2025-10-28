@@ -16,7 +16,7 @@ runs:
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       run: |
-        if command -v uvx >/dev/null 2>&1; then
+        if command -v uvx >/dev/null 2>&1 && [ -w /var/lib/apt/lists ]; then
           # Running in container with uvx available, execute directly
           cd ${{ inputs.rendered-directory }}
           uvx --from go-task-bin task agent:create-docker-context
