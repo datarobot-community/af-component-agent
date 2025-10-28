@@ -22,7 +22,7 @@ jobs:
       - name: Create docker context
         uses: ./.github/actions/create-docker-context
       - name: Docker Requirements Compile Test
-        shell: sh
+        shell: bash
         run: |
           apt -o Acquire::Check-Valid-Until=false update && apt install -y git
           uv add jinja-cli
