@@ -134,7 +134,7 @@ class TestMyAgentBase:
             _ = agent.extra_param1
 
     @patch("builtins.print")
-    def test_run_method_with_json_input(self, mock_print, agent):
+    async def test_run_method_with_json_input(self, mock_print, agent):
         # Create a mock result with a raw attribute
         completion_create_params = {
             "model": "test-model",
@@ -143,7 +143,7 @@ class TestMyAgentBase:
             ],
             "environment_var": True,
         }
-        assert agent.invoke(completion_create_params) == (
+        assert await agent.invoke(completion_create_params) == (
             "success",
             None,
             {"completion_tokens": 0, "prompt_tokens": 0, "total_tokens": 0},
@@ -157,14 +157,14 @@ class TestMyAgentBase:
         )
 
     @patch("builtins.print")
-    def test_run_method_with_string_input(self, mock_print, agent):
+    async def test_run_method_with_string_input(self, mock_print, agent):
         # Create a mock result with a raw attribute
         completion_create_params = {
             "model": "test-model",
             "messages": [{"role": "user", "content": "Artificial Intelligence"}],
             "environment_var": True,
         }
-        result = agent.invoke(completion_create_params)
+        result = await agent.invoke(completion_create_params)
         assert result == (
             "success",
             None,
