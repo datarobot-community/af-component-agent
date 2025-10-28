@@ -10,7 +10,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   test-compile-docker-requirements:
-    name: "Docker Requirements Compile Test"
+    name: "Test Compile Docker Requirements"
     runs-on: "ubuntu-latest"
     container:
       image: ghcr.io/astral-sh/uv:python3.11-bookworm

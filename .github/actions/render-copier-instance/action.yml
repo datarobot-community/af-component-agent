@@ -23,8 +23,6 @@ runs:
           mkdir -p ./rendered/.datarobot/answers/
           cp ./fixtures/.datarobot/answers/llm-llm.yml ./rendered/.datarobot/answers/llm-llm.yml
           uvx copier copy . ./rendered ${{ inputs.copier-args }}
-          # Overwrite the infra Taskfile.yml
-          cp .rendered/agent/Taskfile_infra.yml ./rendered/infra/Taskfile.yml
 
           # For infra testing
           cp ./fixtures/infra/pyproject.toml ./rendered/infra/pyproject.toml
@@ -39,9 +37,10 @@ runs:
             mkdir -p ./rendered/.datarobot/answers/
             cp ./fixtures/.datarobot/answers/llm-llm.yml ./rendered/.datarobot/answers/llm-llm.yml
             uvx copier copy . ./rendered ${{ inputs.copier-args }}
+
+            # For infra testing
             cp ./fixtures/infra/pyproject.toml ./rendered/infra/pyproject.toml
             cp ./fixtures/infra/__init__.py ./rendered/infra/infra/__init__.py
-            # For infra testing
             cp ./fixtures/infra/Pulumi.yaml ./rendered/infra/Pulumi.yaml
             cp ./fixtures/infra/llm.py ./rendered/infra/infra/llm.py
           "
