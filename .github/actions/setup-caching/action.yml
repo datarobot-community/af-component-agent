@@ -22,7 +22,6 @@ runs:
         restore-keys: |
           uv-${{ inputs.python-version }}-
           uv-
-    
     - name: Cache APT packages
       uses: actions/cache@v4
       with:
@@ -32,13 +31,6 @@ runs:
         key: apt-${{ runner.os }}-${{ hashFiles('.github/actions/render-copier-instance/action.yml') }}
         restore-keys: |
           apt-${{ runner.os }}-
-    
-    - name: Cache rendered copier instance
-      uses: actions/cache@v4
-      id: cache-rendered
-      with:
-        path: ./rendered
-        key: rendered-${{ inputs.cache-key-suffix }}-${{ hashFiles('template/**', 'fixtures/**', 'copier.yml') }}
 outputs:
   cache-hit:
     description: 'Whether the rendered cache was hit'
