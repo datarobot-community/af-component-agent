@@ -67,7 +67,7 @@ class MyAgent:
         elif isinstance(verbose, bool):
             self.verbose = verbose
 
-    def invoke(
+    async def invoke(
         self, completion_create_params: CompletionCreateParams
     ) -> Union[
         Generator[tuple[str, Any | None, dict[str, int]], None, None],

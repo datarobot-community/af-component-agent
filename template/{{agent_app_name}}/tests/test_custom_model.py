@@ -14,7 +14,7 @@
 
 import json
 import os
-from unittest.mock import ANY, MagicMock, Mock, patch
+from unittest.mock import ANY, AsyncMock, MagicMock, Mock, patch
 
 import pytest
 
@@ -34,7 +34,7 @@ class TestCustomModel:
 
         # Setup mocks
         mock_agent_instance = MagicMock()
-        mock_agent_instance.invoke.return_value = mock_agent_response
+        mock_agent_instance.invoke = AsyncMock(return_value=mock_agent_response)
         mock_agent.return_value = mock_agent_instance
 
         completion_create_params = {
@@ -99,7 +99,7 @@ class TestCustomModel:
         from custom import chat
 
         # Create a generator that yields streaming responses
-        def mock_streaming_generator():
+        async def mock_streaming_generator():
             yield (
                 "chunk1",
                 None,
@@ -118,7 +118,7 @@ class TestCustomModel:
 
         # Setup mocks
         mock_agent_instance = MagicMock()
-        mock_agent_instance.invoke.return_value = mock_streaming_generator()
+        mock_agent_instance.invoke = AsyncMock(return_value=mock_streaming_generator())
         mock_agent.return_value = mock_agent_instance
 
         completion_create_params = {
