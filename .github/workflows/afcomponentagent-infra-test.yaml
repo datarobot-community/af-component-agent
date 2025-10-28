@@ -45,16 +45,16 @@ jobs:
           uvx --from go-task-bin task infra:lint-check
         env:
           UV_CACHE_DIR: /.uv_cache
-      # - name: Run unit tests
-      #   shell: sh
-      #   run: |
-      #     apt update --allow-releaseinfo-change && apt install -y curl --no-install-recommends
-      #     curl -fsSL https://get.pulumi.com | sh
-      #     export PATH=/root/.pulumi/bin:$PATH
-      #     cd ./rendered/infra
-      #     pulumi login --local
-      #     pulumi stack init -s organization/unittest/unittest
-      #     uv run pytest --disable-warnings -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/
-      #   env:
-      #     UV_CACHE_DIR: /.uv_cache
-      #     PULUMI_CONFIG_PASSPHRASE: "123"
+      - name: Run unit tests
+        shell: sh
+        run: |
+          apt update --allow-releaseinfo-change && apt install -y curl --no-install-recommends
+          curl -fsSL https://get.pulumi.com | sh
+          export PATH=/root/.pulumi/bin:$PATH
+          cd ./rendered/infra
+          pulumi login --local
+          pulumi stack init -s organization/unittest/unittest
+          task infra:test-coverage
+        env:
+          UV_CACHE_DIR: /.uv_cache
+          PULUMI_CONFIG_PASSPHRASE: "123"
