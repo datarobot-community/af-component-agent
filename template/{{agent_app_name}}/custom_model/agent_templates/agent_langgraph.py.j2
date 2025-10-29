@@ -20,9 +20,7 @@ from datarobot_genai.agents.common import (
     make_system_prompt,
     extract_user_prompt_content,
 )
-from datarobot_genai.agents.langgraph import (
-    create_pipeline_interactions_from_events as _dr_create_pipeline_interactions_from_events,
-)
+from datarobot_genai.agents.langgraph import create_pipeline_interactions_from_events
 
 from langchain_core.messages import HumanMessage
 from langchain_litellm.chat_models import ChatLiteLLM
@@ -335,10 +333,4 @@ class MyAgent(BaseAgent):
             goto=END,
         )
 
-    # system prompt and pipeline interaction logic moved to datarobot_genai
 
-    @staticmethod
-    def create_pipeline_interactions_from_events(
-        events: list[dict[str, Any]] | None,
-    ) -> MultiTurnSample | None:
-        return _dr_create_pipeline_interactions_from_events(events)

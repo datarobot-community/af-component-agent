@@ -26,6 +26,7 @@ from datarobot_genai.chat import (
 from helpers import to_custom_model_streaming_response
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from ragas import MultiTurnSample
+from datarobot_genai.agents.langgraph import create_pipeline_interactions_from_events
 
 
 class TestMyAgentLanggraph:
@@ -425,7 +426,7 @@ def events() -> list[dict[str, Any]]:
 def test_extract_pipeline_interactions(events: list[dict[str, Any]]) -> None:
     """Test that the pipeline interactions are extracted correctly."""
 
-    result = MyAgent.create_pipeline_interactions_from_events(events)
+    result = create_pipeline_interactions_from_events(events)
     # The check is that with different ToolMessage content types there is no exception
     assert isinstance(result, MultiTurnSample)
     assert len(result.user_input) == 3

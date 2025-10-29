@@ -282,5 +282,3 @@ class MyAgent(BaseAgent):
         current_state["review"] = review
         await ctx.set("state", current_state)
         return "Report reviewed."
-
-    # pipeline interaction logic moved to datarobot_genai
