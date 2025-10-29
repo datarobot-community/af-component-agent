@@ -16,7 +16,7 @@ from typing import Any, Generator, List, Optional, Union
 from config import Config
 from crewai import LLM, Agent, Crew, Task
 from crewai_event_listener import CrewAIEventListener
-from datarobot_genai.agents.common import BaseAgent, extract_user_prompt_content
+from datarobot_genai.agents import BaseAgent, extract_user_prompt_content
 from datarobot_genai.agents.crewai import (
     build_llm,
     create_pipeline_interactions_from_messages,

@@ -15,10 +15,9 @@ import os
 from typing import Any, AsyncGenerator, Optional, Union
 
 from config import Config
+from datarobot_genai.agents import BaseAgent, extract_user_prompt_content
 from datarobot_genai.agents.common import (
-    BaseAgent,
     create_pipeline_interactions_from_events_simple,
-    extract_user_prompt_content,
 )
 from openai.types.chat import CompletionCreateParams
 
