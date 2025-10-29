@@ -37,30 +37,20 @@ The Agent Framework is component from [App Framework Studio](https://github.com/
 
 To use this template, it expects the base component https://github.com/datarobot/af-component-base has already been
 installed. To do that first, run:
-
 ```bash
-# Using HTTPS
 uvx copier copy https://github.com/datarobot/af-component-base .
-# OR using SSH
-uvx copier copy git@github.com:datarobot/af-component-base.git .
+# uvx copier copy git@github.com:datarobot/af-component-base.git .
 ```
 
 To add the agent component to your project, you can use the `uvx copier` command to copy the template from this repository:
-
 ```bash
-# Using HTTPS
 uvx copier copy https://github.com/datarobot/af-component-agent .
-# OR using SSH
-uvx copier copy git@github.com:datarobot/af-component-agent.git .
+# uvx copier copy git@github.com:datarobot/af-component-agent.git .
 ```
 
-If a template requires multiple agents, it can be used multiple times with a different answer to the
-`agent_app_name` question.
-
 To update an existing agent template, you can use the `uvx copier update` command. This will update the template files
-
 ```bash
-uvx copier update -a .datarobot/answers/agent-{{ agent_app }}.yml -A
+uvx copier update -a .datarobot/answers/agent-{ agent_app }.yml -A
 ```
 
 
