@@ -3,12 +3,8 @@
     <img src="docs/img/datarobot_logo.avif" width="600px" alt="DataRobot Logo"/>
   </a>
 </p>
-<p align="center">
-    <span style="font-size: 1.5em; font-weight: bold; display: block;">DataRobot Application Framework</span>
-</p>
-<p align="center">
-    <span style="font-size: 2.0em; font-weight: bold; display: block;">af-component-agent</span>
-</p>
+<h2 align="center">DataRobot Application Framework</h2>
+<h1 align="center">af-component-agent</h1>
 
 <p align="center">
   <a href="https://datarobot.com">Homepage</a>
