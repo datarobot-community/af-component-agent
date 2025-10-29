@@ -2,22 +2,31 @@
 agent_app_name:
   type: str
   default: "agent"
-  help: "The name/folder of your Agent Deployment. Required to use a python friendly name like agent or agent_backend"
+  help: "The name/folder of your Agent Deployment. Must be a Python-friendly name (letters, numbers, underscores only, no spaces)"
+  validator: "^[a-zA-Z_][a-zA-Z0-9_]*$"
 
 agent_template_framework:
   type: str
   default: "base"
-  help: "The agentic framework template to start with. Supported frameworks: base, crewai, langgraph, llamaindex"
+  help: "Choose the agentic framework template to start with"
+  choices:
+    - base
+    - crewai
+    - langgraph
+    - llamaindex
+    - nat
 
 base_answers_file:
   type: str
   default: ".datarobot/answers/base.yml"
-  help: "Path to the base component answers file"
+  help: "Path to the base component answers file (must contain '.datarobot/answers')"
+  validator: ".*\\.datarobot/answers.*"
 
 llm_answers_file:
   type: str
   default: ".datarobot/answers/llm-llm.yml"
-  help: "Path to the llm component answers file"
+  help: "Path to the llm component answers file (must contain '.datarobot/answers')"
+  validator: ".*\\.datarobot/answers.*"
 
 # Grab the base component answers to re-use answers
 _external_data:
