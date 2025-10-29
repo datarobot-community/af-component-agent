@@ -3,6 +3,7 @@ agent_app_name:
   type: str
   default: "agent"
   help: "The name/folder of your Agent Deployment. Must be a Python-friendly name (letters, numbers, underscores only, no spaces)"
+  validator: "{% if agent_app_name and agent_app_name.replace('_', '').replace('0','').replace('1','').replace('2','').replace('3','').replace('4','').replace('5','').replace('6','').replace('7','').replace('8','').replace('9','').isalpha() and not ' ' in agent_app_name and agent_app_name.isidentifier() %}True{% else %}False{% endif %}"
 
 agent_template_framework:
   type: str
@@ -19,11 +20,13 @@ base_answers_file:
   type: str
   default: ".datarobot/answers/base.yml"
   help: "Path to the base component answers file (must contain '.datarobot/answers')"
+  validator: "{% if base_answers_file and '.datarobot/answers' in base_answers_file %}True{% else %}False{% endif %}"
 
 llm_answers_file:
   type: str
   default: ".datarobot/answers/llm-llm.yml" 
   help: "Path to the llm component answers file (must contain '.datarobot/answers')"
+  validator: "{% if llm_answers_file and '.datarobot/answers' in llm_answers_file %}True{% else %}False{% endif %}"
 
 # Grab the base component answers to re-use answers
 _external_data:
