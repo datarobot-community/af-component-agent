@@ -207,9 +207,9 @@ class TestMyAgentBase:
             (None, "https://app.datarobot.com/"),
         ],
     )
-    def test_api_base_litellm_variations(self, api_base, expected_result):
-        """Test api_base_litellm property with various URL formats."""
+    def test_litellm_api_base_variations(self, api_base, expected_result):
+        """Test litellm_api_base with various URL formats."""
         with patch.dict(os.environ, {}, clear=True):
             agent = MyAgent(api_base=api_base)
-            result = agent.api_base_litellm
+            result = agent.litellm_api_base(None)
             assert result == expected_result

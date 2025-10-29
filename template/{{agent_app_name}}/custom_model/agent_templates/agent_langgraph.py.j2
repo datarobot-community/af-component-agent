@@ -11,23 +11,29 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
 from datetime import datetime
 from typing import Any, AsyncGenerator, Optional, Union
 
 from config import Config
-from datarobot_genai.utils import get_api_base
-from langchain_core.messages import HumanMessage, ToolMessage
+from datarobot_genai.agents.common import (
+    BaseAgent,
+    make_system_prompt,
+    extract_user_prompt_content,
+)
+from datarobot_genai.agents.langgraph import (
+    create_pipeline_interactions_from_events as _dr_create_pipeline_interactions_from_events,
+)
+
+from langchain_core.messages import HumanMessage
 from langchain_litellm.chat_models import ChatLiteLLM
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import create_react_agent
 from langgraph.types import Command
 from openai.types.chat import CompletionCreateParams
 from ragas import MultiTurnSample
-from ragas.integrations.langgraph import convert_to_ragas_messages
 
 
-class MyAgent:
+class MyAgent(BaseAgent):
     """MyAgent is a custom agent that uses Langgraph to plan, write, and edit content.
     It utilizes DataRobot's LLM Gateway or a specific deployment for language model interactions.
     This example illustrates 3 agents that handle content creation tasks, including planning, writing,
@@ -62,12 +68,7 @@ class MyAgent:
         Returns:
             None
         """
-        self.api_key = api_key or os.environ.get("DATAROBOT_API_TOKEN")
-        self.api_base = (
-            api_base
-            or os.environ.get("DATAROBOT_ENDPOINT")
-            or "https://app.datarobot.com"
-        )
+        super().__init__(api_key=api_key, api_base=api_base, model=model, verbose=verbose, timeout=timeout, **kwargs)
         self.config = Config()
         self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
         self.model = model
@@ -97,14 +98,7 @@ class MyAgent:
                For non-streaming requests, returns a single tuple of (response_text, pipeline_interactions, usage_metrics).
         """
         # Retrieve the starting user prompt from the CompletionCreateParams
-        user_messages = [
-            msg
-            for msg in completion_create_params["messages"]
-            # You can use other roles as needed (e.g. "system", "assistant")
-            if msg.get("role") == "user"
-        ]
-        user_prompt: Any = user_messages[0] if user_messages else {}
-        user_prompt_content = user_prompt.get("content", {})
+        user_prompt_content = extract_user_prompt_content(completion_create_params)
 
         # Print commands may need flush=True to ensure they are displayed in real-time.
         print("Running agent with user prompt:", user_prompt_content, flush=True)
@@ -175,9 +169,7 @@ class MyAgent:
                         )
 
                 # Create a list of events from the event listener
-                pipeline_interactions = self.create_pipeline_interactions_from_events(
-                    events
-                )
+                pipeline_interactions = create_pipeline_interactions_from_events(events)
 
                 # yield the final response indicating completion
                 yield "", pipeline_interactions, usage_metrics
@@ -186,9 +178,7 @@ class MyAgent:
         else:
             # Synchronous response: collect all events and return the final message
             events = [event async for event in graph_stream]
-            pipeline_interactions = self.create_pipeline_interactions_from_events(
-                events
-            )
+            pipeline_interactions = create_pipeline_interactions_from_events(events)
 
             # Extract the final event from the graph stream as the synchronous response
             last_event = events[-1]
@@ -224,9 +214,8 @@ class MyAgent:
         Returns:
             ChatLiteLLM: The model to use.
         """
-        api_base = get_api_base(
-            self.api_base,
-            self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id,
+        api_base = self.litellm_api_base(
+            self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id
         )
         model = preferred_model
         if preferred_model is None:
@@ -247,7 +236,7 @@ class MyAgent:
         return create_react_agent(
             self.llm(preferred_model="datarobot/azure/gpt-4o-mini"),
             tools=[],
-            prompt=self.make_system_prompt(
+            prompt=make_system_prompt(
                 "You are a content planner. You are working with a content writer and editor colleague.\n"
                 "You're working on planning a blog article about the topic. You collect information that helps the "
                 "audience learn something and make informed decisions. Your work is the basis for the Content Writer "
@@ -268,7 +257,7 @@ class MyAgent:
         return create_react_agent(
             self.llm(preferred_model="datarobot/azure/gpt-4o-mini"),
             tools=[],
-            prompt=self.make_system_prompt(
+            prompt=make_system_prompt(
                 "You are a content writer. You are working with a planner and editor colleague.\n"
                 "You're working on writing a new opinion piece about the topic. You base your writing on the work "
                 "of the Content Planner, who provides an outline and relevant context about the topic. You follow "
@@ -293,7 +282,7 @@ class MyAgent:
         return create_react_agent(
             self.llm(),
             tools=[],
-            prompt=self.make_system_prompt(
+            prompt=make_system_prompt(
                 "You are a content editor. You are working with a planner and writer colleague.\n"
                 "You are an editor who receives a blog post from the Content Writer. Your goal is to review the "
                 "blog post to ensure that it follows journalistic best practices, provides balanced viewpoints when "
@@ -346,36 +335,10 @@ class MyAgent:
             goto=END,
         )
 
-    @staticmethod
-    def make_system_prompt(suffix: str) -> str:
-        return (
-            "You are a helpful AI assistant, collaborating with other assistants."
-            " Use the provided tools to progress towards answering the question."
-            " If you are unable to fully answer, that's OK, another assistant with different tools "
-            " will help where you left off. Execute what you can to make progress."
-            f"\n{suffix}"
-        )
+    # system prompt and pipeline interaction logic moved to datarobot_genai
 
     @staticmethod
     def create_pipeline_interactions_from_events(
-        events: list[dict[str, Any]],
+        events: list[dict[str, Any]] | None,
     ) -> MultiTurnSample | None:
-        """Convert a list of events into a MultiTurnSample.
-
-        Creates the pipeline interactions for moderations and evaluation
-        (e.g. Task Adherence, Agent Goal Accuracy, Tool Call Accuracy)
-        """
-        if not events:
-            return None
-
-        messages = []
-        for e in events:
-            for k, v in e.items():
-                messages.extend(v["messages"])
-
-        # Drop the ToolMessages since they may not be compatible with Ragas ToolMessage
-        # that is needed for the MultiTurnSample.
-        messages = [m for m in messages if not isinstance(m, ToolMessage)]
-
-        ragas_trace = convert_to_ragas_messages(messages)
-        return MultiTurnSample(user_input=ragas_trace)
+        return _dr_create_pipeline_interactions_from_events(events)

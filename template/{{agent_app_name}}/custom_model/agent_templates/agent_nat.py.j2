@@ -18,7 +18,7 @@ from typing import Any, Generator, Union
 from nat.runtime.loader import load_workflow
 from nat.utils.type_utils import StrPath
 from openai.types.chat import CompletionCreateParams
-from ragas import MultiTurnSample
+from datarobot_genai.agents.common import create_pipeline_interactions_from_events_simple
 
 
 class MyAgent:
@@ -87,7 +87,7 @@ class MyAgent:
         # Create a list of events from the event listener
         events: list[Any]
         events = []  # This should be populated with the agent's events/messages
-        pipeline_interactions = self.create_pipeline_interactions_from_events(events)
+        pipeline_interactions = create_pipeline_interactions_from_events_simple(events)
 
         usage_metrics = {
             "completion_tokens": 0,
@@ -118,15 +118,4 @@ class MyAgent:
 
         return runner_outputs  # type: ignore[no-any-return]
 
-    @staticmethod
-    def create_pipeline_interactions_from_events(
-        events: list[Any],
-    ) -> MultiTurnSample | None:
-        """Convert a list of events into a MultiTurnSample.
 
-        Creates the pipeline interactions for moderations and evaluation
-        (e.g. Task Adherence, Agent Goal Accuracy, Tool Call Accuracy)
-        """
-        if not events:
-            return None
-        return MultiTurnSample(user_input=events)
