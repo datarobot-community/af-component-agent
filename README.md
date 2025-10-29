@@ -55,7 +55,7 @@ uvx copier update -a .datarobot/answers/agent-{ agent_app }.yml -A
 
 
 ## Developer Guide
-Please see the (Development Documentation)[/docs/development.md]
+Please see the [Development Documentation](/docs/development.md).
 
 
 # Get help
