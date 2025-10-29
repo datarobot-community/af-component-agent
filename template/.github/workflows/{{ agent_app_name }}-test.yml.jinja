@@ -23,7 +23,7 @@ jobs:
       matrix:
         {% if agent_template_framework == "nat" %}python-version: ["3.11", "3.12"]{% else %}python-version: ["3.10", "3.11", "3.12"]{% endif %}
     steps:
-      - uses: "actions/checkout@v4"
+      - uses: "actions/checkout@v5"
       # Ref: https://docs.astral.sh/uv/guides/integration/github/#installation
       - name: Setup uv
         uses: astral-sh/setup-uv@v6
