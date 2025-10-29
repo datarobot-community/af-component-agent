@@ -23,9 +23,12 @@ runs:
           mkdir -p ./rendered/.datarobot/answers/
           cp ./fixtures/.datarobot/answers/llm-llm.yml ./rendered/.datarobot/answers/llm-llm.yml
           uvx copier copy . ./rendered ${{ inputs.copier-args }}
+
+          # For infra testing
           cp ./fixtures/infra/pyproject.toml ./rendered/infra/pyproject.toml
           cp ./fixtures/infra/__init__.py ./rendered/infra/infra/__init__.py
-          cd ./rendered
+          cp ./fixtures/infra/Pulumi.yaml ./rendered/infra/Pulumi.yaml
+          cp ./fixtures/infra/llm.py ./rendered/infra/infra/llm.py
         else
           # Running on host, use docker container
           docker run --rm -v "$(pwd):/workspace" -w /workspace ghcr.io/astral-sh/uv:python3.11-bookworm bash -c "
@@ -34,8 +37,11 @@ runs:
             mkdir -p ./rendered/.datarobot/answers/
             cp ./fixtures/.datarobot/answers/llm-llm.yml ./rendered/.datarobot/answers/llm-llm.yml
             uvx copier copy . ./rendered ${{ inputs.copier-args }}
+
+            # For infra testing
             cp ./fixtures/infra/pyproject.toml ./rendered/infra/pyproject.toml
             cp ./fixtures/infra/__init__.py ./rendered/infra/infra/__init__.py
-            cd ./rendered
+            cp ./fixtures/infra/Pulumi.yaml ./rendered/infra/Pulumi.yaml
+            cp ./fixtures/infra/llm.py ./rendered/infra/infra/llm.py
           "
         fi
