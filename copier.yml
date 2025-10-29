@@ -2,22 +2,41 @@
 agent_app_name:
   type: str
   default: "agent"
-  help: "The name/folder of your Agent Deployment. Required to use a python friendly name like agent or agent_backend"
+  help: "The name/folder of your Agent Deployment. Must be a Python-friendly name (letters, numbers, underscores only, no spaces)"
+  validator: >-
+    {% if not agent_app_name %}ERROR: Agent app name cannot be empty
+    {% elif ' ' in agent_app_name %}ERROR: Agent app name cannot contain spaces
+    {% elif not agent_app_name.isidentifier() %}ERROR: Agent app name must be a valid Python identifier (letters, numbers, underscores only, cannot start with number)
+    {% endif %}
 
 agent_template_framework:
   type: str
   default: "base"
-  help: "The agentic framework template to start with. Supported frameworks: base, crewai, langgraph, llamaindex"
+  help: "Choose the agentic framework template to start with"
+  choices:
+    - base
+    - crewai
+    - langgraph
+    - llamaindex
+    - nat
 
 base_answers_file:
   type: str
   default: ".datarobot/answers/base.yml"
-  help: "Path to the base component answers file"
+  help: "Path to the base component answers file (must contain '.datarobot/answers')"
+  validator: >-
+    {% if not base_answers_file %}ERROR: Base answers file path cannot be empty
+    {% elif '.datarobot/answers' not in base_answers_file %}ERROR: Base answers file must contain '.datarobot/answers' in the path
+    {% endif %}
 
 llm_answers_file:
   type: str
-  default: ".datarobot/answers/llm-llm.yml"
-  help: "Path to the llm component answers file"
+  default: ".datarobot/answers/llm-llm.yml" 
+  help: "Path to the llm component answers file (must contain '.datarobot/answers')"
+  validator: >-
+    {% if not llm_answers_file %}ERROR: LLM answers file path cannot be empty
+    {% elif '.datarobot/answers' not in llm_answers_file %}ERROR: LLM answers file must contain '.datarobot/answers' in the path
+    {% endif %}
 
 # Grab the base component answers to re-use answers
 _external_data:
