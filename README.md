@@ -15,11 +15,11 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/datarobot-community/datarobot-agent-templates/tags">
-    <img src="https://img.shields.io/github/v/tag/datarobot-community/af-component-agent?label=version" alt="Latest Release">
+  <a href="https://github.com/datarobot/datarobot-agent-templates/tags">
+    <img src="https://img.shields.io/github/v/tag/datarobot/af-component-agent?label=version" alt="Latest Release">
   </a>
   <a href="/LICENSE">
-    <img src="https://img.shields.io/github/license/datarobot-community/af-component-agent" alt="License">
+    <img src="https://img.shields.io/github/license/datarobot/af-component-agent" alt="License">
   </a>
 </p>
 
@@ -61,4 +61,4 @@ If you encounter issues or have questions, try the following:
 
 - Check [the documentation](#available-templates) for your chosen framework.
 - [Contact DataRobot](https://docs.datarobot.com/en/docs/get-started/troubleshooting/general-help.html) for support.
-- Open an issue on the [GitHub repository](https://github.com/datarobot-community/datarobot-agent-templates).
+- Open an issue on the [GitHub repository](https://github.com/datarobot/af-component-llm).
