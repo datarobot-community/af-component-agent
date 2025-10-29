@@ -26,6 +26,13 @@ jobs:
             agent_name: agent_langgraph
           - name: llamaindex
             agent_name: agent_llamaindex
+          - name: nat
+            agent_name: agent_nat
+        exclude:
+          - python: python3.10
+            framework: 
+              name: nat
+              agent_name: agent_nat
     steps:
       - name: Checkout
         uses: "actions/checkout@v4"
