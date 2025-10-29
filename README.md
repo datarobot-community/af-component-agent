@@ -10,19 +10,17 @@
 <p align="center">
   <a href="https://datarobot.com">Homepage</a>
   ·
-  <a href="https://docs.datarobot.com/en/docs/gen-ai/genai-agents/index.html">Agentic Workflows</a>
-  ·
-  <a href="/docs/getting-started.md">Getting Started</a>
+  <a href="https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/index.html">Agent Documentation</a>
   ·
   <a href="https://docs.datarobot.com/en/docs/get-started/troubleshooting/general-help.html">Support</a>
 </p>
 
 <p align="center">
   <a href="https://github.com/datarobot-community/datarobot-agent-templates/tags">
-    <img src="https://img.shields.io/github/v/tag/datarobot-community/datarobot-agent-templates?label=version" alt="Latest Release">
+    <img src="https://img.shields.io/github/v/tag/datarobot-community/af-component-agent?label=version" alt="Latest Release">
   </a>
   <a href="/LICENSE">
-    <img src="https://img.shields.io/github/license/datarobot-community/datarobot-agent-templates" alt="License">
+    <img src="https://img.shields.io/github/license/datarobot-community/af-component-agent" alt="License">
   </a>
 </p>
 
