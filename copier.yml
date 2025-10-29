@@ -3,7 +3,11 @@ agent_app_name:
   type: str
   default: "agent"
   help: "The name/folder of your Agent Deployment. Must be a Python-friendly name (letters, numbers, underscores only, no spaces)"
-  validator: "{% if agent_app_name and agent_app_name.replace('_', '').replace('0','').replace('1','').replace('2','').replace('3','').replace('4','').replace('5','').replace('6','').replace('7','').replace('8','').replace('9','').isalpha() and not ' ' in agent_app_name and agent_app_name.isidentifier() %}True{% else %}False{% endif %}"
+  validator: >-
+    {% if not agent_app_name %}ERROR: Agent app name cannot be empty
+    {% elif ' ' in agent_app_name %}ERROR: Agent app name cannot contain spaces
+    {% elif not agent_app_name.isidentifier() %}ERROR: Agent app name must be a valid Python identifier (letters, numbers, underscores only, cannot start with number)
+    {% endif %}
 
 agent_template_framework:
   type: str
@@ -20,13 +24,19 @@ base_answers_file:
   type: str
   default: ".datarobot/answers/base.yml"
   help: "Path to the base component answers file (must contain '.datarobot/answers')"
-  validator: "{% if base_answers_file and '.datarobot/answers' in base_answers_file %}True{% else %}False{% endif %}"
+  validator: >-
+    {% if not base_answers_file %}ERROR: Base answers file path cannot be empty
+    {% elif '.datarobot/answers' not in base_answers_file %}ERROR: Base answers file must contain '.datarobot/answers' in the path
+    {% endif %}
 
 llm_answers_file:
   type: str
   default: ".datarobot/answers/llm-llm.yml" 
   help: "Path to the llm component answers file (must contain '.datarobot/answers')"
-  validator: "{% if llm_answers_file and '.datarobot/answers' in llm_answers_file %}True{% else %}False{% endif %}"
+  validator: >-
+    {% if not llm_answers_file %}ERROR: LLM answers file path cannot be empty
+    {% elif '.datarobot/answers' not in llm_answers_file %}ERROR: LLM answers file must contain '.datarobot/answers' in the path
+    {% endif %}
 
 # Grab the base component answers to re-use answers
 _external_data:
