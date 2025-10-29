@@ -55,6 +55,7 @@ jobs:
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: License Header Check
+        if: matrix.python == 'python3.11'
         uses: apache/skywalking-eyes/header@main
         with:
           config: .github/.licenserc.yaml
