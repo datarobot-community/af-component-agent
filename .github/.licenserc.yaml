@@ -37,6 +37,7 @@ header:
     # - You can temporarily list files below which will be checked when running the tool locally.
     # - 'new-file01.py'
     - "**/.rendered/*.py"
+    - "**/.rendered/**/*.py"
 
   paths-ignore:
     # these files/directories should not be analyzed
