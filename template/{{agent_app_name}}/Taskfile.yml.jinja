@@ -78,14 +78,9 @@ tasks:
     silent: true
   dev:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
-    # desc: 🔨 [{{ agent_app_name }}] Run the development server
-    env:
-      TARGET_NAME: response
-      FLASK_DEBUG: 1
+    desc: 🔨 [{{ agent_app_name }}] Run the development server
     cmds:
-      - echo "Running development server on http://localhost:8842"
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run drum server -cd custom_model --address localhost:8842 --target-type agenticworkflow"
-      - wait
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run python dev.py"
   create-docker-context:
     desc: 🐳 [{{ agent_app_name }}] Create the template for a local docker_context image
     cmds:

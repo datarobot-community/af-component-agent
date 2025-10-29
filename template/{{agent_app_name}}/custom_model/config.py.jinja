@@ -21,7 +21,7 @@ DataRobot credentials automatically.
 from typing import Any
 
 from datarobot.core.config import DataRobotAppFrameworkBaseSettings
-from pydantic import model_validator
+from pydantic import model_validator, Field
 
 
 class Config(DataRobotAppFrameworkBaseSettings):
@@ -36,6 +36,14 @@ class Config(DataRobotAppFrameworkBaseSettings):
     use_datarobot_llm_gateway: bool = False
     mcp_deployment_id: str | None = None
     external_mcp_url: str | None = None
+
+    agent_endpoint: str = Field(default_value="http://localhost:8842", alias="{{agent_app_name|upper}}_ENDPOINT")
+
+    @property
+    def local_dev_port(self) -> int:
+        endpoint = self.endpoint
+        port = int(endpoint.split(":")[-1])
+        return port
 
     @model_validator(mode="before")
     @classmethod
