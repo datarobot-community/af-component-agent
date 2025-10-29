@@ -4,7 +4,10 @@
   </a>
 </p>
 <p align="center">
-    <span style="font-size: 1.5em; font-weight: bold; display: block;">DataRobot Agentic Workflow Templates</span>
+    <span style="font-size: 1.5em; font-weight: bold; display: block;">DataRobot Application Framework</span>
+</p>
+<p align="center">
+    <span style="font-size: 1.7em; font-weight: bold; display: block;">af-component-agent</span>
 </p>
 
 <p align="center">
