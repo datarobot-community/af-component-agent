@@ -47,7 +47,6 @@ jobs:
         uses: ./.github/actions/render-copier-instance
         with:
           copier-args: '--defaults --data agent_app_name=${{ matrix.framework.agent_name }} --data agent_template_framework=${{ matrix.framework.name }} --data base_answers_file=.datarobot/answers/base.yml'
-      
       - name: Install dependencies
         shell: sh
         working-directory: ./rendered/${{ matrix.framework.agent_name }}
@@ -55,6 +54,10 @@ jobs:
           uvx --from go-task-bin task install
         env:
           UV_CACHE_DIR: /.uv_cache
+      - name: License Header Check
+        uses: apache/skywalking-eyes/header@main
+        with:
+          config: .github/.licenserc.yaml
       - name: Run linter
         shell: sh
         working-directory: ./rendered/${{ matrix.framework.agent_name }}
