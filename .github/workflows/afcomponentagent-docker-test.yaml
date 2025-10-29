@@ -100,7 +100,7 @@ jobs:
       - name: Create docker context
         uses: ./.github/actions/create-docker-context
       - name: Lint Dockerfile
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.3.0
         with:
           dockerfile: ./rendered/agent/docker_context/${{ matrix.dockerfile }}
           config: .hadolint.yaml
