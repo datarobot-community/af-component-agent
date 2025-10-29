@@ -16,16 +16,6 @@ defaults:
   run:
     working-directory: {{ agent_app_name }}
 jobs:
-  docker-build-test:
-    name: "Agent: {{ agent_app_name }} Docker build and test"
-    runs-on: "ubuntu-latest"
-    steps:
-      - name: Checkout
-        uses: "actions/checkout@v5"
-      - name: Build Docker Image
-        run: |
-          cd docker_context
-          tar -czh . | docker build - -t {{ agent_app_name }}
   tests:
     name: "Agent: {{ agent_app_name }} {% raw %}${{ matrix.python-version }}{% endraw %}"
     runs-on: "ubuntu-latest"
