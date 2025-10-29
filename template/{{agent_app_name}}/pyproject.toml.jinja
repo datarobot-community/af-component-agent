@@ -8,6 +8,7 @@ readme = "README.md"
 dependencies = [
     "click>=8.1.8",
     "datarobot-drum>=1.17.5",
+    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai,langgraph,llamaindex,nat]{% elif agent_template_framework == 'crewai' %}[crewai]{% elif agent_template_framework == 'langgraph' %}[langgraph]{% elif agent_template_framework == 'llamaindex' %}[llamaindex]{% elif agent_template_framework == 'nat' %}[nat]{% endif %}>=0.1.12",
     "opentelemetry-api>=1.33.0,<2.0.0",
     "opentelemetry-instrumentation-aiohttp-client>=0.54b0",
     "opentelemetry-instrumentation-httpx>=0.54b0",
