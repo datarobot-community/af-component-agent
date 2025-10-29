@@ -18,7 +18,6 @@ from datarobot_drum.drum.root_predictors.prediction_server import PredictionServ
 
 from custom_model.config import Config
 
-
 if __name__ == "__main__":
     os.environ["TARGET_NAME"] = "response"
     os.environ["FLASK_DEBUG"] = "1"
