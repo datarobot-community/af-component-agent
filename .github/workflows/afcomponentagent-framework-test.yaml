@@ -1,5 +1,5 @@
 ---
-name: Test af-component-agent Frameworks
+name: af-component-agent Frameworks
 on:
   push:
     branches: ["main"]
@@ -69,57 +69,3 @@ jobs:
           uvx --from go-task-bin task test-coverage
         env:
           UV_CACHE_DIR: /.uv_cache
-  test-infra:
-    name: "Test Infra"
-    runs-on: "ubuntu-latest"
-    container:
-      image: ghcr.io/astral-sh/uv:python3.11-bookworm
-    steps:
-      - name: Checkout
-        uses: "actions/checkout@v4"
-      - name: Setup caching
-        uses: ./.github/actions/setup-caching
-        id: setup-cache
-        with:
-          python-version: python3.11
-          cache-key-suffix: infra
-      - name: Install pulumi
-        run: |
-          curl -fsSL https://get.pulumi.com | sh
-          echo "/github/home/.pulumi/bin" >> $GITHUB_PATH
-      - name: Render copier instance
-        if: steps.setup-cache.outputs.cache-hit != 'true'
-        uses: ./.github/actions/render-copier-instance
-        with:
-          copier-args: '--defaults'
-      - name: Setup infra files and install dependencies
-        shell: sh
-        working-directory: ./rendered
-        run: |
-          uvx --from go-task-bin task infra:install
-          cd ./infra
-          uv sync --extra dev
-        env:
-          UV_CACHE_DIR: /.uv_cache
-      - name: Run linter
-        shell: sh
-        working-directory: ./rendered
-        run: |
-          uvx --from go-task-bin task infra:lint-check
-        env:
-          UV_CACHE_DIR: /.uv_cache
-      - name: Create pulumi stack
-        working-directory: ./rendered/infra
-        run: |
-          pulumi login --local
-          pulumi stack init -s organization/unittest/unittest
-        env:
-          PULUMI_CONFIG_PASSPHRASE: "123"
-      - name: Run unit tests
-        shell: sh
-        working-directory: ./rendered
-        run: |
-          uvx --from go-task-bin task infra:test-coverage
-        env:
-          UV_CACHE_DIR: /.uv_cache
-          PULUMI_CONFIG_PASSPHRASE: "123"

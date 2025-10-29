@@ -1,5 +1,5 @@
 ---
-name: Test af-component-agent CLI
+name: af-component-agent CLI
 on:
   push:
     branches: ["main"]
@@ -22,7 +22,7 @@ jobs:
         id: setup-cache
         with:
           python-version: python3.11
-          cache-key-suffix: infra
+          cache-key-suffix: cli
       - name: Render copier instance
         if: steps.setup-cache.outputs.cache-hit != 'true'
         uses: ./.github/actions/render-copier-instance

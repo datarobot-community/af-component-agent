@@ -1,5 +1,5 @@
 ---
-name: Test af-component-agent Docker
+name: af-component-agent Docker
 on:
   push:
     branches: ["main"]
