@@ -1,3 +1,31 @@
+<p align="center">
+  <a href="https://github.com/datarobot-community/datarobot-agent-templates">
+    <img src="docs/img/datarobot_logo.avif" width="600px" alt="DataRobot Logo"/>
+  </a>
+</p>
+<p align="center">
+    <span style="font-size: 1.5em; font-weight: bold; display: block;">DataRobot Agentic Workflow Templates</span>
+</p>
+
+<p align="center">
+  <a href="https://datarobot.com">Homepage</a>
+  ·
+  <a href="https://docs.datarobot.com/en/docs/gen-ai/genai-agents/index.html">Agentic Workflows</a>
+  ·
+  <a href="/docs/getting-started.md">Getting Started</a>
+  ·
+  <a href="https://docs.datarobot.com/en/docs/get-started/troubleshooting/general-help.html">Support</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/datarobot-community/datarobot-agent-templates/tags">
+    <img src="https://img.shields.io/github/v/tag/datarobot-community/datarobot-agent-templates?label=version" alt="Latest Release">
+  </a>
+  <a href="/LICENSE">
+    <img src="https://img.shields.io/github/license/datarobot-community/datarobot-agent-templates" alt="License">
+  </a>
+</p>
+
 # af-component-agent
 
 The agent template provides a set of utilities for constructing a single or multi-agent flow using platforms such
@@ -5,9 +33,6 @@ as CrewAI, LangGraph, LlamaIndex, and others. The template is designed to be fle
 to create a wide range of agent-based applications.
 
 The Agent Framework is component from [App Framework Studio](https://github.com/datarobot/app-framework-studio)
-
-
-* Part of https://datarobot.atlassian.net/wiki/spaces/BOPS/pages/6542032899/App+Framework+-+Studio
 
 
 ## Getting Started
@@ -42,34 +67,13 @@ uvx copier update -a .datarobot/answers/agent-{{ agent_app }}.yml -A
 
 
 ## Developer Guide
+Please see the (Development Documentation)[/docs/development.md]
 
-### af-component-agent
 
-To run tests and linters locally on all agent frameworks you can run `task test`. To test an individual
-framework you can run `task test-<agent_framework>`. To test the CLI on the base agent you can run `task test-cli`
-and `task test-cli-json`. These are equivalent to the tests when you open a PR against your branch.
-Tests will be run through github actions, and you can see the results in the PR. If you are making large changes 
-that may have significant impacts to the template installation
-and usage, you should additionally open a branch in [recipe-datarobot-agent-templates](https://github.com/datarobot/recipe-datarobot-agent-templates).
+# Get help
 
-> After committing a PR you should create a new release in this repository to bump the version of the component.
-> This is required to properly work with the `uvx copier` command and to ensure that the changes are reflected in the
-> downstream repositories.
+If you encounter issues or have questions, try the following:
 
-### recipe-datarobot-agent-templates
-This repository is used to generate the customer facing recipe repository and provides an alternative way to test the
-templates. This can also be used to verify that changes to the template do not produce unexpected results in the
-generated code.
-
-To co-develop a PR in the `recipe` and the `template` use the following development flow:
-1. Create a new branch in the `af-component-agent` repository.
-2. Make your changes to the template files.
-3. Open a PR against the `af-component-agent` repository and ensure tests are green.
-4. Once all tests are green, merge the PR in the `af-component-agent` repository.
-5. Create a new release in the `af-component-agent` repository to bump the version of the component.
-6. Start a new PR to `recipe-datarobot-agent-templates`.
-7. Run `task development:update-all` to update the templates in the `recipe-datarobot-agent-templates` repository with the latest version of `af-component-agent`.
-8. Once everything is green and reviewed, merge the PR in the `recipe-datarobot-agent-templates` repository.
-
-> You can also run `task` in the `recipe-datarobot-agent-templates` repository to see additional developer commands and their descriptions.
-> These provide alternative ways to develop and test the templates inside the recipe repository.
+- Check [the documentation](#available-templates) for your chosen framework.
+- [Contact DataRobot](https://docs.datarobot.com/en/docs/get-started/troubleshooting/general-help.html) for support.
+- Open an issue on the [GitHub repository](https://github.com/datarobot-community/datarobot-agent-templates).
