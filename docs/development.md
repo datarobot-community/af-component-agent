@@ -1,6 +1,4 @@
-# af-component-agent
-
-## Developer Guide
+# Developer Guide
 
 ### af-component-agent
 
