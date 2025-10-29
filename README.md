@@ -3,8 +3,8 @@
     <img src="docs/img/datarobot_logo.avif" width="600px" alt="DataRobot Logo"/>
   </a>
 </p>
+
 <h2 align="center">DataRobot Application Framework</h2>
-<h1 align="center">af-component-agent</h1>
 
 <p align="center">
   <a href="https://datarobot.com">Homepage</a>
@@ -22,6 +22,8 @@
     <img src="https://img.shields.io/github/license/datarobot-community/af-component-agent" alt="License">
   </a>
 </p>
+
+<h1 align="center">af-component-agent</h1>
 
 The agent template provides a set of utilities for constructing a single or multi-agent workflow using frameworks such
 as Nvidia NAT, CrewAI, LangGraph, LlamaIndex, and others. The template is designed to be flexible and extensible, allowing you
