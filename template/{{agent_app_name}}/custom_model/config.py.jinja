@@ -37,11 +37,11 @@ class Config(DataRobotAppFrameworkBaseSettings):
     mcp_deployment_id: str | None = None
     external_mcp_url: str | None = None
 
-    agent_endpoint: str = Field(default_value="http://localhost:8842", alias="{{agent_app_name|upper}}_ENDPOINT")
+    agent_endpoint: str = Field(default="http://localhost:8842", validation_alias="{{agent_app_name|upper}}_ENDPOINT")
 
     @property
     def local_dev_port(self) -> int:
-        endpoint = self.endpoint
+        endpoint = self.agent_endpoint
         port = int(endpoint.split(":")[-1])
         return port
 

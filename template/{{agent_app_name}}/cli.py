@@ -225,24 +225,24 @@ pass_environment = click.make_pass_decorator(Environment)
 
 def display_response(response: ChatCompletion, show_output: bool) -> None:
     """Display the response in a formatted way."""
-    response_json = response.model_dump_json()
+    response_dict = response.model_dump()
     if not show_output:
         with open("execute_output.json", "w") as f:
-            json.dump(f, response_json)
+            json.dump(response_dict, f, indent=2)
 
-    if "pipeline_interactions" in response_json:
-        response_json["pipeline_interactions"] = "[Truncated for display]"
+    if "pipeline_interactions" in response_dict:
+        response_dict["pipeline_interactions"] = "[Truncated for display]"
 
     if show_output:
         click.echo("\nExecution result:")
-        click.echo(json.dumps(response_json, indent=2))
+        click.echo(json.dumps(response_dict, indent=2))
     else:
-        if "choices" in response_json:
-            response_json["choices"] = "[Truncated for display]"
+        if "choices" in response_dict:
+            response_dict["choices"] = "[Truncated for display]"
 
         # Show only first 200 characters of response
         click.echo("\nExecution result preview:")
-        click.echo(json.dumps(response_json, indent=2))
+        click.echo(json.dumps(response_dict, indent=2))
         click.echo("")
         click.echo("IMPORTANT")
         click.echo(
@@ -259,10 +259,10 @@ def display_response(response: ChatCompletion, show_output: bool) -> None:
 def display_response_streaming(response: Stream[ChatCompletionChunk]) -> None:
     click.echo("\nStreaming response:")
     for chunk in response:
-        chunk_json = chunk.model_dump_json()
-        if "pipeline_interactions" in chunk_json:
-            chunk_json["pipeline_interactions"] = "[Truncated for display]"
-        click.echo(json.dumps(chunk_json, indent=2))
+        chunk_dict = chunk.model_dump()
+        if "pipeline_interactions" in chunk_dict:
+            chunk_dict["pipeline_interactions"] = "[Truncated for display]"
+        click.echo(json.dumps(chunk_dict, indent=2))
 
 
 @click.group()
