@@ -3,8 +3,14 @@ name: af-component-agent Docker
 on:
   push:
     branches: ["main"]
+    paths:
+      - "**/*pyproject*"
+      - ".github/workflows/afcomponentagent-docker-test.yaml"
   pull_request:
     branches: ["main"]
+    paths:
+      - "**/*pyproject*"
+      - ".github/workflows/afcomponentagent-docker-test.yaml"
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
