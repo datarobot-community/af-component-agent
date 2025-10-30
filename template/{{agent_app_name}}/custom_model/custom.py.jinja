@@ -20,6 +20,8 @@ import logging
 # Suppress the "Attempting to instrument while already instrumented" warning
 logging.getLogger("opentelemetry.instrumentation.instrumentor").setLevel(logging.ERROR)
 
+import asyncio
+
 from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from opentelemetry.instrumentation.openai import OpenAIInstrumentor
@@ -47,15 +49,14 @@ instrument_llamaindex = LlamaIndexInstrumentor().instrument()  # type: ignore[no
 import os
 
 # Some libraries collect telemetry data by default. Let's disable that.
-{%- if agent_template_framework == "crewai" %}os.environ["CREWAI_TESTING"] = "true"{% endif -%}
+{%- if agent_template_framework == "crewai" %}os.environ["CREWAI_TESTING"] = "true"{% endif %}
 os.environ["RAGAS_DO_NOT_TRACK"] = "true"
 os.environ["DEEPEVAL_TELEMETRY_OPT_OUT"] = "YES"
 # isort: on
 # ------------------------------------------------------------------------------
 
 
-from collections.abc import Generator
-from typing import Iterator, Union
+from typing import AsyncGenerator, Iterator, Union, cast
 
 # ruff: noqa: E402
 from agent import MyAgent
@@ -65,8 +66,8 @@ from datarobot_genai.chat import (
     CustomModelStreamingResponse,
     initialize_authorization_context,
     to_custom_model_chat_response,
-    to_custom_model_streaming_response,
 )
+from helpers import to_custom_model_streaming_response
 from openai.types.chat import CompletionCreateParams
 from openai.types.chat.completion_create_params import (
     CompletionCreateParamsNonStreaming,
@@ -144,15 +145,20 @@ def chat(
     # Instantiate the agent, all fields from the completion_create_params are passed to the agent
     # allowing environment variables to be passed during execution
     agent = MyAgent(**completion_create_params)
-
+    event_loop = asyncio.get_event_loop()
     # Invoke the agent and check if it returns a generator or a tuple
-    result = agent.invoke(completion_create_params=completion_create_params)
+    result = event_loop.run_until_complete(
+        agent.invoke(completion_create_params=completion_create_params)
+    )
 
     # Check if the result is a generator (streaming response)
-    if isinstance(result, Generator):
+    if isinstance(result, AsyncGenerator):
         # Streaming response
-        return to_custom_model_streaming_response(
-            result, model=completion_create_params.get("model")
+        return cast(
+            Iterator[CustomModelStreamingResponse],
+            to_custom_model_streaming_response(
+                event_loop, result, model=completion_create_params.get("model")
+            ),
         )
     else:
         # Non-streaming response

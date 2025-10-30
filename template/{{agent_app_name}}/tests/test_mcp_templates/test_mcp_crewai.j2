@@ -22,7 +22,7 @@ class TestMCPConfig:
     def test_mcp_config_with_external_url(self):
         """Test MCP config with external URL."""
         test_url = "https://mcp-server.example.com/mcp"
-        with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}):
+        with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}, clear=True):
             config = MCPConfig()
             assert config.external_mcp_url == test_url
             assert config.server_config is not None
@@ -43,6 +43,7 @@ class TestMCPConfig:
                 "DATAROBOT_ENDPOINT": api_base,
                 "DATAROBOT_API_TOKEN": api_key,
             },
+            clear=True,
         ):
             config = MCPConfig()
             assert config.mcp_deployment_id == deployment_id
@@ -69,6 +70,7 @@ class TestMCPConfig:
                 "DATAROBOT_ENDPOINT": api_base,
                 "DATAROBOT_API_TOKEN": api_key,
             },
+            clear=True,
         ):
             config = MCPConfig()
             assert config.server_config["headers"]["Authorization"] == api_key
@@ -102,6 +104,7 @@ class TestMCPConfig:
                 "DATAROBOT_ENDPOINT": api_base,
                 "DATAROBOT_API_TOKEN": api_key,
             },
+            clear=True,
         ):
             config = MCPConfig()
             expected_url = "https://app.datarobot.com/api/v2/deployments/abc123def456789012345678/directAccess/mcp"
@@ -120,6 +123,7 @@ class TestMCPConfig:
                 "MCP_DEPLOYMENT_ID": deployment_id,
                 "DATAROBOT_API_TOKEN": api_key,
             },
+            clear=True,
         ):
             config = MCPConfig()
             assert config.server_config["url"] == external_url
@@ -145,7 +149,7 @@ class TestMCPToolsContext:
         mock_adapter.return_value = mock_adapter_instance
 
         test_url = "https://mcp-server.example.com/mcp"
-        with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}):
+        with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}, clear=True):
             with mcp_tools_context() as tools:
                 assert tools == mock_tools
                 mock_adapter.assert_called_once()
@@ -174,6 +178,7 @@ class TestMCPToolsContext:
                 "DATAROBOT_ENDPOINT": api_base,
                 "DATAROBOT_API_TOKEN": api_key,
             },
+            clear=True,
         ):
             with mcp_tools_context() as tools:
                 assert tools == mock_tools
@@ -193,7 +198,7 @@ class TestMCPToolsContext:
         mock_adapter.side_effect = Exception("Connection failed")
 
         test_url = "https://mcp-server.example.com/mcp"
-        with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}):
+        with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}, clear=True):
             with mcp_tools_context() as tools:
                 assert tools == []
 

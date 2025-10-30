@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import asyncio
 import os
 from typing import Any
 from unittest.mock import MagicMock, Mock, patch
@@ -21,8 +22,8 @@ from datarobot_genai.chat import (
     CustomModelChatResponse,
     CustomModelStreamingResponse,
     to_custom_model_chat_response,
-    to_custom_model_streaming_response,
 )
+from helpers import to_custom_model_streaming_response
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from ragas import MultiTurnSample
 
@@ -256,8 +257,8 @@ class TestMyAgentLanggraph:
             )
 
     @patch("agent.StateGraph")
-    def test_langgraph_non_streaming(self, mock_state_graph, agent):
-        def mock_stream_generator():
+    async def test_langgraph_non_streaming(self, mock_state_graph, agent):
+        async def mock_stream_generator():
             yield {
                 "final_agent": {
                     "messages": [
@@ -270,7 +271,7 @@ class TestMyAgentLanggraph:
             }
 
         mock_graph_stream = Mock()
-        mock_graph_stream.stream.return_value = mock_stream_generator()
+        mock_graph_stream.astream.return_value = mock_stream_generator()
         mock_state_graph.return_value = Mock(
             compile=MagicMock(return_value=mock_graph_stream)
         )
@@ -283,7 +284,7 @@ class TestMyAgentLanggraph:
             "environment_var": True,
         }
 
-        response_text, pipeline_interactions, usage_metrics = agent.invoke(
+        response_text, pipeline_interactions, usage_metrics = await agent.invoke(
             completion_create_params
         )
         response = to_custom_model_chat_response(
@@ -300,8 +301,8 @@ class TestMyAgentLanggraph:
         assert response.usage.total_tokens == 0
 
     @patch("agent.StateGraph")
-    def test_langgraph_streaming(self, mock_state_graph, agent):
-        def mock_stream_generator():
+    async def test_langgraph_streaming(self, mock_state_graph, agent):
+        async def mock_stream_generator():
             yield {
                 "first_agent": {
                     "messages": [
@@ -322,7 +323,7 @@ class TestMyAgentLanggraph:
             }
 
         mock_graph_stream = Mock()
-        mock_graph_stream.stream.return_value = mock_stream_generator()
+        mock_graph_stream.astream.return_value = mock_stream_generator()
         mock_state_graph.return_value = Mock(
             compile=MagicMock(return_value=mock_graph_stream)
         )
@@ -335,9 +336,10 @@ class TestMyAgentLanggraph:
             "environment_var": True,
             "stream": True,
         }
-        streaming_response_iterator = agent.invoke(completion_create_params)
+        streaming_response_iterator = await agent.invoke(completion_create_params)
+        event_loop = asyncio.get_event_loop()
         streaming_response = to_custom_model_streaming_response(
-            streaming_response_iterator, model="test-model"
+            event_loop, streaming_response_iterator, model="test-model"
         )
         for idx, response in enumerate(streaming_response):
             assert isinstance(response, CustomModelStreamingResponse)

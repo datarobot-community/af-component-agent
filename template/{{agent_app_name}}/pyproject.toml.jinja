@@ -92,6 +92,7 @@ dev = [
     "pydantic>=2.6.1",
     "pytest-cov>=6.1.1",
     "pytest>=7.4.0",
+    "pytest-asyncio>=1.2.0",
     "requests-mock>=1.12.1",
     "ruff>=0.12.0",
     "types-requests>=2.32.4.20250913",
@@ -106,6 +107,7 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 pythonpath = ["custom_model"]
+asyncio_mode = "auto"
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
