@@ -15,7 +15,7 @@
 import time
 import uuid
 from asyncio import AbstractEventLoop
-from typing import Any, AsyncGenerator, Iterator, Optional
+from typing import Any, AsyncGenerator, Iterator
 
 from datarobot_genai.chat import CustomModelStreamingResponse
 from openai.types import CompletionUsage
@@ -26,7 +26,7 @@ def to_custom_model_streaming_response(
     streaming_response_generator: AsyncGenerator[
         tuple[str, Any | None, dict[str, int]], None
     ],
-    model: Optional[str] = None,
+    model: str | object | None,
 ) -> Iterator[CustomModelStreamingResponse]:
     """Convert the OpenAI ChatCompletionChunk response to CustomModelStreamingResponse."""
     from openai.types.chat.chat_completion_chunk import Choice, ChoiceDelta
