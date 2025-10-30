@@ -35,13 +35,6 @@ jobs:
           uvx --from go-task-bin task install
         env:
           UV_CACHE_DIR: /.uv_cache
-
-      - name: Start agent in background
-        working-directory: ./rendered
-        run: |
-          uvx --from go-task-bin task agent:dev &
-          sleep 10
-
       - name: Run CLI Tests
         shell: sh
         working-directory:

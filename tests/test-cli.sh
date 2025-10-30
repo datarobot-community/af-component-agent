@@ -5,6 +5,10 @@ cd $1
 echo "DATAROBOT_API_TOKEN = secret" >> .env
 echo "DATAROBOT_ENDPOINT = https://test.com/api/v2" >> .env
 
+# Start the server, colorize output. Wait for it to start
+stdbuf -oL uvx --from go-task-bin task agent:dev | awk '{print "\033[34m" $0 "\033[0m"}' &
+sleep 10
+
 # Run the CLI command with a sample user prompt
 echo "Initial execution"
 uvx --from go-task-bin task agent:cli -- \
