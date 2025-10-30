@@ -15,8 +15,12 @@
 import chainlit as cl
 from openai import AsyncOpenAI
 
-agent_endpoint = "http://localhost:8842"
-client = AsyncOpenAI(base_url=agent_endpoint, api_key="empty")
+from custom_model.config import Config
+
+
+config = Config()
+
+client = AsyncOpenAI(base_url=config.agent_endpoint, api_key="empty")
 
 
 @cl.on_chat_start  # type: ignore[misc]

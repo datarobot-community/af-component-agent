@@ -14,7 +14,7 @@
 import json
 import os
 import time
-from typing import Any, Optional, Union
+from typing import Any, Optional, Union, cast
 
 import click
 import requests
@@ -47,6 +47,23 @@ class Kernel:
         return {
             "Authorization": f"Token {self.api_token}",
         }
+
+    def load_completion_json(
+        self, completion_json: str
+    ) -> CompletionCreateParamsNonStreaming:
+        """Load the completion JSON from a file or return an empty prompt."""
+        if not os.path.exists(completion_json):
+            raise FileNotFoundError(
+                f"Completion JSON file not found: {completion_json}"
+            )
+
+        with open(completion_json, "r") as f:
+            completion_data = json.load(f)
+
+        completion_create_params = CompletionCreateParamsNonStreaming(
+            **completion_data,  # type: ignore[typeddict-item]
+        )
+        return cast(CompletionCreateParamsNonStreaming, completion_create_params)
 
     def construct_prompt(
         self, user_prompt: str, verbose: bool, stream: bool = False
