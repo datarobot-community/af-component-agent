@@ -35,6 +35,10 @@ jobs:
           uvx --from go-task-bin task install
         env:
           UV_CACHE_DIR: /.uv_cache
+
+      - name: Start agent locally
+        run: uvx --from go-task-bin task dev
+
       - name: Run CLI Tests with DRUM using serverless mode
         shell: sh
         working-directory: ./rendered
