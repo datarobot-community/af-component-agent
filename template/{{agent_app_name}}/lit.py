@@ -17,7 +17,6 @@ from openai import AsyncOpenAI
 
 from custom_model.config import Config
 
-
 config = Config()
 
 client = AsyncOpenAI(base_url=config.agent_endpoint, api_key="empty")
