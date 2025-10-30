@@ -36,11 +36,11 @@ jobs:
         env:
           UV_CACHE_DIR: /.uv_cache
 
-      - name: Start agent locally
+      - name: Start agent in background
         working-directory: ./rendered
         run: |
           uvx --from go-task-bin task agent:dev &
-          sleep 5
+          sleep 10
 
       - name: Run CLI Tests with DRUM using serverless mode
         shell: sh
