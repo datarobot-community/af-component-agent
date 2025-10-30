@@ -1,0 +1,76 @@
+# Copyright 2025 DataRobot, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import os
+from typing import Any, List
+
+from llama_index.tools.mcp import aget_tools_from_mcp_url
+
+
+class MCPConfig:
+    def __init__(self, api_base: str | None = None, api_key: str | None = None) -> None:
+        self.api_base = api_base or os.environ.get("DATAROBOT_ENDPOINT") or ""
+        self.api_key = api_key or os.environ.get("DATAROBOT_API_TOKEN")
+        self.external_mcp_url = os.environ.get("EXTERNAL_MCP_URL")
+        self.mcp_deployment_id = os.environ.get("MCP_DEPLOYMENT_ID")
+
+    def _get_server_config(self) -> dict[str, Any] | None:
+        if self.external_mcp_url:
+            return {
+                "url": self.external_mcp_url.rstrip("/"),
+                "transport": "streamable-http",
+            }
+
+        if self.mcp_deployment_id and self.api_key:
+            base_url = self.api_base.rstrip("/")
+            if base_url.endswith("/api/v2"):
+                base_url = base_url[: -len("/api/v2")]
+            url = f"{base_url}/api/v2/deployments/{self.mcp_deployment_id}/directAccess/mcp"
+            auth_header_value = (
+                self.api_key
+                if str(self.api_key).startswith("Bearer ")
+                else f"Bearer {self.api_key}"
+            )
+            return {
+                "url": url,
+                "transport": "streamable-http",
+                "headers": {"Authorization": auth_header_value},
+            }
+        return None
+
+
+async def load_mcp_tools(
+    api_base: str | None = None,
+    api_key: str | None = None,
+) -> List[Any]:
+    """Asynchronously load MCP tools for LlamaIndex.
+
+    Returns an empty list if no MCP configuration is present.
+    """
+    config = MCPConfig(api_base=api_base, api_key=api_key)
+    server_params = config._get_server_config()
+    if not server_params:
+        return []
+
+    url = server_params["url"]
+    transport = server_params.get("transport", "streamable-http")
+    headers = server_params.get("headers")
+
+    tools = await aget_tools_from_mcp_url(
+        url=url,
+        transport=transport,
+        headers=headers,
+    )
+    # Ensure list
+    return list(tools) if tools is not None else []
