@@ -123,7 +123,7 @@ class TestKernel:
         assert result == mock_completion_obj
 
     @patch("cli.OpenAI")
-    def test_local_streaming(self, mock_openai):
+    def test_deployment_streaming(self, mock_openai):
         """Test deployment method creates OpenAI client and calls chat.completions.create correctly with streming."""
         # Setup
         kernel = Kernel(
@@ -166,7 +166,7 @@ class TestKernel:
                 "api_base": "https://test.example.com",
                 "verbose": True,
             },
-            stream=True
+            stream=True,
         )
 
         # Verify the result is the completion object
@@ -313,7 +313,7 @@ class TestKernel:
                 "api_base": "https://test.example.com",
                 "verbose": True,
             },
-            stream=True
+            stream=True,
         )
 
         # Verify the result is the completion object
@@ -341,9 +341,7 @@ class TestKernel:
         kernel.local(user_prompt)
 
         # Assert print statements were called with expected arguments
-        expected_api_url = (
-            "http://localhost:8842"
-        )
+        expected_api_url = "http://localhost:8842"
         mock_print.assert_any_call(expected_api_url)
 
     @patch("cli.OpenAI")
@@ -366,7 +364,6 @@ class TestKernel:
         # Execute and Assert
         with pytest.raises(ValueError, match="Test error"):
             kernel.local(user_prompt)
-
 
     @patch("cli.requests.post")
     @patch("cli.requests.get")

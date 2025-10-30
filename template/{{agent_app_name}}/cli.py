@@ -14,7 +14,7 @@
 import json
 import os
 import time
-from typing import Any, Optional, Union, cast
+from typing import Any, Optional, cast
 
 import click
 import requests
@@ -119,7 +119,9 @@ class Kernel:
         chat_api_url = config.agent_endpoint
         print(chat_api_url)
 
-        return self._do_chat_completion(chat_api_url, user_prompt, completion_json, stream=stream)
+        return self._do_chat_completion(
+            chat_api_url, user_prompt, completion_json, stream=stream
+        )
 
     def custom_model(self, custom_model_id: str, user_prompt: str) -> str:
         chat_api_url = f"{self.base_url}/api/v2/genai/agents/fromCustomModel/{custom_model_id}/chat/"
@@ -177,16 +179,30 @@ class Kernel:
             return str(agent_response)
 
     def deployment(
-        self, deployment_id: str, user_prompt: str, completion_json: str = "", stream: bool = False,
+        self,
+        deployment_id: str,
+        user_prompt: str,
+        completion_json: str = "",
+        stream: bool = False,
     ) -> ChatCompletion | Stream[ChatCompletionChunk]:
         chat_api_url = f"{self.base_url}/api/v2/deployments/{deployment_id}/"
         print(chat_api_url)
 
-        return self._do_chat_completion(chat_api_url, user_prompt, completion_json, stream=stream)
+        return self._do_chat_completion(
+            chat_api_url, user_prompt, completion_json, stream=stream
+        )
 
-    def _do_chat_completion(self, url: str, user_prompt: str, completion_json: str = "", stream: bool = False) -> ChatCompletion | Stream[ChatCompletionChunk]:
+    def _do_chat_completion(
+        self,
+        url: str,
+        user_prompt: str,
+        completion_json: str = "",
+        stream: bool = False,
+    ) -> ChatCompletion | Stream[ChatCompletionChunk]:
         if len(user_prompt) > 0:
-            completion_create_params = self.construct_prompt(user_prompt, stream=stream, verbose=True)
+            completion_create_params = self.construct_prompt(
+                user_prompt, stream=stream, verbose=True
+            )
         else:
             completion_create_params = self.load_completion_json(completion_json)
 
@@ -204,6 +220,7 @@ class Kernel:
 
         completion = openai_client.chat.completions.create(**completion_create_params)
         return completion
+
 
 class Environment:
     def __init__(
@@ -272,6 +289,7 @@ def display_response(response: ChatCompletion, show_output: bool) -> None:
         click.echo(
             "To display the full result inline, rerun with the `--show_output` flag."
         )
+
 
 def display_response_streaming(response: Stream[ChatCompletionChunk]) -> None:
     click.echo("\nStreaming response:")
