@@ -15,6 +15,11 @@
 # THIS SECTION OF CODE IS REQUIRED TO SETUP TRACING AND TELEMETRY FOR THE AGENTS.
 # REMOVING THIS CODE WILL DISABLE ALL MONITORING, TRACING AND TELEMETRY.
 # isort: off
+import logging
+
+# Suppress the "Attempting to instrument while already instrumented" warning
+logging.getLogger("opentelemetry.instrumentation.instrumentor").setLevel(logging.ERROR)
+
 from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from opentelemetry.instrumentation.openai import OpenAIInstrumentor

@@ -70,7 +70,8 @@ dependencies = [
     "pylance<=0.38.1",{% endif -%}
     {%- if agent_template_framework == "docker" or agent_template_framework == "langgraph" %}
     "langgraph>=0.4.10",
-    "langgraph-prebuilt>=0.2.3",{% endif -%}
+    "langgraph-prebuilt>=0.2.3",
+    "langchain-litellm>=0.2.3",{% endif -%}
     {%- if agent_template_framework == "docker" or agent_template_framework == "llamaindex" %}
     "llama-index<0.14.0",
     "llama-index-core<0.14.0",
@@ -95,6 +96,9 @@ dev = [
     "ruff>=0.12.0",
     "types-requests>=2.32.4.20250913",
     "yamlfix>=1.17.0",
+]
+chainlit = [
+    "chainlit>=2.8.3",
 ]
 
 [tool.pytest.ini_options]

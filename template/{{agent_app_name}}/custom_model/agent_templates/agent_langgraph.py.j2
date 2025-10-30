@@ -17,8 +17,8 @@ from typing import Any, Generator, Optional, Union
 
 from config import Config
 from datarobot_genai.utils import get_api_base
-from langchain_community.chat_models import ChatLiteLLM
 from langchain_core.messages import HumanMessage, ToolMessage
+from langchain_litellm.chat_models import ChatLiteLLM
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import create_react_agent
 from langgraph.types import Command
