@@ -19,7 +19,6 @@ jobs:
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-      
       - name: Get latest tag
         id: get-latest-tag
         run: |
@@ -27,7 +26,6 @@ jobs:
           LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
           echo "latest-tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "Latest tag: $LATEST_TAG"
-      
       - name: Generate next version
         id: next-version
         run: |
@@ -47,7 +45,6 @@ jobs:
           NEW_VERSION="$MAJOR.$MINOR.$PATCH"
           echo "new-version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "Next version: $NEW_VERSION"
-      
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
