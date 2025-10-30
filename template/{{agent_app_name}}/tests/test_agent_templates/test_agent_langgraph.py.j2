@@ -18,6 +18,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from agent import MyAgent
+from datarobot_genai.agents.langgraph import create_pipeline_interactions_from_events
 from datarobot_genai.chat import (
     CustomModelChatResponse,
     CustomModelStreamingResponse,
@@ -26,7 +27,6 @@ from datarobot_genai.chat import (
 from helpers import to_custom_model_streaming_response
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from ragas import MultiTurnSample
-from datarobot_genai.agents.langgraph import create_pipeline_interactions_from_events
 
 
 class TestMyAgentLanggraph:
