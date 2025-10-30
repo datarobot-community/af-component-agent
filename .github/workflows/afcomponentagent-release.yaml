@@ -1,0 +1,55 @@
+---
+name: af-component-agent Release
+on:
+  push:
+    branches: ["main"]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  release:
+    name: "Create Release"
+    runs-on: "ubuntu-latest"
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Checkout
+        uses: "actions/checkout@v5"
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get latest tag
+        id: get-latest-tag
+        run: |
+          # Get the latest tag, or use v0.0.0 if no tags exist
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "latest-tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "Latest tag: $LATEST_TAG"
+      - name: Generate next version
+        id: next-version
+        run: |
+          LATEST_TAG="${{ steps.get-latest-tag.outputs.latest-tag }}"
+          # Remove v prefix if present for version calculation
+          VERSION="${LATEST_TAG#v}"
+          
+          # Split version into parts
+          IFS='.' read -r -a VERSION_PARTS <<< "$VERSION"
+          MAJOR=${VERSION_PARTS[0]:-0}
+          MINOR=${VERSION_PARTS[1]:-0}
+          PATCH=${VERSION_PARTS[2]:-0}
+          
+          # Increment patch version
+          PATCH=$((PATCH + 1))
+          
+          NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
+          echo "new-version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "Next version: $NEW_VERSION"
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.next-version.outputs.new-version }}
+          name: "${{ steps.next-version.outputs.new-version }}"
+          generate_release_notes: true
+          draft: false
+          prerelease: false
