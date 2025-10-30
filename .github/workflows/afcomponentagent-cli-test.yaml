@@ -37,7 +37,8 @@ jobs:
           UV_CACHE_DIR: /.uv_cache
 
       - name: Start agent locally
-        run: uvx --from go-task-bin task dev &
+        working-directory: ./rendered
+        run: uvx --from go-task-bin task agent:dev &
 
       - name: Run CLI Tests with DRUM using serverless mode
         shell: sh
