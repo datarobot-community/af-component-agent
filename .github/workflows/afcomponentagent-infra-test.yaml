@@ -3,8 +3,16 @@ name: af-component-agent Infra
 on:
   push:
     branches: ["main"]
+    paths:
+      - "fixtures/**"
+      - "template/infra/**"
+      - ".github/workflows/afcomponentagent-infra-test.yaml"
   pull_request:
     branches: ["main"]
+    paths:
+      - "fixtures/**"
+      - "template/infra/**"
+      - ".github/workflows/afcomponentagent-infra-test.yaml"
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
