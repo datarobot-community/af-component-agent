@@ -55,7 +55,14 @@ class MyAgent(BaseAgent):
         Returns:
             None
         """
-        super().__init__(api_key=api_key, api_base=api_base, model=model, verbose=verbose, timeout=timeout, **kwargs)
+        super().__init__(
+            api_key=api_key,
+            api_base=api_base,
+            model=model,
+            verbose=verbose,
+            timeout=timeout,
+            **kwargs,
+        )
         self.config = Config()
         self.model = model
         self.timeout = timeout
@@ -115,7 +122,9 @@ class MyAgent(BaseAgent):
                     Any
                 ] = []  # This should be populated with the agent's events/messages
 
-                pipeline_interactions = create_pipeline_interactions_from_events_simple(events)
+                pipeline_interactions = create_pipeline_interactions_from_events_simple(
+                    events
+                )
                 # Final response after streaming is complete
                 yield "", pipeline_interactions, usage_metrics
 
@@ -131,6 +140,8 @@ class MyAgent(BaseAgent):
                 Any
             ] = []  # This should be populated with the agent's events/messages
 
-            pipeline_interactions = create_pipeline_interactions_from_events_simple(events)
+            pipeline_interactions = create_pipeline_interactions_from_events_simple(
+                events
+            )
 
             return response_text, pipeline_interactions, usage_metrics
