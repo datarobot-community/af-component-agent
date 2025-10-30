@@ -11,14 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import asyncio
 from pathlib import Path
 from typing import Any, Generator, Union
 
+from datarobot_genai.agents.common import (
+    create_pipeline_interactions_from_events_simple,
+)
 from nat.runtime.loader import load_workflow
 from nat.utils.type_utils import StrPath
 from openai.types.chat import CompletionCreateParams
-from ragas import MultiTurnSample
 
 
 class MyAgent:
@@ -74,20 +75,12 @@ class MyAgent:
         config_file = Path(__file__).parent / "workflow.yaml"
 
         # Create and invoke the NAT (Nemo Agent Toolkit) Agentic Workflow with the inputs
-        try:
-            loop = asyncio.get_running_loop()
-            result = loop.run_until_complete(
-                self.run_nat_workflow(config_file, user_prompt_content)
-            )
-        except RuntimeError:
-            result = asyncio.run(
-                self.run_nat_workflow(config_file, user_prompt_content)
-            )
+        result = await self.run_nat_workflow(config_file, user_prompt_content)
 
         # Create a list of events from the event listener
         events: list[Any]
         events = []  # This should be populated with the agent's events/messages
-        pipeline_interactions = self.create_pipeline_interactions_from_events(events)
+        pipeline_interactions = create_pipeline_interactions_from_events_simple(events)
 
         usage_metrics = {
             "completion_tokens": 0,
@@ -117,16 +110,3 @@ class MyAgent:
         print(f"{prefix}{runner_outputs}{suffix}")
 
         return runner_outputs  # type: ignore[no-any-return]
-
-    @staticmethod
-    def create_pipeline_interactions_from_events(
-        events: list[Any],
-    ) -> MultiTurnSample | None:
-        """Convert a list of events into a MultiTurnSample.
-
-        Creates the pipeline interactions for moderations and evaluation
-        (e.g. Task Adherence, Agent Goal Accuracy, Tool Call Accuracy)
-        """
-        if not events:
-            return None
-        return MultiTurnSample(user_input=events)

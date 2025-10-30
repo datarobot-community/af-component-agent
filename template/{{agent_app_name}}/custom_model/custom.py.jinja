@@ -145,7 +145,15 @@ def chat(
     # Instantiate the agent, all fields from the completion_create_params are passed to the agent
     # allowing environment variables to be passed during execution
     agent = MyAgent(**completion_create_params)
-    event_loop = asyncio.get_event_loop()
+    # Ensure there is an event loop available; create one in non-main threads
+    try:
+        event_loop = asyncio.get_running_loop()
+    except RuntimeError:
+        try:
+            event_loop = asyncio.get_event_loop()
+        except RuntimeError:
+            event_loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(event_loop)
     # Invoke the agent and check if it returns a generator or a tuple
     result = event_loop.run_until_complete(
         agent.invoke(completion_create_params=completion_create_params)
