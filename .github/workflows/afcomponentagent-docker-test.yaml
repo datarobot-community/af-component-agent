@@ -24,7 +24,7 @@ jobs:
 #      image: ghcr.io/astral-sh/uv:python3.11-bookworm
 #    steps:
 #      - name: Checkout
-#        uses: "actions/checkout@v4"
+#        uses: "actions/checkout@v5"
 #      - name: Setup caching
 #        uses: ./.github/actions/setup-caching
 #        id: setup-cache
@@ -96,7 +96,7 @@ jobs:
         dockerfile: [Dockerfile]
     steps:
       - name: Checkout
-        uses: "actions/checkout@v4"
+        uses: "actions/checkout@v5"
       - name: Setup caching
         uses: ./.github/actions/setup-caching
         id: setup-cache
