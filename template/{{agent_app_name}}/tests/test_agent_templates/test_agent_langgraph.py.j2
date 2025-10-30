@@ -338,30 +338,66 @@ class TestMyAgentLanggraph:
             "stream": True,
         }
         streaming_response_iterator = await agent.invoke(completion_create_params)
-        event_loop = asyncio.get_event_loop()
-        streaming_response = to_custom_model_streaming_response(
-            event_loop, streaming_response_iterator, model="test-model"
-        )
-        for idx, response in enumerate(streaming_response):
-            assert isinstance(response, CustomModelStreamingResponse)
-            if idx == 0:
-                assert (
-                    response.choices[0].delta.content
-                    == "Here is the information you requested about Paris....."
+        # Use a fresh loop if we're already in a running loop (pytest-asyncio)
+        try:
+            _ = asyncio.get_running_loop()
+            use_new_loop = True
+        except RuntimeError:
+            use_new_loop = False
+
+        if use_new_loop:
+            event_loop = asyncio.new_event_loop()
+            try:
+                streaming_response = to_custom_model_streaming_response(
+                    event_loop, streaming_response_iterator, model="test-model"
                 )
-                assert response.choices[0].finish_reason is None
-                assert response.pipeline_interactions is None
-            elif idx == 1:
-                assert (
-                    response.choices[0].delta.content
-                    == "Paris is the capital city of France."
-                )
-                assert response.choices[0].finish_reason is None
-                assert response.pipeline_interactions is None
-            else:
-                assert response.choices[0].delta.content is None
-                assert response.choices[0].finish_reason == "stop"
-                assert response.pipeline_interactions is not None
+                for idx, response in enumerate(streaming_response):
+                    assert isinstance(response, CustomModelStreamingResponse)
+                    if idx == 0:
+                        assert (
+                            response.choices[0].delta.content
+                            == "Here is the information you requested about Paris....."
+                        )
+                        assert response.choices[0].finish_reason is None
+                        assert response.pipeline_interactions is None
+                    elif idx == 1:
+                        assert (
+                            response.choices[0].delta.content
+                            == "Paris is the capital city of France."
+                        )
+                        assert response.choices[0].finish_reason is None
+                        assert response.pipeline_interactions is None
+                    else:
+                        assert response.choices[0].delta.content is None
+                        assert response.choices[0].finish_reason == "stop"
+                        assert response.pipeline_interactions is not None
+            finally:
+                event_loop.close()
+        else:
+            event_loop = asyncio.get_event_loop()
+            streaming_response = to_custom_model_streaming_response(
+                event_loop, streaming_response_iterator, model="test-model"
+            )
+            for idx, response in enumerate(streaming_response):
+                assert isinstance(response, CustomModelStreamingResponse)
+                if idx == 0:
+                    assert (
+                        response.choices[0].delta.content
+                        == "Here is the information you requested about Paris....."
+                    )
+                    assert response.choices[0].finish_reason is None
+                    assert response.pipeline_interactions is None
+                elif idx == 1:
+                    assert (
+                        response.choices[0].delta.content
+                        == "Paris is the capital city of France."
+                    )
+                    assert response.choices[0].finish_reason is None
+                    assert response.pipeline_interactions is None
+                else:
+                    assert response.choices[0].delta.content is None
+                    assert response.choices[0].finish_reason == "stop"
+                    assert response.pipeline_interactions is not None
 
 
 @pytest.fixture

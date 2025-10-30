@@ -17,6 +17,7 @@ dependencies = [
     "opentelemetry-sdk>=1.33.0",
     {% if agent_template_framework == "langgraph" %}
     "opentelemetry-instrumentation-langchain>=0.40.5",
+    "langchain-litellm>=0.2.4",
     {% endif %}
 
     # Docker image requirements (only for docker templates)

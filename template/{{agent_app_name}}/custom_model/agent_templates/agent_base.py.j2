@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
 from typing import Any, AsyncGenerator, Optional, Union
 
 from config import Config
@@ -65,7 +64,6 @@ class MyAgent(BaseAgent):
         )
         self.config = Config()
         self.model = model
-        self.timeout = timeout
         if isinstance(verbose, str):
             self.verbose = verbose.lower() == "true"
         elif isinstance(verbose, bool):
