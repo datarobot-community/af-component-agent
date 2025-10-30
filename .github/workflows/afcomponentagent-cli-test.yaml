@@ -82,35 +82,19 @@ jobs:
             exit 1
           fi
 
-          # Check the logger showed the startup commands
-          if cat ./agent/output.log | grep -q 'INFO - Parsing args'; then
-            echo "Test passed: cli.py returned log for argparse"
+          # Check the execution result
+          if cat ./agent/output.log | grep -q 'Execution result:'; then
+            echo "Test passed: cli.py returned log containing execution result"
           else
-            echo "Test failed: cli.py did not return log for argparse"
+            echo "Test failed: cli.py did not return log containing execution result"
             exit 1
           fi
 
           # Check the chat completion returned
-          if cat ./agent/output.log | grep -q 'INFO - Starting DRUM runner'; then
-            echo "Test passed: cli.py returned log for starting DRUM runner"
+          if cat ./agent/output.log | grep -q '"model": "datarobot-deployed-llm"'; then
+            echo "Test passed: cli.py returned log containing chat completion"
           else
-            echo "Test failed: cli.py did not return log for starting DRUM runner"
-            exit 1
-          fi
-
-          # Check the chat completion returned
-          if cat ./agent/output.log | grep -q 'Running agent with user'; then
-            echo "Test passed: cli.py returned log containing in-agent messaging"
-          else
-            echo "Test failed: cli.py did not return log containing in-agent messaging"
-            exit 1
-          fi
-
-          # Check the chat completion returned
-          if cat ./agent/output.log | grep -q 'Stored execution result'; then
-            echo "Test passed: cli.py returned log containing stored execution result"
-          else
-            echo "Test failed: cli.py did not return log containing stored execution result"
+            echo "Test failed: cli.py did not return log containing chat completion"
             exit 1
           fi
 
