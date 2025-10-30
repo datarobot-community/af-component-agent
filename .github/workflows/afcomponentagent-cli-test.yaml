@@ -38,7 +38,7 @@ jobs:
 
       - name: Start agent locally
         working-directory: ./rendered
-        run: uvx --from go-task-bin task agent:dev &
+        run: uvx --from go-task-bin task agent:dev
 
       - name: Run CLI Tests with DRUM using serverless mode
         shell: sh
@@ -53,7 +53,7 @@ jobs:
             execute \
             --show_output \
             --user_prompt '{"topic": "Artificial Intelligence"}' \
-            > ./agent/output.log 2>&1 || echo "Failed to execute agent" && cat ./agent/output.log
+            > ./agent/output.log 2>&1 || echo "Failed to execute agent" && cat ./agent/output.log && exit 1
           cat ./agent/output.log
 
           # Check if the log file was created
