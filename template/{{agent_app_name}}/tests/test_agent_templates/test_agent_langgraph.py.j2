@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import asyncio
 import os
 from typing import Any
 from unittest.mock import MagicMock, Mock, patch
@@ -24,9 +23,8 @@ from datarobot_genai.chat import (
     CustomModelStreamingResponse,
     to_custom_model_chat_response,
 )
-from openai.types import CompletionUsage
-from helpers import to_custom_model_streaming_response
 from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from openai.types import CompletionUsage
 from ragas import MultiTurnSample
 
 
@@ -342,11 +340,16 @@ class TestMyAgentLanggraph:
 
         # Iterate directly over the async generator to avoid event loop conflicts
         idx = 0
-        async for response_text, pipeline_interactions, usage_metrics in streaming_response_iterator:
+        async for (
+            response_text,
+            pipeline_interactions,
+            usage_metrics,
+        ) in streaming_response_iterator:
             # Create the streaming response manually for testing
-            from openai.types.chat.chat_completion_chunk import Choice, ChoiceDelta
-            import uuid
             import time
+            import uuid
+
+            from openai.types.chat.chat_completion_chunk import Choice, ChoiceDelta
 
             completion_id = str(uuid.uuid4())
             created = int(time.time())
