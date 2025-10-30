@@ -38,7 +38,9 @@ jobs:
 
       - name: Start agent locally
         working-directory: ./rendered
-        run: uvx --from go-task-bin task agent:dev
+        run: |
+          uvx --from go-task-bin task agent:dev &
+          sleep 5
 
       - name: Run CLI Tests with DRUM using serverless mode
         shell: sh
