@@ -80,7 +80,7 @@ class MyAgent:
         """Set MCP tools for all agents."""
         self._mcp_tools = tools
 
-    def invoke(
+    async def invoke(
         self, completion_create_params: CompletionCreateParams
     ) -> Union[
         Generator[tuple[str, Any | None, dict[str, int]], None, None],

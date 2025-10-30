@@ -15,10 +15,9 @@ tasks:
     desc: 🛠️ [{{ agent_app_name }}] Install agent uv dependencies
     cmds:
       - echo "Updating local dependencies for {{ agent_app_name }}"
-      - uv sync --extra dev --quiet
+      - uv sync --extra dev
       - if [ -f pyproject.toml ] && [ -d docker_context ]; then cp pyproject.toml docker_context/pyproject.toml; fi
       - if [ -f uv.lock ] && [ -d docker_context ]; then cp uv.lock docker_context/uv.lock; fi
-    silent: true
     aliases:
       - req
   update:
@@ -77,15 +76,15 @@ tasks:
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} UV_PROJECT={% raw %}{{.TASKFILE_DIR}}{% endraw %} uv run cli.py {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   dev:
-    # Hidden to avoid showing in task list, run `task --list-all` to see it
-    # desc: 🔨 [{{ agent_app_name }}] Run the development server
-    env:
-      TARGET_NAME: response
-      FLASK_DEBUG: 1
+    desc: 🔨 [{{ agent_app_name }}] Run the development server
     cmds:
-      - echo "Running development server on http://localhost:8842"
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run drum server -cd custom_model --address localhost:8842 --target-type agenticworkflow"
-      - wait
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run python dev.py"
+  chainlit:
+    desc: "🛝 Run the ChainLit playground"
+    cmds:
+      - echo "🛝 Starting ChainLit playground"
+      - uv sync --all-extras
+      - uv run chainlit run --host 0.0.0.0 --port 8083 -w lit.py
   create-docker-context:
     desc: 🐳 [{{ agent_app_name }}] Create the template for a local docker_context image
     cmds:

@@ -37,7 +37,7 @@ class TestMyAgentBase:
         with pytest.raises(AttributeError):
             _ = agent.extra_param1
 
-    def test_run_method(self, agent):
+    async def test_run_method(self, agent):
         # Patch the run_nat_workflow method
         with patch.object(MyAgent, "run_nat_workflow", return_value="success"):
             # Call the run method with test inputs
@@ -46,7 +46,7 @@ class TestMyAgentBase:
                 "messages": [{"role": "user", "content": "Artificial Intelligence"}],
                 "environment_var": True,
             }
-            result, pipeline_interactions, usage = agent.invoke(
+            result, pipeline_interactions, usage = await agent.invoke(
                 completion_create_params
             )
 

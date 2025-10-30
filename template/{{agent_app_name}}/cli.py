@@ -14,13 +14,14 @@
 import json
 import os
 import time
-from typing import Any, Optional, Union, cast
+from typing import Any, Optional, cast
 
 import click
 import requests
-from openai import OpenAI
+from openai import OpenAI, Stream
 from openai.types.chat import (
     ChatCompletion,
+    ChatCompletionChunk,
     ChatCompletionSystemMessageParam,
     ChatCompletionUserMessageParam,
 )
@@ -28,6 +29,8 @@ from openai.types.chat.completion_create_params import (
     CompletionCreateParamsNonStreaming,
     CompletionCreateParamsStreaming,
 )
+
+from custom_model.config import Config
 
 
 class Kernel:
@@ -44,6 +47,23 @@ class Kernel:
         return {
             "Authorization": f"Token {self.api_token}",
         }
+
+    def load_completion_json(
+        self, completion_json: str
+    ) -> CompletionCreateParamsNonStreaming:
+        """Load the completion JSON from a file or return an empty prompt."""
+        if not os.path.exists(completion_json):
+            raise FileNotFoundError(
+                f"Completion JSON file not found: {completion_json}"
+            )
+
+        with open(completion_json, "r") as f:
+            completion_data = json.load(f)
+
+        completion_create_params = CompletionCreateParamsNonStreaming(
+            **completion_data,  # type: ignore[typeddict-item]
+        )
+        return cast(CompletionCreateParamsNonStreaming, completion_create_params)
 
     def construct_prompt(
         self, user_prompt: str, verbose: bool, stream: bool = False
@@ -89,96 +109,19 @@ class Kernel:
                 extra_body=extra_body,  # type: ignore[typeddict-unknown-key]
             )
 
-    def load_completion_json(
-        self, completion_json: str
-    ) -> CompletionCreateParamsNonStreaming:
-        """Load the completion JSON from a file or return an empty prompt."""
-        if not os.path.exists(completion_json):
-            raise FileNotFoundError(
-                f"Completion JSON file not found: {completion_json}"
-            )
-
-        with open(completion_json, "r") as f:
-            completion_data = json.load(f)
-
-        completion_create_params = CompletionCreateParamsNonStreaming(
-            **completion_data,  # type: ignore[typeddict-item]
-        )
-        return cast(CompletionCreateParamsNonStreaming, completion_create_params)
-
-    def validate_and_create_execute_args(
-        self,
-        user_prompt: str,
-        completion_json: str = "",
-        custom_model_dir: str = "",
-        output_path: str = "",
-        stream: bool = False,
-    ) -> tuple[str, str]:
-        if len(user_prompt) == 0 and len(completion_json) == 0:
-            raise ValueError("user_prompt or completion_json must provided.")
-
-        # Construct the raw prompt and headers
-        if len(user_prompt) > 0:
-            completion_create_params = self.construct_prompt(
-                user_prompt, verbose=True, stream=stream
-            )
-        else:
-            completion_create_params = self.load_completion_json(completion_json)
-        chat_completion = json.dumps(completion_create_params)
-        default_headers = "{}"
-
-        if len(custom_model_dir) == 0:
-            custom_model_dir = os.path.join(os.getcwd(), "custom_model")
-
-        if len(output_path) == 0:
-            output_path = os.path.join(os.getcwd(), "custom_model", "output.json")
-
-        command_args = (
-            f"--chat_completion '{chat_completion}' "
-            f"--default_headers '{default_headers}' "
-            f"--custom_model_dir '{custom_model_dir}' "
-            f"--output_path '{output_path}'"
-        )
-
-        return command_args, output_path
-
-    @staticmethod
-    def get_output(output_path: str) -> Any:
-        """Read the local output file and remove it."""
-        if os.path.exists(output_path):
-            with open(output_path, "r") as f:
-                output = f.read()
-
-            if os.path.exists(output_path):
-                os.remove(output_path)
-            return output
-        else:
-            print(
-                f"ERROR: Output file not found: {output_path}. Please check the agent execution logs for errors."
-            )
-            return None
-
     def local(
         self,
         user_prompt: str,
         completion_json: str = "",
-        custom_model_dir: str = "",
-        output_path: str = "",
         stream: bool = False,
-    ) -> Any:
-        command_args, output_path = self.validate_and_create_execute_args(
-            user_prompt, completion_json, custom_model_dir, output_path, stream
-        )
+    ) -> ChatCompletion | Stream[ChatCompletionChunk]:
+        config = Config()
+        chat_api_url = config.agent_endpoint
+        print(chat_api_url)
 
-        local_cmd = f"python3 run_agent.py {command_args}"
-        try:
-            result = os.system(local_cmd)
-            if result != 0:
-                raise RuntimeError(f"Command failed with exit code {result}")
-            return self.get_output(output_path)
-        except Exception as e:
-            print(f"Error executing command: {e}")
-            raise
+        return self._do_chat_completion(
+            chat_api_url, user_prompt, completion_json, stream=stream
+        )
 
     def custom_model(self, custom_model_id: str, user_prompt: str) -> str:
         chat_api_url = f"{self.base_url}/api/v2/genai/agents/fromCustomModel/{custom_model_id}/chat/"
@@ -236,18 +179,35 @@ class Kernel:
             return str(agent_response)
 
     def deployment(
-        self, deployment_id: str, user_prompt: str, completion_json: str = ""
-    ) -> ChatCompletion:
+        self,
+        deployment_id: str,
+        user_prompt: str,
+        completion_json: str = "",
+        stream: bool = False,
+    ) -> ChatCompletion | Stream[ChatCompletionChunk]:
         chat_api_url = f"{self.base_url}/api/v2/deployments/{deployment_id}/"
         print(chat_api_url)
 
+        return self._do_chat_completion(
+            chat_api_url, user_prompt, completion_json, stream=stream
+        )
+
+    def _do_chat_completion(
+        self,
+        url: str,
+        user_prompt: str,
+        completion_json: str = "",
+        stream: bool = False,
+    ) -> ChatCompletion | Stream[ChatCompletionChunk]:
         if len(user_prompt) > 0:
-            completion_create_params = self.construct_prompt(user_prompt, verbose=True)
+            completion_create_params = self.construct_prompt(
+                user_prompt, stream=stream, verbose=True
+            )
         else:
             completion_create_params = self.load_completion_json(completion_json)
 
         openai_client = OpenAI(
-            base_url=chat_api_url,
+            base_url=url,
             api_key=self.api_token,
             _strict_response_validation=False,
         )
@@ -257,6 +217,7 @@ class Kernel:
             "Please wait for the agent to complete the response. This may take a few seconds to minutes "
             "depending on the complexity of the agent workflow."
         )
+
         completion = openai_client.chat.completions.create(**completion_create_params)
         return completion
 
@@ -296,38 +257,26 @@ class Environment:
 pass_environment = click.make_pass_decorator(Environment)
 
 
-def display_response(response: Union[str, ChatCompletion], show_output: bool) -> None:
+def display_response(response: ChatCompletion, show_output: bool) -> None:
     """Display the response in a formatted way."""
+    response_dict = response.model_dump()
+    if not show_output:
+        with open("execute_output.json", "w") as f:
+            json.dump(response_dict, f, indent=2)
 
-    if isinstance(response, ChatCompletion):
-        response_json = json.loads(response.model_dump_json())
-    else:
-        response_json = json.loads(response)
-
-    # Write response to execute_output.json
-    with open("execute_output.json", "w") as json_file:
-        json.dump(response_json, json_file, indent=2)
-
-    if isinstance(response_json, list):
-        for item in response_json:
-            if "pipeline_interactions" in item:
-                item["pipeline_interactions"] = "[Truncated for display]"
-    elif "pipeline_interactions" in response_json:
-        response_json["pipeline_interactions"] = "[Truncated for display]"
+    if "pipeline_interactions" in response_dict:
+        response_dict["pipeline_interactions"] = "[Truncated for display]"
 
     if show_output:
-        click.echo("\nStored execution result:")
-        click.echo(json.dumps(response_json, indent=2))
+        click.echo("\nExecution result:")
+        click.echo(json.dumps(response_dict, indent=2))
     else:
-        if isinstance(response_json, list):
-            response_json = response_json[-1]
-
-        if "choices" in response_json:
-            response_json["choices"] = "[Truncated for display]"
+        if "choices" in response_dict:
+            response_dict["choices"] = "[Truncated for display]"
 
         # Show only first 200 characters of response
-        click.echo("\nStored execution result preview:")
-        click.echo(json.dumps(response_json, indent=2))
+        click.echo("\nExecution result preview:")
+        click.echo(json.dumps(response_dict, indent=2))
         click.echo("")
         click.echo("IMPORTANT")
         click.echo(
@@ -340,6 +289,15 @@ def display_response(response: Union[str, ChatCompletion], show_output: bool) ->
         click.echo(
             "To display the full result inline, rerun with the `--show_output` flag."
         )
+
+
+def display_response_streaming(response: Stream[ChatCompletionChunk]) -> None:
+    click.echo("\nStreaming response:")
+    for chunk in response:
+        chunk_dict = chunk.model_dump()
+        if "pipeline_interactions" in chunk_dict:
+            chunk_dict["pipeline_interactions"] = "[Truncated for display]"
+        click.echo(json.dumps(chunk_dict, indent=2))
 
 
 @click.group()
@@ -379,10 +337,10 @@ def cli(
 @pass_environment
 @click.option("--user_prompt", default="", help="Input to use for chat.")
 @click.option("--completion_json", default="", help="Path to json to use for chat.")
+@click.option("--stream", is_flag=True, help="Enable streaming response.")
 @click.option(
     "--show_output", is_flag=True, help="Show the full stored execution result."
 )
-@click.option("--stream", is_flag=True, help="Enable streaming response.")
 def execute(
     environment: Any,
     user_prompt: str,
@@ -418,7 +376,10 @@ def execute(
         completion_json=completion_json,
         stream=stream,
     )
-    display_response(response, show_output)
+    if stream:
+        display_response_streaming(response)
+    else:
+        display_response(response, show_output)
 
 
 @cli.command()
@@ -460,12 +421,14 @@ def execute_custom_model(
 @click.option(
     "--show_output", is_flag=True, help="Show the full stored execution result."
 )
+@click.option("--stream", is_flag=True, help="Enable streaming response.")
 def execute_deployment(
     environment: Any,
     user_prompt: str,
     completion_json: str,
     deployment_id: str,
     show_output: bool,
+    stream: bool,
 ) -> None:
     """Query a deployed model using the command line for OpenAI completions.
 
@@ -476,6 +439,9 @@ def execute_deployment(
 
     # Run the agent with a string user prompt and show full output
     > task cli -- execute-deployment --user_prompt "Artificial Intelligence" --show_output --deployment_id 680a77a9a3
+
+    # Run the agent with a string user prompt, streaming enabled
+    > task cli -- execute-deployment --user_prompt "Artificial Intelligence" --stream --deployment_id 680a77a9a3
 
     # Run the agent with a JSON user prompt
     > task cli -- execute-deployment --user_prompt '{"topic": "Artificial Intelligence"}' --deployment_id 680a77a9a3
@@ -494,7 +460,10 @@ def execute_deployment(
         user_prompt=user_prompt,
         completion_json=completion_json,
     )
-    display_response(response, show_output)
+    if stream:
+        display_response_streaming(response)
+    else:
+        display_response(response, show_output)
 
 
 if __name__ == "__main__":
