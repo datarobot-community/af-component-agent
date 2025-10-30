@@ -15,7 +15,7 @@ tasks:
     desc: 🛠️ [{{ agent_app_name }}] Install agent uv dependencies
     cmds:
       - echo "Updating local dependencies for {{ agent_app_name }}"
-      - uv sync --extra dev --quiet
+      - uv sync --extra dev
       - if [ -f pyproject.toml ] && [ -d docker_context ]; then cp pyproject.toml docker_context/pyproject.toml; fi
       - if [ -f uv.lock ] && [ -d docker_context ]; then cp uv.lock docker_context/uv.lock; fi
     aliases:
