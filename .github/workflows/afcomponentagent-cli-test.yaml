@@ -55,7 +55,7 @@ jobs:
             execute \
             --show_output \
             --user_prompt '{"topic": "Artificial Intelligence"}' \
-            > ./agent/output.log 2>&1 || echo "Failed to execute agent" && cat ./agent/output.log && exit 1
+            > ./agent/output.log 2>&1
           cat ./agent/output.log
 
           # Check if the log file was created
