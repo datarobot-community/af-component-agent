@@ -61,7 +61,14 @@ class MyAgent(BaseAgent):
         Returns:
             None
         """
-        super().__init__(api_key=api_key, api_base=api_base, model=model, verbose=verbose, timeout=timeout, **kwargs)
+        super().__init__(
+            api_key=api_key,
+            api_base=api_base,
+            model=model,
+            verbose=verbose,
+            timeout=timeout,
+            **kwargs,
+        )
         self.config = Config()
         self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
         self.event_listener = CrewAIEventListener()
