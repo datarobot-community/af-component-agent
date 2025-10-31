@@ -48,6 +48,7 @@ class MyAgent(BaseAgent):
         # Print commands may need flush=True to ensure they are displayed in real-time.
         print("Running agent with user prompt:", user_prompt_content, flush=True)
 
+        usage_metrics = {
             "completion_tokens": 0,
             "prompt_tokens": 0,
             "total_tokens": 0,
