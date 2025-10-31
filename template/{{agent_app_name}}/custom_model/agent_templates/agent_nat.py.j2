@@ -80,7 +80,9 @@ class MyAgent:
         # Create a list of events from the event listener
         events: list[Any]
         events = []  # This should be populated with the agent's events/messages
-        pipeline_interactions = BaseAgent.create_pipeline_interactions_from_events(events)
+        pipeline_interactions = BaseAgent.create_pipeline_interactions_from_events(
+            events
+        )
 
         usage_metrics = {
             "completion_tokens": 0,
