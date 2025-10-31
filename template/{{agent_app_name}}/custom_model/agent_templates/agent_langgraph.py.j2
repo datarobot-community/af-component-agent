@@ -38,7 +38,7 @@ class MyAgent(LangGraphAgent):
     """
 
     @property
-    def workflow(self) -> StateGraph[MessagesState, None, MessagesState, MessagesState]:
+    def workflow(self) -> StateGraph[MessagesState]:
         langgraph_workflow = StateGraph[
             MessagesState, None, MessagesState, MessagesState
         ](MessagesState)
@@ -49,7 +49,7 @@ class MyAgent(LangGraphAgent):
         langgraph_workflow.add_edge("planner_node", "writer_node")
         langgraph_workflow.add_edge("writer_node", "editor_node")
         langgraph_workflow.add_edge("editor_node", END)
-        return langgraph_workflow
+        return langgraph_workflow  # type: ignore[return-value]
 
     @property
     def prompt_template(self) -> ChatPromptTemplate:

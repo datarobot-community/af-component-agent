@@ -12,13 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from pathlib import Path
-from typing import Any, Generator, Union
+from typing import Any
 
 from datarobot_genai.core.agents import (
     BaseAgent,
-    extract_user_prompt_content,
-    default_usage_metrics,
     InvokeReturn,
+    default_usage_metrics,
 )
 from nat.runtime.loader import load_workflow
 from nat.utils.type_utils import StrPath

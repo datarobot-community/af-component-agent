@@ -13,16 +13,16 @@
 # limitations under the License.
 # mypy: disable-error-code=attr-defined
 from datetime import datetime
-from typing import Any, Generator, Optional, Union
+from typing import Any, Optional, Union
 
 from config import Config
 from datarobot_genai.core.agents import (
     BaseAgent,
-    extract_user_prompt_content,
-    default_usage_metrics,
     InvokeReturn,
+    default_usage_metrics,
+    extract_user_prompt_content,
 )
-from datarobot_genai.llamaindex.agent import (
+from datarobot_genai.llama_index.agent import (
     DataRobotLiteLLM,
     create_pipeline_interactions_from_events,
 )

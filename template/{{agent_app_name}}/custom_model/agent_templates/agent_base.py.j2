@@ -16,11 +16,13 @@ from typing import Any, AsyncGenerator, Optional, Union
 from config import Config
 from datarobot_genai.core.agents import (
     BaseAgent,
-    extract_user_prompt_content,
-    default_usage_metrics,
     InvokeReturn,
+    UsageMetrics,
+    default_usage_metrics,
+    extract_user_prompt_content,
 )
 from openai.types.chat import CompletionCreateParams
+from ragas import MultiTurnSample
 
 
 class MyAgent(BaseAgent):
@@ -89,7 +91,7 @@ class MyAgent(BaseAgent):
         # Print commands may need flush=True to ensure they are displayed in real-time.
         print("Running agent with user prompt:", user_prompt_content, flush=True)
 
-        usage_metrics = default_usage_metrics()
+        usage_metrics: UsageMetrics = default_usage_metrics()
 
         # The following code demonstrate both a synchronous and streaming response.
         # You can choose one or the other based on your use case, they function the same.
@@ -97,7 +99,7 @@ class MyAgent(BaseAgent):
         if completion_create_params.get("stream"):
             # Streaming response: yield each message as it is generated
             async def stream_generator() -> AsyncGenerator[
-                tuple[str, Any | None, dict[str, int]], None
+                tuple[str, MultiTurnSample | None, UsageMetrics], None
             ]:
                 # -----------------------------------------------------------
                 # Here you would implement the streaming logic of your agent using the inputs.
