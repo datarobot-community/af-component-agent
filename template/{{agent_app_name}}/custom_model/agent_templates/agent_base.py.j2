@@ -98,9 +98,7 @@ class MyAgent(BaseAgent):
         # The main difference is returning a generator for streaming or a final response for sync.
         if completion_create_params.get("stream"):
             # Streaming response: yield each message as it is generated
-            async def stream_generator() -> AsyncGenerator[
-                tuple[str, MultiTurnSample | None, UsageMetrics], None
-            ]:
+            async def stream_generator() -> InvokeReturn:
                 # -----------------------------------------------------------
                 # Here you would implement the streaming logic of your agent using the inputs.
                 # -----------------------------------------------------------
@@ -114,6 +112,7 @@ class MyAgent(BaseAgent):
                 pipeline_interactions = self.create_pipeline_interactions_from_events(
                     events
                 )
+
                 # Final response after streaming is complete
                 yield "", pipeline_interactions, usage_metrics
 
