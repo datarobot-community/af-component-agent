@@ -15,6 +15,7 @@ from datetime import datetime
 from functools import partial
 from typing import Any
 
+from config import Config
 from datarobot_genai.core.agents import (
     make_system_prompt,
 )
@@ -25,8 +26,6 @@ from langchain_litellm.chat_models import ChatLiteLLM
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import create_react_agent
 from langgraph.types import Command
-
-from config import Config
 
 config = Config()
 
