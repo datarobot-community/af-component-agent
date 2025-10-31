@@ -14,8 +14,11 @@
 from pathlib import Path
 from typing import Any, Generator, Union
 
-from datarobot_genai.core.agents.base import (
+from datarobot_genai.core.agents import (
     BaseAgent,
+    extract_user_prompt_content,
+    default_usage_metrics,
+    InvokeReturn,
 )
 from nat.runtime.loader import load_workflow
 from nat.utils.type_utils import StrPath
@@ -45,10 +48,7 @@ class MyAgent:
 
     async def invoke(
         self, completion_create_params: CompletionCreateParams
-    ) -> Union[
-        Generator[tuple[str, Any | None, dict[str, int]], None, None],
-        tuple[str, Any | None, dict[str, int]],
-    ]:
+    ) -> InvokeReturn:
         """Run the agent with the provided completion parameters.
 
         [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
@@ -56,7 +56,7 @@ class MyAgent:
         Args:
             completion_create_params: The completion request parameters including input topic and settings.
         Returns:
-            tuple[list[Any], dict[str, int]]: A tuple containing a list of messages (events) and usage_statistics for agentic metrics.
+
         """
         # Retrieve the starting user prompt from the CompletionCreateParams
         user_messages = [
@@ -84,11 +84,7 @@ class MyAgent:
             events
         )
 
-        usage_metrics = {
-            "completion_tokens": 0,
-            "prompt_tokens": 0,
-            "total_tokens": 0,
-        }
+        usage_metrics = default_usage_metrics()
         return result, pipeline_interactions, usage_metrics
 
     async def run_nat_workflow(self, config_file: StrPath, input_str: str) -> str:

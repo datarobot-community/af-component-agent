@@ -14,8 +14,14 @@
 from typing import Any, AsyncGenerator, Optional, Union
 
 from config import Config
-from datarobot_genai.core.agents import BaseAgent, extract_user_prompt_content
+from datarobot_genai.core.agents import (
+    BaseAgent,
+    extract_user_prompt_content,
+    default_usage_metrics,
+    InvokeReturn,
+)
 from openai.types.chat import CompletionCreateParams
+
 
 
 class MyAgent(BaseAgent):
@@ -64,10 +70,7 @@ class MyAgent(BaseAgent):
 
     async def invoke(
         self, completion_create_params: CompletionCreateParams
-    ) -> Union[
-        AsyncGenerator[tuple[str, Any | None, dict[str, int]], None],
-        tuple[str, Any | None, dict[str, int]],
-    ]:
+    ) -> InvokeReturn:
         """Run the agent with the provided completion parameters.
 
         [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
@@ -87,11 +90,7 @@ class MyAgent(BaseAgent):
         # Print commands may need flush=True to ensure they are displayed in real-time.
         print("Running agent with user prompt:", user_prompt_content, flush=True)
 
-        usage_metrics = {
-            "completion_tokens": 0,
-            "prompt_tokens": 0,
-            "total_tokens": 0,
-        }
+        usage_metrics = default_usage_metrics()
 
         # The following code demonstrate both a synchronous and streaming response.
         # You can choose one or the other based on your use case, they function the same.
