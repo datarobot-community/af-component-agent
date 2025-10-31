@@ -54,9 +54,14 @@ class MyAgent(LangGraphAgent):
 
     @property
     def prompt_template(self) -> ChatPromptTemplate:
-        return ChatPromptTemplate.from_messages([
-            ("user", f"The topic is {{topic}}. Make sure you find any interesting and relevant information given the current year is {datetime.now().year}."),
-        ])
+        return ChatPromptTemplate.from_messages(
+            [
+                (
+                    "user",
+                    f"The topic is {{topic}}. Make sure you find any interesting and relevant information given the current year is {datetime.now().year}.",
+                ),
+            ]
+        )
 
     def llm(
         self,
