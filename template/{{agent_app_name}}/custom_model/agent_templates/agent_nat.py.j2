@@ -14,8 +14,8 @@
 from pathlib import Path
 from typing import Any, Generator, Union
 
-from datarobot_genai.agents.common import (
-    create_pipeline_interactions_from_events_simple,
+from datarobot_genai.core.agents.base import (
+    BaseAgent,
 )
 from nat.runtime.loader import load_workflow
 from nat.utils.type_utils import StrPath
@@ -80,7 +80,7 @@ class MyAgent:
         # Create a list of events from the event listener
         events: list[Any]
         events = []  # This should be populated with the agent's events/messages
-        pipeline_interactions = create_pipeline_interactions_from_events_simple(events)
+        pipeline_interactions = BaseAgent.create_pipeline_interactions_from_events(events)
 
         usage_metrics = {
             "completion_tokens": 0,

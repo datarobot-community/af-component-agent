@@ -1,5 +1,4 @@
 {% if agent_template_framework == "crewai" %}{% include 'template/{{agent_app_name}}/tests/test_agent_templates/test_agent_crewai.py.j2' -%}
-{% elif agent_template_framework == "langgraph" %}{% include 'template/{{agent_app_name}}/tests/test_agent_templates/test_agent_langgraph.py.j2' -%}
 {% elif agent_template_framework == "llamaindex" %}{% include 'template/{{agent_app_name}}/tests/test_agent_templates/test_agent_llamaindex.py.j2' -%}
 {% elif agent_template_framework == "nat" %}{% include 'template/{{agent_app_name}}/tests/test_agent_templates/test_agent_nat.py.j2' -%}
 {% else %}{% include 'template/{{agent_app_name}}/tests/test_agent_templates/test_agent_base.py.j2' %}{% endif -%}

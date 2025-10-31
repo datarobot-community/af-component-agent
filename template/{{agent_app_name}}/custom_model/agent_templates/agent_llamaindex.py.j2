@@ -16,8 +16,8 @@ from datetime import datetime
 from typing import Any, Generator, Optional, Union
 
 from config import Config
-from datarobot_genai.agents import BaseAgent, extract_user_prompt_content
-from datarobot_genai.agents.llamaindex import (
+from datarobot_genai.core.agents import BaseAgent, extract_user_prompt_content
+from datarobot_genai.llamaindex.agent import (
     DataRobotLiteLLM,
     create_pipeline_interactions_from_events,
 )
