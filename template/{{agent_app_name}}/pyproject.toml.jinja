@@ -8,7 +8,7 @@ readme = "README.md"
 dependencies = [
     "click>=8.1.8",
     "datarobot-drum>=1.17.5",
-    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai,langgraph,llamaindex,nat]{% elif agent_template_framework == 'crewai' %}[crewai]{% elif agent_template_framework == 'langgraph' %}[langgraph]{% elif agent_template_framework == 'llamaindex' %}[llamaindex]{% elif agent_template_framework == 'nat' %}[nat]{% endif %}>=0.1.13",
+    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai,langgraph,llamaindex,nat]{% elif agent_template_framework == 'crewai' %}[crewai]{% elif agent_template_framework == 'langgraph' %}[langgraph]{% elif agent_template_framework == 'llamaindex' %}[llamaindex]{% elif agent_template_framework == 'nat' %}[nat]{% endif %}>=0.1.18",
     "opentelemetry-api>=1.33.0,<2.0.0",
     "opentelemetry-instrumentation-aiohttp-client>=0.54b0",
     "opentelemetry-instrumentation-httpx>=0.54b0",
@@ -21,8 +21,8 @@ dependencies = [
     "langchain-litellm>=0.2.4",
     {% endif %}
 
-    # Docker image requirements (only for docker templates)
     {% if agent_template_framework == "docker" %}
+    # Docker image requirements (only for docker templates)
     "ecs-logging>=2.2.0",
     "fastapi[all]==0.118.2",
     "ipykernel<6.29.0",
