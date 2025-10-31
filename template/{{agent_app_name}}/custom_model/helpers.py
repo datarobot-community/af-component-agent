@@ -17,7 +17,7 @@ import uuid
 from asyncio import AbstractEventLoop
 from typing import Any, AsyncGenerator, Iterator
 
-from datarobot_genai.chat import CustomModelStreamingResponse
+from datarobot_genai.core.chat import CustomModelStreamingResponse
 from openai.types import CompletionUsage
 
 
