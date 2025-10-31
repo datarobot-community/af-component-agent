@@ -9,6 +9,16 @@ tasks:
     cmds:
       - task --list
     silent: true
+  install:
+    desc: "Install development dependencies for all agents into .venv_dev directory"
+    cmds:
+      - echo "Installing development dependencies for all agents"
+      - mv pyproject.toml pyproject.toml.bak
+      - uv run jinja -D agent_app_name DockerContext -D agent_template_framework docker template/\{\{agent_app_name\}\}/pyproject.toml.jinja -o pyproject.toml
+      - UV_PROJECT_ENVIRONMENT=.venv_dev uv sync --all-extras
+      - rm pyproject.toml
+      - mv pyproject.toml.bak pyproject.toml
+      - uv sync --all-extras
   render-template:
     desc: "Render template"
     cmds:
@@ -20,7 +30,7 @@ tasks:
       - uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_template_framework={{.AGENT}} --vcs-ref=HEAD
       - cp ./fixtures/infra/pyproject.toml ./$RENDER_DIR/agent_{{.AGENT}}/infra/pyproject.toml
       - cp ./fixtures/infra/__init__.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/__init__.py
-  install-dev:
+  install-rendered:
     desc: "Install dev"
     cmds:
       - echo "Installing dev for {{.AGENT}}"
@@ -53,7 +63,7 @@ tasks:
   test-agent:
     desc: "Run tests"
     cmds:
-      - task: install-dev
+      - task: install-rendered
         vars:
           AGENT: "{{.AGENT}}"
       - echo "Running tests for {{.AGENT}}"
@@ -102,7 +112,7 @@ tasks:
   run-cli:
     desc: "Run CLI"
     cmds:
-      - task: install-dev
+      - task: install-rendered
         vars:
           AGENT: "base"
       - echo "Running tests for {{.AGENT}}"
@@ -125,7 +135,7 @@ tasks:
   run-cli-json:
     desc: "Run CLI with JSON"
     cmds:
-      - task: install-dev
+      - task: install-rendered
         vars:
           AGENT: "base"
       - echo "Running tests for {{.AGENT}}"
@@ -141,7 +151,7 @@ tasks:
   run-cli-streaming:
     desc: "Run CLI with Streaming"
     cmds:
-      - task: install-dev
+      - task: install-rendered
         vars:
           AGENT: "base"
       - echo "Running tests for {{.AGENT}}"
@@ -157,7 +167,7 @@ tasks:
   build-docker:
     desc: "Build docker image"
     cmds:
-      - task: install-dev
+      - task: install-rendered
         vars:
           AGENT: "{{.AGENT}}"
       - echo "Building docker image for {{.AGENT}}"

@@ -16,6 +16,9 @@ dev = [
     "mypy>=1.8.0",
 ]
 
+[tool.uv]
+required-version = ">=0.7.0"
+
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
 exclude = [
