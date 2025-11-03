@@ -82,7 +82,7 @@ tasks:
       - echo "Running CLI {% raw %}{{.CLI_ARGS}}{% endraw %}"
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} UV_PROJECT={% raw %}{{.TASKFILE_DIR}}{% endraw %} uv run cli.py {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
-  cli-auto:
+  cli-dev:
     desc: 🖥️ [agent_crewai] Run the CLI with automatic dev server management
     cmds:
       - echo "Running CLI with auto dev server {{.CLI_ARGS}}"
