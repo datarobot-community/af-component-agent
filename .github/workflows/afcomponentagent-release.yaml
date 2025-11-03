@@ -22,8 +22,8 @@ jobs:
       - name: Get latest tag
         id: get-latest-tag
         run: |
-          # Get the latest tag, or use v0.0.0 if no tags exist
-          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          # Get the latest tag, or use 0.0.0 if no tags exist
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "0.0.0")
           echo "latest-tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "Latest tag: $LATEST_TAG"
       - name: Generate next version
@@ -42,7 +42,7 @@ jobs:
           # Increment patch version
           PATCH=$((PATCH + 1))
           
-          NEW_VERSION="v$MAJOR.$MINOR.$PATCH"
+          NEW_VERSION="$MAJOR.$MINOR.$PATCH"
           echo "new-version=$NEW_VERSION" >> $GITHUB_OUTPUT
           echo "Next version: $NEW_VERSION"
       - name: Create Release
