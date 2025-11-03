@@ -88,7 +88,10 @@ tasks:
 
           # Wait for server to be ready
           echo "⏳ Waiting for dev server to be ready..."
-          AGENT_ENDPOINT="${"${{ agent_app_name | upper }}_ENDPOINT":-http://localhost:8842}"
+          AGENT_ENDPOINT="http://localhost:8842"
+          if [ -n "${{ agent_app_name | upper }}_ENDPOINT" ]; then
+            AGENT_ENDPOINT="${{ agent_app_name | upper }}_ENDPOINT"
+          fi
           for i in {1..30}; do
             if curl --silent --fail $AGENT_ENDPOINT/ >/dev/null 2>&1; then
               echo "✅ Dev server is ready!"
