@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -246,3 +248,177 @@ class TestMyAgentLlamaIndex:
                 api_key=None,
                 timeout=90,
             )
+
+    @patch("agent.StateGraph")
+    async def test_langgraph_non_streaming(self, mock_state_graph, agent):
+        async def mock_stream_generator():
+            yield {
+                "final_agent": {
+                    "messages": [
+                        HumanMessage(content="Hi, tell me about Paris."),
+                        AIMessage(
+                            content="Here is the information you requested about Paris....."
+                        ),
+                    ]
+                }
+            }
+
+        mock_graph_stream = Mock()
+        mock_graph_stream.astream.return_value = mock_stream_generator()
+        mock_state_graph.return_value = Mock(
+            compile=MagicMock(return_value=mock_graph_stream)
+        )
+
+        completion_create_params = {
+            "model": "test-model",
+            "messages": [
+                {"role": "user", "content": '{"topic": "Artificial Intelligence"}'}
+            ],
+            "environment_var": True,
+        }
+
+        response_text, pipeline_interactions, usage_metrics = await agent.invoke(
+            completion_create_params
+        )
+        response = to_custom_model_chat_response(
+            response_text, pipeline_interactions, usage_metrics, model="test-model"
+        )
+        assert isinstance(response, CustomModelChatResponse)
+        assert (
+            response.choices[0].message.content
+            == "Here is the information you requested about Paris....."
+        )
+        assert response.pipeline_interactions is not None
+        assert response.usage.completion_tokens == 0
+        assert response.usage.prompt_tokens == 0
+        assert response.usage.total_tokens == 0
+
+    @patch("agent.StateGraph")
+    async def test_langgraph_streaming(self, mock_state_graph, agent):
+        async def mock_stream_generator():
+            yield {
+                "first_agent": {
+                    "messages": [
+                        HumanMessage(content="Hi, tell me about Paris."),
+                        AIMessage(
+                            content="Here is the information you requested about Paris....."
+                        ),
+                    ]
+                }
+            }
+            yield {
+                "final_agent": {
+                    "messages": [
+                        HumanMessage(content="Hi, tell me about Paris."),
+                        AIMessage(content="Paris is the capital city of France."),
+                    ]
+                }
+            }
+
+        mock_graph_stream = Mock()
+        mock_graph_stream.astream.return_value = mock_stream_generator()
+        mock_state_graph.return_value = Mock(
+            compile=MagicMock(return_value=mock_graph_stream)
+        )
+
+        completion_create_params = {
+            "model": "test-model",
+            "messages": [
+                {"role": "user", "content": '{"topic": "Artificial Intelligence"}'}
+            ],
+            "environment_var": True,
+            "stream": True,
+        }
+        streaming_response_iterator = await agent.invoke(completion_create_params)
+        event_loop = asyncio.get_event_loop()
+        streaming_response = to_custom_model_streaming_response(
+            event_loop, streaming_response_iterator, model="test-model"
+        )
+        for idx, response in enumerate(streaming_response):
+            assert isinstance(response, CustomModelStreamingResponse)
+            if idx == 0:
+                assert (
+                    response.choices[0].delta.content
+                    == "Here is the information you requested about Paris....."
+                )
+                assert response.choices[0].finish_reason is None
+                assert response.pipeline_interactions is None
+            elif idx == 1:
+                assert (
+                    response.choices[0].delta.content
+                    == "Paris is the capital city of France."
+                )
+                assert response.choices[0].finish_reason is None
+                assert response.pipeline_interactions is None
+            else:
+                assert response.choices[0].delta.content is None
+                assert response.choices[0].finish_reason == "stop"
+                assert response.pipeline_interactions is not None
+
+
+@pytest.fixture
+def events() -> list[dict[str, Any]]:
+    return [
+        {
+            "final_agent": {
+                "messages": [
+                    HumanMessage(content="Hi, tell me about Paris."),
+                    AIMessage(
+                        content="",
+                        additional_kwars={
+                            "tool_calls": [
+                                {
+                                    "id": "call_9Luzq73eFGikbDUnAazwnPep",
+                                    "function": {
+                                        "name": "wikipedia",
+                                        "arguments": '{"city": "Paris"}',
+                                        "type": "function",
+                                    },
+                                },
+                                {
+                                    "id": "call_PvSdV1HLzTd6RnoiwM7lLy5u",
+                                    "function": {
+                                        "name": "weather",
+                                        "arguments": '{"city": "Paris"}',
+                                        "type": "function",
+                                    },
+                                },
+                                {
+                                    "id": "call_mknvGBUMnAY4OzUTZA9yTe4I",
+                                    "function": {
+                                        "name": "events",
+                                        "arguments": '{"city": "Paris"}',
+                                        "type": "function",
+                                    },
+                                },
+                            ]
+                        },
+                    ),
+                    ToolMessage(
+                        content="stuff about paris",
+                        tool_call_id="call_9Luzq73eFGikbDUnAazwnPep",
+                    ),
+                    ToolMessage(
+                        content=[{"temp": 15, "wind": 2, "direction": 215}],
+                        tool_call_id="call_PvSdV1HLzTd6RnoiwM7lLy5u",
+                    ),
+                    ToolMessage(
+                        content=["a", "b", "c"],
+                        tool_call_id="call_mknvGBUMnAY4OzUTZA9yTe4I",
+                    ),
+                    AIMessage(
+                        content="Here is the information you requested about Paris....."
+                    ),
+                ]
+            }
+        }
+    ]
+
+
+def test_extract_pipeline_interactions(events: list[dict[str, Any]]) -> None:
+    """Test that the pipeline interactions are extracted correctly."""
+
+    result = MyAgent.create_pipeline_interactions_from_events(events)
+    # The check is that with different ToolMessage content types there is no exception
+    assert isinstance(result, MultiTurnSample)
+    assert len(result.user_input) == 3
