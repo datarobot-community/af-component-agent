@@ -92,12 +92,14 @@ tasks:
           if [ -n "${{ agent_app_name | upper }}_ENDPOINT" ]; then
             AGENT_ENDPOINT="${{ agent_app_name | upper }}_ENDPOINT"
           fi
-          for i in {1..30}; do
-            if curl --silent --fail $AGENT_ENDPOINT/ >/dev/null 2>&1; then
+          i=0
+          while [ $i -lt 30 ]; do
+            if curl --silent --fail --max-time 2 "$AGENT_ENDPOINT/" >/dev/null 2>&1; then
               echo "✅ Dev server is ready!"
               break
             fi
             sleep 1
+            i=$((i + 1))
             if [ $i -eq 30 ]; then
               echo "❌ Dev server failed to start within 30 seconds"
               pkill -f 'uv run python dev.py' 2>/dev/null || true
@@ -107,10 +109,8 @@ tasks:
         fi
       - |
         # Run CLI and handle cleanup regardless of exit code
-        set +e  # Disable immediate exit on command failure
-        {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} UV_PROJECT={% raw %}{{.TASKFILE_DIR}}{% endraw %} uv run cli.py {% raw %}{{.CLI_ARGS}}{% endraw %}
-        CLI_EXIT_CODE=$?
-        set -e  # Re-enable immediate exit on command failure
+        CLI_EXIT_CODE=0
+        {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} UV_PROJECT={% raw %}{{.TASKFILE_DIR}}{% endraw %} uv run cli.py {% raw %}{{.CLI_ARGS}}{% endraw %} || CLI_EXIT_CODE=$?
         echo "CLI exited with code: $CLI_EXIT_CODE"
 
         # Check if command failed and contains "execute"
@@ -119,8 +119,8 @@ tasks:
           echo "❌ CLI command failed with exit status 1"
           echo "💡 It looks like you're trying to execute an agent that requires a dev server."
           echo "   Try one of these options:"
-          echo "   1. Start the dev server first: task agent:dev"
-          echo "   2. Or run with auto dev server: task agent:cli START_DEV=1 -- {% raw %}{{.CLI_ARGS}}{% endraw %}"
+          echo "   1. Start the dev server first: task {{ agent_app_name }}:dev"
+          echo "   2. Or run with auto dev server: task {{ agent_app_name }}:cli START_DEV=1 -- {% raw %}{{.CLI_ARGS}}{% endraw %}"
           echo ""
         fi
 
