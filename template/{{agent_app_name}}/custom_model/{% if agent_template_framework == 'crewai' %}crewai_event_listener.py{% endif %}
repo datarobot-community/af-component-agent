@@ -37,7 +37,7 @@ from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 
 class CrewAIEventListener(BaseEventListener):
     def __init__(self) -> None:
-        super().__init__()  # type: ignore[no-untyped-call]
+        super().__init__()
         self.messages: list[Union[HumanMessage, AIMessage, ToolMessage]] = []
 
     def setup_listeners(self, crewai_event_bus: CrewAIEventsBus) -> None:
