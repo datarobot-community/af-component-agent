@@ -10,13 +10,6 @@ vars:
       else
         echo ""
       fi
-  AGENT_ENDPOINT:
-    sh: |
-      if [ -n "${{ agent_app_name | upper }}_ENDPOINT" ]; then
-        echo "${{ agent_app_name | upper }}_ENDPOINT"
-      else
-        echo "http://localhost:8842"
-      fi
 tasks:
   install:
     desc: 🛠️ [{{ agent_app_name }}] Install agent uv dependencies
@@ -95,8 +88,9 @@ tasks:
 
           # Wait for server to be ready
           echo "⏳ Waiting for dev server to be ready..."
+          AGENT_ENDPOINT="${"${{ agent_app_name | upper }}_ENDPOINT":-http://localhost:8842}"
           for i in {1..30}; do
-            if curl --silent --fail {% raw %}{{.AGENT_ENDPOINT}}{% endraw %}/ >/dev/null 2>&1; then
+            if curl --silent --fail $AGENT_ENDPOINT/ >/dev/null 2>&1; then
               echo "✅ Dev server is ready!"
               break
             fi
