@@ -24,7 +24,7 @@ from nat.utils.type_utils import StrPath
 from openai.types.chat import CompletionCreateParams
 
 
-class MyAgent:
+class MyAgent(BaseAgent):
     """MyAgent is a custom agent that uses NVIDIA NeMo Agent Toolkit and can be used for creating
     a custom agentic flow defined in workflow.yaml. It utilizes DataRobot's LLM Gateway or a
     specific deployment for language model interactions. This example illustrates 3 agents that
@@ -79,11 +79,10 @@ class MyAgent:
         # Create a list of events from the event listener
         events: list[Any]
         events = []  # This should be populated with the agent's events/messages
-        pipeline_interactions = BaseAgent.create_pipeline_interactions_from_events(
-            events
-        )
 
         usage_metrics = default_usage_metrics()
+        pipeline_interactions = self.create_pipeline_interactions_from_events(events)
+
         return result, pipeline_interactions, usage_metrics
 
     async def run_nat_workflow(self, config_file: StrPath, input_str: str) -> str:

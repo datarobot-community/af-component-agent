@@ -13,248 +13,19 @@
 # limitations under the License.
 import json
 import os
-import time
-from typing import Any, Optional, cast
+from typing import Any
 
 import click
-import requests
-from openai import OpenAI, Stream
+from datarobot_genai.core.cli import AgentEnvironment
+from openai import Stream
 from openai.types.chat import (
     ChatCompletion,
     ChatCompletionChunk,
-    ChatCompletionSystemMessageParam,
-    ChatCompletionUserMessageParam,
-)
-from openai.types.chat.completion_create_params import (
-    CompletionCreateParamsNonStreaming,
-    CompletionCreateParamsStreaming,
 )
 
 from custom_model.config import Config
 
-
-class Kernel:
-    def __init__(
-        self,
-        api_token: str,
-        base_url: str,
-    ):
-        self.base_url = base_url
-        self.api_token = api_token
-
-    @property
-    def headers(self) -> dict[str, str]:
-        return {
-            "Authorization": f"Token {self.api_token}",
-        }
-
-    def load_completion_json(
-        self, completion_json: str
-    ) -> CompletionCreateParamsNonStreaming:
-        """Load the completion JSON from a file or return an empty prompt."""
-        if not os.path.exists(completion_json):
-            raise FileNotFoundError(
-                f"Completion JSON file not found: {completion_json}"
-            )
-
-        with open(completion_json, "r") as f:
-            completion_data = json.load(f)
-
-        completion_create_params = CompletionCreateParamsNonStreaming(
-            **completion_data,  # type: ignore[typeddict-item]
-        )
-        return cast(CompletionCreateParamsNonStreaming, completion_create_params)
-
-    def construct_prompt(
-        self, user_prompt: str, verbose: bool, stream: bool = False
-    ) -> CompletionCreateParamsNonStreaming | CompletionCreateParamsStreaming:
-        extra_body = {
-            "api_key": self.api_token,
-            "api_base": self.base_url,
-            "verbose": verbose,
-        }
-        if stream:
-            return CompletionCreateParamsStreaming(
-                model="datarobot-deployed-llm",
-                messages=[
-                    ChatCompletionSystemMessageParam(
-                        content="You are a helpful assistant",
-                        role="system",
-                    ),
-                    ChatCompletionUserMessageParam(
-                        content=user_prompt,
-                        role="user",
-                    ),
-                ],
-                n=1,
-                temperature=0.01,
-                stream=True,
-                extra_body=extra_body,  # type: ignore[typeddict-unknown-key]
-            )
-        else:
-            return CompletionCreateParamsNonStreaming(
-                model="datarobot-deployed-llm",
-                messages=[
-                    ChatCompletionSystemMessageParam(
-                        content="You are a helpful assistant",
-                        role="system",
-                    ),
-                    ChatCompletionUserMessageParam(
-                        content=user_prompt,
-                        role="user",
-                    ),
-                ],
-                n=1,
-                temperature=0.01,
-                extra_body=extra_body,  # type: ignore[typeddict-unknown-key]
-            )
-
-    def local(
-        self,
-        user_prompt: str,
-        completion_json: str = "",
-        stream: bool = False,
-    ) -> ChatCompletion | Stream[ChatCompletionChunk]:
-        config = Config()
-        chat_api_url = config.agent_endpoint
-        print(chat_api_url)
-
-        return self._do_chat_completion(
-            chat_api_url, user_prompt, completion_json, stream=stream
-        )
-
-    def custom_model(self, custom_model_id: str, user_prompt: str) -> str:
-        chat_api_url = f"{self.base_url}/api/v2/genai/agents/fromCustomModel/{custom_model_id}/chat/"
-        print(chat_api_url)
-
-        headers = {
-            "Authorization": f"Bearer {os.environ['DATAROBOT_API_TOKEN']}",
-            "Content-Type": "application/json",
-        }
-        data = {"messages": [{"role": "user", "content": user_prompt}]}
-
-        print(f'Querying custom model with prompt: "{data}"')
-        print(
-            "Please wait... This may take 1-2 minutes the first time you run this as a codespace is provisioned "
-            "for the custom model to execute."
-        )
-        response = requests.post(
-            chat_api_url,
-            headers=headers,
-            json=data,
-        )
-
-        if not response.ok or not response.headers.get("Location"):
-            raise Exception(response.text)
-        # Wait for the agent to complete
-        status_location = response.headers["Location"]
-        while response.ok:
-            time.sleep(1)
-            response = requests.get(
-                status_location, headers=headers, allow_redirects=False
-            )
-            if response.status_code == 303:
-                agent_response = requests.get(
-                    response.headers["Location"], headers=headers
-                ).json()
-                # Show the agent response
-                break
-            else:
-                status_response = response.json()
-                if status_response["status"] in ["ERROR", "ABORTED"]:
-                    raise Exception(status_response)
-        else:
-            raise Exception(response.content)
-
-        if "errorMessage" in agent_response and agent_response["errorMessage"]:
-            return (
-                f"Error: "
-                f"{agent_response.get('errorMessage', 'No error message available')}"
-                f"Error details:"
-                f"{agent_response.get('errorDetails', 'No details available')}"
-            )
-        elif "choices" in agent_response:
-            return str(agent_response["choices"][0]["message"]["content"])
-        else:
-            return str(agent_response)
-
-    def deployment(
-        self,
-        deployment_id: str,
-        user_prompt: str,
-        completion_json: str = "",
-        stream: bool = False,
-    ) -> ChatCompletion | Stream[ChatCompletionChunk]:
-        chat_api_url = f"{self.base_url}/api/v2/deployments/{deployment_id}/"
-        print(chat_api_url)
-
-        return self._do_chat_completion(
-            chat_api_url, user_prompt, completion_json, stream=stream
-        )
-
-    def _do_chat_completion(
-        self,
-        url: str,
-        user_prompt: str,
-        completion_json: str = "",
-        stream: bool = False,
-    ) -> ChatCompletion | Stream[ChatCompletionChunk]:
-        if len(user_prompt) > 0:
-            completion_create_params = self.construct_prompt(
-                user_prompt, stream=stream, verbose=True
-            )
-        else:
-            completion_create_params = self.load_completion_json(completion_json)
-
-        openai_client = OpenAI(
-            base_url=url,
-            api_key=self.api_token,
-            _strict_response_validation=False,
-        )
-
-        print(f'Querying deployment with prompt: "{completion_create_params}"')
-        print(
-            "Please wait for the agent to complete the response. This may take a few seconds to minutes "
-            "depending on the complexity of the agent workflow."
-        )
-
-        completion = openai_client.chat.completions.create(**completion_create_params)
-        return completion
-
-
-class Environment:
-    def __init__(
-        self,
-        api_token: Optional[str] = None,
-        base_url: Optional[str] = None,
-    ):
-        self.api_token = os.environ.get("DATAROBOT_API_TOKEN") or api_token
-        if not self.api_token:
-            raise ValueError(
-                "Missing DataRobot API token. Set the DATAROBOT_API_TOKEN "
-                "environment variable or provide it explicitly."
-            )
-        self.base_url = (
-            os.environ.get("DATAROBOT_ENDPOINT")
-            or base_url
-            or "https://app.datarobot.com"
-        )
-        if not self.base_url:
-            raise ValueError(
-                "Missing DataRobot endpoint. Set the DATAROBOT_ENDPOINT environment "
-                "variable or provide it explicitly."
-            )
-        self.base_url = self.base_url.replace("/api/v2", "")
-
-    @property
-    def interface(self) -> Kernel:
-        return Kernel(
-            api_token=str(self.api_token),
-            base_url=str(self.base_url),
-        )
-
-
-pass_environment = click.make_pass_decorator(Environment)
+pass_environment = click.make_pass_decorator(AgentEnvironment)
 
 
 def display_response(response: ChatCompletion, show_output: bool) -> None:
@@ -330,7 +101,7 @@ def cli(
     > task cli -- execute-deployment --user_prompt "Artificial Intelligence" --deployment_id 680a77a9a3
 
     """
-    ctx.obj = Environment(api_token, base_url)
+    ctx.obj = AgentEnvironment(api_token, base_url)
 
 
 @cli.command()
@@ -375,6 +146,7 @@ def execute(
         user_prompt=user_prompt,
         completion_json=completion_json,
         stream=stream,
+        config=Config(),
     )
     if stream:
         display_response_streaming(response)
