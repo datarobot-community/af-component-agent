@@ -12,24 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import json
 import os
+from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import ANY, AsyncMock, MagicMock, Mock, patch
 
 import pytest
 
 
 class TestCustomModel:
+    @pytest.fixture()
+    def load_model_result(self):
+        with ThreadPoolExecutor(1) as thread_pool_executor:
+            event_loop = asyncio.new_event_loop()
+            thread_pool_executor.submit(asyncio.set_event_loop, event_loop).result()
+            yield (thread_pool_executor, event_loop)
+
     def test_load_model(self):
         from custom import load_model
 
-        result = load_model("")
-        assert result == "success"
+        (thread_pool_executor, event_loop) = load_model("")
+        assert isinstance(thread_pool_executor, ThreadPoolExecutor)
+        assert isinstance(event_loop, type(asyncio.get_event_loop()))
+        thread_pool_executor.shutdown()
 
     @patch("custom.MyAgent")
     @patch.dict(os.environ, {"LLM_DATAROBOT_DEPLOYMENT_ID": "TEST_VALUE"}, clear=True)
     @pytest.mark.parametrize("stream", [False, True])
-    def test_chat(self, mock_agent, mock_agent_response, stream):
+    def test_chat(self, mock_agent, mock_agent_response, stream, load_model_result):
         from custom import chat
 
         # Setup mocks
@@ -44,7 +55,7 @@ class TestCustomModel:
             "stream": stream,
         }
 
-        response = chat(completion_create_params, model="test-model")
+        response = chat(completion_create_params, load_model_result=load_model_result)
 
         # Assert results
         actual = json.loads(response.model_dump_json())
@@ -95,7 +106,7 @@ class TestCustomModel:
 
     @patch("custom.MyAgent")
     @patch.dict(os.environ, {"LLM_DATAROBOT_DEPLOYMENT_ID": "TEST_VALUE"}, clear=True)
-    def test_chat_streaming(self, mock_agent):
+    def test_chat_streaming(self, mock_agent, load_model_result):
         from custom import chat
 
         # Create a generator that yields streaming responses
@@ -128,7 +139,7 @@ class TestCustomModel:
             "environment_var": True,
         }
 
-        response = chat(completion_create_params, model="test-model")
+        response = chat(completion_create_params, load_model_result=load_model_result)
 
         # Verify response is an iterator
         assert hasattr(response, "__iter__")

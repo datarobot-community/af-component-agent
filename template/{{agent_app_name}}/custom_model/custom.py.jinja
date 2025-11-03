@@ -75,10 +75,6 @@ from openai.types.chat.completion_create_params import (
     CompletionCreateParamsStreaming,
 )
 
-thread_pool_executor = ThreadPoolExecutor(1)
-event_loop = asyncio.new_event_loop()
-thread_pool_executor.submit(asyncio.set_event_loop, event_loop).result()
-
 
 def maybe_set_env_from_runtime_parameters(key: str) -> None:
     """
@@ -100,17 +96,19 @@ def maybe_set_env_from_runtime_parameters(key: str) -> None:
         pass
 
 
-def load_model(code_dir: str) -> str:
+def load_model(code_dir: str) -> tuple[ThreadPoolExecutor, asyncio.AbstractEventLoop]:
     """The agent is instantiated in this function and returned."""
-    _ = code_dir
-    return "success"
+    thread_pool_executor = ThreadPoolExecutor(1)
+    event_loop = asyncio.new_event_loop()
+    thread_pool_executor.submit(asyncio.set_event_loop, event_loop).result()
+    return (thread_pool_executor, event_loop)
 
 
 def chat(
     completion_create_params: CompletionCreateParams
     | CompletionCreateParamsNonStreaming
     | CompletionCreateParamsStreaming,
-    model: str,
+    load_model_result: tuple[ThreadPoolExecutor, asyncio.AbstractEventLoop],
 ) -> Union[CustomModelChatResponse, Iterator[CustomModelStreamingResponse]]:
     """When using the chat endpoint, this function is called.
 
@@ -133,7 +131,7 @@ def chat(
             ...
         )
     """
-    _ = model
+    thread_pool_executor, event_loop = load_model_result
 
     # Initialize the authorization context for downstream agents and tools to retrieve
     # access tokens for external services.
