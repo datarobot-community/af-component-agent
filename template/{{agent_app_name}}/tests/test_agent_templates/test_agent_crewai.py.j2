@@ -357,7 +357,9 @@ class TestMyAgentCrewAI:
     @patch("agent.Crew")
     @patch("agent.CrewAIEventListener")
     @patch("agent.Agent")
-    def test_chat(self, mock_agent, mock_event_listener, mock_crew, agent, load_model_result):
+    def test_chat(
+        self, mock_agent, mock_event_listener, mock_crew, agent, load_model_result
+    ):
         # This test case covers testing that the agent invoke runs with the llm interactions mocked
         from custom import chat
 
@@ -398,7 +400,9 @@ class TestMyAgentCrewAI:
             patch.object(MyAgent, "task_write"),
             patch.object(MyAgent, "task_edit"),
         ):
-            response = chat(completion_create_params, load_model_result=load_model_result)
+            response = chat(
+                completion_create_params, load_model_result=load_model_result
+            )
 
         # Assert results - check the pipeline_interactions - other sections of the
         # results are already being checked in test_custom_model.py::test_chat
