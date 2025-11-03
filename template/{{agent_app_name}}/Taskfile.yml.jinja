@@ -78,48 +78,61 @@ tasks:
     silent: true
   cli:
     desc: 🖥️ [{{ agent_app_name }}] Run the CLI with provided arguments
+    vars:
+      START_DEV: "{{.START_DEV}}"
     cmds:
       - echo "Running CLI {% raw %}{{.CLI_ARGS}}{% endraw %}"
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} UV_PROJECT={% raw %}{{.TASKFILE_DIR}}{% endraw %} uv run cli.py {% raw %}{{.CLI_ARGS}}{% endraw %}"
-    silent: true
-  cli-dev:
-    desc: 🖥️ [agent_crewai] Run the CLI with automatic dev server management
-    cmds:
-      - echo "Running CLI with auto dev server {{.CLI_ARGS}}"
       - |
-        # Kill any existing dev server processes
-        pkill -f 'uv run python dev.py' 2>/dev/null || true
+        if [ "{% raw %}{{.START_DEV}}{% endraw %}" -eq "1" ]; then
+          # Kill any existing dev server processes
+          pkill -f 'uv run python dev.py' 2>/dev/null || true
 
-        # Start dev server in background
-        echo "🚀 Starting dev server in background..."
-        {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run python dev.py &
-        DEV_SERVER_PID=$!
-        echo "Dev server started with PID: $DEV_SERVER_PID"
+          # Start dev server in background
+          echo "🚀 Starting dev server in background..."
+          {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run python dev.py &
+          DEV_SERVER_PID=$!
+          echo "Dev server started with PID: $DEV_SERVER_PID"
 
-        # Wait for server to be ready
-        echo "⏳ Waiting for dev server to be ready..."
-        for i in {1..30}; do
-          if curl --silent --fail {% raw %}{{.AGENT_ENDPOINT}}{% endraw %}/ >/dev/null 2>&1; then
-            echo "✅ Dev server is ready!"
-            break
-          fi
-          sleep 1
-          if [ $i -eq 30 ]; then
-            echo "❌ Dev server failed to start within 30 seconds"
-            pkill -f 'uv run python dev.py' 2>/dev/null || true
-            exit 1
-          fi
-        done
-
-        # Run the CLI
-        echo "🏃 Running CLI command..."
-        {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} UV_PROJECT={{.TASKFILE_DIR}} uv run cli.py {{.CLI_ARGS}}
+          # Wait for server to be ready
+          echo "⏳ Waiting for dev server to be ready..."
+          for i in {1..30}; do
+            if curl --silent --fail {% raw %}{{.AGENT_ENDPOINT}}{% endraw %}/ >/dev/null 2>&1; then
+              echo "✅ Dev server is ready!"
+              break
+            fi
+            sleep 1
+            if [ $i -eq 30 ]; then
+              echo "❌ Dev server failed to start within 30 seconds"
+              pkill -f 'uv run python dev.py' 2>/dev/null || true
+              exit 1
+            fi
+          done
+        fi
+      - |
+        # Run CLI and handle cleanup regardless of exit code
+        set +e  # Disable immediate exit on command failure
+        {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run cli.py {{.CLI_ARGS}}
         CLI_EXIT_CODE=$?
+        set -e  # Re-enable immediate exit on command failure
+        echo "CLI exited with code: $CLI_EXIT_CODE"
 
-        # Always clean up dev server processes
-        echo "🛑 Stopping dev server..."
-        pkill -f 'uv run python dev.py' 2>/dev/null || true
-        echo "✅ Dev server stopped"
+        # Check if command failed and contains "execute"
+        if [ $CLI_EXIT_CODE -eq 1 ] && echo "{% raw %}{{.CLI_ARGS}}{% endraw %}" | grep -q "execute "; then
+          echo ""
+          echo "❌ CLI command failed with exit status 1"
+          echo "💡 It looks like you're trying to execute an agent that requires a dev server."
+          echo "   Try one of these options:"
+          echo "   1. Start the dev server first: task agent:dev"
+          echo "   2. Or run with auto dev server: task agent:cli START_DEV=1 -- {% raw %}{{.CLI_ARGS}}{% endraw %}"
+          echo ""
+        fi
+
+        # Clean up dev server processes if we started them
+        if [ "{% raw %}{{.START_DEV}}{% endraw %}" -eq "1" ]; then
+          echo "🛑 Stopping dev server..."
+          pkill -f 'uv run python dev.py' 2>/dev/null || true
+          echo "✅ Dev server stopped"
+        fi
 
         exit $CLI_EXIT_CODE
     silent: true
@@ -127,6 +140,11 @@ tasks:
     desc: 🔨 [{{ agent_app_name }}] Run the development server
     cmds:
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run python dev.py"
+  dev-stop:
+    desc: 🛑 [{{ agent_app_name }}] Stop the development server
+    cmds:
+      - echo "Stopping development server"
+      - pkill -f 'uv run python dev.py' 2>/dev/null || echo "No development server process found"
   chainlit:
     desc: "🛝 Run the ChainLit playground"
     cmds:
