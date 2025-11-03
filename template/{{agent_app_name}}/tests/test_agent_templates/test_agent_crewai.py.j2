@@ -18,6 +18,7 @@ from unittest.mock import ANY, MagicMock, Mock, patch
 import pytest
 from agent import MyAgent
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
+from datarobot_genai.crewai.events import CrewAIEventListener
 
 
 class TestMyAgentCrewAI:
@@ -277,7 +278,7 @@ class TestMyAgentCrewAI:
         with patch.object(MyAgent, "llm", return_value=mock_llm):
             agent.agent_planner
             mock_agent.assert_called_once_with(
-                role="Content Planner",
+                role="Planner",
                 goal=ANY,
                 backstory=ANY,
                 allow_delegation=False,
@@ -293,7 +294,7 @@ class TestMyAgentCrewAI:
         with patch.object(MyAgent, "llm", return_value=mock_llm):
             agent.agent_writer
             mock_agent.assert_called_once_with(
-                role="Content Writer",
+                role="Writer",
                 goal=ANY,
                 backstory=ANY,
                 allow_delegation=False,
@@ -354,8 +355,8 @@ class TestMyAgentCrewAI:
                 agent=ANY,
             )
 
-    @patch("agent.Crew")
-    @patch("agent.CrewAIEventListener")
+    @patch("datarobot_genai.crewai.base.Crew")
+    @patch("datarobot_genai.crewai.events.CrewAIEventListener")
     @patch("agent.Agent")
     def test_chat(
         self, mock_agent, mock_event_listener, mock_crew, agent, load_model_result
@@ -592,3 +593,4 @@ class TestMyAgentMCPIntegration:
         # Test editor agent
         editor = agent.agent_editor
         assert editor.tools == mock_tools
+
