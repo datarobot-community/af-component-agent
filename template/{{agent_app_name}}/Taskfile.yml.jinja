@@ -111,7 +111,7 @@ tasks:
       - |
         # Run CLI and handle cleanup regardless of exit code
         set +e  # Disable immediate exit on command failure
-        {% raw %}{{.CLEAN_PYTHON_ENV}} UV_PROJECT={{.TASKFILE_DIR}}{% endraw %} uv run cli.py {{.CLI_ARGS}}
+        {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} UV_PROJECT={% raw %}{{.TASKFILE_DIR}}{% endraw %} uv run cli.py {% raw %}{{.CLI_ARGS}}{% endraw %}
         CLI_EXIT_CODE=$?
         set -e  # Re-enable immediate exit on command failure
         echo "CLI exited with code: $CLI_EXIT_CODE"
