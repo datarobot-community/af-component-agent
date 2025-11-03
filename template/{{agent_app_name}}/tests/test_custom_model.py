@@ -22,13 +22,6 @@ import pytest
 
 
 class TestCustomModel:
-    @pytest.fixture()
-    def load_model_result(self):
-        with ThreadPoolExecutor(1) as thread_pool_executor:
-            event_loop = asyncio.new_event_loop()
-            thread_pool_executor.submit(asyncio.set_event_loop, event_loop).result()
-            yield (thread_pool_executor, event_loop)
-
     def test_load_model(self):
         from custom import load_model
 
