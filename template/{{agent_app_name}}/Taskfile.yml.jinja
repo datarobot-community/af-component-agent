@@ -10,6 +10,13 @@ vars:
       else
         echo ""
       fi
+  AGENT_ENDPOINT:
+    sh: |
+      if [ -n "${{ agent_app_name | upper }}_ENDPOINT" ]; then
+        echo "${{ agent_app_name | upper }}_ENDPOINT"
+      else
+        echo "http://localhost:8842"
+      fi
 tasks:
   install:
     desc: 🛠️ [{{ agent_app_name }}] Install agent uv dependencies
@@ -74,6 +81,47 @@ tasks:
     cmds:
       - echo "Running CLI {% raw %}{{.CLI_ARGS}}{% endraw %}"
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} UV_PROJECT={% raw %}{{.TASKFILE_DIR}}{% endraw %} uv run cli.py {% raw %}{{.CLI_ARGS}}{% endraw %}"
+    silent: true
+  cli-auto:
+    desc: 🖥️ [agent_crewai] Run the CLI with automatic dev server management
+    cmds:
+      - echo "Running CLI with auto dev server {{.CLI_ARGS}}"
+      - |
+        # Kill any existing dev server processes
+        pkill -f 'uv run python dev.py' 2>/dev/null || true
+
+        # Start dev server in background
+        echo "🚀 Starting dev server in background..."
+        {{.CLEAN_PYTHON_ENV}} uv run python dev.py &
+        DEV_SERVER_PID=$!
+        echo "Dev server started with PID: $DEV_SERVER_PID"
+
+        # Wait for server to be ready
+        echo "⏳ Waiting for dev server to be ready..."
+        for i in {1..30}; do
+          if curl --silent --fail {{.AGENT_ENDPOINT}}/ >/dev/null 2>&1; then
+            echo "✅ Dev server is ready!"
+            break
+          fi
+          sleep 1
+          if [ $i -eq 30 ]; then
+            echo "❌ Dev server failed to start within 30 seconds"
+            pkill -f 'uv run python dev.py' 2>/dev/null || true
+            exit 1
+          fi
+        done
+
+        # Run the CLI
+        echo "🏃 Running CLI command..."
+        {{.CLEAN_PYTHON_ENV}} UV_PROJECT={{.TASKFILE_DIR}} uv run cli.py {{.CLI_ARGS}}
+        CLI_EXIT_CODE=$?
+
+        # Always clean up dev server processes
+        echo "🛑 Stopping dev server..."
+        pkill -f 'uv run python dev.py' 2>/dev/null || true
+        echo "✅ Dev server stopped"
+
+        exit $CLI_EXIT_CODE
     silent: true
   dev:
     desc: 🔨 [{{ agent_app_name }}] Run the development server
