@@ -147,35 +147,35 @@ def chat(
     # allowing environment variables to be passed during execution
     agent = MyAgent(**completion_create_params)
 
-    thread_pool_executor = ThreadPoolExecutor(1)
-    event_loop = asyncio.new_event_loop()
-    thread_pool_executor.submit(asyncio.set_event_loop, event_loop).result()
+    with ThreadPoolExecutor(1) as thread_pool_executor:
+        event_loop = asyncio.new_event_loop()
+        thread_pool_executor.submit(asyncio.set_event_loop, event_loop).result()
 
-    # Invoke the agent and check if it returns a generator or a tuple
-    result = thread_pool_executor.submit(
-        event_loop.run_until_complete,
-        agent.invoke(completion_create_params=completion_create_params),
-    ).result()
+        # Invoke the agent and check if it returns a generator or a tuple
+        result = thread_pool_executor.submit(
+            event_loop.run_until_complete,
+            agent.invoke(completion_create_params=completion_create_params),
+        ).result()
 
-    # Check if the result is a generator (streaming response)
-    if isinstance(result, AsyncGenerator):
-        # Streaming response
-        return cast(
-            Iterator[CustomModelStreamingResponse],
-            to_custom_model_streaming_response(
-                thread_pool_executor,
-                event_loop,
-                result,
+        # Check if the result is a generator (streaming response)
+        if isinstance(result, AsyncGenerator):
+            # Streaming response
+            return cast(
+                Iterator[CustomModelStreamingResponse],
+                to_custom_model_streaming_response(
+                    thread_pool_executor,
+                    event_loop,
+                    result,
+                    model=completion_create_params.get("model"),
+                ),
+            )
+        else:
+            # Non-streaming response
+            response_text, pipeline_interactions, usage_metrics = result
+
+            return to_custom_model_chat_response(
+                response_text,
+                pipeline_interactions,
+                usage_metrics,
                 model=completion_create_params.get("model"),
-            ),
-        )
-    else:
-        # Non-streaming response
-        response_text, pipeline_interactions, usage_metrics = result
-
-        return to_custom_model_chat_response(
-            response_text,
-            pipeline_interactions,
-            usage_metrics,
-            model=completion_create_params.get("model"),
-        )
+            )
