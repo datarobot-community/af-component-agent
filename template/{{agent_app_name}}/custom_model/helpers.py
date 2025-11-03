@@ -19,6 +19,7 @@ from asyncio import AbstractEventLoop
 from concurrent.futures import ThreadPoolExecutor
 from typing import AsyncGenerator, Iterator
 
+from datarobot_genai.core.agents import default_usage_metrics
 from datarobot_genai.core.chat import CustomModelStreamingResponse
 from openai.types import CompletionUsage
 from openai.types.chat.chat_completion_chunk import Choice as ChunkChoice
@@ -46,11 +47,7 @@ def to_custom_model_streaming_response(
     else:
         model = str(model)
 
-    required_usage_metrics: dict[str, int] = {
-        "completion_tokens": 0,
-        "prompt_tokens": 0,
-        "total_tokens": 0,
-    }
+    required_usage_metrics = default_usage_metrics()
     try:
         agent_response = streaming_response_generator.__aiter__()
         while True:
