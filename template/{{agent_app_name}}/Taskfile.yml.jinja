@@ -92,14 +92,14 @@ tasks:
 
         # Start dev server in background
         echo "🚀 Starting dev server in background..."
-        {{.CLEAN_PYTHON_ENV}} uv run python dev.py &
+        {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run python dev.py &
         DEV_SERVER_PID=$!
         echo "Dev server started with PID: $DEV_SERVER_PID"
 
         # Wait for server to be ready
         echo "⏳ Waiting for dev server to be ready..."
         for i in {1..30}; do
-          if curl --silent --fail {{.AGENT_ENDPOINT}}/ >/dev/null 2>&1; then
+          if curl --silent --fail {% raw %}{{.AGENT_ENDPOINT}}{% endraw %}/ >/dev/null 2>&1; then
             echo "✅ Dev server is ready!"
             break
           fi
@@ -113,7 +113,7 @@ tasks:
 
         # Run the CLI
         echo "🏃 Running CLI command..."
-        {{.CLEAN_PYTHON_ENV}} UV_PROJECT={{.TASKFILE_DIR}} uv run cli.py {{.CLI_ARGS}}
+        {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} UV_PROJECT={{.TASKFILE_DIR}} uv run cli.py {{.CLI_ARGS}}
         CLI_EXIT_CODE=$?
 
         # Always clean up dev server processes
