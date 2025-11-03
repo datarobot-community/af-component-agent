@@ -154,7 +154,7 @@ class MyAgent(LangGraphAgent):
     @property
     def agent_editor(self) -> Any:
         return create_react_agent(
-            self.llm(),
+            self.llm(preferred_model="datarobot/azure/gpt-4o-mini"),
             tools=[],
             prompt=make_system_prompt(
                 "You are a content editor. You are working with a planner and writer colleague.\n"
