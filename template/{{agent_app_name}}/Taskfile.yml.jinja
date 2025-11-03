@@ -79,7 +79,7 @@ tasks:
   cli:
     desc: 🖥️ [{{ agent_app_name }}] Run the CLI with provided arguments
     vars:
-      START_DEV: "{{.START_DEV}}"
+      START_DEV: "{% raw %}{{.START_DEV}}{% endraw %}"
     cmds:
       - echo "Running CLI {% raw %}{{.CLI_ARGS}}{% endraw %}"
       - |
