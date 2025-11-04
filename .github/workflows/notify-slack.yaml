@@ -65,20 +65,26 @@ jobs:
           echo "Open PRs after filtering for 'ready for review' label (case-insensitive):"
           echo "$PRS_JSON" | jq -r '.[] | "Title: " + .title + " | Labels: " + ([.labels[].name] | join(", "))'
           
-          # Filter PRs with "Ready for Review" label and format them
+          # Filter PRs with "Ready for Review" label and format them (fetching details for correct additions/deletions)
           PR_LIST=""
-          while IFS= read -r line; do
-            if [ -n "$line" ]; then
-              echo "Found PR marked as ready for review: $line"
-              # Escape special characters for JSON
-              ESCAPED_LINE=$(echo "$line" | sed 's/\\/\\\\/g; s/"/\\"/g')
-              if [ -z "$PR_LIST" ]; then
-                PR_LIST="$ESCAPED_LINE"
-              else
-                PR_LIST="$PR_LIST\\n$ESCAPED_LINE"
-              fi
+          for PR_NUMBER in $(echo "$PRS_JSON" | jq -r '.[].number'); do
+            PR_DETAIL=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${REPO_NAME}/pulls/${PR_NUMBER}")
+            TITLE=$(echo "$PR_DETAIL" | jq -r '.title')
+            USER=$(echo "$PR_DETAIL" | jq -r '.user.login')
+            ADDITIONS=$(echo "$PR_DETAIL" | jq -r '.additions')
+            DELETIONS=$(echo "$PR_DETAIL" | jq -r '.deletions')
+            HTML_URL=$(echo "$PR_DETAIL" | jq -r '.html_url')
+            LINE="• PR <$HTML_URL|#$PR_NUMBER: $TITLE> by $USER needs a review: \`+$ADDITIONS -$DELETIONS\`"
+            echo "Found PR marked as ready for review: $LINE"
+            # Escape special characters for JSON
+            ESCAPED_LINE=$(echo "$LINE" | sed 's/\\/\\\\/g; s/"/\\"/g')
+            if [ -z "$PR_LIST" ]; then
+              PR_LIST="$ESCAPED_LINE"
+            else
+              PR_LIST="$PR_LIST\\n$ESCAPED_LINE"
             fi
-          done < <(echo "$PRS_JSON" | jq -r '.[] | "• " + .title + " by " + .user.login + " needs a review: `+" + (.additions|tostring) + " -" + (.deletions|tostring) + "` <" + .html_url + "|#" + (.number|tostring) + ">"')
+          done
 
           
           # Only send notification if there are PRs ready for review
