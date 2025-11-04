@@ -189,7 +189,7 @@ else:
 
 pulumi.export("SESSION_SECRET_KEY", session_secret_key)
 session_secret_cred = pulumi_datarobot.ApiTokenCredential(
-    f"{{agent_app_name}} Session Secret Key",
+    "{{agent_app_name}} Session Secret Key",
     args=pulumi_datarobot.ApiTokenCredentialArgs(
         api_token=str(session_secret_key),
     ),
