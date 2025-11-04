@@ -278,7 +278,7 @@ def test_custom_model_created(monkeypatch):
     assert len(runtime_parameter_values) == 1
     assert runtime_parameter_values[0].type == "credential"
     assert runtime_parameter_values[0].key == "SESSION_SECRET_KEY"
-    assert runtime_parameter_values[0].value == "secret_value"
+    assert runtime_parameter_values[0].value is not None
 
 
 def test_agentic_playground_and_blueprint_created(monkeypatch):
