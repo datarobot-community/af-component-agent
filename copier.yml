@@ -38,10 +38,20 @@ llm_answers_file:
     {% elif '.datarobot/answers' not in llm_answers_file %}ERROR: LLM answers file must contain '.datarobot/answers' in the path
     {% endif %}
 
+fastapi_answers_file:
+  type: str
+  default: ".datarobot/answers/fastapi-web.yml"
+  help: "Path to the fastapi component answers file (must contain '.datarobot/answers')"
+  validator: >-
+    {% if not fastapi_answers_file %}ERROR: FastApi answers file path cannot be empty
+    {% elif '.datarobot/answers' not in fastapi_answers_file %}ERROR: FastApi answers file must contain '.datarobot/answers' in the path
+    {% endif %}
+
 # Grab the base component answers to re-use answers
 _external_data:
   base: "{{ base_answers_file }}"
   llm: "{{ llm_answers_file }}"
+  fastapi: "{{ fastapi_answers_file }}"
 
 _subdirectory: template
 _answers_file: ".datarobot/answers/agent-{{ agent_app_name }}.yml"

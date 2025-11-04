@@ -57,7 +57,7 @@ os.environ["DEEPEVAL_TELEMETRY_OPT_OUT"] = "YES"
 # ------------------------------------------------------------------------------
 
 
-from typing import AsyncGenerator, Iterator, Union, cast
+from typing import Any, AsyncGenerator, Iterator, Union, cast
 
 # ruff: noqa: E402
 from agent import MyAgent
@@ -109,6 +109,7 @@ def chat(
     | CompletionCreateParamsNonStreaming
     | CompletionCreateParamsStreaming,
     load_model_result: tuple[ThreadPoolExecutor, asyncio.AbstractEventLoop],
+    **kwargs: Any,
 ) -> Union[CustomModelChatResponse, Iterator[CustomModelStreamingResponse]]:
     """When using the chat endpoint, this function is called.
 
@@ -133,17 +134,18 @@ def chat(
     """
     thread_pool_executor, event_loop = load_model_result
 
-    # Initialize the authorization context for downstream agents and tools to retrieve
-    # access tokens for external services.
-    initialize_authorization_context(completion_create_params)
-
     # Change working directory to the directory containing this file.
     # Some agent frameworks expect this for expected pathing.
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
-    # Load MCP runtime parameters if configured
+    # Load MCP runtime parameters and session secret if configured
     maybe_set_env_from_runtime_parameters("EXTERNAL_MCP_URL")
     maybe_set_env_from_runtime_parameters("MCP_DEPLOYMENT_ID")
+    maybe_set_env_from_runtime_parameters("SESSION_SECRET_KEY")
+
+    # Initialize the authorization context for downstream agents and tools to retrieve
+    # access tokens for external services.
+    initialize_authorization_context(completion_create_params, **kwargs)
 
     # Instantiate the agent, all fields from the completion_create_params are passed to the agent
     # allowing environment variables to be passed during execution
