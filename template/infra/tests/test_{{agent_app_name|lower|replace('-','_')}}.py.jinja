@@ -39,6 +39,8 @@ def pulumi_mocks(monkeypatch):
     # Mock pulumi_datarobot resources
     monkeypatch.setattr("pulumi_datarobot.ExecutionEnvironment", MagicMock())
     monkeypatch.setattr("pulumi_datarobot.CustomModel", MagicMock())
+    monkeypatch.setattr("pulumi_datarobot.ApiTokenCredential", MagicMock())
+    monkeypatch.setattr("pulumi_datarobot.ApiTokenCredentialArgs", MagicMock())
     monkeypatch.setattr("pulumi_datarobot.Playground", MagicMock())
     monkeypatch.setattr("pulumi_datarobot.LlmBlueprint", MagicMock())
     monkeypatch.setattr("pulumi_datarobot.PredictionEnvironment", MagicMock())
