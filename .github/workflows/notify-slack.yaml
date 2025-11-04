@@ -5,6 +5,7 @@ on:
     types: [labeled]
   schedule:
     - cron: '*/30 * * * *'  # Every 30 minutes
+  workflow_dispatch:
 
 jobs:
   notify-slack:
@@ -12,8 +13,14 @@ jobs:
 
     steps:
       - name: Send notification to Slack
-        if: github.event_name != 'schedule'
+        if: github.event_name == 'pull_request'
         run: |
+          LABEL_NAME="${{ github.event.label.name }}"
+          # Check if label contains 'ready for review' (case-insensitive)
+          if ! echo "$LABEL_NAME" | grep -i 'ready for review' >/dev/null; then
+            echo "Label does not contain 'ready for review' (case-insensitive), skipping notification."
+            exit 0
+          fi
           SLACK_WEBHOOK_URL="${{ secrets.SLACK_WEBHOOK_URL }}"
           PR_NR="${{ github.event.pull_request.number }}"
           PR_URL="${{ github.event.pull_request.html_url }}"
@@ -36,57 +43,68 @@ jobs:
                 \"type\": \"section\",
                 \"text\": {
                   \"type\": \"mrkdwn\",
-                  \"text\": \"@buzok-team: :rocket: PR by ${PR_AUTHOR_ESCAPED} needs a review: \`+${PR_ADDITIONS} -${PR_DELETIONS}\` <${PR_URL}|${REPO_NAME_ESCAPED}#${PR_NR}: ${PR_TITLE_ESCAPED}>\"
+                  \"text\": \"@buzok-team: :rocket: PR by ${PR_AUTHOR_ESCAPED} needs a review:\\n<${PR_URL}|${REPO_NAME_ESCAPED}#${PR_NR}: ${PR_TITLE_ESCAPED}> \`+${PR_ADDITIONS} -${PR_DELETIONS}\`\"
                 }
               }
             ]
           }" \
           "${SLACK_WEBHOOK_URL}"
       - name: Send summary notification to Slack
-        if: github.event_name == 'schedule'
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
           SLACK_WEBHOOK_URL="${{ secrets.SLACK_WEBHOOK_URL }}"
-          ORG="datarobot-community"
-          # Get all open PRs for all repos in the org (first 100 repos)
-          REPOS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/orgs/$ORG/repos?per_page=100" | jq -r '.[].name')
-          NOW=$(date -u +%s)
+          REPO_NAME="${{ github.repository }}"
+          
+          # Get PRs with any label containing "ready for review" (case-insensitive)
+          PRS_JSON=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/${REPO_NAME}/pulls?state=open&per_page=100")
+          echo "All open PRs (before filtering):"
+          echo "$PRS_JSON" | jq -r '.[] | "Title: " + .title + " | Labels: " + ([.labels[].name] | join(", "))'
+          # Filter PRS_JSON to only PRs with a label containing 'ready for review' (case-insensitive)
+          PRS_JSON=$(echo "$PRS_JSON" | jq '[.[] | select(.labels[]?.name | ascii_downcase | test("ready for review"))]')
+          echo "Open PRs after filtering for 'ready for review' label (case-insensitive):"
+          echo "$PRS_JSON" | jq -r '.[] | "Title: " + .title + " | Labels: " + ([.labels[].name] | join(", "))'
+          
+          # Filter PRs with "Ready for Review" label and format them (fetching details for correct additions/deletions)
           PR_LIST=""
-          for REPO in $REPOS; do
-            PRS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/$ORG/$REPO/pulls?state=open&per_page=100")
-            echo "$PRS" | jq -c '.[] | select(.labels[]?.name == "Ready for review")' | while read -r pr; do
-              NUMBER=$(echo "$pr" | jq -r '.number')
-              TITLE=$(echo "$pr" | jq -r '.title')
-              AUTHOR=$(echo "$pr" | jq -r '.user.login')
-              URL=$(echo "$pr" | jq -r '.html_url')
-              ADDITIONS=$(echo "$pr" | jq -r '.additions')
-              DELETIONS=$(echo "$pr" | jq -r '.deletions')
-              CREATED_AT=$(echo "$pr" | jq -r '.created_at')
-              # Calculate time ago
-              CREATED_AT_EPOCH=$(date -d "$CREATED_AT" +%s)
-              MINUTES_AGO=$(( (NOW - CREATED_AT_EPOCH) / 60 ))
-              if [ "$MINUTES_AGO" -lt 60 ]; then
-                TIME_AGO="$MINUTES_AGO minutes ago"
-              else
-                HOURS=$((MINUTES_AGO / 60))
-                MINUTES=$((MINUTES_AGO % 60))
-                TIME_AGO="$HOURS hours $MINUTES minutes ago"
-              fi
-              # Escape for JSON
-              TITLE_ESCAPED=$(echo "$TITLE" | sed 's/\\/\\\\/g; s/"/\\"/g')
-              AUTHOR_ESCAPED=$(echo "$AUTHOR" | sed 's/\\/\\\\/g; s/"/\\"/g')
-              # Format: - <link|repo#pr: [title] by author (time ago) +adds -dels>
-              SLACK_LINE_TEXT="$REPO#$NUMBER: [$TITLE_ESCAPED] by $AUTHOR_ESCAPED ($TIME_AGO) +$ADDITIONS -$DELETIONS (Review on behalf of GenAI Tooling (Buzok))"
-              LINE="- <$URL|$SLACK_LINE_TEXT>"
-              if [ -z "$PR_LIST" ]; then
-                PR_LIST="$LINE"
-              else
-                PR_LIST="$PR_LIST\\n$LINE"
-              fi
-            done
+          for PR_NUMBER in $(echo "$PRS_JSON" | jq -r '.[].number'); do
+            PR_DETAIL=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${REPO_NAME}/pulls/${PR_NUMBER}")
+            TITLE=$(echo "$PR_DETAIL" | jq -r '.title')
+            USER=$(echo "$PR_DETAIL" | jq -r '.user.login')
+            ADDITIONS=$(echo "$PR_DETAIL" | jq -r '.additions')
+            DELETIONS=$(echo "$PR_DETAIL" | jq -r '.deletions')
+            HTML_URL=$(echo "$PR_DETAIL" | jq -r '.html_url')
+            LINE="• PR <$HTML_URL|#$PR_NUMBER: $TITLE> by $USER needs a review: \`+$ADDITIONS -$DELETIONS\`"
+            echo "Found PR marked as ready for review: $LINE"
+            # Escape special characters for JSON
+            ESCAPED_LINE=$(echo "$LINE" | sed 's/\\/\\\\/g; s/"/\\"/g')
+            if [ -z "$PR_LIST" ]; then
+              PR_LIST="$ESCAPED_LINE"
+            else
+              PR_LIST="$PR_LIST\\n$ESCAPED_LINE"
+            fi
           done
+
+          
           # Only send notification if there are PRs ready for review
           if [ -n "$PR_LIST" ]; then
+              echo "PR_LIST content before sending notification:"
+              echo -e "$PR_LIST"
             curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\": \"$PR_LIST\"}" \
+            --data "{
+              \"text\": \"*Pull Requests Ready for Review Summary*\", 
+              \"blocks\": [
+                {
+                  \"type\": \"section\",
+                  \"text\": {
+                    \"type\": \"mrkdwn\",
+                    \"text\": \":clipboard: Here are the open PRs ready for review:\\n$PR_LIST\"
+                  }
+                }
+              ]
+            }" \
             "${SLACK_WEBHOOK_URL}"
+            else
+              echo "No PRs found with a 'ready for review' label. PR_LIST is empty."
           fi
