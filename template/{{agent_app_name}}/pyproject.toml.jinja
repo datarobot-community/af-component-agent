@@ -1,4 +1,7 @@
 [project]
+exclude-dependencies = [
+    "uv",
+]
 
 name = "{{ agent_app_name }}"
 version = "0.1.0"
@@ -6,6 +9,9 @@ description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
 {% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% elif agent_template_framework == "nat" %}requires-python = ">=3.11, <3.13"{% else %}requires-python = ">=3.10, <3.13"{% endif %}
 dependencies = [
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # DO NOT EDIT THESE DEPENDENCIES OUTSIDE OF AF-COMPONENT-AGENT
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     "click>=8.1.8",
     "datarobot[core]>=3.9.1",
     "datarobot-drum>=1.17.5",
@@ -23,9 +29,11 @@ dependencies = [
     "opentelemetry-instrumentation-requests>=0.54b0",
     "opentelemetry-sdk>=1.33.0",
 
+    {% if agent_template_framework == "docker" %}
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # We need to verify execution environment compatibility before these are removed.
     # Codespaces must be able to launch the container!
-    {% if agent_template_framework == "docker" %}
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     "dotenv>=0.9.9",
     "langchain-community>=0.3.27",
     "langchain-mcp-adapters>=0.1.9",
@@ -77,6 +85,7 @@ dependencies = [
     "pypdf>=6.0.0",
     "logfire>=4.6.0",
     "pydantic-ai>=1.0.5",
+    "pypdf>=6.1.3",
     {% endif %}
 ]
 
