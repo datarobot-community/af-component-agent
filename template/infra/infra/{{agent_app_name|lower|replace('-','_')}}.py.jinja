@@ -32,6 +32,12 @@ from . import project_dir, use_case
 
 from .{{ _external_data.llm.llm_app_name }} import custom_model_runtime_parameters as llm_custom_model_runtime_parameters
 
+try:
+    from .{{ _external_data.fastapi.fastapi_app_name }} import custom_model_credential_runtime_parameters
+except ImportError:
+    custom_model_credential_runtime_parameters = []
+
+
 DEFAULT_EXECUTION_ENVIRONMENT = "[DataRobot] Python 3.11 GenAI Agents"
 
 EXCLUDE_PATTERNS = [
@@ -194,7 +200,7 @@ else:
     language="python",
     use_case_ids=[use_case.id],
     files={{agent_app_name}}_custom_model_files,
-    runtime_parameter_values=llm_custom_model_runtime_parameters,
+    runtime_parameter_values=llm_custom_model_runtime_parameters + custom_model_credential_runtime_parameters,
 )
 
 {{agent_app_name}}_custom_model_endpoint = {{agent_app_name}}_custom_model.id.apply(
