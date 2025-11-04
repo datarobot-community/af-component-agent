@@ -14,7 +14,7 @@
 import os
 import re
 import shutil
-from typing import cast
+from typing import cast, Final
 
 import datarobot as dr
 import pulumi
@@ -31,11 +31,6 @@ from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 from . import project_dir, use_case
 
 from .{{ _external_data.llm.llm_app_name }} import custom_model_runtime_parameters as llm_custom_model_runtime_parameters
-
-try:
-    from .{{ _external_data.fastapi.fastapi_app_name }} import custom_model_credential_runtime_parameters
-except ImportError:
-    custom_model_credential_runtime_parameters = []
 
 DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
 
@@ -71,6 +66,9 @@ __all__ = [
 {{agent_app_name}}_application_name: str = "{{agent_app_name}}"
 {{agent_app_name}}_asset_name: str = f"[{PROJECT_NAME}] [{{agent_app_name}}]"
 {{agent_app_name}}_application_path = project_dir.parent / "{{agent_app_name}}"
+
+SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
+session_secret_key = os.environ.get(SESSION_SECRET_KEY)
 
 
 def get_custom_model_files(custom_model_folder: str) -> list[tuple[str, str]]:
@@ -188,6 +186,21 @@ else:
 {{agent_app_name}}_custom_model_files = get_custom_model_files(
     str(os.path.join(str({{agent_app_name}}_application_path), "custom_model"))
 )
+
+pulumi.export("SESSION_SECRET_KEY", session_secret_key)
+session_secret_cred = pulumi_datarobot.ApiTokenCredential(
+    "{{agent_app_name}} Session Secret Key",
+    args=pulumi_datarobot.ApiTokenCredentialArgs(
+        api_token=str(session_secret_key),
+    ),
+)
+custom_model_credential_runtime_parameters = [
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        type="credential",
+        key=SESSION_SECRET_KEY,
+        value=session_secret_cred.id,
+    ),
+]
 
 {{agent_app_name}}_custom_model = pulumi_datarobot.CustomModel(
     resource_name={{agent_app_name}}_asset_name + " Custom Model",
