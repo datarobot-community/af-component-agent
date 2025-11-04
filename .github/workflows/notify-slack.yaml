@@ -67,7 +67,6 @@ jobs:
           
           # Filter PRs with "Ready for Review" label and format them
           PR_LIST=""
-          echo "$PRS_JSON" | jq -r '.[] | "• " + .title + " by " + .user.login + " needs a review: `+" + (.additions|tostring) + " -" + (.deletions|tostring) + "` <" + .html_url + "|#" + (.number|tostring) + ">"' | \
           while IFS= read -r line; do
             if [ -n "$line" ]; then
               echo "Found PR marked as ready for review: $line"
@@ -79,7 +78,7 @@ jobs:
                 PR_LIST="$PR_LIST\\n$ESCAPED_LINE"
               fi
             fi
-          done
+          done < <(echo "$PRS_JSON" | jq -r '.[] | "• " + .title + " by " + .user.login + " needs a review: `+" + (.additions|tostring) + " -" + (.deletions|tostring) + "` <" + .html_url + "|#" + (.number|tostring) + ">"')
 
           
           # Only send notification if there are PRs ready for review
