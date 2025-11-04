@@ -198,7 +198,7 @@ custom_model_credential_runtime_parameters = [
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
         type="credential",
         key=SESSION_SECRET_KEY,
-        value=session_secret_cred.id,
+        value=str(session_secret_cred.id),
     ),
 ]
 
