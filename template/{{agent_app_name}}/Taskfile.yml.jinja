@@ -160,6 +160,8 @@ tasks:
       - cd docker_context_temp && git pull origin master
       - cp -r docker_context_temp/public_dropin_environments/python311_genai_agents ./docker_context
       - rm -rf docker_context_temp
+      # Remove the env_info.json as it contains production environment info
+      - rm ./docker_context/env_info.json
       # We need to rename these from their production variants to their local variants
       - mv ./docker_context/Dockerfile ./docker_context/Dockerfile.prod
       - mv ./docker_context/Dockerfile.local ./docker_context/Dockerfile
