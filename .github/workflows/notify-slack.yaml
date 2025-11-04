@@ -12,7 +12,7 @@ jobs:
 
     steps:
       - name: Send notification to Slack
-        if: github.event_name != 'schedule'
+        if: github.event_name == 'pull_request' && contains(toLower(github.event.label.name), 'ready for review')
         run: |
           SLACK_WEBHOOK_URL="${{ secrets.SLACK_WEBHOOK_URL }}"
           PR_NR="${{ github.event.pull_request.number }}"
@@ -22,26 +22,34 @@ jobs:
           PR_ADDITIONS="${{ github.event.pull_request.additions }}"
           PR_DELETIONS="${{ github.event.pull_request.deletions }}"
           REPO_NAME="${{ github.event.repository.name }}"
-          
+          OWNER="${{ github.repository_owner }}"
+
+          # Get changed files (first 3)
+          FILES_JSON=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/repos/$OWNER/$REPO_NAME/pulls/$PR_NR/files?per_page=3")
+          FILE_LINES=""
+          COUNT=0
+          echo "$FILES_JSON" | jq -c '.[]' | while read -r file; do
+            COUNT=$((COUNT+1))
+            FILENAME=$(echo "$file" | jq -r '.filename')
+            ADD=$(echo "$file" | jq -r '.additions')
+            DEL=$(echo "$file" | jq -r '.deletions')
+            FILE_LINES="$FILE_LINES\n• $FILENAME +$ADD -$DEL"
+            if [ $COUNT -ge 3 ]; then break; fi
+          done
+
           # Escape special characters for JSON
           PR_TITLE_ESCAPED=$(echo "$PR_TITLE" | sed 's/\\/\\\\/g; s/"/\\"/g')
           PR_AUTHOR_ESCAPED=$(echo "$PR_AUTHOR" | sed 's/\\/\\\\/g; s/"/\\"/g')
           REPO_NAME_ESCAPED=$(echo "$REPO_NAME" | sed 's/\\/\\\\/g; s/"/\\"/g')
+          FILE_LINES_ESCAPED=$(echo -e "$FILE_LINES" | sed 's/\\/\\\\/g; s/"/\\"/g')
+
+          # Compose message
+          MSG="@buzok-team: :rocket: PR by $PR_AUTHOR_ESCAPED needs a review::green_with_check: +$PR_ADDITIONS -$PR_DELETIONS $REPO_NAME_ESCAPED#$PR_NR: $PR_TITLE_ESCAPED based on the following changes:$FILE_LINES_ESCAPED\n<${PR_URL}|View PR>"
 
           curl -X POST -H 'Content-type: application/json' \
-          --data "{
-            \"text\": \"*Pull Request Ready for Review!*\", 
-            \"blocks\": [
-              {
-                \"type\": \"section\",
-                \"text\": {
-                  \"type\": \"mrkdwn\",
-                  \"text\": \"@buzok-team: :rocket: PR by ${PR_AUTHOR_ESCAPED} needs a review: \`+${PR_ADDITIONS} -${PR_DELETIONS}\` <${PR_URL}|${REPO_NAME_ESCAPED}#${PR_NR}: ${PR_TITLE_ESCAPED}>\"
-                }
-              }
-            ]
-          }" \
-          "${SLACK_WEBHOOK_URL}"
+            --data "{\"text\": \"$MSG\"}" \
+            "${SLACK_WEBHOOK_URL}"
       - name: Send summary notification to Slack
         if: github.event_name == 'schedule'
         run: |
@@ -53,7 +61,7 @@ jobs:
           PR_LIST=""
           for REPO in $REPOS; do
             PRS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/$ORG/$REPO/pulls?state=open&per_page=100")
-            echo "$PRS" | jq -c '.[] | select(.labels[]?.name == "Ready for review")' | while read -r pr; do
+            echo "$PRS" | jq -c '.[] | select([.labels[].name | ascii_downcase] | map(contains("ready for review")) | any)' | while read -r pr; do
               NUMBER=$(echo "$pr" | jq -r '.number')
               TITLE=$(echo "$pr" | jq -r '.title')
               AUTHOR=$(echo "$pr" | jq -r '.user.login')
