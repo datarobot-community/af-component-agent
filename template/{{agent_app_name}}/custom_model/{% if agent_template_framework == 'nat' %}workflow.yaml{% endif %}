@@ -67,11 +67,9 @@ functions:
       You must create a well-written blog post in markdown format, ready for publication, each section should have 2 or 3 paragraphs.
 llms:
   datarobot_llm:
-    _type: openai
+    _type: datarobot_llm_gateway
     model_name: azure/gpt-4o-2024-11-20
     temperature: 0.0
-    api_key: ${DATAROBOT_API_TOKEN}
-    base_url: ${DATAROBOT_ENDPOINT}/genai/llmgw
 workflow:
   _type: sequential_executor
   tool_list: [planner, writer, editor]

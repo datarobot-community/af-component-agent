@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# type: ignore
 import json
 import logging
 from typing import Any, Union
@@ -37,7 +38,7 @@ from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 
 class CrewAIEventListener(BaseEventListener):
     def __init__(self) -> None:
-        super().__init__()  # type: ignore[no-untyped-call]
+        super().__init__()
         self.messages: list[Union[HumanMessage, AIMessage, ToolMessage]] = []
 
     def setup_listeners(self, crewai_event_bus: CrewAIEventsBus) -> None:

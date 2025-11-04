@@ -37,8 +37,7 @@ try:
 except ImportError:
     custom_model_credential_runtime_parameters = []
 
-
-DEFAULT_EXECUTION_ENVIRONMENT = "[DataRobot] Python 3.11 GenAI Agents"
+DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
 
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
@@ -138,7 +137,7 @@ if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
         "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT"
     ]
 
-    if {{agent_app_name}}_execution_environment_id == DEFAULT_EXECUTION_ENVIRONMENT:
+    if DEFAULT_EXECUTION_ENVIRONMENT in {{agent_app_name}}_execution_environment_id:
         pulumi.info(
             "Using default GenAI Agents execution environment "
             + {{agent_app_name}}_execution_environment_id
