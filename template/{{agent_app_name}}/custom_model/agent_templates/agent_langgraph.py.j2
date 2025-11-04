@@ -57,7 +57,7 @@ class MyAgent(LangGraphAgent):
             [
                 (
                     "user",
-                    f"The topic is {{topic}}. Make sure you find any interesting and relevant information given the current year is {datetime.now().year}.",
+                    f"The topic is {% raw %}{{topic}}{% endraw %}. Make sure you find any interesting and relevant information given the current year is {datetime.now().year}.",
                 ),
             ]
         )

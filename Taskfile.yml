@@ -13,6 +13,7 @@ tasks:
     desc: "Install development dependencies for all agents into .venv_dev directory"
     cmds:
       - echo "Installing development dependencies for all agents"
+      - uv sync --all-extras
       - mv pyproject.toml pyproject.toml.bak
       - uv run jinja -D agent_app_name DockerContext -D agent_template_framework docker template/\{\{agent_app_name\}\}/pyproject.toml.jinja -o pyproject.toml
       - UV_PROJECT_ENVIRONMENT=.venv_dev uv sync --all-extras
