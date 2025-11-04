@@ -196,9 +196,9 @@ session_secret_cred = pulumi_datarobot.ApiTokenCredential(
 )
 custom_model_credential_runtime_parameters = [
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        type="credential",
+        type="string",
         key=SESSION_SECRET_KEY,
-        value=session_secret_cred.id,
+        value=session_secret_cred.id.apply(lambda id: str(id)),
     ),
 ]
 
