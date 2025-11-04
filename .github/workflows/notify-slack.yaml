@@ -46,42 +46,47 @@ jobs:
         if: github.event_name == 'schedule'
         run: |
           SLACK_WEBHOOK_URL="${{ secrets.SLACK_WEBHOOK_URL }}"
-          REPO_NAME="${{ github.repository }}"
-          
-          # Get PRs with "Ready for Review" label
-          PRS_JSON=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${REPO_NAME}/pulls?state=open&per_page=100")
-          
-          # Filter PRs with "Ready for Review" label and format them
+          ORG="datarobot-community"
+          # Get all open PRs for all repos in the org (first 100 repos)
+          REPOS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/orgs/$ORG/repos?per_page=100" | jq -r '.[].name')
+          NOW=$(date -u +%s)
           PR_LIST=""
-          echo "$PRS_JSON" | jq -r '.[] | select(.labels[]?.name == "Ready for review") | 
-            "• " + .title + " by " + .user.login + " needs a review: `+" + (.additions|tostring) + " -" + (.deletions|tostring) + "` <" + .html_url + "|#" + (.number|tostring) + ">"' | \
-          while IFS= read -r line; do
-            if [ -n "$line" ]; then
-              # Escape special characters for JSON
-              ESCAPED_LINE=$(echo "$line" | sed 's/\\/\\\\/g; s/"/\\"/g')
-              if [ -z "$PR_LIST" ]; then
-                PR_LIST="$ESCAPED_LINE"
+          for REPO in $REPOS; do
+            PRS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/$ORG/$REPO/pulls?state=open&per_page=100")
+            echo "$PRS" | jq -c '.[] | select(.labels[]?.name == "Ready for review")' | while read -r pr; do
+              NUMBER=$(echo "$pr" | jq -r '.number')
+              TITLE=$(echo "$pr" | jq -r '.title')
+              AUTHOR=$(echo "$pr" | jq -r '.user.login')
+              URL=$(echo "$pr" | jq -r '.html_url')
+              ADDITIONS=$(echo "$pr" | jq -r '.additions')
+              DELETIONS=$(echo "$pr" | jq -r '.deletions')
+              CREATED_AT=$(echo "$pr" | jq -r '.created_at')
+              # Calculate time ago
+              CREATED_AT_EPOCH=$(date -d "$CREATED_AT" +%s)
+              MINUTES_AGO=$(( (NOW - CREATED_AT_EPOCH) / 60 ))
+              if [ "$MINUTES_AGO" -lt 60 ]; then
+                TIME_AGO="$MINUTES_AGO minutes ago"
               else
-                PR_LIST="$PR_LIST\\n$ESCAPED_LINE"
+                HOURS=$((MINUTES_AGO / 60))
+                MINUTES=$((MINUTES_AGO % 60))
+                TIME_AGO="$HOURS hours $MINUTES minutes ago"
               fi
-            fi
+              # Escape for JSON
+              TITLE_ESCAPED=$(echo "$TITLE" | sed 's/\\/\\\\/g; s/"/\\"/g')
+              AUTHOR_ESCAPED=$(echo "$AUTHOR" | sed 's/\\/\\\\/g; s/"/\\"/g')
+              # Format: - <link|repo#pr: [title] by author (time ago) +adds -dels>
+              SLACK_LINE_TEXT="$REPO#$NUMBER: [$TITLE_ESCAPED] by $AUTHOR_ESCAPED ($TIME_AGO) +$ADDITIONS -$DELETIONS (Review on behalf of GenAI Tooling (Buzok))"
+              LINE="- <$URL|$SLACK_LINE_TEXT>"
+              if [ -z "$PR_LIST" ]; then
+                PR_LIST="$LINE"
+              else
+                PR_LIST="$PR_LIST\\n$LINE"
+              fi
+            done
           done
-          
           # Only send notification if there are PRs ready for review
           if [ -n "$PR_LIST" ]; then
             curl -X POST -H 'Content-type: application/json' \
-            --data "{
-              \"text\": \"*Pull Requests Ready for Review Summary*\", 
-              \"blocks\": [
-                {
-                  \"type\": \"section\",
-                  \"text\": {
-                    \"type\": \"mrkdwn\",
-                    \"text\": \"@buzok-team: :clipboard: Here are the open PRs ready for review:\\n$PR_LIST\"
-                  }
-                }
-              ]
-            }" \
+            --data "{\"text\": \"$PR_LIST\"}" \
             "${SLACK_WEBHOOK_URL}"
           fi
