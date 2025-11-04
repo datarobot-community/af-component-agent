@@ -16,19 +16,14 @@ from datetime import datetime
 from typing import Any, Optional, Union
 
 from config import Config
+from datarobot_genai.core.agents import extract_user_prompt_content
 from datarobot_genai.llama_index import (
     DataRobotLiteLLM,
 )
 from datarobot_genai.llama_index.base import LlamaIndexAgent
-from datarobot_genai.core.agents import extract_user_prompt_content
 from llama_index.core.agent.workflow import (
-    AgentInput,
-    AgentOutput,
-    AgentStream,
     AgentWorkflow,
     FunctionAgent,
-    ToolCall,
-    ToolCallResult,
 )
 from llama_index.core.workflow import Context
 
@@ -80,7 +75,7 @@ class MyAgent(LlamaIndexAgent):
         )
 
     def extract_response_text(self, result_state: Any, events: list[Any]) -> str:  # noqa: D401
-        return str(result_state["report_content"]) 
+        return str(result_state["report_content"])
 
     def llm(
         self,
