@@ -199,7 +199,8 @@ else:
     language="python",
     use_case_ids=[use_case.id],
     files={{agent_app_name}}_custom_model_files,
-    runtime_parameter_values=llm_custom_model_runtime_parameters + custom_model_credential_runtime_parameters,
+    runtime_parameter_values=llm_custom_model_runtime_parameters
+    + custom_model_credential_runtime_parameters,
 )
 
 {{agent_app_name}}_custom_model_endpoint = {{agent_app_name}}_custom_model.id.apply(
