@@ -36,14 +36,11 @@ def pulumi_mocks(monkeypatch):
     mock_llm_module = MagicMock()
     mock_llm_module.custom_model_runtime_parameters = []
     monkeypatch.setitem(sys.modules, "infra.{{ _external_data.llm.llm_app_name }}", mock_llm_module)
-    # Mock out the FastApi and just expose the runtime credentials as it is the only public
-    # interface required for this module.
-    mock_fastapi_module = MagicMock()
-    mock_fastapi_module.custom_model_credential_runtime_parameters = []
-    monkeypatch.setitem(sys.modules, "infra.{{ _external_data.fastapi.fastapi_app_name }}", mock_fastapi_module)
     # Mock pulumi_datarobot resources
     monkeypatch.setattr("pulumi_datarobot.ExecutionEnvironment", MagicMock())
     monkeypatch.setattr("pulumi_datarobot.CustomModel", MagicMock())
+    monkeypatch.setattr("pulumi_datarobot.ApiTokenCredential", MagicMock())
+    monkeypatch.setattr("pulumi_datarobot.ApiTokenCredentialArgs", MagicMock())
     monkeypatch.setattr("pulumi_datarobot.Playground", MagicMock())
     monkeypatch.setattr("pulumi_datarobot.LlmBlueprint", MagicMock())
     monkeypatch.setattr("pulumi_datarobot.PredictionEnvironment", MagicMock())
@@ -254,7 +251,12 @@ def test_custom_model_created(monkeypatch):
 
     # Reset the mock to clear calls from the initial import
     agent_infra.pulumi_datarobot.CustomModel.reset_mock()
-    importlib.reload(agent_infra)
+
+    environment_variables = {
+        "SESSION_SECRET_KEY": "secret_value",
+    }
+    with patch.dict(os.environ, environment_variables):
+        importlib.reload(agent_infra)
 
     agent_infra.pulumi_datarobot.CustomModel.assert_called_once()
     args, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
@@ -270,7 +272,13 @@ def test_custom_model_created(monkeypatch):
     assert kwargs["language"] == "python"
     assert kwargs["use_case_ids"] == [agent_infra.use_case.id]
     assert isinstance(kwargs["files"], list)
-    assert kwargs["runtime_parameter_values"] == []
+
+    runtime_parameter_values = kwargs["runtime_parameter_values"]
+
+    assert len(runtime_parameter_values) == 1
+    assert runtime_parameter_values[0].type == "credential"
+    assert runtime_parameter_values[0].key == "SESSION_SECRET_KEY"
+    assert runtime_parameter_values[0].value is not None
 
 
 def test_agentic_playground_and_blueprint_created(monkeypatch):
