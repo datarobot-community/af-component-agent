@@ -43,8 +43,8 @@ fastapi_answers_file:
   default: ".datarobot/answers/fastapi-web.yml"
   help: "Path to the fastapi component answers file (must contain '.datarobot/answers')"
   validator: >-
-    {% if not web_answers_file %}ERROR: FastApi answers file path cannot be empty
-    {% elif '.datarobot/answers' not in llm_answers_file %}ERROR: FastApi answers file must contain '.datarobot/answers' in the path
+    {% if not fastapi_answers_file %}ERROR: FastApi answers file path cannot be empty
+    {% elif '.datarobot/answers' not in fastapi_answers_file %}ERROR: FastApi answers file must contain '.datarobot/answers' in the path
     {% endif %}
 
 # Grab the base component answers to re-use answers
