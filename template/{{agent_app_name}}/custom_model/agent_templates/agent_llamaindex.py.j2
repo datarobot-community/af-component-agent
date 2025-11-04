@@ -74,7 +74,7 @@ class MyAgent(LlamaIndexAgent):
             },
         )
 
-    def extract_response_text(self, result_state: Any, events: list[Any]) -> str:  # noqa: D401
+    def extract_response_text(self, result_state: Any, events: list[Any]) -> str:
         return str(result_state["report_content"])
 
     def llm(
