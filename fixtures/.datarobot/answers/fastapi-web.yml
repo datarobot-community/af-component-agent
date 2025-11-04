@@ -1,0 +1,8 @@
+---
+# Changes here will be overwritten by Copier
+_commit: 131453e
+_src_path: git@github.com:datarobot/af-component-fastapi-backend.git
+base_answers_file: .datarobot/answers/base.yml
+copyright_year: 2025
+fastapi_app_name: web
+fastapi_local_port: 8080
