@@ -18,7 +18,7 @@ from unittest.mock import ANY, MagicMock, Mock, patch
 import pytest
 from agent import MyAgent
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
-from datarobot_genai.crewai.events import CrewAIEventListener
+from crewai_event_listener import CrewAIEventListener
 
 
 class TestMyAgentCrewAI:
@@ -356,7 +356,7 @@ class TestMyAgentCrewAI:
             )
 
     @patch("datarobot_genai.crewai.base.Crew")
-    @patch("datarobot_genai.crewai.events.CrewAIEventListener")
+    @patch("crewai_event_listener.CrewAIEventListener")
     @patch("agent.Agent")
     def test_chat(
         self, mock_agent, mock_event_listener, mock_crew, agent, load_model_result
