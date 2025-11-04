@@ -18,7 +18,6 @@ from unittest.mock import ANY, MagicMock, Mock, patch
 import pytest
 from agent import MyAgent
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
-from crewai_event_listener import CrewAIEventListener
 
 
 class TestMyAgentCrewAI:
@@ -593,4 +592,3 @@ class TestMyAgentMCPIntegration:
         # Test editor agent
         editor = agent.agent_editor
         assert editor.tools == mock_tools
-
