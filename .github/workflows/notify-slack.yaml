@@ -43,7 +43,7 @@ jobs:
                 \"type\": \"section\",
                 \"text\": {
                   \"type\": \"mrkdwn\",
-                  \"text\": \"@buzok-team: :rocket: PR by ${PR_AUTHOR_ESCAPED} needs a review:\n\`+${PR_ADDITIONS} -${PR_DELETIONS}\` <${PR_URL}|${REPO_NAME_ESCAPED}#${PR_NR}: ${PR_TITLE_ESCAPED}>\"
+                  \"text\": \"@buzok-team: :rocket: PR by ${PR_AUTHOR_ESCAPED} needs a review:\\n<${PR_URL}|${REPO_NAME_ESCAPED}#${PR_NR}: ${PR_TITLE_ESCAPED}> \`+${PR_ADDITIONS} -${PR_DELETIONS}\`\"
                 }
               }
             ]
@@ -99,7 +99,7 @@ jobs:
                   \"type\": \"section\",
                   \"text\": {
                     \"type\": \"mrkdwn\",
-                    \"text\": \"@buzok-team: :clipboard: Here are the open PRs ready for review:\\n$PR_LIST\"
+                    \"text\": \":clipboard: Here are the open PRs ready for review:\\n$PR_LIST\"
                   }
                 }
               ]
