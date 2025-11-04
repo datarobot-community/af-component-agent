@@ -103,6 +103,10 @@ class MyAgent(CrewAIAgent):
             timeout=self.timeout,
         )
 
+    def make_kickoff_inputs(self, user_prompt_content: str) -> dict[str, Any]:
+        """Map the user prompt into Crew kickoff inputs expected by tasks/agents."""
+        return {"topic": str(user_prompt_content)}
+
     @property
     def agents(self) -> List[Agent]:
         return [self.agent_planner, self.agent_writer, self.agent_editor]
