@@ -5,6 +5,7 @@ on:
     types: [labeled]
   schedule:
     - cron: '*/30 * * * *'  # Every 30 minutes
+  workflow_dispatch:
 
 jobs:
   notify-slack:
@@ -12,8 +13,14 @@ jobs:
 
     steps:
       - name: Send notification to Slack
-        if: github.event_name == 'pull_request' && contains(toLower(github.event.label.name), 'ready for review')
+        if: github.event_name == 'pull_request'
         run: |
+          LABEL_NAME="${{ github.event.label.name }}"
+          # Check if label contains 'ready for review' (case-insensitive)
+          if ! echo "$LABEL_NAME" | grep -i 'ready for review' >/dev/null; then
+            echo "Label does not contain 'ready for review' (case-insensitive), skipping notification."
+            exit 0
+          fi
           SLACK_WEBHOOK_URL="${{ secrets.SLACK_WEBHOOK_URL }}"
           PR_NR="${{ github.event.pull_request.number }}"
           PR_URL="${{ github.event.pull_request.html_url }}"
@@ -51,7 +58,7 @@ jobs:
             --data "{\"text\": \"$MSG\"}" \
             "${SLACK_WEBHOOK_URL}"
       - name: Send summary notification to Slack
-        if: github.event_name == 'schedule'
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: |
           SLACK_WEBHOOK_URL="${{ secrets.SLACK_WEBHOOK_URL }}"
           ORG="datarobot-community"
