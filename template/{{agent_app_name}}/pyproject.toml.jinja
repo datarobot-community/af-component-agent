@@ -9,11 +9,27 @@ description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
 {% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% elif agent_template_framework == "nat" %}requires-python = ">=3.11, <3.13"{% else %}requires-python = ">=3.10, <3.13"{% endif %}
 dependencies = [
-    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    # DO NOT EDIT THESE DEPENDENCIES OUTSIDE OF AF-COMPONENT-AGENT
-    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, langgraph, llamaindex, nat, pydantic]{% elif agent_template_framework == 'crewai' %}[crewai]{% elif agent_template_framework == 'langgraph' %}[langgraph]{% elif agent_template_framework == 'llamaindex' %}[llamaindex]{% elif agent_template_framework == 'nat' %}[nat]{% endif %}>=0.1.22",
+    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, langgraph, llamaindex, nat, pydanticai]{% elif agent_template_framework == 'crewai' %}[crewai]{% elif agent_template_framework == 'langgraph' %}[langgraph]{% elif agent_template_framework == 'llamaindex' %}[llamaindex]{% elif agent_template_framework == 'nat' %}[nat]{% endif %}>=0.1.22",
     "datarobot-moderations>=11.2.3",
+
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    # THESE ARE UNIVERSALLY USED AGENT PACKAGES
+    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    "fastmcp>2.12.0",
+    "mcp>=1.11.0",
+    "openai>=1.76.2",
+    "litellm>=1.72.1",
+    "langchain-litellm>=0.2.3",
+    "langchain-community>=0.3.27",
+    "langchain-mcp-adapters>=0.1.9",
+    "langchain>=0.3.23",
+    "opentelemetry-api>=1.33.0,<2.0.0",
+    "opentelemetry-instrumentation-aiohttp-client>=0.54b0",
+    "opentelemetry-instrumentation-httpx>=0.54b0",
+    "opentelemetry-instrumentation-langchain>=0.40.5",
+    "opentelemetry-instrumentation-openai>=0.40.5",
+    "opentelemetry-instrumentation-requests>=0.54b0",
+    "opentelemetry-sdk>=1.33.0",
 
     # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     # THE FOLLOWING DEPENDENCIES MAY BE REQUIRED FOR IPYTHON KERNEL AND DEPLOYMENT STABILITY
@@ -50,25 +66,6 @@ dependencies = [
     "uwsgi>=2.0.30",
     "pylance<=0.38.1",
     "pypdf>=6.1.3",
-    
-    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    # THESE ARE UNIVERSALLY USED AGENT PACKAGES. DO NOT REMOVE THEM WITHOUT TESTING!
-    # !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    "fastmcp>2.12.0",
-    "mcp>=1.11.0",
-    "openai>=1.76.2",
-    "litellm>=1.72.1",
-    "langchain-litellm>=0.2.3",
-    "langchain-community>=0.3.27",
-    "langchain-mcp-adapters>=0.1.9",
-    "langchain>=0.3.23",
-    "opentelemetry-api>=1.33.0,<2.0.0",
-    "opentelemetry-instrumentation-aiohttp-client>=0.54b0",
-    "opentelemetry-instrumentation-httpx>=0.54b0",
-    "opentelemetry-instrumentation-langchain>=0.40.5",
-    "opentelemetry-instrumentation-openai>=0.40.5",
-    "opentelemetry-instrumentation-requests>=0.54b0",
-    "opentelemetry-sdk>=1.33.0",
 ]
 
 [project.optional-dependencies]
