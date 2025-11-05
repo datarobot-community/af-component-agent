@@ -163,7 +163,7 @@ tasks:
       - rm ./docker_context/env_info.json
       - mv ./docker_context/Dockerfile ./docker_context/Dockerfile.prod
       - mv ./docker_context/Dockerfile.local ./docker_context/Dockerfile
-      - echo "Docker context created inside agent_generic_base/docker_context"
+      - echo "Docker context created inside {{ agent_app_name }}/docker_context"
   build-docker-context:
     desc: 🐳 [{{ agent_app_name }}] Build the Docker image
     cmds:
