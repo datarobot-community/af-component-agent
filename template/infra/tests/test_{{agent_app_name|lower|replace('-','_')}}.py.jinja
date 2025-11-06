@@ -284,7 +284,9 @@ def test_custom_model_created(monkeypatch):
 def test_custom_model_created_pinned_version_id(monkeypatch):
     """Test that pulumi_datarobot.CustomModel is created with correct arguments."""
     monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
-    monkeypatch.setenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID", "690cd2f698419673f938f7c4")
+    monkeypatch.setenv(
+        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID", "690cd2f698419673f938f7c4"
+    )
 
     import importlib
     import infra.{{agent_app_name}} as agent_infra

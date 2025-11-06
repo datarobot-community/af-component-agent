@@ -39,6 +39,7 @@ tasks:
         vars:
           AGENT: "{{.AGENT}}"
       - task agent:install --dir $RENDER_DIR/agent_{{.AGENT}}
+      - task infra:install --dir $RENDER_DIR/agent_{{.AGENT}}
   docker_update_reqs:
     desc: "Update Docker requirements pyproject.toml from jinja template"
     vars:
@@ -70,6 +71,8 @@ tasks:
       - echo "Running tests for {{.AGENT}}"
       - task agent:lint-check --dir $RENDER_DIR/agent_{{.AGENT}}
       - task agent:test-coverage --dir $RENDER_DIR/agent_{{.AGENT}}
+      - task infra:lint-check --dir $RENDER_DIR/agent_{{.AGENT}}
+      - task infra:test-coverage --dir $RENDER_DIR/agent_{{.AGENT}}
   test-base:
     desc: "Run tests for base agent"
     cmds:
