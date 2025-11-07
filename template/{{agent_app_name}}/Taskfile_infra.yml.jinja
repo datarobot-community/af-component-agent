@@ -26,7 +26,7 @@ tasks:
       - echo "Updating local dependencies for infra"
       - uv sync --quiet
   lint:
-    silent: true
+    silent: false
     # desc: "🧹 Run linters"
     cmds:
       - echo "🧹 Running linters.."
@@ -34,7 +34,7 @@ tasks:
       - uv run ruff check . --fix
       - uv run mypy --pretty .
   lint-check:
-    silent: true
+    silent: false
     # desc: "🧹 Check whether the codebase is linted"
     cmds:
       - uv run ruff format --check .
