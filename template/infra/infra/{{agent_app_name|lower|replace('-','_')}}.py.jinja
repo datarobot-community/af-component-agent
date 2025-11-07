@@ -264,7 +264,7 @@ custom_model_credential_runtime_parameters = [
     files={{agent_app_name}}_custom_model_files,
     runtime_parameter_values=llm_custom_model_runtime_parameters
     + custom_model_credential_runtime_parameters
-    + get_mcp_custom_model_runtime_parameters()
+    + get_mcp_custom_model_runtime_parameters(),
 )
 
 {{agent_app_name}}_custom_model_endpoint = {{agent_app_name}}_custom_model.id.apply(
