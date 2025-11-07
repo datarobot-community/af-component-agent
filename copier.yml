@@ -17,9 +17,9 @@ agent_template_framework:
   type: str
   default: |-
     {% if use_low_code_interface -%}
-      "nat"
+      nat
     {%- else -%}
-      "base"
+      base
     {%- endif %}
   help: "Choose the agentic framework template to start with"
   choices:
