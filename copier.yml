@@ -9,9 +9,18 @@ agent_app_name:
     {% elif not agent_app_name.isidentifier() %}ERROR: Agent app name must be a valid Python identifier (letters, numbers, underscores only, cannot start with number)
     {% endif %}
 
+use_low_code_interface:
+  type: bool
+  help: "Do you want to use low-code yaml configuration interface for your agent?"
+
 agent_template_framework:
   type: str
-  default: "base"
+  default: |-
+    {% if use_low_code_interface -%}
+      "nat"
+    {%- else -%}
+      "base"
+    {%- endif %}
   help: "Choose the agentic framework template to start with"
   choices:
     - base
@@ -19,6 +28,7 @@ agent_template_framework:
     - langgraph
     - llamaindex
     - nat
+  when: not use_low_code_interface
 
 base_answers_file:
   type: str
