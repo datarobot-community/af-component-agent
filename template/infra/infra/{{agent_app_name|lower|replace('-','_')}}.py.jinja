@@ -28,6 +28,7 @@ from datarobot_pulumi_utils.schema.custom_models import (
 )
 from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 
+from fixtures.infra.mcp_server import mcp_custom_model_runtime_parameters
 from . import project_dir, use_case
 
 from .{{ _external_data.llm.llm_app_name }} import custom_model_runtime_parameters as llm_custom_model_runtime_parameters
@@ -126,6 +127,49 @@ def synchronize_pyproject_dependencies():
             shutil.copy2(uv_lock_path, docker_context_uv_lock_path)
 
 
+def get_mcp_runtime_parameters_from_env() -> list[
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs
+]:
+    mcp_runtime_parameters: list[
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs
+    ] = []
+
+    # Add MCP runtime parameters if configured
+    if os.environ.get("MCP_DEPLOYMENT_ID"):
+        mcp_deployment_id = os.environ["MCP_DEPLOYMENT_ID"]
+        mcp_runtime_parameters.append(
+            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+                key="MCP_DEPLOYMENT_ID",
+                type="string",
+                value=mcp_deployment_id,
+            )
+        )
+        pulumi.info(f"MCP configured with DataRobot MCP Server: {mcp_deployment_id}")
+
+    # Allow external mcp server. Currently, code will use MCP_DEPLOYMENT_ID first and if that is empty
+    # then use the EXTERNAL_MCP_URL
+    if os.environ.get("EXTERNAL_MCP_URL"):
+        external_mcp_url = os.environ["EXTERNAL_MCP_URL"].rstrip("/")
+        mcp_runtime_parameters.append(
+            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+                key="EXTERNAL_MCP_URL",
+                type="string",
+                value=external_mcp_url,
+            )
+        )
+        pulumi.info(f"MCP configured with external server: {external_mcp_url}")
+
+    return mcp_runtime_parameters
+
+def get_mcp_custom_model_runtime_parameters() -> list[pulumi_datarobot.CustomModelRuntimeParameterValueArgs]:
+    # Load MCP runtime parameters from the MCP Deployment if the module is available, otherwise
+    # fall back to environment variables
+    try:
+        from .{{ _external_data.fastmcp.fastmcp_app_name }} import mcp_custom_model_runtime_parameters
+    except ImportError:
+        return get_mcp_runtime_parameters_from_env()
+
+
 synchronize_pyproject_dependencies()
 pulumi.info("NOTE: [unknown] values will be populated after performing an update.")  # fmt: skip
 
@@ -213,7 +257,8 @@ custom_model_credential_runtime_parameters = [
     use_case_ids=[use_case.id],
     files={{agent_app_name}}_custom_model_files,
     runtime_parameter_values=llm_custom_model_runtime_parameters
-    + custom_model_credential_runtime_parameters,
+    + custom_model_credential_runtime_parameters
+    + get_mcp_custom_model_runtime_parameters()
 )
 
 {{agent_app_name}}_custom_model_endpoint = {{agent_app_name}}_custom_model.id.apply(
@@ -329,27 +374,4 @@ if os.environ.get("AGENT_DEPLOY") != "0":
     ),
 ]
 
-# Add MCP runtime parameters if configured
-if os.environ.get("MCP_DEPLOYMENT_ID"):
-    mcp_deployment_id = os.environ["MCP_DEPLOYMENT_ID"]
-    {{agent_app_name}}_app_runtime_parameters.append(
-        pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
-            key="MCP_DEPLOYMENT_ID",
-            type="string",
-            value=mcp_deployment_id,
-        )
-    )
-    pulumi.info(f"MCP configured with DataRobot MCP Server: {mcp_deployment_id}")
 
-# Allow external mcp server.  Currently code will use MCP_DEPLOYMENT_ID first and if that is empty
-# then use the EXTERNAL_MCP_URL
-if os.environ.get("EXTERNAL_MCP_URL"):
-    external_mcp_url = os.environ["EXTERNAL_MCP_URL"].rstrip("/")
-    {{agent_app_name}}_app_runtime_parameters.append(
-        pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
-            key="EXTERNAL_MCP_URL",
-            type="string",
-            value=external_mcp_url,
-        )
-    )
-    pulumi.info(f"MCP configured with external server: {external_mcp_url}")

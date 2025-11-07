@@ -36,6 +36,11 @@ def pulumi_mocks(monkeypatch):
     mock_llm_module = MagicMock()
     mock_llm_module.custom_model_runtime_parameters = []
     monkeypatch.setitem(sys.modules, "infra.{{ _external_data.llm.llm_app_name }}", mock_llm_module)
+    # Mock out the MCP Server and just expose the runtime parameters as it is the only public
+    # interface required for this module.
+    mock_mcp_module = MagicMock()
+    mock_mcp_module.mcp_custom_model_runtime_parameters = []
+    monkeypatch.setitem(sys.modules, "infra.{{ _external_data.fastmcp.fastmcp_app_name }}", mock_llm_module)
     # Mock pulumi_datarobot resources
     monkeypatch.setattr("pulumi_datarobot.ExecutionEnvironment", MagicMock())
     monkeypatch.setattr("pulumi_datarobot.CustomModel", MagicMock())
