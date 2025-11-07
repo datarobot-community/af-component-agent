@@ -28,7 +28,7 @@ agent_template_framework:
     - langgraph
     - llamaindex
     - nat
-  when: not use_low_code_interface
+  when: "not use_low_code_interface"
 
 base_answers_file:
   type: str
