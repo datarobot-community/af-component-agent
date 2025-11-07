@@ -259,7 +259,6 @@ def test_custom_model_created(monkeypatch):
 
     environment_variables = {
         "SESSION_SECRET_KEY": "secret_value",
-        "MCP_DEPLOYMENT_ID": "mcp_deployment_id",
     }
     with patch.dict(os.environ, environment_variables):
         importlib.reload(agent_infra)
@@ -282,7 +281,7 @@ def test_custom_model_created(monkeypatch):
     runtime_parameter_values = kwargs["runtime_parameter_values"]
 
     assert len(runtime_parameter_values) == 1
-    assert runtime_parameter_values[0].type == "credential"
+    assert runtime_parameter_values[0].type == "string"
     assert runtime_parameter_values[0].key == "SESSION_SECRET_KEY"
     assert runtime_parameter_values[0].value is not None
 
