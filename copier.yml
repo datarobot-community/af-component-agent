@@ -12,6 +12,7 @@ agent_app_name:
 use_low_code_interface:
   type: bool
   help: "Do you want to use low-code yaml configuration interface for your agent?"
+  default: no
 
 agent_template_framework:
   type: str
