@@ -66,6 +66,7 @@ from datarobot.models.genai.agent.auth import (
     set_authorization_context,
 )
 from datarobot_drum import RuntimeParameters
+from datarobot_genai.core.agents.base import InvokeReturn
 from datarobot_genai.core.chat import (
     CustomModelChatResponse,
     CustomModelStreamingResponse,
@@ -73,7 +74,6 @@ from datarobot_genai.core.chat import (
     to_custom_model_chat_response,
     to_custom_model_streaming_response,
 )
-from datarobot_genai.core.agents.base import InvokeReturn
 from openai.types.chat import CompletionCreateParams
 from openai.types.chat.completion_create_params import (
     CompletionCreateParamsNonStreaming,
