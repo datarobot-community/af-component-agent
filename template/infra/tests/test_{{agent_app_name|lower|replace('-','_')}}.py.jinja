@@ -281,15 +281,11 @@ def test_custom_model_created(monkeypatch):
 
     runtime_parameter_values = kwargs["runtime_parameter_values"]
 
-    assert len(runtime_parameter_values) == 2
-
+    assert len(runtime_parameter_values) == 1
     assert runtime_parameter_values[0].type == "string"
     assert runtime_parameter_values[0].key == "SESSION_SECRET_KEY"
     assert runtime_parameter_values[0].value is not None
 
-    assert runtime_parameter_values[1].type == "string"
-    assert runtime_parameter_values[1].key == "MCP_DEPLOYMENT_ID"
-    assert runtime_parameter_values[1].value == "mcp_deployment_id"
 
 
 def test_agentic_playground_and_blueprint_created(monkeypatch):
