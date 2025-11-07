@@ -160,11 +160,18 @@ def get_mcp_runtime_parameters_from_env() -> list[
 
     return mcp_runtime_parameters
 
-def get_mcp_custom_model_runtime_parameters() -> list[pulumi_datarobot.CustomModelRuntimeParameterValueArgs]:
-    # Load MCP runtime parameters from the MCP Deployment if the module is available, otherwise
-    # fall back to environment variables
+
+def get_mcp_custom_model_runtime_parameters() -> list[
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs
+]:
+    """
+    Load MCP runtime parameters from the MCP Deployment module if available,
+    otherwise fall back to environment variables.
+    """
     try:
         from .{{ _external_data.fastmcp.fastmcp_app_name }} import mcp_custom_model_runtime_parameters
+
+        return mcp_custom_model_runtime_parameters
     except ImportError:
         return get_mcp_runtime_parameters_from_env()
 
