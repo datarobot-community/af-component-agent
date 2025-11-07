@@ -176,6 +176,12 @@ class MyAgent(LangGraphAgent):
     def _add_the_last_message_and_go_to_next_node(
         self, node_name: str, result: MessagesState
     ) -> Command[Any]:
+        last_msg = result["messages"][-1]
+        tool_calls = getattr(last_msg, "tool_calls", [])
+        # If the agent hasn't called all the tools it wants yet, leave the execution of the
+        # graph to the langgraph engine
+        if tool_calls:
+            return Command()
         result["messages"][-1] = HumanMessage(
             content=result["messages"][-1].content, name=node_name
         )
