@@ -157,7 +157,7 @@ def chat(
     try:
         auth_context = get_authorization_context()
     except LookupError:
-        auth_context = None
+        auth_context = {}
 
     # Instantiate the agent, all fields from the completion_create_params are passed to the agent
     # allowing environment variables to be passed during execution
@@ -166,11 +166,11 @@ def chat(
     # Invoke the agent and check if it returns a generator or a tuple
     # Set the authorization context in the worker thread before invoking the agent
     def invoke_with_auth_context() -> InvokeReturn:
-        if auth_context is not None:
-            try:
-                set_authorization_context(auth_context)
-            except AttributeError:
-                pass
+        try:
+            set_authorization_context(auth_context)
+        except AttributeError:
+            pass
+
         return event_loop.run_until_complete(
             agent.invoke(completion_create_params=completion_create_params)
         )
