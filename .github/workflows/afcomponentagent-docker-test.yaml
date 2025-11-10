@@ -117,22 +117,22 @@ jobs:
           cd ./rendered/agent/docker_context
           docker build --platform linux/amd64 -f ${{ matrix.dockerfile }} -t test-agent:latest .
 
-      - name: Test Flask server in Docker container
+      - name: Test Codespaces server in Docker container
         run: |
           # Start the container in the background
-          CONTAINER_ID=$(docker run -d -p 8080:8080 test-agent:latest /opt/code/start_server.sh)
+          CONTAINER_ID=$(docker run -d -p 8889:8889 test-agent:latest /etc/system/kernel/start_server.sh)
           echo "Started container: $CONTAINER_ID"
           # Wait for the server to start
           for i in {1..30}; do
-            if curl -s http://localhost:8080/ > /dev/null; then
-              echo "Flask server is up and responding."
+            if curl -s http://localhost:8889/ > /dev/null; then
+              echo "Codespaces server is up and responding."
               break
             fi
             sleep 1
           done
           # Check if server responded
-          if ! curl -s http://localhost:8080/ > /dev/null; then
-            echo "Flask server did not respond on port 8080 after 30 seconds."
+          if ! curl -s http://localhost:8889/ > /dev/null; then
+            echo "Codespaces server did not respond on port 8889 after 30 seconds."
             docker logs "$CONTAINER_ID"
             docker stop "$CONTAINER_ID"
             exit 1
