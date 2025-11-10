@@ -164,7 +164,7 @@ def chat(
 
     # Invoke the agent and check if it returns a generator or a tuple
     # Set the authorization context in the worker thread before invoking the agent
-    def invoke_with_auth_context():  # type: ignore[return-value]
+    def invoke_with_auth_context():  # type: ignore[no-untyped-def]
         try:
             set_authorization_context(auth_context)
         except AttributeError:
