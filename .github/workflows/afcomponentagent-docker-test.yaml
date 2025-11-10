@@ -115,15 +115,15 @@ jobs:
           dockerfile: ./rendered/agent/docker_context/${{ matrix.dockerfile }}
           config: .hadolint.yaml
       - name: Build Dockerfile
-        working-directory: ./rendered
+        working-directory: ./rendered/agent
         run: |
-          docker run --rm -v "$(pwd):/workspace" -w /workspace ghcr.io/astral-sh/uv:python3.11-bookworm bash -c "
-            uvx --from go-task-bin task agent:create-docker-context
-          "
+          echo "Building Docker image"
+          cp pyproject.toml docker_context/pyproject.toml
+          docker build --platform linux/amd64 -f ./docker_context/${{ matrix.dockerfile }} -t test-agent:latest .
       - name: Test Codespaces server in Docker container
         run: |
           # Start the container in the background
-          CONTAINER_ID=$(docker run -d -p 8889:8889 agent:latest /etc/system/kernel/start_server.sh)
+          CONTAINER_ID=$(docker run -d -p 8889:8889 test-agent:latest /etc/system/kernel/start_server.sh)
           echo "Started container: $CONTAINER_ID"
           # Wait for the server to start
           for i in {1..30}; do
