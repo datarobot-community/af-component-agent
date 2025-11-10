@@ -97,12 +97,14 @@ jobs:
     steps:
       - name: Checkout
         uses: "actions/checkout@v5"
-      - name: Setup caching
-        uses: ./.github/actions/setup-caching
-        id: setup-cache
+      - name: Setup caching for Docker build
+        uses: actions/cache@v4
         with:
-          python-version: python3.11
-          cache-key-suffix: docker-build-test
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.ref_name }}-${{ matrix.dockerfile }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+            ${{ runner.os }}-buildx-${{ github.ref_name }}-
       - name: Render copier instance
         uses: ./.github/actions/render-copier-instance
       - name: Create docker context
@@ -113,14 +115,14 @@ jobs:
           dockerfile: ./rendered/agent/docker_context/${{ matrix.dockerfile }}
           config: .hadolint.yaml
       - name: Build Dockerfile
+        working-directory: ./rendered
         run: |
-          cd ./rendered/agent/docker_context
-          docker build --platform linux/amd64 -f ${{ matrix.dockerfile }} -t test-agent:latest .
-
+          cd ./rendered
+          uvx --from go-task-bin task agent:create-docker-context
       - name: Test Codespaces server in Docker container
         run: |
           # Start the container in the background
-          CONTAINER_ID=$(docker run -d -p 8889:8889 test-agent:latest /etc/system/kernel/start_server.sh)
+          CONTAINER_ID=$(docker run -d -p 8889:8889 agent:latest /etc/system/kernel/start_server.sh)
           echo "Started container: $CONTAINER_ID"
           # Wait for the server to start
           for i in {1..30}; do

@@ -164,12 +164,16 @@ tasks:
       - mv ./docker_context/Dockerfile ./docker_context/Dockerfile.prod
       - mv ./docker_context/Dockerfile.local ./docker_context/Dockerfile
       - echo "Docker context created inside {{ agent_app_name }}/docker_context"
-  build-docker-context:
-    desc: 🐳 [{{ agent_app_name }}] Build the Docker image
+  build-docker-image:
+    # desc: 🐳 [{{ agent_app_name }}] Build the Docker image
     cmds:
       - echo "Building Docker image"
       - cp pyproject.toml docker_context/pyproject.toml
       - cd docker_context && docker build --platform linux/amd64 -f Dockerfile -t {{ agent_app_name }}:latest .
+  build-docker-context:
+    desc: 🐳 [{{ agent_app_name }}] Build the Docker image
+    cmds:
+      - task: create-docker-context
       - echo "Saving Docker image"
       - docker save {{ agent_app_name }}:latest | gzip -1 > docker_context.tar.gz
     silent: true
