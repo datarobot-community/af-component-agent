@@ -97,14 +97,14 @@ jobs:
     steps:
       - name: Checkout
         uses: "actions/checkout@v5"
-      - name: Setup caching for Docker build
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.ref_name }}-${{ matrix.dockerfile }}
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-            ${{ runner.os }}-buildx-${{ github.ref_name }}-
+      # - name: Setup caching for Docker build
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: /tmp/.buildx-cache
+      #     key: ${{ runner.os }}-buildx-${{ github.ref_name }}-${{ matrix.dockerfile }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-buildx-
+      #       ${{ runner.os }}-buildx-${{ github.ref_name }}-
       - name: Render copier instance
         uses: ./.github/actions/render-copier-instance
       - name: Create docker context
