@@ -116,3 +116,27 @@ jobs:
         run: |
           cd ./rendered/agent/docker_context
           docker build --platform linux/amd64 -f ${{ matrix.dockerfile }} -t test-agent:latest .
+
+      - name: Test Flask server in Docker container
+        run: |
+          # Start the container in the background
+          CONTAINER_ID=$(docker run -d -p 8080:8080 test-agent:latest /opt/code/start_server.sh)
+          echo "Started container: $CONTAINER_ID"
+          # Wait for the server to start
+          for i in {1..30}; do
+            if curl -s http://localhost:8080/ > /dev/null; then
+              echo "Flask server is up and responding."
+              break
+            fi
+            sleep 1
+          done
+          # Check if server responded
+          if ! curl -s http://localhost:8080/ > /dev/null; then
+            echo "Flask server did not respond on port 8080 after 30 seconds."
+            docker logs "$CONTAINER_ID"
+            docker stop "$CONTAINER_ID"
+            exit 1
+          fi
+          # Stop the container after success
+          docker stop "$CONTAINER_ID"
+          echo "Stopped container: $CONTAINER_ID"
