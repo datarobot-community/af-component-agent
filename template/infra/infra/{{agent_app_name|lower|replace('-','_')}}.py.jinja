@@ -68,7 +68,7 @@ __all__ = [
 {{agent_app_name}}_application_path = project_dir.parent / "{{agent_app_name}}"
 
 SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
-session_secret_key = os.environ.get(SESSION_SECRET_KEY)
+session_secret_key = os.environ.get(SESSION_SECRET_KEY, "")
 
 
 def get_custom_model_files(custom_model_folder: str) -> list[tuple[str, str]]:
@@ -191,14 +191,14 @@ pulumi.export("SESSION_SECRET_KEY", session_secret_key)
 session_secret_cred = pulumi_datarobot.ApiTokenCredential(
     "{{agent_app_name}} Session Secret Key",
     args=pulumi_datarobot.ApiTokenCredentialArgs(
-        api_token=str(session_secret_key),
+        api_token=str(session_secret_key or "")
     ),
 )
 custom_model_credential_runtime_parameters = [
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        type="string",
+        type="credential",
         key=SESSION_SECRET_KEY,
-        value=session_secret_cred.id.apply(lambda id: str(id)),
+        value=session_secret_cred.id,
     ),
 ]
 
