@@ -635,18 +635,14 @@ class TestGetMcpCustomModelRuntimeParameters:
     def test_get_mcp_custom_model_runtime_parameters_fallback_to_env(self, monkeypatch):
         """Test that MCP runtime parameters fall back to environment variables when module is unavailable."""
         import infra.{{agent_app_name}} as agent_infra
-        import importlib
 
         # Set up environment variables
         monkeypatch.setenv("MCP_DEPLOYMENT_ID", "test-deployment-123")
         monkeypatch.setenv("EXTERNAL_MCP_URL", "https://example.com/mcp")
 
-        # Mock importlib.import_module to raise ImportError for MCP module
-        original_import_module = importlib.import_module
+        # Mock importlib.import_module to raise ImportError
         def mock_import_module(name, package=None):
-            if "{{ _external_data.fastmcp.fastmcp_app_name }}" in name:
-                raise ImportError(f"No module named '{name}'")
-            return original_import_module(name, package)
+            raise ImportError(f"No module named '{name}'")
 
         monkeypatch.setattr("importlib.import_module", mock_import_module)
 
