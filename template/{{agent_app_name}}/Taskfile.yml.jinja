@@ -136,7 +136,7 @@ tasks:
   dev:
     desc: 🔨 [{{ agent_app_name }}] Run the development server
     cmds:
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run python dev.py"
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run python dev.py --autoreload"
   dev-stop:
     desc: 🛑 [{{ agent_app_name }}] Stop the development server
     cmds:
