@@ -183,7 +183,7 @@ def chat(
         return to_custom_model_streaming_response(
             thread_pool_executor,
             event_loop,
-            result,
+            result,  # type: ignore[arg-type]
             model=completion_create_params.get("model"),
         )
     else:
@@ -193,6 +193,6 @@ def chat(
         return to_custom_model_chat_response(
             response_text,
             pipeline_interactions,
-            usage_metrics,
+            usage_metrics,  # type: ignore[arg-type]
             model=completion_create_params.get("model"),
         )
