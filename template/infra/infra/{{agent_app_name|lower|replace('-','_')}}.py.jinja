@@ -245,9 +245,7 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
     pulumi.export(SESSION_SECRET_KEY, session_secret_key)
     session_secret_cred = pulumi_datarobot.ApiTokenCredential(
         {{agent_app_name}}_asset_name + " Session Secret Key",
-        args=pulumi_datarobot.ApiTokenCredentialArgs(
-            api_token=str(session_secret_key)
-        ),
+       args=pulumi_datarobot.ApiTokenCredentialArgs(api_token=str(session_secret_key)),
     )
     custom_model_credential_runtime_parameters.append(
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
