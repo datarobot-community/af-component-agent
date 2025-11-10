@@ -165,7 +165,7 @@ def chat(
 
     # Invoke the agent and check if it returns a generator or a tuple
     # Set the authorization context in the worker thread before invoking the agent
-    def invoke_with_auth_context() -> InvokeReturn:
+    def invoke_with_auth_context():  # type: ignore[return-value]
         try:
             set_authorization_context(auth_context)
         except AttributeError:
@@ -183,7 +183,7 @@ def chat(
         return to_custom_model_streaming_response(
             thread_pool_executor,
             event_loop,
-            result,  # type: ignore[arg-type]
+            result,
             model=completion_create_params.get("model"),
         )
     else:
@@ -193,6 +193,6 @@ def chat(
         return to_custom_model_chat_response(
             response_text,
             pipeline_interactions,
-            usage_metrics,  # type: ignore[arg-type]
+            usage_metrics,
             model=completion_create_params.get("model"),
         )
