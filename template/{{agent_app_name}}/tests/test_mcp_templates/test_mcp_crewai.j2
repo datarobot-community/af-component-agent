@@ -1,11 +1,12 @@
 """
-Tests for MCP CrewAI integration using MCPServerAdapter.
+Tests for MCP CrewAI integration using MCPServerAdapter from datarobot-genai.
 """
 
 import os
 from unittest.mock import MagicMock, patch
 
-from custom_model.mcp_client import MCPConfig, mcp_tools_context
+from datarobot_genai.core.mcp.common import MCPConfig
+from datarobot_genai.crewai.mcp import mcp_tools_context
 
 
 class TestMCPConfig:
@@ -27,8 +28,8 @@ class TestMCPConfig:
             assert config.external_mcp_url == test_url
             assert config.server_config is not None
             assert config.server_config["url"] == test_url
-            assert config.server_config["transport"] == "streamable-http"
-            assert "headers" not in config.server_config
+            headers = config.server_config.get("headers")
+            assert headers is None or headers == {}
 
     def test_mcp_config_with_datarobot_deployment_id(self):
         """Test MCP config with DataRobot deployment ID."""
@@ -52,7 +53,6 @@ class TestMCPConfig:
                 config.server_config["url"]
                 == f"{api_base}/deployments/{deployment_id}/directAccess/mcp"
             )
-            assert config.server_config["transport"] == "streamable-http"
             assert (
                 config.server_config["headers"]["Authorization"] == f"Bearer {api_key}"
             )
@@ -127,7 +127,8 @@ class TestMCPConfig:
         ):
             config = MCPConfig()
             assert config.server_config["url"] == external_url
-            assert "headers" not in config.server_config
+            headers = config.server_config.get("headers")
+            assert headers is None or headers == {}
 
 
 class TestMCPToolsContext:
@@ -139,7 +140,7 @@ class TestMCPToolsContext:
             with mcp_tools_context() as tools:
                 assert tools == []
 
-    @patch("custom_model.mcp_client.MCPServerAdapter")
+    @patch("datarobot_genai.crewai.mcp.MCPServerAdapter")
     def test_mcp_tools_context_with_external_url(self, mock_adapter):
         """Test context manager with external MCP URL."""
         mock_tools = [MagicMock(), MagicMock()]
@@ -153,12 +154,12 @@ class TestMCPToolsContext:
             with mcp_tools_context() as tools:
                 assert tools == mock_tools
                 mock_adapter.assert_called_once()
-                # Check that the server config was passed correctly
+                # Check that the adapter setting was passed correctly
                 call_args = mock_adapter.call_args[0][0]
                 assert call_args["url"] == test_url
                 assert call_args["transport"] == "streamable-http"
 
-    @patch("custom_model.mcp_client.MCPServerAdapter")
+    @patch("datarobot_genai.crewai.mcp.MCPServerAdapter")
     def test_mcp_tools_context_with_datarobot_deployment(self, mock_adapter):
         """Test context manager with DataRobot deployment ID."""
         mock_tools = [MagicMock()]
@@ -183,7 +184,7 @@ class TestMCPToolsContext:
             with mcp_tools_context() as tools:
                 assert tools == mock_tools
                 mock_adapter.assert_called_once()
-                # Check that the server config was passed correctly
+                # Check that the adapter setting was passed correctly
                 call_args = mock_adapter.call_args[0][0]
                 expected_url = (
                     f"{api_base}/deployments/{deployment_id}/directAccess/mcp"
@@ -192,7 +193,7 @@ class TestMCPToolsContext:
                 assert call_args["transport"] == "streamable-http"
                 assert call_args["headers"]["Authorization"] == f"Bearer {api_key}"
 
-    @patch("custom_model.mcp_client.MCPServerAdapter")
+    @patch("datarobot_genai.crewai.mcp.MCPServerAdapter")
     def test_mcp_tools_context_connection_error(self, mock_adapter):
         """Test context manager handles connection errors gracefully."""
         mock_adapter.side_effect = Exception("Connection failed")
