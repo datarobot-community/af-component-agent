@@ -118,7 +118,7 @@ jobs:
         working-directory: ./rendered/agent
         run: |
           echo "Building Docker image"
-          chmod 777 ./docker_context
+          chmod 755 ./docker_context/pyproject.toml
           cp pyproject.toml ./docker_context/pyproject.toml
           docker build --platform linux/amd64 -f ./docker_context/${{ matrix.dockerfile }} -t test-agent:latest .
       - name: Test Codespaces server in Docker container
