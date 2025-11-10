@@ -595,8 +595,7 @@ class TestMaybeImportFromModule:
 
         # The fixture sets up the mocked MCP module with mcp_custom_model_runtime_parameters
         result = agent_infra.maybe_import_from_module(
-            "{{ _external_data.fastmcp.fastmcp_app_name }}",
-            "mcp_custom_model_runtime_parameters"
+            "{{ _external_data.fastmcp.fastmcp_app_name }}", "mcp_custom_model_runtime_parameters"
         )
         assert result is not None
 
@@ -615,8 +614,7 @@ class TestMaybeImportFromModule:
 
             # Attempt to import from the removed module
             result = agent_infra.maybe_import_from_module(
-                "{{ _external_data.fastmcp.fastmcp_app_name }}",
-                "mcp_custom_model_runtime_parameters"
+                "{{ _external_data.fastmcp.fastmcp_app_name }}", "mcp_custom_model_runtime_parameters"
             )
             assert result is None
         finally:
@@ -630,8 +628,7 @@ class TestMaybeImportFromModule:
 
         # The module exists but we're looking for a non-existent attribute
         result = agent_infra.maybe_import_from_module(
-            "{{ _external_data.fastmcp.fastmcp_app_name }}",
-            "non_existent_attribute"
+            "{{ _external_data.fastmcp.fastmcp_app_name }}", "non_existent_attribute"
         )
         assert result is None
 
@@ -676,7 +673,9 @@ class TestGetMcpCustomModelRuntimeParameters:
             assert len(result) == 2
 
             # Check MCP_DEPLOYMENT_ID parameter
-            mcp_deployment_param = next((p for p in result if p.key == "MCP_DEPLOYMENT_ID"), None)
+            mcp_deployment_param = next(
+                (p for p in result if p.key == "MCP_DEPLOYMENT_ID"), None
+            )
             assert mcp_deployment_param is not None
             assert mcp_deployment_param.type == "string"
             assert mcp_deployment_param.value == "test-deployment-123"
@@ -690,4 +689,3 @@ class TestGetMcpCustomModelRuntimeParameters:
             # Restore the module if it was originally present
             if original_module is not None:
                 sys.modules[mcp_module_key] = original_module
-

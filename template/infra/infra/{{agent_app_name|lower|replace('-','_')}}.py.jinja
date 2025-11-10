@@ -140,7 +140,7 @@ def maybe_import_from_module(module: str, object_name: str) -> Optional[Any]:
         imported_module = __import__(
             module if module.startswith(".") else f".{module}",
             fromlist=[object_name],
-            level=1 if not module.startswith(".") else 0
+            level=1 if not module.startswith(".") else 0,
         )
         return getattr(imported_module, object_name, None)
     except (ImportError, AttributeError):
@@ -191,7 +191,9 @@ def get_mcp_custom_model_runtime_parameters() -> list[
     """
     mcp_module = "{{ _external_data.fastmcp.fastmcp_app_name }}"
 
-    mcp_params = maybe_import_from_module(mcp_module, "mcp_custom_model_runtime_parameters")
+    mcp_params = maybe_import_from_module(
+        mcp_module, "mcp_custom_model_runtime_parameters"
+    )
     if mcp_params is not None:
         return mcp_params
 
