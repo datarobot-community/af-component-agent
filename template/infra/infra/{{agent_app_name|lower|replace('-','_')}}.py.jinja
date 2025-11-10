@@ -137,11 +137,11 @@ def maybe_import_from_module(module: str, object_name: str) -> Optional[Any]:
         return None
 
     try:
-        imported_module = __import__(
-            module if module.startswith(".") else f".{module}",
-            fromlist=[object_name],
-            level=1 if not module.startswith(".") else 0,
-        )
+        import importlib
+
+        # Ensure relative import format
+        module_path = module if module.startswith(".") else f".{module}"
+        imported_module = importlib.import_module(module_path, package=__package__)
         return getattr(imported_module, object_name, None)
     except (ImportError, AttributeError):
         return None
