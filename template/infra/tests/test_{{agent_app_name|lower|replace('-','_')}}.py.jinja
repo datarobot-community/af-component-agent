@@ -681,7 +681,9 @@ class TestGetMcpCustomModelRuntimeParameters:
             assert mcp_deployment_param.value == "test-deployment-123"
 
             # Check EXTERNAL_MCP_URL parameter
-            external_mcp_param = next((p for p in result if p.key == "EXTERNAL_MCP_URL"), None)
+            external_mcp_param = next(
+                (p for p in result if p.key == "EXTERNAL_MCP_URL"), None
+            )
             assert external_mcp_param is not None
             assert external_mcp_param.type == "string"
             assert external_mcp_param.value == "https://example.com/mcp"
