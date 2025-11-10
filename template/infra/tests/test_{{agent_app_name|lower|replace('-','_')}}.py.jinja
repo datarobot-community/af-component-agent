@@ -586,3 +586,108 @@ name = "old-project"
         assert (
             tmp_path / "docker_context" / "pyproject.toml"
         ).read_text() == new_content
+
+
+class TestMaybeImportFromModule:
+    def test_maybe_import_from_module_success(self):
+        """Test that maybe_import_from_module successfully imports an existing module."""
+        import infra.{{agent_app_name}} as agent_infra
+
+        # The fixture sets up the mocked MCP module with mcp_custom_model_runtime_parameters
+        result = agent_infra.maybe_import_from_module(
+            "{{ _external_data.fastmcp.fastmcp_app_name }}",
+            "mcp_custom_model_runtime_parameters"
+        )
+        assert result is not None
+
+    def test_maybe_import_from_module_missing_module(self, monkeypatch):
+        """Test that maybe_import_from_module returns None when module is not available."""
+        import infra.{{agent_app_name}} as agent_infra
+
+        # Temporarily remove the MCP module from sys.modules
+        mcp_module_key = "infra.{{ _external_data.fastmcp.fastmcp_app_name }}"
+        original_module = sys.modules.get(mcp_module_key)
+
+        try:
+            # Remove the module if it exists
+            if mcp_module_key in sys.modules:
+                del sys.modules[mcp_module_key]
+
+            # Attempt to import from the removed module
+            result = agent_infra.maybe_import_from_module(
+                "{{ _external_data.fastmcp.fastmcp_app_name }}",
+                "mcp_custom_model_runtime_parameters"
+            )
+            assert result is None
+        finally:
+            # Restore the module if it was originally present
+            if original_module is not None:
+                sys.modules[mcp_module_key] = original_module
+
+    def test_maybe_import_from_module_missing_attribute(self, monkeypatch):
+        """Test that maybe_import_from_module returns None when attribute doesn't exist."""
+        import infra.{{agent_app_name}} as agent_infra
+
+        # The module exists but we're looking for a non-existent attribute
+        result = agent_infra.maybe_import_from_module(
+            "{{ _external_data.fastmcp.fastmcp_app_name }}",
+            "non_existent_attribute"
+        )
+        assert result is None
+
+    def test_maybe_import_from_module_empty_module_name(self):
+        """Test that maybe_import_from_module returns None with empty module name."""
+        import infra.{{agent_app_name}} as agent_infra
+
+        result = agent_infra.maybe_import_from_module("", "some_attribute")
+        assert result is None
+
+
+class TestGetMcpCustomModelRuntimeParameters:
+    def test_get_mcp_custom_model_runtime_parameters_from_module(self):
+        """Test that MCP runtime parameters are loaded from the module when available."""
+        import infra.{{agent_app_name}} as agent_infra
+
+        result = agent_infra.get_mcp_custom_model_runtime_parameters()
+        # The fixture sets up a mock module with empty list
+        assert isinstance(result, list)
+
+    def test_get_mcp_custom_model_runtime_parameters_fallback_to_env(self, monkeypatch):
+        """Test that MCP runtime parameters fall back to environment variables when module is unavailable."""
+        import infra.{{agent_app_name}} as agent_infra
+
+        # Set up environment variables
+        monkeypatch.setenv("MCP_DEPLOYMENT_ID", "test-deployment-123")
+        monkeypatch.setenv("EXTERNAL_MCP_URL", "https://example.com/mcp")
+
+        # Temporarily remove the MCP module from sys.modules
+        mcp_module_key = "infra.{{ _external_data.fastmcp.fastmcp_app_name }}"
+        original_module = sys.modules.get(mcp_module_key)
+
+        try:
+            # Remove the module if it exists
+            if mcp_module_key in sys.modules:
+                del sys.modules[mcp_module_key]
+
+            # Get runtime parameters - should fall back to environment variables
+            result = agent_infra.get_mcp_custom_model_runtime_parameters()
+
+            assert isinstance(result, list)
+            assert len(result) == 2
+
+            # Check MCP_DEPLOYMENT_ID parameter
+            mcp_deployment_param = next((p for p in result if p.key == "MCP_DEPLOYMENT_ID"), None)
+            assert mcp_deployment_param is not None
+            assert mcp_deployment_param.type == "string"
+            assert mcp_deployment_param.value == "test-deployment-123"
+
+            # Check EXTERNAL_MCP_URL parameter
+            external_mcp_param = next((p for p in result if p.key == "EXTERNAL_MCP_URL"), None)
+            assert external_mcp_param is not None
+            assert external_mcp_param.type == "string"
+            assert external_mcp_param.value == "https://example.com/mcp"
+        finally:
+            # Restore the module if it was originally present
+            if original_module is not None:
+                sys.modules[mcp_module_key] = original_module
+
