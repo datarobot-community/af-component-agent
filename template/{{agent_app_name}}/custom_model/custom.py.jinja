@@ -54,6 +54,6 @@ def chat(
         framework="langgraph",
         {%- elif agent_template_framework == "llamaindex" -%}
         framework="llamaindex",
-        {%- endif -%}
+        {% endif %}
         **kwargs,
     )
