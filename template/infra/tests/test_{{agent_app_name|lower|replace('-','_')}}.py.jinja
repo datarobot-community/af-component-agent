@@ -588,7 +588,18 @@ name = "old-project"
         ).read_text() == new_content
 
 
+
+
 class TestMaybeImportFromModule:
+
+    @pytest.fixture
+    def skip_if_no_fastmcp(self):
+        """Skip tests if fastmcp module is not available."""
+        mcp_module = "{{ _external_data.fastmcp.fastmcp_app_name }}"
+        if not mcp_module:
+            pytest.skip("Skipping tests of existing MCP when module is not provided.")
+
+    @pytest.mark.usefixtures("skip_if_no_fastmcp")
     def test_maybe_import_from_module_success(self):
         """Test that maybe_import_from_module successfully imports an existing module."""
         import infra.{{agent_app_name}} as agent_infra
