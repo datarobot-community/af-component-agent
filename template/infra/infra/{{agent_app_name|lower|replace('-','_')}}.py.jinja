@@ -123,7 +123,7 @@ def get_custom_model_files(
     custom_model_folder: str,
     runtime_parameter_values: Sequence[
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs
-    ]
+    ],
 ) -> list[tuple[str, str]]:
     # generate model-metadata.yaml file in the custom model folder
     _generate_metadata_yaml(

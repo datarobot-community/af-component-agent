@@ -588,10 +588,7 @@ name = "old-project"
         ).read_text() == new_content
 
 
-
-
 class TestMaybeImportFromModule:
-
     @pytest.fixture
     def skip_if_no_fastmcp(self):
         """Skip tests if fastmcp module is not available."""
