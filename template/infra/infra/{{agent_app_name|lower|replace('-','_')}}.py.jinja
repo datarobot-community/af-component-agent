@@ -93,7 +93,8 @@ def _generate_metadata_yaml(
         "type": "inference",
         "targetType": "agenticworkflow",
         "runtimeParameterDefinitions": [
-             {"fieldName": param.key, "type": param.type} for param in runtime_parameter_values
+            {"fieldName": param.key, "type": param.type}
+            for param in runtime_parameter_values
         ]
         or [],
     }
