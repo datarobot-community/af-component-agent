@@ -14,7 +14,7 @@
 import os
 import re
 import shutil
-from typing import cast, Final
+from typing import cast, Final, Optional, Any
 
 import datarobot as dr
 import pulumi
@@ -123,6 +123,30 @@ def synchronize_pyproject_dependencies():
             shutil.copy2(uv_lock_path, docker_context_uv_lock_path)
 
 
+def maybe_import_from_module(module: str, object_name: str) -> Optional[Any]:
+    """Attempt to import an object from a module.
+
+    Args:
+        module: The module name to import from (can include relative imports like ".module_name")
+        object_name: The name of the object to import from the module
+
+    Returns:
+        The imported object if successful, None otherwise
+    """
+    if not module:
+        return None
+
+    try:
+        import importlib
+
+        # Ensure relative import format
+        module_path = module if module.startswith(".") else f".{module}"
+        imported_module = importlib.import_module(module_path, package=__package__)
+        return getattr(imported_module, object_name, None)
+    except (ImportError, AttributeError):
+        return None
+
+
 def get_mcp_runtime_parameters_from_env() -> list[
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs
 ]:
@@ -165,12 +189,15 @@ def get_mcp_custom_model_runtime_parameters() -> list[
     Load MCP runtime parameters from the MCP Deployment module if available,
     otherwise fall back to environment variables.
     """
-    try:
-        from .{{ _external_data.fastmcp.fastmcp_app_name }} import mcp_custom_model_runtime_parameters
+    mcp_module = "{{ _external_data.fastmcp.fastmcp_app_name }}"
 
-        return mcp_custom_model_runtime_parameters
-    except ImportError:
-        return get_mcp_runtime_parameters_from_env()
+    mcp_params = maybe_import_from_module(
+        mcp_module, "mcp_custom_model_runtime_parameters"
+    )
+    if mcp_params is not None:
+        return mcp_params
+
+    return get_mcp_runtime_parameters_from_env()
 
 
 synchronize_pyproject_dependencies()
