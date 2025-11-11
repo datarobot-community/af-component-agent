@@ -23,11 +23,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 # Patch all Pulumi resources and functions used in the module
 @pytest.fixture(autouse=True)
-def pulumi_mocks(monkeypatch):
+def pulumi_mocks(monkeypatch, tmp_path):
     # Mock infra.__init__ exported objects
     mock_use_case = MagicMock()
     mock_use_case.id = "mock-use-case-id"
-    mock_project_dir = Path("/mock/project/dir")
+    mock_project_dir = tmp_path
     monkeypatch.setattr("infra.use_case", mock_use_case)
     monkeypatch.setattr("infra.project_dir", mock_project_dir)
 
