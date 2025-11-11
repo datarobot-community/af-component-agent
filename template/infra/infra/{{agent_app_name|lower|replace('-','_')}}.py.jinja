@@ -14,7 +14,8 @@
 import os
 import re
 import shutil
-from typing import cast, Final, Optional, Any
+import textwrap
+from typing import cast, Final, Optional, Any, Sequence
 
 import datarobot as dr
 import pulumi
@@ -68,7 +69,61 @@ __all__ = [
 {{agent_app_name}}_application_path = project_dir.parent / "{{agent_app_name}}"
 
 
-def get_custom_model_files(custom_model_folder: str) -> list[tuple[str, str]]:
+def _generate_metadata_yaml(
+    agent_name: str,
+    custom_model_folder: str,
+    runtime_parameter_values: Sequence[pulumi_datarobot.CustomModelRuntimeParameterValueArgs],
+) -> None:
+    """Generate model-metadata.yaml file from scratch with runtime parameters.
+
+    Args:
+        agent_name: Name of the agent
+        custom_model_folder: Path to the custom model folder
+        runtime_parameter_values: List of runtime parameter definitions
+
+    Raises:
+        OSError: If unable to write the metadata file
+    """
+    from pathlib import Path
+    import yaml
+
+    def _build_runtime_parameter(
+        param: pulumi_datarobot.CustomModelRuntimeParameterValueArgs,
+    ) -> dict[str, str]:
+        """Build a runtime parameter definition dictionary."""
+        param_def = {"fieldName": param.key, "type": param.type}
+        if param.type != "credential":
+            param_def["defaultValue"] = "SET_VIA_PULUMI_OR_MANUALLY"
+        return param_def
+
+    # Build metadata structure
+    metadata = {
+        "name": agent_name,
+        "type": "inference",
+        "targetType": "agenticworkflow",
+        "runtimeParameterDefinitions": [
+            _build_runtime_parameter(param) for param in runtime_parameter_values
+        ] or [],
+    }
+
+    # Write the file using yaml library for proper formatting
+    metadata_output_path = Path(custom_model_folder) / "model-metadata.yaml"
+    metadata_output_path.write_text(
+        yaml.dump(metadata, default_flow_style=False, sort_keys=False, explicit_start=True),
+        encoding="utf-8",
+    )
+
+
+def get_custom_model_files(
+    custom_model_folder: str,
+    runtime_parameter_values: Sequence[pulumi_datarobot.CustomModelRuntimeParameterValueArgs]
+) -> list[tuple[str, str]]:
+    # generate model-metadata.yaml file in the custom model folder
+    _generate_metadata_yaml(
+        agent_name="{{agent_app_name}}",
+        custom_model_folder=custom_model_folder,
+        runtime_parameter_values=runtime_parameter_values
+    )
     # Get all files from application path, following symlinks
     # When we've upgraded to Python 3.13 we can use Path.glob(reduce_symlinks=True)
     # https://docs.python.org/3.13/library/pathlib.html#pathlib.Path.glob
@@ -257,15 +312,12 @@ else:
             use_cases={{agent_app_name}}_exec_env_use_cases,
         )
 
-{{agent_app_name}}_custom_model_files = get_custom_model_files(
-    str(os.path.join(str({{agent_app_name}}_application_path), "custom_model"))
-)
+# Prepare runtime parameters for agent custom model deployment
+agent_runtime_parameter_values: list[
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs
+] = [] + llm_custom_model_runtime_parameters + get_mcp_custom_model_runtime_parameters()
 
 # Handle session secret key credential
-custom_model_credential_runtime_parameters: list[
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs
-] = []
-
 SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
 
 if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
@@ -274,7 +326,7 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
         {{agent_app_name}}_asset_name + " Session Secret Key",
         args=pulumi_datarobot.ApiTokenCredentialArgs(api_token=str(session_secret_key)),
     )
-    custom_model_credential_runtime_parameters.append(
+    agent_runtime_parameter_values.append(
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
             type="credential",
             key=SESSION_SECRET_KEY,
@@ -290,6 +342,11 @@ pinned_version_id = os.environ.get(
 )
 if pinned_version_id and re.match("^[a-f\d]{24}$", pinned_version_id):
     base_environment_version_id = pinned_version_id
+
+{{agent_app_name}}_custom_model_files = get_custom_model_files(
+    custom_model_folder=str(os.path.join(str({{agent_app_name}}_application_path), "custom_model"))
+    runtime_parameters=agent_runtime_parameter_values,
+)
 
 {{agent_app_name}}_custom_model = pulumi_datarobot.CustomModel(
     resource_name={{agent_app_name}}_asset_name + " Custom Model",
