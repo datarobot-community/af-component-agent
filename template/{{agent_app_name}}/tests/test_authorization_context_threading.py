@@ -129,7 +129,7 @@ class TestAuthorizationContextThreading:
 
         # Patch get_authorization_context to track calls in worker threads
         with patch(
-            "custom.get_authorization_context",
+            "datarobot_genai.core.custom_model.get_authorization_context",
             side_effect=tracked_get_authorization_context,
         ):
             # Spawn multiple threads that call the ACTUAL chat() concurrently
