@@ -677,9 +677,9 @@ class TestGetMcpCustomModelRuntimeParameters:
         assert external_mcp_param.value == "https://example.com/mcp"
 
 
-class TestPrepMetadataYaml:
-    def test_prep_metadata_yaml_with_string_parameters(self, tmp_path):
-        """Test _prep_metadata_yaml generates correct YAML for string parameters."""
+class TestGenerateMetadataYaml:
+    def test_generate_metadata_yaml_with_string_parameters(self, tmp_path):
+        """Test _generate_metadata_yaml generates correct YAML for string parameters."""
         import infra.{{agent_app_name}} as agent_infra
         import yaml
 
@@ -689,8 +689,8 @@ class TestPrepMetadataYaml:
             MagicMock(key="LLM_DEFAULT_MODEL", type="string"),
         ]
 
-        # Call the function
-        agent_infra._prep_metadata_yaml(str(tmp_path), mock_params)
+        # Call the function with tmp_path as the custom_model_folder
+        agent_infra._generate_metadata_yaml("{{agent_app_name}}", str(tmp_path), mock_params)
 
         # Read and parse the generated YAML
         metadata_file = tmp_path / "model-metadata.yaml"
@@ -719,8 +719,8 @@ class TestPrepMetadataYaml:
         assert params[1]["type"] == "string"
         assert params[1]["defaultValue"] == "SET_VIA_PULUMI_OR_MANUALLY"
 
-    def test_prep_metadata_yaml_with_credential_parameters(self, tmp_path):
-        """Test _prep_metadata_yaml generates correct YAML for credential parameters."""
+    def test_generate_metadata_yaml_with_credential_parameters(self, tmp_path):
+        """Test _generate_metadata_yaml generates correct YAML for credential parameters."""
         import infra.{{agent_app_name}} as agent_infra
         import yaml
 
@@ -730,8 +730,8 @@ class TestPrepMetadataYaml:
             MagicMock(key="API_TOKEN", type="credential"),
         ]
 
-        # Call the function
-        agent_infra._prep_metadata_yaml(str(tmp_path), mock_params)
+        # Call the function with tmp_path as the custom_model_folder
+        agent_infra._generate_metadata_yaml("{{agent_app_name}}", str(tmp_path), mock_params)
 
         # Read and parse the generated YAML
         metadata_file = tmp_path / "model-metadata.yaml"
@@ -755,8 +755,8 @@ class TestPrepMetadataYaml:
         assert params[1]["type"] == "credential"
         assert "defaultValue" not in params[1]
 
-    def test_prep_metadata_yaml_with_mixed_parameters(self, tmp_path):
-        """Test _prep_metadata_yaml generates correct YAML with both string and credential parameters."""
+    def test_generate_metadata_yaml_with_mixed_parameters(self, tmp_path):
+        """Test _generate_metadata_yaml generates correct YAML with both string and credential parameters."""
         import infra.{{agent_app_name}} as agent_infra
         import yaml
 
@@ -767,8 +767,8 @@ class TestPrepMetadataYaml:
             MagicMock(key="EXTERNAL_MCP_URL", type="string"),
         ]
 
-        # Call the function
-        agent_infra._prep_metadata_yaml(str(tmp_path), mock_params)
+        # Call the function with tmp_path as the custom_model_folder
+        agent_infra._generate_metadata_yaml("{{agent_app_name}}", str(tmp_path), mock_params)
 
         # Read and parse the generated YAML
         metadata_file = tmp_path / "model-metadata.yaml"
@@ -794,13 +794,13 @@ class TestPrepMetadataYaml:
         assert params[2]["type"] == "string"
         assert params[2]["defaultValue"] == "SET_VIA_PULUMI_OR_MANUALLY"
 
-    def test_prep_metadata_yaml_with_empty_parameters(self, tmp_path):
-        """Test _prep_metadata_yaml generates correct YAML with empty parameter list."""
+    def test_generate_metadata_yaml_with_empty_parameters(self, tmp_path):
+        """Test _generate_metadata_yaml generates correct YAML with empty parameter list."""
         import infra.{{agent_app_name}} as agent_infra
         import yaml
 
-        # Call with empty parameters
-        agent_infra._prep_metadata_yaml(str(tmp_path), [])
+        # Call with empty parameters and tmp_path as the custom_model_folder
+        agent_infra._generate_metadata_yaml("{{agent_app_name}}", str(tmp_path), [])
 
         # Read and parse the generated YAML
         metadata_file = tmp_path / "model-metadata.yaml"
@@ -815,16 +815,16 @@ class TestPrepMetadataYaml:
         assert metadata["targetType"] == "agenticworkflow"
         assert metadata["runtimeParameterDefinitions"] == []
 
-    def test_prep_metadata_yaml_file_format(self, tmp_path):
-        """Test _prep_metadata_yaml generates properly formatted YAML with document start marker."""
+    def test_generate_metadata_yaml_file_format(self, tmp_path):
+        """Test _generate_metadata_yaml generates properly formatted YAML with document start marker."""
         import infra.{{agent_app_name}} as agent_infra
 
         mock_params = [
             MagicMock(key="TEST_PARAM", type="string"),
         ]
 
-        # Call the function
-        agent_infra._prep_metadata_yaml(str(tmp_path), mock_params)
+        # Call the function with tmp_path as the custom_model_folder
+        agent_infra._generate_metadata_yaml("{{agent_app_name}}", str(tmp_path), mock_params)
 
         # Read the raw file content to check formatting
         metadata_file = tmp_path / "model-metadata.yaml"
@@ -840,8 +840,8 @@ class TestPrepMetadataYaml:
         assert "runtimeParameterDefinitions:" in content
         assert "fieldName: TEST_PARAM" in content
 
-    def test_prep_metadata_yaml_overwrites_existing_file(self, tmp_path):
-        """Test _prep_metadata_yaml overwrites existing metadata file."""
+    def test_generate_metadata_yaml_overwrites_existing_file(self, tmp_path):
+        """Test _generate_metadata_yaml overwrites existing metadata file."""
         import infra.{{agent_app_name}} as agent_infra
         import yaml
 
@@ -849,11 +849,11 @@ class TestPrepMetadataYaml:
         metadata_file = tmp_path / "model-metadata.yaml"
         metadata_file.write_text("old: content\n")
 
-        # Call the function with new parameters
+        # Call the function with new parameters and tmp_path as the custom_model_folder
         mock_params = [
             MagicMock(key="NEW_PARAM", type="string"),
         ]
-        agent_infra._prep_metadata_yaml(str(tmp_path), mock_params)
+        agent_infra._generate_metadata_yaml("{{agent_app_name}}", str(tmp_path), mock_params)
 
         # Verify the file was overwritten
         with open(metadata_file) as f:
@@ -863,8 +863,8 @@ class TestPrepMetadataYaml:
         assert metadata["name"] == "{{agent_app_name}}"
         assert metadata["runtimeParameterDefinitions"][0]["fieldName"] == "NEW_PARAM"
 
-    def test_prep_metadata_yaml_with_special_characters_in_keys(self, tmp_path):
-        """Test _prep_metadata_yaml handles parameter keys with special characters correctly."""
+    def test_generate_metadata_yaml_with_special_characters_in_keys(self, tmp_path):
+        """Test _generate_metadata_yaml handles parameter keys with special characters correctly."""
         import infra.{{agent_app_name}} as agent_infra
         import yaml
 
@@ -874,8 +874,8 @@ class TestPrepMetadataYaml:
             MagicMock(key="ANOTHER-PARAM", type="credential"),
         ]
 
-        # Call the function
-        agent_infra._prep_metadata_yaml(str(tmp_path), mock_params)
+        # Call the function with tmp_path as the custom_model_folder
+        agent_infra._generate_metadata_yaml("{{agent_app_name}}", str(tmp_path), mock_params)
 
         # Read and verify
         metadata_file = tmp_path / "model-metadata.yaml"
