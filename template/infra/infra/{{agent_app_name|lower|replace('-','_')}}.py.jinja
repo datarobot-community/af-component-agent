@@ -16,7 +16,7 @@ from pathlib import Path
 import re
 import shutil
 from typing import cast, Final, Optional, Any, Sequence
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 import datarobot as dr
 import pulumi
@@ -93,7 +93,7 @@ def _generate_metadata_yaml(
         param: pulumi_datarobot.CustomModelRuntimeParameterValueArgs,
     ) -> dict[str, str]:
         """Build a runtime parameter definition dictionary."""
-        param_def: dict[str, str] = {"fieldName": param.key, "type": param.type}
+        param_def = {"fieldName": str(param.key), "type": str(param.type)}
         if param.type != "credential":
             param_def["defaultValue"] = "SET_VIA_PULUMI_OR_MANUALLY"
         return param_def
