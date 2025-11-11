@@ -48,11 +48,11 @@ def chat(
         completion_create_params,
         load_model_result,
         work_dir=os.path.dirname(os.path.abspath(__file__)),
-        {% if agent_template_framework == "crewai" -%}
+        {% if agent_template_framework == "crewai" %}
         framework="crewai",
-        {%- elif agent_template_framework == "langgraph" -%}
+        {% elif agent_template_framework == "langgraph" %}
         framework="langgraph",
-        {%- elif agent_template_framework == "llamaindex" -%}
+        {% elif agent_template_framework == "llamaindex" %}
         framework="llamaindex",
         {% endif -%}
         **kwargs,
