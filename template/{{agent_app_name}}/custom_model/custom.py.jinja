@@ -11,10 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+import asyncio
 import os
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Iterator, Union
 
 from agent import MyAgent
+from datarobot_genai.core.chat import (
+    CustomModelChatResponse,
+    CustomModelStreamingResponse,
+)
 from datarobot_genai.core.custom_model import chat_entrypoint
 from datarobot_genai.core.custom_model import load_model as _load_model
 from openai.types.chat import CompletionCreateParams
@@ -22,13 +29,9 @@ from openai.types.chat.completion_create_params import (
     CompletionCreateParamsNonStreaming,
     CompletionCreateParamsStreaming,
 )
-from datarobot_genai.core.chat import (
-    CustomModelChatResponse,
-    CustomModelStreamingResponse,
-)
 
 
-def load_model(code_dir: str) -> tuple:
+def load_model(code_dir: str) -> tuple[ThreadPoolExecutor, asyncio.AbstractEventLoop]:
     # The code_dir argument is part of the DRUM interface; we don't need it here.
     return _load_model()
 
@@ -37,7 +40,7 @@ def chat(
     completion_create_params: CompletionCreateParams
     | CompletionCreateParamsNonStreaming
     | CompletionCreateParamsStreaming,
-    load_model_result: tuple,
+    load_model_result: tuple[ThreadPoolExecutor, asyncio.AbstractEventLoop],
     **kwargs: Any,
 ) -> Union[CustomModelChatResponse, Iterator[CustomModelStreamingResponse]]:
     return chat_entrypoint(
