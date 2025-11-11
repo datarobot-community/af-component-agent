@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+from pathlib import Path
 import re
 import shutil
 from typing import cast, Final, Optional, Any, Sequence
+import yaml
 
 import datarobot as dr
 import pulumi
@@ -27,6 +29,7 @@ from datarobot_pulumi_utils.schema.custom_models import (
     RegisteredModelArgs,
 )
 from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
+
 
 from . import project_dir, use_case
 
@@ -85,14 +88,12 @@ def _generate_metadata_yaml(
     Raises:
         OSError: If unable to write the metadata file
     """
-    from pathlib import Path
-    import yaml
 
     def _build_runtime_parameter(
         param: pulumi_datarobot.CustomModelRuntimeParameterValueArgs,
     ) -> dict[str, str]:
         """Build a runtime parameter definition dictionary."""
-        param_def = {"fieldName": param.key, "type": param.type}
+        param_def: dict[str, str] = {"fieldName": param.key, "type": param.type}
         if param.type != "credential":
             param_def["defaultValue"] = "SET_VIA_PULUMI_OR_MANUALLY"
         return param_def
@@ -364,9 +365,7 @@ if pinned_version_id and re.match("^[a-f\d]{24}$", pinned_version_id):
     language="python",
     use_case_ids=[use_case.id],
     files={{agent_app_name}}_custom_model_files,
-    runtime_parameter_values=llm_custom_model_runtime_parameters
-    + custom_model_credential_runtime_parameters
-    + get_mcp_custom_model_runtime_parameters(),
+    runtime_parameter_values=agent_runtime_parameter_values,
 )
 
 {{agent_app_name}}_custom_model_endpoint = {{agent_app_name}}_custom_model.id.apply(
