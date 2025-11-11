@@ -410,7 +410,7 @@ class TestGetCustomModelFiles:
         # Create a simple file structure
         (tmp_path / "file1.py").write_text("print('hi')")
         (tmp_path / "file2.txt").write_text("hello")
-        files = agent_infra.get_custom_model_files(str(tmp_path))
+        files = agent_infra.get_custom_model_files(str(tmp_path), [])
         file_names = [f[1] for f in files]
         assert "file1.py" in file_names
         assert "file2.txt" in file_names
@@ -424,7 +424,7 @@ class TestGetCustomModelFiles:
         (tmp_path / ".DS_Store").write_text("")
         (tmp_path / "__pycache__").mkdir()
         (tmp_path / "__pycache__" / "foo.pyc").write_text("")
-        files = agent_infra.get_custom_model_files(str(tmp_path))
+        files = agent_infra.get_custom_model_files(str(tmp_path), [])
         file_names = [f[1] for f in files]
         assert "file1.py" in file_names
         assert ".DS_Store" not in file_names
@@ -441,7 +441,7 @@ class TestGetCustomModelFiles:
         symlink_dir.mkdir()
         symlink = symlink_dir / "link.py"
         symlink.symlink_to(real_file)
-        files = agent_infra.get_custom_model_files(str(tmp_path))
+        files = agent_infra.get_custom_model_files(str(tmp_path), [])
         file_names = [f[1] for f in files]
         assert "real.py" in file_names
 
