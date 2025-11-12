@@ -233,7 +233,6 @@ def get_mcp_runtime_parameters_from_env() -> list[
         pulumi.info(f"MCP configured with external server: {external_mcp_url}")
 
     # Add optional EXTERNAL_MCP_HEADERS
-    if os.environ.get("EXTERNAL_MCP_HEADERS"):
     external_mcp_headers = os.environ.get("EXTERNAL_MCP_HEADERS")
     if external_mcp_headers:
         mcp_runtime_parameters.append(
