@@ -1,0 +1,266 @@
+"""
+Tests for MCP LlamaIndex integration - verifying agents have MCP tools configured.
+"""
+
+import os
+from unittest.mock import AsyncMock, MagicMock, patch
+from typing import Any
+
+import pytest
+
+from agent import MyAgent
+
+
+def create_mock_mcp_tool(name: str):
+    """Create a mock MCP tool that can be used by LlamaIndex FunctionAgent."""
+    async def mock_tool_func(ctx: Any, **kwargs: Any) -> str:
+        return f"Result from {name}"
+    
+    mock_tool_func.__name__ = name
+    mock_tool_func.__doc__ = f"Mock MCP tool {name}"
+    return mock_tool_func
+
+
+class TestMyAgentMCPIntegration:
+    """Test MCP tool integration for LlamaIndex agents."""
+
+    @pytest.fixture
+    def agent(self):
+        return MyAgent(api_key="test_key", api_base="test_base", verbose=True)
+
+    @pytest.mark.asyncio
+    @patch("datarobot_genai.llama_index.mcp.load_mcp_tools")
+    async def test_agent_planner_with_external_mcp_url(self, mock_load_mcp_tools):
+        """Test that planner agent uses MCP tools when configured with external URL."""
+        # Create mock MCP tools as callable functions
+        mock_tool1 = create_mock_mcp_tool("test_mcp_tool_1")
+        mock_tool2 = create_mock_mcp_tool("test_mcp_tool_2")
+        mock_tools = [mock_tool1, mock_tool2]
+        mock_load_mcp_tools.return_value = mock_tools
+
+        test_url = "https://mcp-server.example.com/mcp"
+        with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}, clear=True):
+            # Patch the mcp_tools property to return our mock tools
+            with patch.object(MyAgent, 'mcp_tools', mock_tools, create=True):
+                agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
+                
+                # Access the planner agent - this should use MCP tools
+                planner = agent.agent_planner
+                
+                # Verify planner has both the record_notes tool and MCP tools
+                assert len(planner.tools) == 3  # record_notes + 2 MCP tools
+
+    @pytest.mark.asyncio
+    @patch("datarobot_genai.llama_index.mcp.load_mcp_tools")
+    async def test_agent_writer_with_external_mcp_url(self, mock_load_mcp_tools):
+        """Test that writer agent uses MCP tools when configured with external URL."""
+        mock_tool = create_mock_mcp_tool("test_mcp_tool")
+        mock_tools = [mock_tool]
+        mock_load_mcp_tools.return_value = mock_tools
+
+        test_url = "https://mcp-server.example.com/mcp"
+        with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}, clear=True):
+            # Patch the mcp_tools property to return our mock tools
+            with patch.object(MyAgent, 'mcp_tools', mock_tools, create=True):
+                agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
+                
+                # Access the writer agent
+                writer = agent.agent_writer
+                
+                # Verify writer has both the write_report tool and MCP tools
+                assert len(writer.tools) == 2  # write_report + 1 MCP tool
+
+    @pytest.mark.asyncio
+    @patch("datarobot_genai.llama_index.mcp.load_mcp_tools")
+    async def test_agent_editor_with_external_mcp_url(self, mock_load_mcp_tools):
+        """Test that editor agent uses MCP tools when configured with external URL."""
+        mock_tool = create_mock_mcp_tool("test_mcp_tool")
+        mock_tools = [mock_tool]
+        mock_load_mcp_tools.return_value = mock_tools
+
+        test_url = "https://mcp-server.example.com/mcp"
+        with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}, clear=True):
+            # Patch the mcp_tools property to return our mock tools
+            with patch.object(MyAgent, 'mcp_tools', mock_tools, create=True):
+                agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
+                
+                # Access the editor agent
+                editor = agent.agent_editor
+                
+                # Verify editor has both the review_report tool and MCP tools
+                assert len(editor.tools) == 2  # review_report + 1 MCP tool
+
+    @pytest.mark.asyncio
+    @patch("datarobot_genai.llama_index.mcp.load_mcp_tools")
+    async def test_all_agents_with_external_mcp_url(self, mock_load_mcp_tools):
+        """Test that all three agents have MCP tools when configured with external URL."""
+        mock_tool1 = create_mock_mcp_tool("tool1")
+        mock_tool2 = create_mock_mcp_tool("tool2")
+        mock_tools = [mock_tool1, mock_tool2]
+        mock_load_mcp_tools.return_value = mock_tools
+
+        test_url = "https://mcp-server.example.com/mcp"
+        with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}, clear=True):
+            # Patch the mcp_tools property to return our mock tools
+            with patch.object(MyAgent, 'mcp_tools', mock_tools, create=True):
+                agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
+                
+                # Access all agents
+                planner = agent.agent_planner
+                writer = agent.agent_writer
+                editor = agent.agent_editor
+                
+                # Verify all agents have MCP tools
+                assert len(planner.tools) == 3  # record_notes + 2 MCP tools
+                assert len(writer.tools) == 3  # write_report + 2 MCP tools
+                assert len(editor.tools) == 3  # review_report + 2 MCP tools
+
+    @pytest.mark.asyncio
+    @patch("datarobot_genai.llama_index.mcp.load_mcp_tools")
+    async def test_agent_planner_with_datarobot_deployment_id(self, mock_load_mcp_tools):
+        """Test that planner agent uses MCP tools when configured with DataRobot deployment ID."""
+        mock_tool = create_mock_mcp_tool("test_mcp_tool")
+        mock_tools = [mock_tool]
+        mock_load_mcp_tools.return_value = mock_tools
+
+        deployment_id = "abc123def456789012345678"
+        api_base = "https://app.datarobot.com/api/v2"
+        api_key = "test-api-key"
+
+        with patch.dict(
+            os.environ,
+            {
+                "MCP_DEPLOYMENT_ID": deployment_id,
+                "DATAROBOT_ENDPOINT": api_base,
+                "DATAROBOT_API_TOKEN": api_key,
+            },
+            clear=True,
+        ):
+            # Patch the mcp_tools property to return our mock tools
+            with patch.object(MyAgent, 'mcp_tools', mock_tools, create=True):
+                agent = MyAgent(api_key=api_key, api_base=api_base, verbose=True)
+                
+                # Access the planner agent
+                planner = agent.agent_planner
+                
+                # Verify planner has both the record_notes tool and MCP tools
+                assert len(planner.tools) == 2  # record_notes + 1 MCP tool
+
+    @pytest.mark.asyncio
+    @patch("datarobot_genai.llama_index.mcp.load_mcp_tools")
+    async def test_agent_writer_with_datarobot_deployment_id(self, mock_load_mcp_tools):
+        """Test that writer agent uses MCP tools when configured with DataRobot deployment ID."""
+        mock_tool = create_mock_mcp_tool("test_mcp_tool")
+        mock_tools = [mock_tool]
+        mock_load_mcp_tools.return_value = mock_tools
+
+        deployment_id = "abc123def456789012345678"
+        api_base = "https://app.datarobot.com/api/v2"
+        api_key = "test-api-key"
+
+        with patch.dict(
+            os.environ,
+            {
+                "MCP_DEPLOYMENT_ID": deployment_id,
+                "DATAROBOT_ENDPOINT": api_base,
+                "DATAROBOT_API_TOKEN": api_key,
+            },
+            clear=True,
+        ):
+            # Patch the mcp_tools property to return our mock tools
+            with patch.object(MyAgent, 'mcp_tools', mock_tools, create=True):
+                agent = MyAgent(api_key=api_key, api_base=api_base, verbose=True)
+                
+                # Access the writer agent
+                writer = agent.agent_writer
+                
+                # Verify writer has both the write_report tool and MCP tools
+                assert len(writer.tools) == 2  # write_report + 1 MCP tool
+
+    @pytest.mark.asyncio
+    @patch("datarobot_genai.llama_index.mcp.load_mcp_tools")
+    async def test_agent_editor_with_datarobot_deployment_id(self, mock_load_mcp_tools):
+        """Test that editor agent uses MCP tools when configured with DataRobot deployment ID."""
+        mock_tool = create_mock_mcp_tool("test_mcp_tool")
+        mock_tools = [mock_tool]
+        mock_load_mcp_tools.return_value = mock_tools
+
+        deployment_id = "abc123def456789012345678"
+        api_base = "https://app.datarobot.com/api/v2"
+        api_key = "test-api-key"
+
+        with patch.dict(
+            os.environ,
+            {
+                "MCP_DEPLOYMENT_ID": deployment_id,
+                "DATAROBOT_ENDPOINT": api_base,
+                "DATAROBOT_API_TOKEN": api_key,
+            },
+            clear=True,
+        ):
+            # Patch the mcp_tools property to return our mock tools
+            with patch.object(MyAgent, 'mcp_tools', mock_tools, create=True):
+                agent = MyAgent(api_key=api_key, api_base=api_base, verbose=True)
+                
+                # Access the editor agent
+                editor = agent.agent_editor
+                
+                # Verify editor has both the review_report tool and MCP tools
+                assert len(editor.tools) == 2  # review_report + 1 MCP tool
+
+    @pytest.mark.asyncio
+    @patch("datarobot_genai.llama_index.mcp.load_mcp_tools")
+    async def test_all_agents_with_datarobot_deployment_id(self, mock_load_mcp_tools):
+        """Test that all three agents have MCP tools when configured with DataRobot deployment ID."""
+        mock_tool1 = create_mock_mcp_tool("tool1")
+        mock_tool2 = create_mock_mcp_tool("tool2")
+        mock_tools = [mock_tool1, mock_tool2]
+        mock_load_mcp_tools.return_value = mock_tools
+
+        deployment_id = "abc123def456789012345678"
+        api_base = "https://app.datarobot.com/api/v2"
+        api_key = "test-api-key"
+
+        with patch.dict(
+            os.environ,
+            {
+                "MCP_DEPLOYMENT_ID": deployment_id,
+                "DATAROBOT_ENDPOINT": api_base,
+                "DATAROBOT_API_TOKEN": api_key,
+            },
+            clear=True,
+        ):
+            # Patch the mcp_tools property to return our mock tools
+            with patch.object(MyAgent, 'mcp_tools', mock_tools, create=True):
+                agent = MyAgent(api_key=api_key, api_base=api_base, verbose=True)
+                
+                # Access all agents
+                planner = agent.agent_planner
+                writer = agent.agent_writer
+                editor = agent.agent_editor
+                
+                # Verify all agents have MCP tools
+                assert len(planner.tools) == 3  # record_notes + 2 MCP tools
+                assert len(writer.tools) == 3  # write_report + 2 MCP tools
+                assert len(editor.tools) == 3  # review_report + 2 MCP tools
+
+    @pytest.mark.asyncio
+    @patch("datarobot_genai.llama_index.mcp.load_mcp_tools")
+    async def test_agent_with_no_mcp_tools(self, mock_load_mcp_tools):
+        """Test that agents work when no MCP tools are available."""
+        mock_load_mcp_tools.return_value = []
+
+        with patch.dict(os.environ, {}, clear=True):
+            # Patch the mcp_tools property to return empty list
+            with patch.object(MyAgent, 'mcp_tools', [], create=True):
+                agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
+                
+                # Access all agents
+                planner = agent.agent_planner
+                writer = agent.agent_writer
+                editor = agent.agent_editor
+                
+                # Verify agents only have their default tools (no MCP tools)
+                assert len(planner.tools) == 1  # only record_notes
+                assert len(writer.tools) == 1  # only write_report
+                assert len(editor.tools) == 1  # only review_report
