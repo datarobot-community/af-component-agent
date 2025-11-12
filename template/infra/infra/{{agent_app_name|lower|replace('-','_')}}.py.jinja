@@ -236,11 +236,11 @@ def get_mcp_runtime_parameters_from_env() -> list[
     external_mcp_headers = os.environ.get("EXTERNAL_MCP_HEADERS")
     if external_mcp_headers:
         mcp_runtime_parameters.append(
-        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-            key="EXTERNAL_MCP_HEADERS",
-            type="string",
-            value=external_mcp_headers,
-        )
+            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+                key="EXTERNAL_MCP_HEADERS",
+                type="string",
+                value=external_mcp_headers,
+            )
         )
         pulumi.info(f"External MCP configured with headers: {external_mcp_headers}")
 
