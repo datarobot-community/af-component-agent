@@ -13,7 +13,7 @@
 # limitations under the License.
 # mypy: disable-error-code=attr-defined
 from datetime import datetime
-from typing import Any, Generator, List, Optional, Sequence, Union
+from typing import Any, Optional, Union
 
 from config import Config
 from datarobot_genai.core.agents import extract_user_prompt_content
@@ -24,41 +24,11 @@ from datarobot_genai.llama_index.base import LlamaIndexAgent
 from llama_index.core.agent.workflow import (
     AgentWorkflow,
     FunctionAgent,
-    ToolCall,
-    ToolCallResult,
 )
-from llama_index.core.base.llms.types import LLMMetadata
-from llama_index.core.workflow import Context, Event
-from llama_index.llms.litellm import LiteLLM
-from mcp_client import load_mcp_tools
-from openai.types.chat import CompletionCreateParams
-from ragas import MultiTurnSample
-from ragas.integrations.llama_index import convert_to_ragas_messages
+from llama_index.core.workflow import Context
 
 
-class DataRobotLiteLLM(LiteLLM):  # type: ignore[misc]
-    """DataRobotLiteLLM is a small LiteLLM wrapper class that makes all LiteLLM endpoints compatible with the
-    LlamaIndex library."""
-
-    @property
-    def metadata(self) -> LLMMetadata:
-        """Returns the metadata for the LLM.
-
-        This is required to enable the is_chat_model and is_function_calling_model, which are
-        mandatory for LlamaIndex agents. By default, LlamaIndex assumes these are false unless each individual
-        model config in LiteLLM explicitly sets them to true. To use custom LLM endpoints with LlamaIndex agents,
-        you must override this method to return the appropriate metadata.
-        """
-        return LLMMetadata(
-            context_window=128000,
-            num_output=self.max_tokens or -1,
-            is_chat_model=True,
-            is_function_calling_model=True,
-            model_name=self.model,
-        )
-
-
-class MyAgent:
+class MyAgent(LlamaIndexAgent):
     """MyAgent is a custom agent that uses LlamaIndex to plan, write, and edit content.
     It utilizes DataRobot's LLM Gateway or a specific deployment for language model interactions.
     This example illustrates 3 agents that handle content creation tasks, including planning, writing,
@@ -83,7 +53,6 @@ class MyAgent:
             **kwargs,
         )
         self.config = Config()
-        self._mcp_tools: List[Any] = []
         self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
 
     def make_input_message(self, completion_create_params: Any) -> str:
@@ -94,32 +63,10 @@ class MyAgent:
             f"information given the current year is {str(datetime.now().year)}."
         )
 
-        # Load MCP tools (if configured) asynchronously before building agents
-        self._mcp_tools = asyncio.run(
-            load_mcp_tools(api_base=self.api_base, api_key=self.api_key)
-        )
-        # Create and invoke the LlamaIndex Agentic Workflow with the inputs
-        result, events = asyncio.run(
-            self.run_llamaindex_agentic_workflow(input_message)
-        )
-
-        # Extract the report_content as the synchronous response
-        response_text = str(result["report_content"])
-
-        pipeline_interactions = self.create_pipeline_interactions_from_events(events)
-
-        usage_metrics: dict[str, int] = {
-            "completion_tokens": 0,
-            "prompt_tokens": 0,
-            "total_tokens": 0,
-        }
-
-        return response_text, pipeline_interactions, usage_metrics
-
-    async def run_llamaindex_agentic_workflow(self, user_prompt: str) -> Any:
-        agent_workflow = AgentWorkflow(
-            agents=[self.research_agent, self.write_agent, self.review_agent],
-            root_agent=self.research_agent.name,
+    def build_workflow(self) -> AgentWorkflow:
+        return AgentWorkflow(
+            agents=[self.agent_planner, self.agent_writer, self.agent_editor],
+            root_agent=self.agent_planner.name,
             initial_state={
                 "research_notes": {},
                 "report_content": "Not written yet.",
@@ -162,8 +109,8 @@ class MyAgent:
                 "before handing off control to the WriterAgent."
             ),
             llm=self.llm(preferred_model="datarobot/azure/gpt-4o-mini"),
-            tools=[self.record_notes, *self._mcp_tools],
-            can_handoff_to=["WriteAgent"],
+            tools=[self.record_notes, *self.mcp_tools],
+            can_handoff_to=["WriterAgent"],
         )
 
     @property
@@ -177,8 +124,8 @@ class MyAgent:
                 "Once the report is written, you should get feedback at least once from the EditorAgent."
             ),
             llm=self.llm(preferred_model="datarobot/azure/gpt-4o-mini"),
-            tools=[self.write_report, *self._mcp_tools],
-            can_handoff_to=["ReviewAgent", "ResearchAgent"],
+            tools=[self.write_report, *self.mcp_tools],
+            can_handoff_to=["EditorAgent"],
         )
 
     @property
@@ -193,8 +140,8 @@ class MyAgent:
                 "WriterAgent implements the changes after submitting the review."
             ),
             llm=self.llm(),
-            tools=[self.review_report, *self._mcp_tools],
-            can_handoff_to=["WriteAgent"],
+            tools=[self.review_report, *self.mcp_tools],
+            # Editor is terminal in this simple flow; no handoff
         )
 
     @staticmethod
