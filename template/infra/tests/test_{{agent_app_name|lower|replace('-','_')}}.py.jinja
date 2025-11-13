@@ -653,6 +653,10 @@ class TestGetMcpCustomModelRuntimeParameters:
         # Set up environment variables
         monkeypatch.setenv("MCP_DEPLOYMENT_ID", "test-deployment-123")
         monkeypatch.setenv("EXTERNAL_MCP_URL", "https://example.com/mcp")
+        monkeypatch.setenv(
+            "EXTERNAL_MCP_HEADERS", '{"Authorization": "Bearer token123"}'
+        )
+        monkeypatch.setenv("EXTERNAL_MCP_TRANSPORT", "sse")
 
         # Mock importlib.import_module to raise ImportError
         def mock_import_module(name, package=None):
@@ -664,7 +668,7 @@ class TestGetMcpCustomModelRuntimeParameters:
         result = agent_infra.get_mcp_custom_model_runtime_parameters()
 
         assert isinstance(result, list)
-        assert len(result) == 2
+        assert len(result) == 4
 
         # Check MCP_DEPLOYMENT_ID parameter
         mcp_deployment_param = next(
@@ -681,6 +685,24 @@ class TestGetMcpCustomModelRuntimeParameters:
         assert external_mcp_param is not None
         assert external_mcp_param.type == "string"
         assert external_mcp_param.value == "https://example.com/mcp"
+
+        # Check EXTERNAL_MCP_HEADERS parameter
+        external_mcp_headers_param = next(
+            (p for p in result if p.key == "EXTERNAL_MCP_HEADERS"), None
+        )
+        assert external_mcp_headers_param is not None
+        assert external_mcp_headers_param.type == "string"
+        assert external_mcp_headers_param.value == (
+            '{"Authorization": "Bearer token123"}'
+        )
+
+        # Check EXTERNAL_MCP_TRANSPORT parameter
+        external_mcp_transport_param = next(
+            (p for p in result if p.key == "EXTERNAL_MCP_TRANSPORT"), None
+        )
+        assert external_mcp_transport_param is not None
+        assert external_mcp_transport_param.type == "string"
+        assert external_mcp_transport_param.value == "sse"
 
 
 class TestGenerateMetadataYaml:
