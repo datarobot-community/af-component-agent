@@ -10,6 +10,7 @@ from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
 from agent import MyAgent
+from langchain_core.messages import AIMessage
 
 
 def create_mock_mcp_tool(name: str):
@@ -30,7 +31,7 @@ def _create_mock_astream():
             "updates",
             {
                 "planner_node": {
-                    "messages": [MagicMock(content="Test response")],
+                    "messages": [AIMessage(content="Test response")],
                     "usage": {
                         "total_tokens": 0,
                         "prompt_tokens": 0,
@@ -70,9 +71,11 @@ def langgraph_common_mocks():
     mock_execution_graph.astream.side_effect = _create_mock_astream()
 
     with (
-        patch("datarobot_genai.langgraph.mcp.mcp_tools_context") as mock_mcp_context,
+        patch("datarobot_genai.langgraph.agent.mcp_tools_context") as mock_mcp_context,
         patch.object(
-            MyAgent, "workflow", new_callable=PropertyMock
+            MyAgent,
+            "workflow",
+            new_callable=PropertyMock,
         ) as mock_workflow_prop,
     ):
         mock_workflow = MagicMock()
@@ -122,13 +125,6 @@ class TestMyAgentLangGraphMCPIntegration:
             )
             assert agent.mcp_tools == mock_tools
 
-            planner = agent.agent_planner
-            writer = agent.agent_writer
-            editor = agent.agent_editor
-
-            for agent_with_tools in (planner, writer, editor):
-                assert len(agent_with_tools.tools) == len(mock_tools)
-
     def test_agent_loads_mcp_tools_from_datarobot_deployment_in_invoke(
         self, langgraph_common_mocks
     ):
@@ -164,13 +160,6 @@ class TestMyAgentLangGraphMCPIntegration:
             mock_context.assert_called_once_with(api_base=api_base, api_key=api_key)
             assert agent.mcp_tools == mock_tools
 
-            planner = agent.agent_planner
-            writer = agent.agent_writer
-            editor = agent.agent_editor
-
-            for agent_with_tools in (planner, writer, editor):
-                assert len(agent_with_tools.tools) == len(mock_tools)
-
     def test_agent_works_without_mcp_tools(self, langgraph_common_mocks):
         langgraph_common_mocks.set_mcp_tools([])
         mock_context = langgraph_common_mocks.mcp_context
@@ -189,13 +178,6 @@ class TestMyAgentLangGraphMCPIntegration:
 
             mock_context.assert_called_once()
             assert len(agent.mcp_tools) == 0
-
-            planner = agent.agent_planner
-            writer = agent.agent_writer
-            editor = agent.agent_editor
-
-            for agent_with_tools in (planner, writer, editor):
-                assert len(agent_with_tools.tools) == 0
 
     def test_mcp_tools_property_accessed_by_all_agents(self, langgraph_common_mocks):
         mock_tool1 = create_mock_mcp_tool("tool1")
