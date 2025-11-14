@@ -97,12 +97,12 @@ jobs:
     steps:
       - name: Checkout
         uses: "actions/checkout@v5"
-      - name: Setup caching
-        uses: ./.github/actions/setup-caching
-        id: setup-cache
-        with:
-          python-version: python3.11
-          cache-key-suffix: docker-build-test
+      # - name: Setup caching
+      #   uses: ./.github/actions/setup-caching
+      #   id: setup-cache
+      #   with:
+      #     python-version: python3.11
+      #     cache-key-suffix: docker-build-test
       - name: Render copier instance
         uses: ./.github/actions/render-copier-instance
       - name: Create docker context
