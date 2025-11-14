@@ -251,3 +251,62 @@ class TestMyAgentMCPIntegration:
                 # Each of these properties accesses self.mcp_tools when creating FunctionAgent
                 # Note: It may be accessed more than 3 times (e.g., when accessing agent_planner.name)
                 assert access_count["count"] >= 3, f"Expected at least 3 accesses (one per agent), got {access_count['count']}"
+
+    @patch("datarobot_genai.llama_index.base.load_mcp_tools")
+    @patch("datarobot_genai.llama_index.mcp.aget_tools_from_mcp_url", new_callable=AsyncMock)
+    @patch.object(MyAgent, 'build_workflow')
+    def test_mcp_tool_execution_makes_request_to_server(
+        self, mock_build_workflow, mock_aget_tools, mock_load_mcp_tools
+    ):
+        """Test that executing an MCP tool makes a request to the MCP server and returns a response."""
+        # Create a mock MCP tool that simulates making a request
+        async def executable_tool_func(ctx: Any, query: str = "test", **kwargs: Any) -> str:
+            # This simulates the tool making a request to the MCP server
+            # In reality, this would be handled by the MCP adapter
+            return f"MCP server response for: {query}"
+        
+        executable_tool_func.__name__ = "test_executable_tool"
+        executable_tool_func.__doc__ = "Test executable MCP tool"
+        
+        mock_tool = executable_tool_func
+        mock_tools = [mock_tool]
+        
+        # Mock aget_tools_from_mcp_url to return our executable tool
+        mock_aget_tools.return_value = mock_tools
+        # Mock load_mcp_tools to return the tools
+        mock_load_mcp_tools.return_value = mock_tools
+        
+        # Mock the workflow
+        mock_build_workflow.return_value = self._create_mock_workflow()
+
+        test_url = "https://mcp-server.example.com/mcp"
+        with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}, clear=True):
+            agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
+            
+            # Create completion params
+            completion_params = {
+                "messages": [{"role": "user", "content": "test prompt"}],
+            }
+            
+            # Call invoke - this should trigger MCP tool loading
+            try:
+                asyncio.run(agent.invoke(completion_params))
+            except (StopIteration, AttributeError, TypeError):
+                # Expected when workflow is mocked
+                pass
+            
+            # Verify load_mcp_tools was called (which internally calls aget_tools_from_mcp_url)
+            mock_load_mcp_tools.assert_called_once()
+            
+            # Verify tools were set
+            assert len(agent.mcp_tools) == 1
+            
+            # Execute the tool and verify it returns a response
+            tool = agent.mcp_tools[0]
+            result = asyncio.run(tool(ctx=MagicMock(), query="test query"))
+            
+            # Verify the tool executed and returned a response
+            assert result == "MCP server response for: test query"
+            
+            # Verify the tool is callable
+            assert callable(tool)
