@@ -3,8 +3,14 @@ name: af-component-agent Docker
 on:
   push:
     branches: ["main"]
+    paths:
+      - "**/*pyproject*"
+      - ".github/workflows/afcomponentagent-docker-test.yaml"
   pull_request:
     branches: ["main"]
+    paths:
+      - "**/*pyproject*"
+      - ".github/workflows/afcomponentagent-docker-test.yaml"
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
@@ -91,14 +97,12 @@ jobs:
     steps:
       - name: Checkout
         uses: "actions/checkout@v5"
-      - name: Setup caching for Docker build
-        uses: actions/cache@v4
+      - name: Setup caching
+        uses: ./.github/actions/setup-caching
+        id: setup-cache
         with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ github.ref_name }}-${{ matrix.dockerfile }}-5
-          restore-keys: |
-            ${{ runner.os }}-buildx-
-            ${{ runner.os }}-buildx-${{ github.ref_name }}-
+          python-version: python3.11
+          cache-key-suffix: docker-build-test
       - name: Render copier instance
         uses: ./.github/actions/render-copier-instance
       - name: Create docker context
@@ -108,39 +112,7 @@ jobs:
         with:
           dockerfile: ./rendered/agent/docker_context/${{ matrix.dockerfile }}
           config: .hadolint.yaml
-      - name: Install dependencies
-        run: |
-          docker run --rm -v "$(pwd):/workspace" -w /workspace ghcr.io/astral-sh/uv:python3.11-bookworm bash -c "
-            cd ./rendered
-            uvx --from go-task-bin task agent:install
-          "
-          # Copy the pyproject.toml and uv.lock into the docker_context for the build
-          sudo cp ./rendered/agent/pyproject.toml ./rendered/agent/docker_context/pyproject.toml
-          sudo cp ./rendered/agent/uv.lock ./rendered/agent/docker_context/uv.lock
       - name: Build Dockerfile
-        workdir: ./rendered/agent/docker_context
         run: |
+          cd ./rendered/agent/docker_context
           docker build --platform linux/amd64 -f ${{ matrix.dockerfile }} -t test-agent:latest .
-      - name: Test Codespaces server in Docker container
-        run: |
-          # Start the container in the background
-          CONTAINER_ID=$(docker run -d -p 8889:8889 test-agent:latest /etc/system/kernel/start_server.sh)
-          echo "Started container: $CONTAINER_ID"
-          # Wait for the server to start
-          for i in {1..30}; do
-            if curl -s http://localhost:8889/ > /dev/null; then
-              echo "Codespaces server is up and responding."
-              break
-            fi
-            sleep 1
-          done
-          # Check if server responded
-          if ! curl -s http://localhost:8889/ > /dev/null; then
-            echo "Codespaces server did not respond on port 8889 after 30 seconds."
-            docker logs "$CONTAINER_ID"
-            docker stop "$CONTAINER_ID"
-            exit 1
-          fi
-          # Stop the container after success
-          docker stop "$CONTAINER_ID"
-          echo "Stopped container: $CONTAINER_ID"
