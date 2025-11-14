@@ -13,8 +13,8 @@ vars:
       fi
   PULUMI_STACK_COMMAND:
     sh: |
-      if [ -n "${PULUMI_STACK_NAME:-}" ]; then
-        echo "--stack $PULUMI_STACK_NAME"
+      if [ -n "${PULUMI_STACK:-}" ]; then
+        echo "--stack $PULUMI_STACK"
       else
         echo ""
       fi
@@ -73,8 +73,8 @@ tasks:
     silent: true
     cmds:
       - |
-        if [ -n "${PULUMI_STACK_NAME:-}" ]; then
-          {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi stack select -c $PULUMI_STACK_NAME
+        if [ -n "${PULUMI_STACK:-}" ]; then
+          {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi stack select -c $PULUMI_STACK
         fi
   info:
     silent: true
