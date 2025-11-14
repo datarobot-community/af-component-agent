@@ -98,55 +98,36 @@ def langgraph_common_mocks():
         )
 
 
+LANGGRAPH_MCP_ENV_CASES = [
+    pytest.param(
+        {
+            "EXTERNAL_MCP_URL": "https://mcp-server.example.com/mcp",
+        },
+        id="external-url",
+    ),
+    pytest.param(
+        {"MCP_DEPLOYMENT_ID": "abc123def456789012345678"},
+        id="datarobot-deployment",
+    ),
+]
+
+
 class TestMyAgentLangGraphMCPIntegration:
     """Test MCP tool integration for LangGraph agents."""
 
-    def test_agent_loads_mcp_tools_from_external_url_in_invoke(
-        self, langgraph_common_mocks
-    ):
-        mock_tools = langgraph_common_mocks.default_tools
+    @pytest.mark.parametrize("env_patch", LANGGRAPH_MCP_ENV_CASES)
+    def test_agent_loads_mcp_tools_in_invoke(self, langgraph_common_mocks, env_patch):
         mock_context = langgraph_common_mocks.mcp_context
+        expected_tools = langgraph_common_mocks.default_tools
 
-        test_url = "https://mcp-server.example.com/mcp"
-        with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}, clear=True):
-            agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
-
-            completion_params = {
-                "messages": [{"role": "user", "content": "test prompt"}]
-            }
-
-            try:
-                asyncio.run(agent.invoke(completion_params))
-            except (StopIteration, AttributeError, TypeError, ValueError):
-                pass
-
-            mock_context.assert_called_once_with(
-                api_base="test_base", api_key="test_key"
+        with patch.dict(os.environ, env_patch, clear=True):
+            api_key = "test-api-key"
+            api_base = "https://app.datarobot.com/api/v2"
+            agent = MyAgent(
+                api_key=api_key,
+                api_base=api_base,
+                verbose=True,
             )
-            assert agent.mcp_tools == mock_tools
-
-    def test_agent_loads_mcp_tools_from_datarobot_deployment_in_invoke(
-        self, langgraph_common_mocks
-    ):
-        mock_tool = create_mock_mcp_tool("test_mcp_tool")
-        mock_tools = [mock_tool]
-        langgraph_common_mocks.set_mcp_tools(mock_tools)
-        mock_context = langgraph_common_mocks.mcp_context
-
-        deployment_id = "abc123def456789012345678"
-        api_base = "https://app.datarobot.com/api/v2"
-        api_key = "test-api-key"
-
-        with patch.dict(
-            os.environ,
-            {
-                "MCP_DEPLOYMENT_ID": deployment_id,
-                "DATAROBOT_ENDPOINT": api_base,
-                "DATAROBOT_API_TOKEN": api_key,
-            },
-            clear=True,
-        ):
-            agent = MyAgent(api_key=api_key, api_base=api_base, verbose=True)
 
             completion_params = {
                 "messages": [{"role": "user", "content": "test prompt"}]
@@ -157,8 +138,8 @@ class TestMyAgentLangGraphMCPIntegration:
             except (StopIteration, AttributeError, TypeError, ValueError):
                 pass
 
-            mock_context.assert_called_once_with(api_base=api_base, api_key=api_key)
-            assert agent.mcp_tools == mock_tools
+        mock_context.assert_called_once_with(api_base=api_base, api_key=api_key)
+        assert agent.mcp_tools == expected_tools
 
     def test_agent_works_without_mcp_tools(self, langgraph_common_mocks):
         langgraph_common_mocks.set_mcp_tools([])
