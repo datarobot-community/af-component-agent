@@ -12,7 +12,7 @@ inputs:
   branch:
     description: 'Branch of datarobot-user-models to use for docker context'
     required: false
-    default: 'mattn/BUZZOK-28395-docker-tests'
+    default: 'master'
 runs:
   using: 'composite'
   steps:
