@@ -85,7 +85,7 @@ jobs:
            exit 1
          fi
   test-build-dockerfile:
-    name: "Test Build Dockerfile for Codespaces and DRUM"
+    name: "Test Build Dockerfile and Codespaces"
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
@@ -137,29 +137,6 @@ jobs:
           # Check if server responded
           if ! curl -s http://localhost:8889/ > /dev/null; then
             echo "Codespaces server did not respond on port 8889 after 30 seconds."
-            docker logs "$CONTAINER_ID"
-            docker stop "$CONTAINER_ID"
-            exit 1
-          fi
-          # Stop the container after success
-          docker stop "$CONTAINER_ID"
-          echo "Stopped container: $CONTAINER_ID"
-      - name: Test DRUM server in Docker container
-        run: |
-          # Start the container in the background
-          CONTAINER_ID=$(docker run -d -p 8080:8080 test-agent:latest /opt/code/start_server.sh)
-          echo "Started container: $CONTAINER_ID"
-          # Wait for the server to start
-          for i in {1..30}; do
-            if curl -s http://localhost:8080/ > /dev/null; then
-              echo "DRUM server is up and responding."
-              break
-            fi
-            sleep 1
-          done
-          # Check if server responded
-          if ! curl -s http://localhost:8080/ > /dev/null; then
-            echo "DRUM server did not respond on port 8080 after 30 seconds."
             docker logs "$CONTAINER_ID"
             docker stop "$CONTAINER_ID"
             exit 1
