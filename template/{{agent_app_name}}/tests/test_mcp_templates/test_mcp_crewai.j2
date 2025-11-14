@@ -4,12 +4,65 @@ Tests for MCP CrewAI integration - verifying agents have MCP tools configured.
 
 import asyncio
 import os
-from unittest.mock import AsyncMock, MagicMock, patch
+from types import SimpleNamespace
 from typing import Any
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
 from agent import MyAgent
+
+
+@pytest.fixture(autouse=True)
+def crewai_common_mocks():
+    """
+    Autouse fixture that wires all common CrewAI dependencies:
+    - patches LLM construction to avoid network calls
+    - patches MCPServerAdapter to return default mock tools
+    - patches Crew to avoid executing real workflows
+    Tests can tweak the mocked adapter tools via `set_adapter_tools`.
+    """
+    default_tool1 = create_mock_mcp_tool("fixture_mcp_tool_1")
+    default_tool2 = create_mock_mcp_tool("fixture_mcp_tool_2")
+    default_tools = [default_tool1, default_tool2]
+
+    mock_crew = MagicMock()
+    mock_crew.kickoff.return_value = MagicMock()
+    mock_crew.kickoff.return_value.raw = "Test response"
+
+    with (
+        patch("crewai.llm.LLM.call") as mock_llm_call,
+        patch.object(MyAgent, "llm") as mock_llm_method,
+        patch("datarobot_genai.crewai.mcp.MCPServerAdapter") as mock_adapter_class,
+        patch("crewai.Crew") as mock_crew_class,
+    ):
+        mock_llm_call.return_value = "mock-response"
+        mock_llm_instance = MagicMock()
+        mock_llm_instance.model = "datarobot/azure/gpt-4o-mini"
+        mock_llm_instance.api_key = "mock-api-key"
+        mock_llm_instance.base_url = "https://mock-llm/api"
+        mock_llm_method.return_value = mock_llm_instance
+
+        mock_adapter = MagicMock()
+        mock_adapter.__enter__.return_value = default_tools
+        mock_adapter.__exit__.return_value = None
+        mock_adapter_class.return_value = mock_adapter
+
+        mock_crew_class.return_value = mock_crew
+
+        def set_adapter_tools(tools: list[Any]):
+            mock_adapter.__enter__.return_value = tools
+
+        yield SimpleNamespace(
+            llm_call=mock_llm_call,
+            llm_method=mock_llm_method,
+            adapter_class=mock_adapter_class,
+            adapter=mock_adapter,
+            crew_class=mock_crew_class,
+            crew=mock_crew,
+            default_tools=default_tools,
+            set_adapter_tools=set_adapter_tools,
+        )
 
 
 def create_mock_mcp_tool(tool_name: str):
@@ -29,50 +82,11 @@ def create_mock_mcp_tool(tool_name: str):
 class TestMyAgentMCPIntegration:
     """Test MCP tool integration for CrewAI agents."""
 
-    def _create_mock_crew(self):
-        """Create a mock Crew that simulates crew execution."""
-        mock_crew = MagicMock()
-        mock_crew.kickoff.return_value = MagicMock()
-        mock_crew.kickoff.return_value.raw = "Test response"
-        return mock_crew
-
-    @patch("crewai.llm.LLM.call")
-    @patch.object(MyAgent, "llm")
-    @patch("crewai_tools.MCPServerAdapter")
-    @patch("datarobot_genai.crewai.base.mcp_tools_context")
-    @patch("crewai.Crew")
-    def test_agent_loads_mcp_tools_from_external_url_in_invoke(
-        self, mock_crew_class, mock_mcp_tools_context, mock_adapter_class, mock_llm_method, mock_llm_call
-    ):
+    def test_agent_loads_mcp_tools_from_external_url_in_invoke(self, crewai_common_mocks):
         """Test that agent loads MCP tools from EXTERNAL_MCP_URL when invoke() is called."""
-        # Create mock MCP tools
-        mock_tool1 = create_mock_mcp_tool("test_mcp_tool_1")
-        mock_tool2 = create_mock_mcp_tool("test_mcp_tool_2")
-        mock_tools = [mock_tool1, mock_tool2]
-        
-        # Configure llm mock to return a proper mock with model attribute (must be done first)
-        mock_llm_call.return_value = "mock-response"
-        mock_llm_instance = MagicMock()
-        mock_llm_instance.model = "datarobot/azure/gpt-4o-mini"
-        mock_llm_instance.api_key = "mock-api-key"
-        mock_llm_instance.base_url = "https://mock-llm/api"
-        mock_llm_method.return_value = mock_llm_instance
-        
-        # Mock MCPServerAdapter to prevent actual connection
-        mock_adapter = MagicMock()
-        mock_adapter.__enter__.return_value = mock_tools
-        mock_adapter.__exit__.return_value = None
-        mock_adapter_class.return_value = mock_adapter
-        
-        # Mock mcp_tools_context to return our tools
-        mock_context = MagicMock()
-        mock_context.__enter__.return_value = mock_tools
-        mock_context.__exit__.return_value = None
-        mock_mcp_tools_context.return_value = mock_context
-        
-        # Mock the crew
-        mock_crew = self._create_mock_crew()
-        mock_crew_class.return_value = mock_crew
+
+        mock_tools = crewai_common_mocks.default_tools
+        mock_adapter_class = crewai_common_mocks.adapter_class
 
         test_url = "https://mcp-server.example.com/mcp"
         with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}, clear=True):
@@ -90,11 +104,11 @@ class TestMyAgentMCPIntegration:
                 # Expected when crew is mocked
                 pass
             
-            # Verify mcp_tools_context was called with correct parameters
-            mock_mcp_tools_context.assert_called_once_with(
-                api_base="test_base",
-                api_key="test_key"
-            )
+            # Verify MCPServerAdapter received the rendered server configuration
+            mock_adapter_class.assert_called_once()
+            adapter_setting = mock_adapter_class.call_args[0][0]
+            assert adapter_setting["url"] == test_url
+            assert adapter_setting["transport"] == "streamable-http"
             
             # Verify set_mcp_tools was called with the tools from MCP server
             assert agent.mcp_tools == mock_tools
@@ -105,51 +119,23 @@ class TestMyAgentMCPIntegration:
             writer = agent.agent_writer
             editor = agent.agent_editor
             
-            # Verify all agents have MCP tools
-            assert len(planner.tools) == 2  # 2 MCP tools
-            assert len(writer.tools) == 2  # 2 MCP tools
-            assert len(editor.tools) == 2  # 2 MCP tools
+            # Verify all agents have the expected MCP tools
+            expected_tool_names = [tool.name for tool in mock_tools]
+            for agent_with_tools in (planner, writer, editor):
+                assert len(agent_with_tools.tools) == len(expected_tool_names)
+                assert [tool.name for tool in agent_with_tools.tools] == expected_tool_names
 
-    @patch("crewai.llm.LLM.call")
-    @patch.object(MyAgent, "llm")
-    @patch("crewai_tools.MCPServerAdapter")
-    @patch("datarobot_genai.crewai.base.mcp_tools_context")
-    @patch("crewai.Crew")
     def test_agent_loads_mcp_tools_from_datarobot_deployment_in_invoke(
-        self, mock_crew_class, mock_mcp_tools_context, mock_adapter_class, mock_llm_method, mock_llm_call
+        self, crewai_common_mocks
     ):
         """Test that agent loads MCP tools from MCP_DEPLOYMENT_ID when invoke() is called."""
-        # Create mock MCP tools
         mock_tool = create_mock_mcp_tool("test_mcp_tool")
         mock_tools = [mock_tool]
-        
-        # Configure llm mock to return a proper mock with model attribute (must be done first)
-        mock_llm_call.return_value = "mock-response"
-        mock_llm_instance = MagicMock()
-        mock_llm_instance.model = "datarobot/azure/gpt-4o-mini"
-        mock_llm_instance.api_key = "mock-api-key"
-        mock_llm_instance.base_url = "https://mock-llm/api"
-        mock_llm_method.return_value = mock_llm_instance
-        
-        # Mock MCPServerAdapter to prevent actual connection
-        mock_adapter = MagicMock()
-        mock_adapter.__enter__.return_value = mock_tools
-        mock_adapter.__exit__.return_value = None
-        mock_adapter_class.return_value = mock_adapter
-        
-        # Mock mcp_tools_context to return our tools
-        mock_context = MagicMock()
-        mock_context.__enter__.return_value = mock_tools
-        mock_context.__exit__.return_value = None
-        mock_mcp_tools_context.return_value = mock_context
-        
+        crewai_common_mocks.set_adapter_tools(mock_tools)
+
         deployment_id = "abc123def456789012345678"
         api_base = "https://app.datarobot.com/api/v2"
         api_key = "test-api-key"
-        
-        # Mock the crew
-        mock_crew = self._create_mock_crew()
-        mock_crew_class.return_value = mock_crew
 
         with patch.dict(
             os.environ,
@@ -174,12 +160,6 @@ class TestMyAgentMCPIntegration:
                 # Expected when crew is mocked
                 pass
             
-            # Verify mcp_tools_context was called with correct parameters
-            mock_mcp_tools_context.assert_called_once_with(
-                api_base=api_base,
-                api_key=api_key
-            )
-            
             # Verify set_mcp_tools was called with the tools from MCP server
             assert agent.mcp_tools == mock_tools
             
@@ -192,30 +172,10 @@ class TestMyAgentMCPIntegration:
             assert len(writer.tools) == 1  # 1 MCP tool
             assert len(editor.tools) == 1  # 1 MCP tool
 
-    @patch("crewai.llm.LLM.call")
-    @patch.object(MyAgent, "llm")
-    @patch("crewai_tools.MCPServerAdapter")
     @patch("datarobot_genai.crewai.base.mcp_tools_context")
-    @patch("crewai.Crew")
-    def test_agent_works_without_mcp_tools(self, mock_crew_class, mock_mcp_tools_context, mock_adapter_class, mock_llm_method, mock_llm_call):
+    def test_agent_works_without_mcp_tools(self, mock_mcp_tools_context, crewai_common_mocks):
         """Test that agent works correctly when no MCP tools are available."""
-        # Configure llm mock to return a proper mock with model attribute (must be done first)
-        mock_llm_call.return_value = "mock-response"
-        mock_llm_instance = MagicMock()
-        mock_llm_instance.model = "datarobot/azure/gpt-4o-mini"
-        mock_llm_instance.api_key = "mock-api-key"
-        mock_llm_instance.base_url = "https://mock-llm/api"
-        mock_llm_method.return_value = mock_llm_instance
-        
-        # Mock mcp_tools_context to return empty list (no MCP configured)
-        mock_context = MagicMock()
-        mock_context.__enter__.return_value = []
-        mock_context.__exit__.return_value = None
-        mock_mcp_tools_context.return_value = mock_context
-        
-        # Mock the crew
-        mock_crew = self._create_mock_crew()
-        mock_crew_class.return_value = mock_crew
+        crewai_common_mocks.set_adapter_tools([])
 
         with patch.dict(os.environ, {}, clear=True):
             agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
@@ -247,20 +207,9 @@ class TestMyAgentMCPIntegration:
             assert len(writer.tools) == 0
             assert len(editor.tools) == 0
 
-    @patch("crewai.llm.LLM.call")
-    @patch.object(MyAgent, "llm")
-    def test_mcp_tools_property_accessed_by_all_agents(self, mock_llm_method, mock_llm_call):
+    def test_mcp_tools_property_accessed_by_all_agents(self, crewai_common_mocks):
         """Test that mcp_tools property is accessed by planner/writer/editor."""
-        mock_llm_call.return_value = "mock-response"
-        mock_llm_instance = MagicMock()
-        mock_llm_instance.model = "datarobot/azure/gpt-4o-mini"
-        mock_llm_instance.api_key = "mock-api-key"
-        mock_llm_instance.base_url = "https://mock-llm/api"
-        mock_llm_method.return_value = mock_llm_instance
-
-        mock_tool1 = create_mock_mcp_tool("tool1")
-        mock_tool2 = create_mock_mcp_tool("tool2")
-        mock_tools = [mock_tool1, mock_tool2]
+        mock_tools = crewai_common_mocks.default_tools
 
         access_count = {"count": 0}
 
@@ -278,13 +227,9 @@ class TestMyAgentMCPIntegration:
 
         assert access_count["count"] >= 3
 
-    @patch("crewai.llm.LLM.call")
-    @patch.object(MyAgent, "llm")
-    @patch("crewai_tools.MCPServerAdapter")
     @patch("datarobot_genai.crewai.base.mcp_tools_context")
-    @patch("crewai.Crew")
     def test_mcp_tool_execution_makes_request_to_server(
-        self, mock_crew_class, mock_mcp_tools_context, mock_adapter_class, mock_llm_method, mock_llm_call
+        self, mock_mcp_tools_context, crewai_common_mocks
     ):
         """Test that executing an MCP tool makes a request to the MCP server and returns a response."""
         # Create a mock MCP tool that simulates making a request
@@ -302,29 +247,7 @@ class TestMyAgentMCPIntegration:
         mock_tool = ExecutableMockTool()
         mock_tools = [mock_tool]
         
-        # Configure llm mock to return a proper mock with model attribute (must be done first)
-        mock_llm_call.return_value = "mock-response"
-        mock_llm_instance = MagicMock()
-        mock_llm_instance.model = "datarobot/azure/gpt-4o-mini"
-        mock_llm_instance.api_key = "mock-api-key"
-        mock_llm_instance.base_url = "https://mock-llm/api"
-        mock_llm_method.return_value = mock_llm_instance
-        
-        # Mock MCPServerAdapter to prevent actual connection
-        mock_adapter = MagicMock()
-        mock_adapter.__enter__.return_value = mock_tools
-        mock_adapter.__exit__.return_value = None
-        mock_adapter_class.return_value = mock_adapter
-        
-        # Mock mcp_tools_context to return our tools
-        mock_context = MagicMock()
-        mock_context.__enter__.return_value = mock_tools
-        mock_context.__exit__.return_value = None
-        mock_mcp_tools_context.return_value = mock_context
-        
-        # Mock the crew
-        mock_crew = self._create_mock_crew()
-        mock_crew_class.return_value = mock_crew
+        crewai_common_mocks.set_adapter_tools(mock_tools)
 
         test_url = "https://mcp-server.example.com/mcp"
         with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}, clear=True):
