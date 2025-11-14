@@ -7,6 +7,12 @@ BASE_RENDER_DIR=".rendered/agent_base"
 #   Rendering the base template keeps the test self-contained and deterministic.
 
 cleanup() {
+    if [ -n "${SERVER_PGID:-}" ] && kill -0 "-${SERVER_PGID}" 2>/dev/null; then
+        kill "-${SERVER_PGID}" >/dev/null 2>&1 || true
+        sleep 1
+        kill "-${SERVER_PGID}" >/dev/null 2>&1 || true
+    fi
+
     if [ -n "${SERVER_PID:-}" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
         kill "$SERVER_PID" >/dev/null 2>&1 || true
         wait "$SERVER_PID" >/dev/null 2>&1 || true
@@ -58,9 +64,13 @@ cd "${BASE_RENDER_DIR}"
 echo "DATAROBOT_API_TOKEN = secret" >> .env
 echo "DATAROBOT_ENDPOINT = https://test.com/api/v2" >> .env
 
-# Start the server, colorize output. Wait for it to start
-stdbuf -oL uvx --from go-task-bin task agent:dev | awk '{print "\033[34m" $0 "\033[0m"}' &
+# Start the server, colorize output via process substitution and keep the real PID
+stdbuf -oL uvx --from go-task-bin task agent:dev > >(awk '{print "\033[34m" $0 "\033[0m"}') &
 SERVER_PID=$!
+SERVER_PGID=$(ps -o pgid= "$SERVER_PID" 2>/dev/null | tr -d '[:space:]')
+if [ -z "$SERVER_PGID" ]; then
+    SERVER_PGID="$SERVER_PID"
+fi
 
 if ! wait_for_port "localhost" 8842 60 1; then
     echo "Dev server did not start listening on port 8842"
