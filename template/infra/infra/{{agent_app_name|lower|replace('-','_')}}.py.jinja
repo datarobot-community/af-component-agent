@@ -232,6 +232,31 @@ def get_mcp_runtime_parameters_from_env() -> list[
         )
         pulumi.info(f"MCP configured with external server: {external_mcp_url}")
 
+    # Add optional EXTERNAL_MCP_HEADERS
+    external_mcp_headers = os.environ.get("EXTERNAL_MCP_HEADERS")
+    if external_mcp_headers:
+        mcp_runtime_parameters.append(
+            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+                key="EXTERNAL_MCP_HEADERS",
+                type="string",
+                value=external_mcp_headers,
+            )
+        )
+        pulumi.info(f"External MCP configured with headers: {external_mcp_headers}")
+
+    # Add optional EXTERNAL_MCP_TRANSPORT parameter
+    external_mcp_transport = os.environ.get("EXTERNAL_MCP_TRANSPORT")
+    if external_mcp_transport:
+        external_mcp_transport = os.environ["EXTERNAL_MCP_TRANSPORT"]
+        mcp_runtime_parameters.append(
+            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+                key="EXTERNAL_MCP_TRANSPORT",
+                type="string",
+                value=external_mcp_transport,
+            )
+        )
+        pulumi.info(f"External MCP configured with transport: {external_mcp_transport}")
+
     return mcp_runtime_parameters
 
 
