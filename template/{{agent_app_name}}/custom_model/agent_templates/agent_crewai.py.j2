@@ -126,7 +126,7 @@ class MyAgent(CrewAIAgent):
             allow_delegation=False,
             verbose=self.verbose,
             llm=self.llm(preferred_model="datarobot/azure/gpt-4o-mini"),
-            tools=self._mcp_tools,
+            tools=self.mcp_tools,
         )
 
     @property
@@ -144,7 +144,7 @@ class MyAgent(CrewAIAgent):
             allow_delegation=False,
             verbose=self.verbose,
             llm=self.llm(preferred_model="datarobot/azure/gpt-4o-mini"),
-            tools=self._mcp_tools,
+            tools=self.mcp_tools,
         )
 
     @property
@@ -160,7 +160,7 @@ class MyAgent(CrewAIAgent):
             allow_delegation=False,
             verbose=self.verbose,
             llm=self.llm(),
-            tools=self._mcp_tools,
+            tools=self.mcp_tools,
         )
 
     @property
