@@ -7,10 +7,10 @@ BASE_RENDER_DIR=".rendered/agent_base"
 #   Rendering the base template keeps the test self-contained and deterministic.
 
 cleanup() {
-    if [ -n "${SERVER_PGID:-}" ] && kill -0 "-${SERVER_PGID}" 2>/dev/null; then
-        kill "-${SERVER_PGID}" >/dev/null 2>&1 || true
+    if [ -n "${SERVER_PGID:-}" ] && kill -0 -"${SERVER_PGID}" 2>/dev/null; then
+        kill -TERM -"${SERVER_PGID}" >/dev/null 2>&1 || true
         sleep 1
-        kill "-${SERVER_PGID}" >/dev/null 2>&1 || true
+        kill -KILL -"${SERVER_PGID}" >/dev/null 2>&1 || true
     fi
 
     if [ -n "${SERVER_PID:-}" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
