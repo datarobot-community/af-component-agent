@@ -112,7 +112,7 @@ jobs:
           sudo cp ./rendered/agent/pyproject.toml ./rendered/agent/docker_context/pyproject.toml
           sudo cp ./rendered/agent/uv.lock ./rendered/agent/docker_context/uv.lock
       - name: Build Dockerfile
-        workdir: ./rendered/agent/docker_context
+        working-directory: ./rendered/agent/docker_context
         run: |
           docker build --platform linux/amd64 -f ${{ matrix.dockerfile }} -t test-agent:latest .
       - name: Test Codespaces server in Docker container
