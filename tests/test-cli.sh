@@ -1,6 +1,21 @@
 #!/bin/bash
 
-cd $1
+BASE_RENDER_DIR=".rendered/agent_base"
+# Always smoke-test the CLI against the base agent:
+# - LangGraph calls ChatLiteLLM, which would try to reach a real endpoint.
+# - This script only verifies the CLI plumbing (dev server + CLI command), which is identical for all agents.
+#   Rendering the base template keeps the test self-contained and deterministic.
+
+if [ ! -d "${BASE_RENDER_DIR}/agent" ]; then
+    echo "Rendering base agent for CLI smoke test"
+    uvx --from go-task-bin task render-template AGENT=base
+fi
+
+if [ -n "$1" ] && [ "$1" != "$BASE_RENDER_DIR" ]; then
+    echo "⚠️  tests/test-cli.sh always runs against ${BASE_RENDER_DIR}; ignoring '$1'"
+fi
+
+cd "${BASE_RENDER_DIR}"
 
 echo "DATAROBOT_API_TOKEN = secret" >> .env
 echo "DATAROBOT_ENDPOINT = https://test.com/api/v2" >> .env
