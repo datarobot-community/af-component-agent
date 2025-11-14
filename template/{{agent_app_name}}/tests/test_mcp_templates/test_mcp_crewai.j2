@@ -78,102 +78,63 @@ def create_mock_mcp_tool(tool_name: str):
     return MockTool()
 
 
+MCP_ENV_CASES = [
+    pytest.param(
+        {"EXTERNAL_MCP_URL": "https://mcp-server.example.com/mcp"},
+        "https://mcp-server.example.com/mcp",
+        id="external-url",
+    ),
+    pytest.param(
+        {"MCP_DEPLOYMENT_ID": "abc123def456789012345678"},
+        None,
+        id="datarobot-deployment",
+    ),
+]
+
+
 class TestMyAgentMCPIntegration:
     """Test MCP tool integration for CrewAI agents."""
 
-    def test_agent_loads_mcp_tools_from_external_url_in_invoke(
-        self, crewai_common_mocks
+    @pytest.mark.parametrize("env_patch,expected_adapter_url", MCP_ENV_CASES)
+    def test_agent_loads_mcp_tools_in_invoke(
+        self, crewai_common_mocks, env_patch, expected_adapter_url
     ):
-        """Test that agent loads MCP tools from EXTERNAL_MCP_URL when invoke() is called."""
+        """Test that agent loads MCP tools from configured environment settings."""
 
         mock_tools = crewai_common_mocks.default_tools
         mock_adapter_class = crewai_common_mocks.adapter_class
 
-        test_url = "https://mcp-server.example.com/mcp"
-        with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}, clear=True):
-            agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
-
-            # Create completion params
-            completion_params = {
-                "messages": [{"role": "user", "content": "test prompt"}],
-            }
-
-            # Call invoke - this should trigger MCP tool loading
-            try:
-                asyncio.run(agent.invoke(completion_params))
-            except (StopIteration, AttributeError, TypeError):
-                # Expected when crew is mocked
-                pass
-
-            # Verify MCPServerAdapter received the rendered server configuration
-            mock_adapter_class.assert_called_once()
-            adapter_setting = mock_adapter_class.call_args[0][0]
-            assert adapter_setting["url"] == test_url
-            assert adapter_setting["transport"] == "streamable-http"
-
-            # Verify set_mcp_tools was called with the tools from MCP server
-            assert agent.mcp_tools == mock_tools
-
-            # Verify mcp_tools property was accessed (by agent_planner, agent_writer, agent_editor)
-            # We can verify this by checking that the agents were created with the tools
-            planner = agent.agent_planner
-            writer = agent.agent_writer
-            editor = agent.agent_editor
-
-            # Verify all agents have the expected MCP tools
-            expected_tool_names = [tool.name for tool in mock_tools]
-            for agent_with_tools in (planner, writer, editor):
-                assert len(agent_with_tools.tools) == len(expected_tool_names)
-                assert [
-                    tool.name for tool in agent_with_tools.tools
-                ] == expected_tool_names
-
-    def test_agent_loads_mcp_tools_from_datarobot_deployment_in_invoke(
-        self, crewai_common_mocks
-    ):
-        """Test that agent loads MCP tools from MCP_DEPLOYMENT_ID when invoke() is called."""
-        mock_tool = create_mock_mcp_tool("test_mcp_tool")
-        mock_tools = [mock_tool]
-        crewai_common_mocks.set_adapter_tools(mock_tools)
-
-        deployment_id = "abc123def456789012345678"
-        api_base = "https://app.datarobot.com/api/v2"
-        api_key = "test-api-key"
-
-        with patch.dict(
-            os.environ,
-            {
-                "MCP_DEPLOYMENT_ID": deployment_id,
-                "DATAROBOT_ENDPOINT": api_base,
-                "DATAROBOT_API_TOKEN": api_key,
-            },
-            clear=True,
-        ):
+        with patch.dict(os.environ, env_patch, clear=True):
+            api_key = "test-api-key"
+            api_base = "https://app.datarobot.com/api/v2"
             agent = MyAgent(api_key=api_key, api_base=api_base, verbose=True)
 
-            # Create completion params
             completion_params = {
                 "messages": [{"role": "user", "content": "test prompt"}],
             }
 
-            # Call invoke - this should trigger MCP tool loading
             try:
                 asyncio.run(agent.invoke(completion_params))
             except (StopIteration, AttributeError, TypeError):
                 # Expected when crew is mocked
                 pass
 
-            # Verify set_mcp_tools was called with the tools from MCP server
-            assert agent.mcp_tools == mock_tools
+        mock_adapter_class.assert_called_once()
+        if expected_adapter_url:
+            adapter_setting = mock_adapter_class.call_args[0][0]
+            assert adapter_setting["url"] == expected_adapter_url
+            assert adapter_setting["transport"] == "streamable-http"
 
-            # Verify agents have MCP tools
-            planner = agent.agent_planner
-            writer = agent.agent_writer
-            editor = agent.agent_editor
+        assert agent.mcp_tools == mock_tools
 
-            assert len(planner.tools) == 1  # 1 MCP tool
-            assert len(writer.tools) == 1  # 1 MCP tool
-            assert len(editor.tools) == 1  # 1 MCP tool
+        planner = agent.agent_planner
+        writer = agent.agent_writer
+        editor = agent.agent_editor
+
+        expected_tool_names = [tool.name for tool in mock_tools]
+        for agent_with_tools in (planner, writer, editor):
+            assert len(agent_with_tools.tools) == len(expected_tool_names)
+            assert [tool.name for tool in agent_with_tools.tools] == expected_tool_names
 
     @patch("datarobot_genai.crewai.base.mcp_tools_context")
     def test_agent_works_without_mcp_tools(

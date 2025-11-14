@@ -84,104 +84,57 @@ def llamaindex_common_mocks():
         )
 
 
+LLAMAINDEX_MCP_ENV_CASES = [
+    pytest.param(
+        {"EXTERNAL_MCP_URL": "https://mcp-server.example.com/mcp"},
+        id="external-url",
+    ),
+    pytest.param(
+        {"MCP_DEPLOYMENT_ID": "abc123def456789012345678"},
+        id="datarobot-deployment",
+    ),
+]
+
+
 class TestMyAgentMCPIntegration:
     """Test MCP tool integration for LlamaIndex agents."""
 
-    def test_agent_loads_mcp_tools_from_external_url_in_invoke(
-        self, llamaindex_common_mocks
-    ):
-        """Test that agent loads MCP tools from EXTERNAL_MCP_URL when invoke() is called."""
+    @pytest.mark.parametrize("env_patch", LLAMAINDEX_MCP_ENV_CASES)
+    def test_agent_loads_mcp_tools_in_invoke(self, llamaindex_common_mocks, env_patch):
+        """Test that agent loads MCP tools from configured environment settings."""
         mock_tools = llamaindex_common_mocks.default_tools
         mock_load_mcp_tools = llamaindex_common_mocks.load_mcp_tools
 
-        test_url = "https://mcp-server.example.com/mcp"
-        with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}, clear=True):
-            agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
+        with patch.dict(os.environ, env_patch, clear=True):
+            api_key = "test-api-key"
+            api_base = "https://app.datarobot.com/api/v2"
+            agent = MyAgent(
+                api_key=api_key,
+                api_base=api_base,
+                verbose=True,
+            )
 
-            # Create completion params
             completion_params = {
                 "messages": [{"role": "user", "content": "test prompt"}],
             }
 
-            # Call invoke - this should trigger MCP tool loading
             try:
                 asyncio.run(agent.invoke(completion_params))
             except (StopIteration, AttributeError, TypeError):
                 # Expected when workflow is mocked
                 pass
 
-            # Verify load_mcp_tools was called with correct parameters
-            mock_load_mcp_tools.assert_called_once_with(
-                api_base="test_base", api_key="test_key"
-            )
+        mock_load_mcp_tools.assert_called_once_with(api_base=api_base, api_key=api_key)
+        assert agent.mcp_tools == mock_tools
 
-            # Verify set_mcp_tools was called with the tools from MCP server
-            assert agent.mcp_tools == mock_tools
+        planner = agent.agent_planner
+        writer = agent.agent_writer
+        editor = agent.agent_editor
 
-            # Verify mcp_tools property was accessed (by agent_planner, agent_writer, agent_editor)
-            # We can verify this by checking that the agents were created with the tools
-            planner = agent.agent_planner
-            writer = agent.agent_writer
-            editor = agent.agent_editor
-
-            # Verify all agents have MCP tools
-            assert len(planner.tools) == 3  # record_notes + 2 MCP tools
-            assert len(writer.tools) == 3  # write_report + 2 MCP tools
-            assert len(editor.tools) == 3  # review_report + 2 MCP tools
-
-    def test_agent_loads_mcp_tools_from_datarobot_deployment_in_invoke(
-        self, llamaindex_common_mocks
-    ):
-        """Test that agent loads MCP tools from MCP_DEPLOYMENT_ID when invoke() is called."""
-        # Create mock MCP tools
-        mock_tool = create_mock_mcp_tool("test_mcp_tool")
-        mock_tools = [mock_tool]
-        llamaindex_common_mocks.set_mcp_tools(mock_tools)
-        mock_load_mcp_tools = llamaindex_common_mocks.load_mcp_tools
-
-        deployment_id = "abc123def456789012345678"
-        api_base = "https://app.datarobot.com/api/v2"
-        api_key = "test-api-key"
-
-        with patch.dict(
-            os.environ,
-            {
-                "MCP_DEPLOYMENT_ID": deployment_id,
-                "DATAROBOT_ENDPOINT": api_base,
-                "DATAROBOT_API_TOKEN": api_key,
-            },
-            clear=True,
-        ):
-            agent = MyAgent(api_key=api_key, api_base=api_base, verbose=True)
-
-            # Create completion params
-            completion_params = {
-                "messages": [{"role": "user", "content": "test prompt"}],
-            }
-
-            # Call invoke - this should trigger MCP tool loading
-            try:
-                asyncio.run(agent.invoke(completion_params))
-            except (StopIteration, AttributeError, TypeError):
-                # Expected when workflow is mocked
-                pass
-
-            # Verify load_mcp_tools was called with correct parameters
-            mock_load_mcp_tools.assert_called_once_with(
-                api_base=api_base, api_key=api_key
-            )
-
-            # Verify set_mcp_tools was called with the tools from MCP server
-            assert agent.mcp_tools == mock_tools
-
-            # Verify agents have MCP tools
-            planner = agent.agent_planner
-            writer = agent.agent_writer
-            editor = agent.agent_editor
-
-            assert len(planner.tools) == 2  # record_notes + 1 MCP tool
-            assert len(writer.tools) == 2  # write_report + 1 MCP tool
-            assert len(editor.tools) == 2  # review_report + 1 MCP tool
+        # record_notes/write_report/review_report plus 2 MCP tools
+        assert len(planner.tools) == 3
+        assert len(writer.tools) == 3
+        assert len(editor.tools) == 3
 
     def test_agent_works_without_mcp_tools(self, llamaindex_common_mocks):
         """Test that agent works correctly when no MCP tools are available."""
