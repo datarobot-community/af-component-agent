@@ -69,41 +69,63 @@ tasks:
       - task: install-rendered
         vars:
           AGENT: "{{.AGENT}}"
+          SKIP_LINT: "{{.SKIP_LINT| default 0}}"
+          SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
       - echo "Running tests for {{.AGENT}}"
-      - task agent:lint-check --dir $RENDER_DIR/agent_{{.AGENT}}
+      - |
+          if [ "{{.SKIP_LINT}}" != "1" ]; then
+            task agent:lint-check --dir $RENDER_DIR/agent_{{.AGENT}}
+          else
+            echo "Skipping lint check for agent: {{.AGENT}} because SKIP_LINT=1"
+          fi
       - task agent:test-coverage --dir $RENDER_DIR/agent_{{.AGENT}}
-      - task infra:lint-check --dir $RENDER_DIR/agent_{{.AGENT}}
-      - task infra:test-coverage --dir $RENDER_DIR/agent_{{.AGENT}}
+      - |
+          if [ "{{.SKIP_INFRA}}" != "1" ]; then
+            task infra:lint-check --dir $RENDER_DIR/agent_{{.AGENT}}
+            task infra:test-coverage --dir $RENDER_DIR/agent_{{.AGENT}}
+          else
+            echo "Skipping lint check for agent: {{.AGENT}} because SKIP_INFRA=1"
+          fi
   test-base:
     desc: "Run tests for base agent"
     cmds:
       - task: test-agent
         vars:
           AGENT: base
+          SKIP_LINT: "{{.SKIP_LINT| default 0}}"
+          SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
   test-nat:
     desc: "Run tests for base agent"
     cmds:
       - task: test-agent
         vars:
           AGENT: nat
+          SKIP_LINT: "{{.SKIP_LINT| default 0}}"
+          SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
   test-crewai:
     desc: "Run tests for crewai agent"
     cmds:
       - task: test-agent
         vars:
           AGENT: crewai
+          SKIP_LINT: "{{.SKIP_LINT| default 0}}"
+          SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
   test-langgraph:
     desc: "Run tests for langgraph agent"
     cmds:
       - task: test-agent
         vars:
           AGENT: langgraph
+          SKIP_LINT: "{{.SKIP_LINT| default 0}}"
+          SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
   test-llamaindex:
     desc: "Run tests for llamaindex agent"
     cmds:
       - task: test-agent
         vars:
           AGENT: llamaindex
+          SKIP_LINT: "{{.SKIP_LINT| default 0}}"
+          SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
   test:
     desc: "Run tests for all agents"
     cmds:
