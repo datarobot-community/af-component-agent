@@ -5,91 +5,87 @@ on:
     branches: ["main"]
     paths:
       - "**/*pyproject*"
+      - "**/*uv.lock*"
       - ".github/workflows/afcomponentagent-docker-test.yaml"
   pull_request:
     branches: ["main"]
     paths:
       - "**/*pyproject*"
+      - "**/*uv.lock*"
       - ".github/workflows/afcomponentagent-docker-test.yaml"
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
-# Temporarily disabled for faster iterations
-# https://datarobot.slack.com/archives/C09K019PZDH/p1761821777970279?thread_ts=1761750276.216089&cid=C09K019PZDH
-#  test-compile-docker-requirements:
-#    name: "Test Compile Docker Requirements"
-#    runs-on: "ubuntu-latest"
-#    container:
-#      image: ghcr.io/astral-sh/uv:python3.11-bookworm
-#    steps:
-#      - name: Checkout
-#        uses: "actions/checkout@v5"
-#      - name: Setup caching
-#        uses: ./.github/actions/setup-caching
-#        id: setup-cache
-#        with:
-#          python-version: python3.11
-#          cache-key-suffix: docker-requirements-compile-test
-#      - name: Render copier instance
-#        uses: ./.github/actions/render-copier-instance
-#      - name: Create docker context
-#        uses: ./.github/actions/create-docker-context
-#      - name: Docker Requirements Compile Test
-#        shell: bash
-#        run: |
-#          apt -o Acquire::Check-Valid-Until=false update && apt install -y git
-#          uv add jinja-cli
-#          uv sync
-#
-#          # Raw jinja render to console for debugging
-#          uv run jinja -D agent_app_name DockerContext -D agent_template_framework docker template/\{\{agent_app_name\}\}/pyproject.toml.jinja
-#
-#          # Comparison renders
-#          # This is the docker_context created by task create_docker_context
-#          VAR1=$(cat rendered/agent/docker_context/pyproject.toml)
-#          # This is the expected pyproject.toml that should exist
-#          VAR2=$(uv run jinja -D agent_app_name DockerContext -D agent_template_framework docker template/\{\{agent_app_name\}\}/pyproject.toml.jinja)
-#
-#          # Check for asyncio in compiled pyproject.toml (should not be there)
-#          if echo "$VAR2" | grep -q "^asyncio=="; then
-#            echo "Error: Compiled pyproject.toml contains 'asyncio==' which should not be included."
-#            echo "asyncio is part of Python's standard library and should not be listed as a dependency."
-#            echo "This suggests an issue with the dependency resolution."
-#            echo "Packages which require the outdated asyncio library are NOT compatible with DataRobot environments."
-#            exit 1
-#          fi
-#
-#          if [ "$VAR1" = "$VAR2" ]; then
-#            echo "pyproject.toml is in sync."
-#          else
-#            echo ""
-#            echo "-------------------------------------------------"
-#            echo "pyproject.toml differences detected:"
-#            echo "$VAR1" > /tmp/pyproject.toml
-#            echo "$VAR2" > /tmp/compiled_pyproject.toml
-#            diff /tmp/pyproject.toml /tmp/compiled_pyproject.toml  || true
-#            echo "-------------------------------------------------"
-#            echo "ERROR:"
-#            echo "pyproject.toml is out of sync with compiled template."
-#            echo "-------------------------------------------------"
-#            echo "Please see:"
-#            echo "https://github.com/datarobot/datarobot-user-models/tree/master/public_dropin_environments/python311_genai_agents"
-#            echo ""
-#            echo "To update requirements in python311_genai_agents:"
-#            echo "1. Create a new branch in datarobot-user-models"
-#            echo "2. Run the following commands:"
-#            echo "  cd /path/to/af-component-agent"
-#            echo "  task docker_update_reqs AGENT_PATH=/path/to/datarobot-user-models/public_dropin_environments/python311_genai_agents"
-#            echo "3. Commit the changes to datarobot-user-models"
-#            echo ""
-#            echo "Once the files are updated in python311_genai_agents this PR will pass."
-#            echo "You can re-run just this job to verify the fix by using the Re-run jobs button."
-#            exit 1
-#          fi
+  test-compile-docker-requirements:
+   # Temporarily disabled for faster iterations
+   # https://datarobot.slack.com/archives/C09K019PZDH/p1761821777970279?thread_ts=1761750276.216089&cid=C09K019PZDH
+   if: false  # Always skip this job
+   name: "Test Compile Docker Requirements"
+   runs-on: "ubuntu-latest"
+   container:
+     image: ghcr.io/astral-sh/uv:python3.11-bookworm
+   steps:
+     - name: Checkout
+       uses: "actions/checkout@v5"
+     - name: Render copier instance
+       uses: ./.github/actions/render-copier-instance
+     - name: Create docker context
+       uses: ./.github/actions/create-docker-context
+     - name: Docker Requirements Compile Test
+       shell: bash
+       run: |
+         apt -o Acquire::Check-Valid-Until=false update && apt install -y git
+         uv add jinja-cli
+         uv sync
 
+         # Raw jinja render to console for debugging
+         uv run jinja -D agent_app_name DockerContext -D agent_template_framework docker template/\{\{agent_app_name\}\}/pyproject.toml.jinja
+
+         # Comparison renders
+         # This is the docker_context created by task create_docker_context
+         VAR1=$(cat rendered/agent/docker_context/pyproject.toml)
+         # This is the expected pyproject.toml that should exist
+         VAR2=$(uv run jinja -D agent_app_name DockerContext -D agent_template_framework docker template/\{\{agent_app_name\}\}/pyproject.toml.jinja)
+
+         # Check for asyncio in compiled pyproject.toml (should not be there)
+         if echo "$VAR2" | grep -q "^asyncio=="; then
+           echo "Error: Compiled pyproject.toml contains 'asyncio==' which should not be included."
+           echo "asyncio is part of Python's standard library and should not be listed as a dependency."
+           echo "This suggests an issue with the dependency resolution."
+           echo "Packages which require the outdated asyncio library are NOT compatible with DataRobot environments."
+           exit 1
+         fi
+
+         if [ "$VAR1" = "$VAR2" ]; then
+           echo "pyproject.toml is in sync."
+         else
+           echo ""
+           echo "-------------------------------------------------"
+           echo "pyproject.toml differences detected:"
+           echo "$VAR1" > /tmp/pyproject.toml
+           echo "$VAR2" > /tmp/compiled_pyproject.toml
+           diff /tmp/pyproject.toml /tmp/compiled_pyproject.toml  || true
+           echo "-------------------------------------------------"
+           echo "ERROR:"
+           echo "pyproject.toml is out of sync with compiled template."
+           echo "-------------------------------------------------"
+           echo "Please see:"
+           echo "https://github.com/datarobot/datarobot-user-models/tree/master/public_dropin_environments/python311_genai_agents"
+           echo ""
+           echo "To update requirements in python311_genai_agents:"
+           echo "1. Create a new branch in datarobot-user-models"
+           echo "2. Run the following commands:"
+           echo "  cd /path/to/af-component-agent"
+           echo "  task docker_update_reqs AGENT_PATH=/path/to/datarobot-user-models/public_dropin_environments/python311_genai_agents"
+           echo "3. Commit the changes to datarobot-user-models"
+           echo ""
+           echo "Once the files are updated in python311_genai_agents this PR will pass."
+           echo "You can re-run just this job to verify the fix by using the Re-run jobs button."
+           exit 1
+         fi
   test-build-dockerfile:
-    name: "Test Build Dockerfile"
+    name: "Test Build Dockerfile and Codespaces"
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
@@ -112,7 +108,39 @@ jobs:
         with:
           dockerfile: ./rendered/agent/docker_context/${{ matrix.dockerfile }}
           config: .hadolint.yaml
-      - name: Build Dockerfile
+      - name: Install dependencies
         run: |
-          cd ./rendered/agent/docker_context
+          docker run --rm -v "$(pwd):/workspace" -w /workspace ghcr.io/astral-sh/uv:python3.11-bookworm bash -c "
+            cd ./rendered
+            uvx --from go-task-bin task agent:install
+          "
+          # Copy the pyproject.toml and uv.lock into the docker_context for the build
+          sudo cp ./rendered/agent/pyproject.toml ./rendered/agent/docker_context/pyproject.toml
+          sudo cp ./rendered/agent/uv.lock ./rendered/agent/docker_context/uv.lock
+      - name: Build Dockerfile
+        working-directory: ./rendered/agent/docker_context
+        run: |
           docker build --platform linux/amd64 -f ${{ matrix.dockerfile }} -t test-agent:latest .
+      - name: Test Codespaces server in Docker container
+        run: |
+          # Start the container in the background
+          CONTAINER_ID=$(docker run -d -p 8889:8889 test-agent:latest /etc/system/kernel/start_server.sh)
+          echo "Started container: $CONTAINER_ID"
+          # Wait for the server to start
+          for i in {1..30}; do
+            if curl -s http://localhost:8889/ > /dev/null; then
+              echo "Codespaces server is up and responding."
+              break
+            fi
+            sleep 1
+          done
+          # Check if server responded
+          if ! curl -s http://localhost:8889/ > /dev/null; then
+            echo "Codespaces server did not respond on port 8889 after 30 seconds."
+            docker logs "$CONTAINER_ID"
+            docker stop "$CONTAINER_ID"
+            exit 1
+          fi
+          # Stop the container after success
+          docker stop "$CONTAINER_ID"
+          echo "Stopped container: $CONTAINER_ID"
