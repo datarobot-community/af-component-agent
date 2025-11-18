@@ -35,6 +35,7 @@ from typing import Any, AsyncGenerator, Iterator, Union
 
 # ruff: noqa: E402
 from agent import MyAgent
+from config import Config
 from datarobot.models.genai.agent.auth import (
     get_authorization_context,
     set_authorization_context,
@@ -52,26 +53,6 @@ from openai.types.chat.completion_create_params import (
     CompletionCreateParamsNonStreaming,
     CompletionCreateParamsStreaming,
 )
-
-
-def maybe_set_env_from_runtime_parameters(key: str) -> None:
-    """
-    Set an environment variable from a runtime parameter if it exists.
-
-    In local development, the runtime parameters are not available, and environment variable
-    is set from the .env file, so it's safe to ignore the exception.
-    """
-    RUNTIME_PARAMETER_PLACEHOLDER_VALUE = "SET_VIA_PULUMI_OR_MANUALLY"
-    try:
-        runtime_parameter_value = RuntimeParameters.get(key)
-        if (
-            runtime_parameter_value
-            and len(runtime_parameter_value) > 0
-            and runtime_parameter_value != RUNTIME_PARAMETER_PLACEHOLDER_VALUE
-        ):
-            os.environ[key] = runtime_parameter_value
-    except ValueError:
-        pass
 
 
 def load_model(code_dir: str) -> tuple[ThreadPoolExecutor, asyncio.AbstractEventLoop]:
@@ -117,9 +98,8 @@ def chat(
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
     # Load MCP runtime parameters and session secret if configured
-    maybe_set_env_from_runtime_parameters("EXTERNAL_MCP_URL")
-    maybe_set_env_from_runtime_parameters("MCP_DEPLOYMENT_ID")
-    maybe_set_env_from_runtime_parameters("SESSION_SECRET_KEY")
+    # ["EXTERNAL_MCP_URL", "MCP_DEPLOYMENT_ID", "SESSION_SECRET_KEY"]
+    _ = Config()
 
     # Initialize the authorization context for downstream agents and tools to retrieve
     # access tokens for external services.
