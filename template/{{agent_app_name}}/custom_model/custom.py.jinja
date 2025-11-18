@@ -18,13 +18,13 @@
 from datarobot_genai.core.telemetry_agent import instrument
 
 {% if agent_template_framework == "crewai" -%}
-framework="crewai",
+framework="crewai"
 {% elif agent_template_framework == "langgraph" -%}
-framework="langgraph",
+framework="langgraph"
 {% elif agent_template_framework == "llamaindex" -%}
-framework="llamaindex",
+framework="llamaindex"
 {% elif agent_template_framework == "nat" -%}
-framework="nat",
+framework="nat"
 {% else -%}
 framework=None
 {% endif -%}
