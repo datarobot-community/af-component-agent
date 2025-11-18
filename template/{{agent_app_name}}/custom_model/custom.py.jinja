@@ -17,8 +17,7 @@
 # isort: off
 from datarobot_genai.core.telemetry_agent import instrument
 
-instrument(
-    {% if agent_template_framework == "crewai" -%}
+instrument({% if agent_template_framework == "crewai" -%}
     framework="crewai",
     {% elif agent_template_framework == "langgraph" -%}
     framework="langgraph",
@@ -26,8 +25,7 @@ instrument(
     framework="llamaindex",
     {% elif agent_template_framework == "nat" -%}
     framework="llamaindex",
-    {% endif -%}
-)
+    {% endif -%})
 # isort: on
 # ------------------------------------------------------------------------------
 import asyncio
