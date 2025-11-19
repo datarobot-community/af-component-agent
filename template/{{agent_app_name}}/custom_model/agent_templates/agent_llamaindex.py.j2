@@ -15,7 +15,9 @@
 from datetime import datetime
 from typing import Any, Optional, Union
 
-from config import Config  # noqa: I001
+# isort: off
+from config import Config
+# isort: on
 from datarobot_genai.core.agents import extract_user_prompt_content
 from datarobot_genai.llama_index import (
     DataRobotLiteLLM,
