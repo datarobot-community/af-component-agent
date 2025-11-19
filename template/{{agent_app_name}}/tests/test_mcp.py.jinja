@@ -1,3 +1,17 @@
+# Copyright 2025 DataRobot, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 {% if agent_template_framework == "crewai" %}{% include 'template/{{agent_app_name}}/tests/test_mcp_templates/test_mcp_crewai.j2' -%}
 {% elif agent_template_framework == "llamaindex" %}{% include 'template/{{agent_app_name}}/tests/test_mcp_templates/test_mcp_llamaindex.j2' -%}
 {% elif agent_template_framework == "langgraph" %}{% include 'template/{{agent_app_name}}/tests/test_mcp_templates/test_mcp_langgraph.j2' -%}

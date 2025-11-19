@@ -709,7 +709,7 @@ class TestGenerateMetadataYaml:
     def test_mixed_parameters(self, tmp_path, monkeypatch):
         """Test _generate_metadata_yaml with string and credential parameters, including special characters."""
         import infra.{{agent_app_name}} as agent_infra
-        import yaml
+        import yaml  # type: ignore[import-untyped]
 
         # Mock the application path to point to our tmp_path
         monkeypatch.setattr(agent_infra, "{{agent_app_name}}_application_path", tmp_path)
@@ -759,7 +759,7 @@ class TestGenerateMetadataYaml:
     def test_with_empty_parameters(self, tmp_path, monkeypatch):
         """Test _generate_metadata_yaml generates correct YAML with empty parameter list."""
         import infra.{{agent_app_name}} as agent_infra
-        import yaml
+        import yaml  # type: ignore[import-untyped]
 
         # Mock the application path to point to our tmp_path
         monkeypatch.setattr(agent_infra, "{{agent_app_name}}_application_path", tmp_path)
@@ -783,7 +783,7 @@ class TestGenerateMetadataYaml:
     def test_format_and_overwrite(self, tmp_path, monkeypatch):
         """Test _generate_metadata_yaml file formatting and overwrite behavior."""
         import infra.{{agent_app_name}} as agent_infra
-        import yaml
+        import yaml  # type: ignore[import-untyped]
 
         # Mock the application path to point to our tmp_path
         monkeypatch.setattr(agent_infra, "{{agent_app_name}}_application_path", tmp_path)

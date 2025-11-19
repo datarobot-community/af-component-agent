@@ -31,7 +31,7 @@ class TestCustomModel:
         thread_pool_executor.shutdown()
 
     @patch("custom.MyAgent")
-    @patch.dict(os.environ, {"LLM_DATAROBOT_DEPLOYMENT_ID": "TEST_VALUE"}, clear=True)
+    @patch.dict(os.environ, {"LLM_DEPLOYMENT_ID": "TEST_VALUE"}, clear=True)
     @pytest.mark.parametrize("stream", [False, True])
     def test_chat(self, mock_agent, mock_agent_response, stream, load_model_result):
         from custom import chat
@@ -94,12 +94,11 @@ class TestCustomModel:
                 "messages": [{"role": "user", "content": '{"topic": "test"}'}],
                 "environment_var": True,
                 "stream": stream,
-                "authorization_context": {},
             },
         )
 
     @patch("custom.MyAgent")
-    @patch.dict(os.environ, {"LLM_DATAROBOT_DEPLOYMENT_ID": "TEST_VALUE"}, clear=True)
+    @patch.dict(os.environ, {"LLM_DEPLOYMENT_ID": "TEST_VALUE"}, clear=True)
     def test_chat_streaming(self, mock_agent, load_model_result):
         from custom import chat
 

@@ -172,14 +172,14 @@ tasks:
       - rm -rf ./docker_context
       - echo "Downloading datarobot-user-models repository..."
       - |
-          GIT_BRANCH={% raw %}{{.BRANCH}}{% endraw %}
-          if [ -n "$GIT_BRANCH" ]; then
-            echo "Downloading datarobot-user-models branch: $GIT_BRANCH"
-            curl -L -o datarobot-user-models.zip "https://github.com/datarobot/datarobot-user-models/archive/refs/heads/$GIT_BRANCH.zip"
-          else
-            echo "Downloading datarobot-user-models master branch"
-            curl -L -o datarobot-user-models.zip "https://github.com/datarobot/datarobot-user-models/archive/refs/heads/master.zip"
-          fi
+        GIT_BRANCH={% raw %}{{.BRANCH}}{% endraw %}
+        if [ -n "$GIT_BRANCH" ]; then
+          echo "Downloading datarobot-user-models branch: $GIT_BRANCH"
+          curl -L -o datarobot-user-models.zip "https://github.com/datarobot/datarobot-user-models/archive/refs/heads/$GIT_BRANCH.zip"
+        else
+          echo "Downloading datarobot-user-models master branch"
+          curl -L -o datarobot-user-models.zip "https://github.com/datarobot/datarobot-user-models/archive/refs/heads/master.zip"
+        fi
       - echo "Extracting docker_context files..."
       - |
         TOP_FOLDER=$(unzip -qql datarobot-user-models.zip | head -n1 | awk '{print $4}' | cut -d/ -f1)
