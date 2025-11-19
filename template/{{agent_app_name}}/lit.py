@@ -43,7 +43,7 @@ async def on_message(message: cl.Message) -> None:
         model="datarobot/azure/gpt-4o-mini",
     )
     async for part in stream:
-        if token := part.choices[0].delta.content or part.choices[0].content or "":
+        if token := part.choices[0].delta.content or "":
             await msg.stream_token(token)
 
     # handle the case where the response is empty
