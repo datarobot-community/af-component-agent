@@ -127,6 +127,7 @@ jobs:
           CONTAINER_ID=$(docker run -d -p 8889:8889 test-agent:latest /etc/system/kernel/start_server.sh)
           echo "Started container: $CONTAINER_ID"
           # Wait for the server to start
+          echo "Waiting for Codespaces server to start..."
           for i in {1..30}; do
             if curl -s http://localhost:8889/ > /dev/null; then
               echo "Codespaces server is up and responding."
@@ -158,6 +159,7 @@ jobs:
             test-agent:latest /opt/code/start_server.sh)
           echo "Started container: $CONTAINER_ID"
           # Wait for the server to start
+          echo "Waiting for DRUM server to start..."
           for i in {1..30}; do
             if curl -s http://localhost:8080/ > /dev/null; then
               echo "DRUM server is up and responding."
