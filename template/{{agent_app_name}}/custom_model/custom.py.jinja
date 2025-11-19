@@ -18,17 +18,21 @@
 from datarobot_genai.core.telemetry_agent import instrument
 
 {% if agent_template_framework == "crewai" -%}
-framework = "crewai"
+instrument(framework="crewai")
 {% elif agent_template_framework == "langgraph" -%}
-framework = "langgraph"
+instrument(framework="langgraph")
 {% elif agent_template_framework == "llamaindex" -%}
-framework = "llamaindex"
+instrument(framework="llamaindex")
 {% elif agent_template_framework == "nat" -%}
-framework = "nat"
+instrument(framework="nat")
 {% else -%}
-framework = None
+instrument()
 {% endif -%}
-instrument(framework=framework)
+
+# ruff: noqa: E402
+from agent import MyAgent
+from config import Config
+
 # isort: on
 # ------------------------------------------------------------------------------
 import asyncio
@@ -36,9 +40,6 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, AsyncGenerator, Iterator, Union
 
-# ruff: noqa: E402
-from agent import MyAgent
-from config import Config
 from datarobot.models.genai.agent.auth import (
     get_authorization_context,
     set_authorization_context,

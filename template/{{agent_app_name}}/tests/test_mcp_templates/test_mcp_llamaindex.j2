@@ -57,7 +57,7 @@ def llamaindex_common_mocks():
         create_mock_mcp_tool("fixture_mcp_tool_2"),
     ]
     default_workflow = create_mock_workflow()
-    original_build_workflow = MyAgent.build_workflow
+    _ = MyAgent.build_workflow
 
     with (
         patch("datarobot_genai.llama_index.base.load_mcp_tools") as mock_load_mcp_tools,
