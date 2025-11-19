@@ -148,7 +148,14 @@ jobs:
         run: |
           # Start the container in the background
           sudo chmod a+x $(pwd)/fixtures/code/start_server.sh
-          CONTAINER_ID=$(docker run -d -p 8080:8080 -v "$(pwd)/fixtures/code:/opt/code" test-agent:latest /opt/code/start_server.sh)
+          export TARGET_NAME="response"
+          CONTAINER_ID=$(docker run \
+            -d \
+            -p 8080:8080 \
+            -e TARGET_TYPE=agenticworkflow \
+            -e TARGET_NAME=response \
+            -v "$(pwd)/fixtures/code:/opt/code" \
+            test-agent:latest /opt/code/start_server.sh)
           echo "Started container: $CONTAINER_ID"
           # Wait for the server to start
           for i in {1..30}; do
