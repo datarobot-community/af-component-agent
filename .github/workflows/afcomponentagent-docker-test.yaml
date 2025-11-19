@@ -148,7 +148,8 @@ jobs:
         run: |
           # Start the container in the background
           mkdir test_code
-          cp ./fixtures/custom.py test_code/custom.py
+          cp -r ./fixtures/code test_code
+          chmod a+x test_code/start_server.sh
           CONTAINER_ID=$(docker run -d -p 8080:8080 -v "$(pwd)/test_code:/opt/code" test-agent:latest /opt/code/start_server.sh)
           echo "Started container: $CONTAINER_ID"
           # Wait for the server to start
