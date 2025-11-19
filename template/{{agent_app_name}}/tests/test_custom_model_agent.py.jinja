@@ -14,4 +14,4 @@
 
 {% if agent_template_framework == "crewai" %}{% include 'template/{{agent_app_name}}/tests/test_agent_templates/test_agent_crewai.py.j2' -%}
 {% elif agent_template_framework == "llamaindex" %}{% include 'template/{{agent_app_name}}/tests/test_agent_templates/test_agent_llamaindex.py.j2' -%}
-{% else %}{% include 'template/{{agent_app_name}}/tests/test_agent_templates/test_agent_base.py.j2' %}{% endif -%}
+{% elif agent_template_framework == "generic_base" %}{% include 'template/{{agent_app_name}}/tests/test_agent_templates/test_agent_base.py.j2' %}{% endif -%}
