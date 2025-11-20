@@ -434,6 +434,7 @@ pulumi.export("Agent Playground URL " + {{agent_app_name}}_asset_name, {{agent_a
 
 
 {{agent_app_name}}_agent_deployment_id: pulumi.Output[str] = cast(pulumi.Output[str], "None")
+{{agent_app_name}}_deployment_endpoint: pulumi.Output[str] = cast(pulumi.Output[str], "None")
 if os.environ.get("AGENT_DEPLOY") != "0":
     {{agent_app_name}}_prediction_environment = pulumi_datarobot.PredictionEnvironment(
         resource_name={{agent_app_name}}_asset_name + " Prediction Environment",
@@ -477,6 +478,9 @@ if os.environ.get("AGENT_DEPLOY") != "0":
     )
     {{agent_app_name}}_agent_deployment_id = {{agent_app_name}}_agent_deployment.id.apply(lambda id: f"{id}")
     {{agent_app_name}}_deployment_endpoint = {{agent_app_name}}_agent_deployment.id.apply(
+        lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}"
+    )
+    {{agent_app_name}}_deployment_completions_endpoint = {{agent_app_name}}_agent_deployment.id.apply(
         lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/chat/completions"
     )
 
@@ -486,7 +490,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
     )
     pulumi.export(
         "Agent Deployment Chat Endpoint " + {{agent_app_name}}_asset_name,
-        {{agent_app_name}}_deployment_endpoint,
+        {{agent_app_name}}_deployment_completions_endpoint,
     )
 
 {{agent_app_name}}_app_runtime_parameters = [
@@ -494,5 +498,10 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         key={{agent_app_name}}_application_name.upper() + "_DEPLOYMENT_ID",
         type="string",
         value={{agent_app_name}}_agent_deployment_id,
+    ),
+    pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
+        key={{agent_app_name}}_application_name.upper() + "_ENDPOINT",
+        type="string",
+        value={{agent_app_name}}_deployment_endpoint,
     ),
 ]
