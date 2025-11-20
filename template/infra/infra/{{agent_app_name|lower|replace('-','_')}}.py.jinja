@@ -476,9 +476,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         registered_model_args={{agent_app_name}}_registered_model_args,
         deployment_args={{agent_app_name}}_deployment_args,
     )
-    {{agent_app_name}}_agent_deployment_id = {{agent_app_name}}_agent_deployment.id.apply(
-        lambda id: f"{id}"
-    )
+    {{agent_app_name}}_agent_deployment_id = {{agent_app_name}}_agent_deployment.id.apply(lambda id: f"{id}")
     {{agent_app_name}}_deployment_endpoint = {{agent_app_name}}_agent_deployment.id.apply(
         lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}"
     )
