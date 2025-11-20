@@ -3,29 +3,32 @@
 version: '3'
 vars:
   # Cross-platform environment cleaning - uses 'env -u' on Unix systems, falls back to empty string on Windows
-  CLEAN_PYTHON_ENV:
+  UV_CMD:
     sh: |
+      # This command ensures compatibility with codespaces environments
+      # Cross-platform environment cleaning - uses 'env -u' on Unix systems,
+      # falls back to empty string on Windows
       if command -v env >/dev/null 2>&1; then
-        echo "env -u PYTHONPATH -u VIRTUAL_ENV"
+        echo "env -u PYTHONPATH -u VIRTUAL_ENV uv"
       else
-        echo ""
+        echo "uv"
       fi
 tasks:
   install:
-    desc: 🛠️ [{{ agent_app_name }}] Install agent uv dependencies
+    desc: 🛠️ Install agent uv dependencies
     cmds:
       - echo "Updating local dependencies for {{ agent_app_name }}"
-      - uv sync --extra dev
+      - "{% raw %}{{.UV_CMD}}{% endraw %} sync --extra dev"
       - if [ -f pyproject.toml ] && [ -d docker_context ]; then cp pyproject.toml docker_context/pyproject.toml; fi
       - if [ -f uv.lock ] && [ -d docker_context ]; then cp uv.lock docker_context/uv.lock; fi
     aliases:
       - req
   update:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
-    # desc: 🛠️ [{{ agent_app_name }}] Update local dependencies (refresh uv locks)
+    # desc: 🛠️ Update local dependencies (refresh uv locks)
     cmds:
-      - echo "Updating local dependencies"
-      - uv sync --extra dev -U
+      - echo "Updating local dependencies for {{ agent_app_name }}"
+      - "{% raw %}{{.UV_CMD}}{% endraw %} sync --extra dev -U"
     silent: true
   auth-check:
     silent: true
@@ -39,49 +42,49 @@ tasks:
           echo "ℹ️  Skipping auth check (not available)"
         fi
   add-dependency:
-    desc: 🛠️ [{{ agent_app_name}}] Add provided packages as a new dependency to an agent
+    desc: 🛠️ Add provided packages as a new dependency to an agent
     cmds:
       - echo "Adding new dependency for {{ agent_app_name }} into 'extras' dependency group"
-      - uv add --no-upgrade --group extras {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - "{% raw %}{{.UV_CMD}}{% endraw %} add --no-upgrade --group extras {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   lint:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
-    # desc: 🧹 [{{ agent_app_name }}] Lint the codebase
+    # desc: 🧹 Lint the codebase
     cmds:
       - task: req
       - echo "Linting the codebase"
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run ruff check . --fix"
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run ruff format ."
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run mypy --pretty ."
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run yamlfix custom_model"
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff check . --fix"
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff format ."
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run mypy --pretty ."
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run yamlfix custom_model"
     silent: true
   lint-check:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
-    # desc: 🧹 [{{ agent_app_name }}] Check whether the codebase is linted
+    # desc: 🧹 Check whether the codebase is linted
     cmds:
       - task: req
       - echo "Checking linting"
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run ruff format --check --diff ."
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run ruff check --diff ."
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff format --check --diff ."
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff check --diff ."
       - echo "Checking type hints"
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run mypy --pretty ."
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run mypy --pretty ."
     silent: true
   test:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
-    # desc: 🧪 [{{ agent_app_name }}] Run tests
+    # desc: 🧪 Run tests
     cmds:
       - echo "Running pytest on tests"
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pytest -vv ./tests/"
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run pytest -vv ./tests/"
     silent: true
   test-coverage:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
-    # desc: 🧪 [{{ agent_app_name }}] Run tests with coverage
+    # desc: 🧪 Run tests with coverage
     cmds:
       - echo "Running pytest on tests"
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/"
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/"
     silent: true
   cli:
-    desc: 🖥️ [{{ agent_app_name }}] Run the CLI with provided arguments
+    desc: 🖥️ Run the CLI with provided arguments
     vars:
       START_DEV: "{% raw %}{{.START_DEV}}{% endraw %}"
     deps:
@@ -91,11 +94,11 @@ tasks:
       - |
         if [ "{% raw %}{{.START_DEV}}{% endraw %}" -eq "1" ]; then
           # Kill any existing dev server processes
-          pkill -f 'uv run python dev.py' 2>/dev/null || true
+          pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || true
 
           # Start dev server in background
           echo "🚀 Starting dev server in background..."
-          {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run python dev.py &
+          {% raw %}{{.UV_CMD}}{% endraw %} run python dev.py &
           DEV_SERVER_PID=$!
           echo "Dev server started with PID: $DEV_SERVER_PID"
 
@@ -115,7 +118,7 @@ tasks:
             i=$((i + 1))
             if [ $i -eq 30 ]; then
               echo "❌ Dev server failed to start within 30 seconds"
-              pkill -f 'uv run python dev.py' 2>/dev/null || true
+              pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || true
               exit 1
             fi
           done
@@ -123,7 +126,7 @@ tasks:
       - |
         # Run CLI and handle cleanup regardless of exit code
         CLI_EXIT_CODE=0
-        {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} UV_PROJECT={% raw %}{{.TASKFILE_DIR}}{% endraw %} uv run cli.py {% raw %}{{.CLI_ARGS}}{% endraw %} || CLI_EXIT_CODE=$?
+        UV_PROJECT={% raw %}{{.TASKFILE_DIR}}{% endraw %} {% raw %}{{.UV_CMD}}{% endraw %} run cli.py {% raw %}{{.CLI_ARGS}}{% endraw %} || CLI_EXIT_CODE=$?
         echo "CLI exited with code: $CLI_EXIT_CODE"
 
         # Check if command failed and contains "execute"
@@ -140,31 +143,31 @@ tasks:
         # Clean up dev server processes if we started them
         if [ "{% raw %}{{.START_DEV}}{% endraw %}" -eq "1" ]; then
           echo "🛑 Stopping dev server..."
-          pkill -f 'uv run python dev.py' 2>/dev/null || true
+          pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || true
           echo "✅ Dev server stopped"
         fi
 
         exit $CLI_EXIT_CODE
     silent: true
   dev:
-    desc: 🔨 [{{ agent_app_name }}] Run the development server
+    desc: 🔨 Run the development server
     deps:
       - auth-check
     cmds:
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run python dev.py --autoreload"
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py --autoreload"
   dev-stop:
-    desc: 🛑 [{{ agent_app_name }}] Stop the development server
+    desc: 🛑 Stop the development server
     cmds:
       - echo "Stopping development server"
-      - pkill -f 'uv run python dev.py' 2>/dev/null || echo "No development server process found"
+      - pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || echo "No development server process found"
   chainlit:
     desc: "🛝 Run the ChainLit playground"
     cmds:
       - echo "🛝 Starting ChainLit playground"
-      - uv sync --all-extras
-      - uv run chainlit run --host 0.0.0.0 --port 8083 -w lit.py
+      - "{% raw %}{{.UV_CMD}}{% endraw %} sync --all-extras"
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run chainlit run --host 0.0.0.0 --port 8083 -w lit.py"
   create-docker-context:
-    desc: 🐳 [{{ agent_app_name }}] Create the template for a local docker_context image
+    desc: 🐳 Create the template for a local docker_context image
     vars:
       BRANCH: "{% raw %}{{.BRANCH}}{% endraw %}"
     cmds:
@@ -193,13 +196,13 @@ tasks:
       - mv ./docker_context/Dockerfile.local ./docker_context/Dockerfile
       - echo "Docker context created inside {{ agent_app_name }}/docker_context"
   build-docker-image:
-    # desc: 🐳 [{{ agent_app_name }}] Build the Docker image
+    # desc: 🐳 Build the Docker image
     cmds:
       - echo "Building Docker image"
       - cp pyproject.toml docker_context/pyproject.toml
       - cd docker_context && docker build --platform linux/amd64 -f Dockerfile -t {{ agent_app_name }}:latest .
   build-docker-context:
-    desc: 🐳 [{{ agent_app_name }}] Build the Docker image
+    desc: 🐳 Build the Docker image
     cmds:
       - task: create-docker-context
       - echo "Saving Docker image"
