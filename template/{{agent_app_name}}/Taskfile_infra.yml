@@ -26,63 +26,63 @@ tasks:
     desc: 🛠️ [infra] Install infra uv dependencies
     cmds:
       - echo "Updating local dependencies for infra"
-      - uv sync --extra dev --quiet
+      - "{{.UV_CMD}} sync --extra dev --quiet"
   install-pulumi-plugin:
     silent: true
     # desc: "⬇️ Install DataRobot Pulumi plugins"
     cmds:
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run pulumi plugin install resource datarobot v0.10.22 --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/v0.10.22/"
+      - "{{.UV_CMD}} run pulumi plugin install resource datarobot v0.10.22 --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/v0.10.22/"
   lint:
     silent: true
     # desc: "🧹 Run linters"
     cmds:
       - echo "🧹 Running linters.."
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff format ."
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff check . --fix"
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run mypy --pretty ."
+      - "{{.UV_CMD}} run ruff format ."
+      - "{{.UV_CMD}} run ruff check . --fix"
+      - "{{.UV_CMD}} run mypy --pretty ."
   lint-check:
     silent: true
     # desc: "🧹 Check whether the codebase is linted"
     cmds:
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff format --check --diff ."
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff check  --diff ."
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run mypy --pretty ."
+      - "{{.UV_CMD}} run ruff format --check --diff ."
+      - "{{.UV_CMD}} run ruff check  --diff ."
+      - "{{.UV_CMD}} run mypy --pretty ."
   test:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
     # desc: 🧪 [infra] Run tests
     cmds:
       - echo "Running pytest on tests"
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run pytest -vv ./tests/"
+      - "{{.UV_CMD}} run pytest -vv ./tests/"
     silent: true
   test-coverage:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
     # desc: 🧪 [infra] Run tests with coverage
     cmds:
       - echo "Running pytest on tests"
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/"
+      - "{{.UV_CMD}} run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/"
     silent: true
   init:
     silent: true
     # desc: "🆕 Initialize a new Pulumi stack"
     cmds:
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run pulumi stack init"
+      - "{{.UV_CMD}} run pulumi stack init"
   pulumi:
     silent: true
     # desc: "Generic pulumi execution command with env variables"
     cmds:
       - task: install-pulumi-plugin
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run pulumi {% raw %}{{.CLI_ARGS}}{% endraw %}"
+      - "{{.UV_CMD}} run pulumi {{.CLI_ARGS}}"
   select:
     silent: true
     # desc: "🚂 Select a Stack"
     cmds:
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run pulumi stack select"
+      - "{{.UV_CMD}} run pulumi stack select"
   select-env-stack:
     silent: true
     cmds:
       - |
         if [ -n "${PULUMI_STACK:-}" ]; then
-          {% raw %}{{.UV_CMD}}{% endraw %} run pulumi stack select -c $PULUMI_STACK
+          {{.UV_CMD}} run pulumi stack select -c $PULUMI_STACK
         fi
   info:
     silent: true
@@ -90,7 +90,7 @@ tasks:
     cmds:
       - task: install-pulumi-plugin
       - task: select-env-stack
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run pulumi stack {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %}"
+      - "{{.UV_CMD}} run pulumi stack {{.PULUMI_STACK_COMMAND}}"
   build:
     desc: "🔵 Deploy only playground testing resources with pulumi"
     env:
@@ -99,7 +99,7 @@ tasks:
       - echo "[infra] Running pulumi up with [BUILD] mode"
       - task: install-pulumi-plugin
       - task: select-env-stack
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run pulumi up {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %} {% raw %}{{.CLI_ARGS}}{% endraw %}"
+      - "{{.UV_CMD}} run pulumi up {{.PULUMI_STACK_COMMAND}} {{.CLI_ARGS}}"
     silent: true
   deploy:
     desc: "🟢 Deploy all resources with pulumi"
@@ -109,7 +109,7 @@ tasks:
       - echo "Running pulumi up with [DEPLOY] mode"
       - task: install-pulumi-plugin
       - task: select-env-stack
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run pulumi up {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %} {% raw %}{{.CLI_ARGS}}{% endraw %}"
+      - "{{.UV_CMD}} run pulumi up {{.PULUMI_STACK_COMMAND}} {{.CLI_ARGS}}"
     silent: true
   refresh:
     desc: "⚪️ Refresh and sync local pulumi state"
@@ -117,7 +117,7 @@ tasks:
       - echo "Running pulumi refresh"
       - task: install-pulumi-plugin
       - task: select-env-stack
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run pulumi refresh {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %} {% raw %}{{.CLI_ARGS}}{% endraw %}"
+      - "{{.UV_CMD}} run pulumi refresh {{.PULUMI_STACK_COMMAND}} {{.CLI_ARGS}}"
     silent: true
   destroy:
     desc: "🔴 Teardown all deployed resources with pulumi"
@@ -125,5 +125,5 @@ tasks:
       - echo "Running pulumi destroy"
       - task: install-pulumi-plugin
       - task: select-env-stack
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run pulumi destroy {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %} {% raw %}{{.CLI_ARGS}}{% endraw %}"
+      - "{{.UV_CMD}} run pulumi destroy {{.PULUMI_STACK_COMMAND}} {{.CLI_ARGS}}"
     silent: true
