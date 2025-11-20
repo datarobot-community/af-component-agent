@@ -3,13 +3,15 @@
 # THIS FILE MUST BE SOURCED FROM ANOTHER TASKFILE IN THE ROOT DIRECTORY
 version: '3'
 vars:
-  # Cross-platform environment cleaning - uses 'env -u' on Unix systems, falls back to empty string on Windows
-  CLEAN_PYTHON_ENV:
+  UV_CMD:
     sh: |
+      # This command ensures compatibility with codespaces environments
+      # Cross-platform environment cleaning - uses 'env -u' on Unix systems,
+      # falls back to empty string on Windows
       if command -v env >/dev/null 2>&1; then
-        echo "env -u PYTHONPATH -u VIRTUAL_ENV"
+        echo "env -u PYTHONPATH -u VIRTUAL_ENV uv"
       else
-        echo ""
+        echo "uv"
       fi
   PULUMI_STACK_COMMAND:
     sh: |
@@ -29,58 +31,58 @@ tasks:
     silent: true
     # desc: "⬇️ Install DataRobot Pulumi plugins"
     cmds:
-      - uv run pulumi plugin install resource datarobot v0.10.22 --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/v0.10.22/
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run pulumi plugin install resource datarobot v0.10.22 --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/v0.10.22/"
   lint:
     silent: true
     # desc: "🧹 Run linters"
     cmds:
       - echo "🧹 Running linters.."
-      - uv run ruff format .
-      - uv run ruff check . --fix
-      - uv run mypy --pretty .
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff format ."
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff check . --fix"
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run mypy --pretty ."
   lint-check:
     silent: true
     # desc: "🧹 Check whether the codebase is linted"
     cmds:
-      - uv run ruff format --check --diff .
-      - uv run ruff check  --diff .
-      - uv run mypy --pretty .
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff format --check --diff ."
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff check  --diff ."
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run mypy --pretty ."
   test:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
     # desc: 🧪 [infra] Run tests
     cmds:
       - echo "Running pytest on tests"
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pytest -vv ./tests/"
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run pytest -vv ./tests/"
     silent: true
   test-coverage:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
     # desc: 🧪 [infra] Run tests with coverage
     cmds:
       - echo "Running pytest on tests"
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/"
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/"
     silent: true
   init:
     silent: true
     # desc: "🆕 Initialize a new Pulumi stack"
     cmds:
-      - uv run pulumi stack init
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run pulumi stack init"
   pulumi:
     silent: true
     # desc: "Generic pulumi execution command with env variables"
     cmds:
       - task: install-pulumi-plugin
-      - uv run pulumi {% raw %}{{.CLI_ARGS}}{% endraw %}
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run pulumi {% raw %}{{.CLI_ARGS}}{% endraw %}"
   select:
     silent: true
     # desc: "🚂 Select a Stack"
     cmds:
-      - uv run pulumi stack select
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run pulumi stack select"
   select-env-stack:
     silent: true
     cmds:
       - |
         if [ -n "${PULUMI_STACK:-}" ]; then
-          {% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi stack select -c $PULUMI_STACK
+          {% raw %}{{.UV_CMD}}{% endraw %} run pulumi stack select -c $PULUMI_STACK
         fi
   info:
     silent: true
@@ -88,7 +90,7 @@ tasks:
     cmds:
       - task: install-pulumi-plugin
       - task: select-env-stack
-      - uv run pulumi stack {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %}
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run pulumi stack {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %}"
   build:
     desc: "🔵 Deploy only playground testing resources with pulumi"
     env:
@@ -97,7 +99,7 @@ tasks:
       - echo "[infra] Running pulumi up with [BUILD] mode"
       - task: install-pulumi-plugin
       - task: select-env-stack
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi up {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %} {% raw %}{{.CLI_ARGS}}{% endraw %}"
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run pulumi up {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %} {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   deploy:
     desc: "🟢 Deploy all resources with pulumi"
@@ -107,7 +109,7 @@ tasks:
       - echo "Running pulumi up with [DEPLOY] mode"
       - task: install-pulumi-plugin
       - task: select-env-stack
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi up {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %} {% raw %}{{.CLI_ARGS}}{% endraw %}"
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run pulumi up {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %} {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   refresh:
     desc: "⚪️ Refresh and sync local pulumi state"
@@ -115,7 +117,7 @@ tasks:
       - echo "Running pulumi refresh"
       - task: install-pulumi-plugin
       - task: select-env-stack
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi refresh {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %} {% raw %}{{.CLI_ARGS}}{% endraw %}"
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run pulumi refresh {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %} {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
   destroy:
     desc: "🔴 Teardown all deployed resources with pulumi"
@@ -123,5 +125,5 @@ tasks:
       - echo "Running pulumi destroy"
       - task: install-pulumi-plugin
       - task: select-env-stack
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run pulumi destroy {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %} {% raw %}{{.CLI_ARGS}}{% endraw %}"
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run pulumi destroy {% raw %}{{.PULUMI_STACK_COMMAND}}{% endraw %} {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
