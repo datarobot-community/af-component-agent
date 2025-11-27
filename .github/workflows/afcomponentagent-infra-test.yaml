@@ -44,7 +44,7 @@ jobs:
         shell: sh
         working-directory: ./rendered
         run: |
-          uvx --from go-task-bin task -t Taskfile_agent.yml infra:install
+          uvx --from go-task-bin task -t Taskfile_agent.yml install
           cd ./infra
           uv sync --extra dev
         env:
