@@ -95,7 +95,7 @@ if cat ./agent/output.log | grep -q 'Running CLI execute' ; then
 fi
 
 # Check the execution result
-if cat ./agent/output.log | grep -q 'Execution result:' ; then
+if cat ./agent/output.log | grep -q 'Stored Execution result:' ; then
     echo "Test passed: cli.py returned log containing execution result"
     else
     echo "Test failed: cli.py did not return log containing execution result"
