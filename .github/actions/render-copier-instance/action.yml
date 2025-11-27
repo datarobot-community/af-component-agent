@@ -27,8 +27,6 @@ runs:
           cp ./fixtures/infra/pyproject.toml ./rendered/infra/pyproject.toml
           cp ./fixtures/infra/__init__.py ./rendered/infra/infra/__init__.py
           cp ./fixtures/infra/Pulumi.yaml ./rendered/infra/Pulumi.yaml
-          cp ./fixtures/infra/llm.py ./rendered/infra/infra/llm.py
-          cp ./fixtures/infra/mcp_server.py ./rendered/infra/infra/mcp_server.py
         else
           # Running on host, use docker container
           docker run --rm -v "$(pwd):/workspace" -w /workspace ghcr.io/astral-sh/uv:python3.11-bookworm bash -c "
@@ -43,7 +41,5 @@ runs:
             cp ./fixtures/infra/pyproject.toml ./rendered/infra/pyproject.toml
             cp ./fixtures/infra/__init__.py ./rendered/infra/infra/__init__.py
             cp ./fixtures/infra/Pulumi.yaml ./rendered/infra/Pulumi.yaml
-            cp ./fixtures/infra/llm.py ./rendered/infra/infra/llm.py
-            cp ./fixtures/infra/mcp_server.py ./rendered/infra/infra/mcp_server.py
           "
         fi
