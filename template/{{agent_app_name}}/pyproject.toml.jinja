@@ -7,12 +7,12 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "click~=8.1.8",
-    "crewai>=0.140.0",
-    "crewai-tools>=0.48.0",
-    "datarobot-drum>=1.16.22",
-    "datarobot-moderations>=11.2.2",
-    "datarobot-mlops>=11.1.0",
-    "datarobot[auth]>=3.8.2",
+    "crewai==0.140.0",
+    "crewai-tools==0.48.0",
+    "datarobot-drum==1.16.22",
+    "datarobot-moderations==11.2.2",
+    "datarobot-mlops==11.1.0",
+    "datarobot[auth]==3.8.2",
     "dotenv~=0.9.9",
     "langchain-community~=0.3.23",
     "langchain-mcp-adapters~=0.1.9",
@@ -46,6 +46,7 @@ dependencies = [
     "requests~=2.32.4",
     "traceloop-sdk~=0.40.2",
     "uvicorn~=0.35.0",
+    "starlette~=0.49.1",
 ]
 
 [project.optional-dependencies]
@@ -58,6 +59,7 @@ dev = [
     "requests-mock>=1.12.1",
     "ruff~=0.12.0",
     "yamlfix>=1.17.0",
+    "types-requests~=2.32.4",
 ]
 
 [tool.pytest.ini_options]

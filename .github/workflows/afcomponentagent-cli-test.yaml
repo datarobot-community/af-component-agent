@@ -1,0 +1,43 @@
+---
+name: af-component-agent CLI
+on:
+  push:
+    branches: ["release/11.1"]
+  pull_request:
+    branches: ["release/11.1"]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  test-cli:
+    name: "Test CLI"
+    runs-on: "ubuntu-latest"
+    container:
+      image: ghcr.io/astral-sh/uv:python3.11-bookworm
+    steps:
+      - name: Checkout
+        uses: "actions/checkout@v5"
+      - name: Setup caching
+        uses: ./.github/actions/setup-caching
+        id: setup-cache
+        with:
+          python-version: python3.11
+          cache-key-suffix: cli
+      - name: Render copier instance
+        if: steps.setup-cache.outputs.cache-hit != 'true'
+        uses: ./.github/actions/render-copier-instance
+        with:
+          copier-args: '--defaults'
+      - name: Setup infra files and install dependencies
+        shell: sh
+        working-directory: ./rendered
+        run: |
+          uvx --from go-task-bin task -t Taskfile_agent.yml install
+        env:
+          UV_CACHE_DIR: /.uv_cache
+      - name: Run CLI Tests
+        shell: sh
+        working-directory:
+        run: ./tests/test-cli.sh rendered
+        env:
+          UV_CACHE_DIR: /.uv_cache

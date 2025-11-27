@@ -25,7 +25,7 @@ tasks:
       - echo "Linting the codebase"
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run ruff check . --fix"
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run ruff format ."
-      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run mypy --pretty ."
+      - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run mypy --pretty --install-types ."
       - "{% raw %}{{.CLEAN_PYTHON_ENV}}{% endraw %} uv run yamlfix custom_model"
     silent: true
   lint-check:

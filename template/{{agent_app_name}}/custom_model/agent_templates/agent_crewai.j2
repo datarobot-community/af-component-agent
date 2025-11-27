@@ -277,13 +277,13 @@ class MyAgent:
         response_text = str(crew_output.raw)
 
         # Create a list of events from the event listener
-        events = self.event_listener.messages
+        events: list[Any] = self.event_listener.messages
         if len(events) > 0:
             last_message = events[-1].content
             if last_message != response_text:
                 events.append(AIMessage(content=response_text))
         else:
-            events = None
+            events = []
         # The `events` variable is used to compute agentic metrics
         # (e.g. Task Adherence, Agent Goal Accuracy, Agent Goal Accuracy with Reference,
         # Tool Call Accuracy).
