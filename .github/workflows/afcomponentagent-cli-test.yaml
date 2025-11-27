@@ -32,7 +32,7 @@ jobs:
         shell: sh
         working-directory: ./rendered
         run: |
-          uvx --from go-task-bin task install
+          uvx --from go-task-bin task -t Taskfile_agent.yml install
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: Run CLI Tests
