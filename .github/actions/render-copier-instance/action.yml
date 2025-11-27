@@ -1,0 +1,49 @@
+name: 'render copier instance'
+description: 'Creates default copier instances using copier and task'
+inputs:
+  working-directory:
+    description: 'Working directory to run commands in'
+    required: false
+    default: '.'
+  copier-args:
+    description: 'Arguments to pass to copier copy command'
+    required: false
+    default: '--defaults'
+runs:
+  using: 'composite'
+  steps:
+    - name: render copier instance
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        if command -v uvx >/dev/null 2>&1 && [ -w /var/lib/apt/lists ]; then
+          # Running in container with uvx and apt permissions, execute directly
+          git config --global --add safe.directory /__w/af-component-agent/af-component-agent
+          apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
+          mkdir -p ./rendered/.datarobot/answers/
+          uvx copier copy . ./rendered ${{ inputs.copier-args }}
+
+          # For infra testing
+          cp ./fixtures/infra/pyproject.toml ./rendered/infra/pyproject.toml
+          cp ./fixtures/infra/__init__.py ./rendered/infra/infra/__init__.py
+          cp ./fixtures/infra/Pulumi.yaml ./rendered/infra/Pulumi.yaml
+          cp ./fixtures/infra/llm.py ./rendered/infra/infra/llm.py
+          cp ./fixtures/infra/mcp_server.py ./rendered/infra/infra/mcp_server.py
+        else
+          # Running on host, use docker container
+          docker run --rm -v "$(pwd):/workspace" -w /workspace ghcr.io/astral-sh/uv:python3.11-bookworm bash -c "
+            git config --global --add safe.directory /workspace
+            apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
+            mkdir -p ./rendered/.datarobot/answers/
+            cp ./fixtures/.datarobot/answers/llm-llm.yml ./rendered/.datarobot/answers/llm-llm.yml
+            cp ./fixtures/.datarobot/answers/fastmcp-mcp_server.yml ./rendered/.datarobot/answers/fastmcp-mcp_server.yml
+            uvx copier copy . ./rendered ${{ inputs.copier-args }}
+
+            # For infra testing
+            cp ./fixtures/infra/pyproject.toml ./rendered/infra/pyproject.toml
+            cp ./fixtures/infra/__init__.py ./rendered/infra/infra/__init__.py
+            cp ./fixtures/infra/Pulumi.yaml ./rendered/infra/Pulumi.yaml
+            cp ./fixtures/infra/llm.py ./rendered/infra/infra/llm.py
+            cp ./fixtures/infra/mcp_server.py ./rendered/infra/infra/mcp_server.py
+          "
+        fi

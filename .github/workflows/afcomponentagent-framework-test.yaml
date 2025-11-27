@@ -1,0 +1,83 @@
+---
+name: af-component-agent Frameworks
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "fixtures/**"
+      - "template/**"
+      - ".github/workflows/afcomponentagent-framework-test.yaml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "fixtures/**"
+      - "template/**"
+      - ".github/workflows/afcomponentagent-framework-test.yaml"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  test-frameworks:
+    name: "Test ${{ matrix.framework.name }} (${{ matrix.python }})"
+    runs-on: "ubuntu-latest"
+    container:
+      image: ghcr.io/astral-sh/uv:${{ matrix.python }}-bookworm
+    strategy:
+      matrix:
+        python: [python3.10, python3.11, python3.12]
+        framework:
+          - name: base
+            agent_name: agent_generic_base
+          - name: crewai
+            agent_name: agent_crewai
+          - name: langgraph
+            agent_name: agent_langgraph
+          - name: llamaindex
+            agent_name: agent_llamaindex
+          - name: nat
+            agent_name: agent_nat
+        exclude:
+          - python: python3.10
+            framework:
+              name: nat
+              agent_name: agent_nat
+    steps:
+      - name: Checkout
+        uses: "actions/checkout@v5"
+      - name: Setup caching
+        uses: ./.github/actions/setup-caching
+        id: setup-cache
+        with:
+          python-version: ${{ matrix.python }}
+          cache-key-suffix: ${{ matrix.framework.name }}
+      - name: Render copier instance
+        if: steps.setup-cache.outputs.cache-hit != 'true'
+        uses: ./.github/actions/render-copier-instance
+        with:
+          copier-args: '--defaults --data agent_app_name=${{ matrix.framework.agent_name }} --data agent_template_framework=${{ matrix.framework.name }} --data base_answers_file=.datarobot/answers/base.yml'
+      - name: Install dependencies
+        shell: sh
+        working-directory: ./rendered/${{ matrix.framework.agent_name }}
+        run: |
+          uvx --from go-task-bin task install
+        env:
+          UV_CACHE_DIR: /.uv_cache
+      - name: License Header Check
+        if: matrix.python == 'python3.11'
+        uses: apache/skywalking-eyes/header@main
+        with:
+          config: .github/.licenserc.yaml
+      - name: Run linter
+        shell: sh
+        working-directory: ./rendered/${{ matrix.framework.agent_name }}
+        run: |
+          uvx --from go-task-bin task lint-check
+        env:
+          UV_CACHE_DIR: /.uv_cache
+      - name: Run unit tests
+        shell: sh
+        working-directory: ./rendered/${{ matrix.framework.agent_name }}
+        run: |
+          uvx --from go-task-bin task test-coverage
+        env:
+          UV_CACHE_DIR: /.uv_cache

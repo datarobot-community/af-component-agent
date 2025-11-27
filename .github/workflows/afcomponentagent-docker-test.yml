@@ -1,0 +1,110 @@
+---
+name: af-component-agent Docker
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "**/*pyproject*"
+      - "**/*uv.lock*"
+      - ".github/workflows/afcomponentagent-docker-test.yaml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "**/*pyproject*"
+      - "**/*uv.lock*"
+      - ".github/workflows/afcomponentagent-docker-test.yaml"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  test-build-dockerfile:
+    name: "Test Build Dockerfile and Codespaces"
+    runs-on: "ubuntu-latest"
+    strategy:
+      matrix:
+        dockerfile: [Dockerfile]
+    steps:
+      - name: Checkout
+        uses: "actions/checkout@v5"
+      - name: Setup caching
+        uses: ./.github/actions/setup-caching
+        id: setup-cache
+        with:
+          python-version: python3.11
+          cache-key-suffix: docker-build-test
+      - name: Render copier instance
+        uses: ./.github/actions/render-copier-instance
+      - name: Lint Dockerfile
+        uses: hadolint/hadolint-action@v3.3.0
+        with:
+          dockerfile: ./rendered/agent/docker_context/${{ matrix.dockerfile }}
+          config: .hadolint.yaml
+      - name: Install dependencies
+        run: |
+          docker run --rm -v "$(pwd):/workspace" -w /workspace ghcr.io/astral-sh/uv:python3.11-bookworm bash -c "
+            cd ./rendered
+            uvx --from go-task-bin task agent:install
+          "
+          # Copy the pyproject.toml and uv.lock into the docker_context for the build
+          sudo cp ./rendered/agent/pyproject.toml ./rendered/agent/docker_context/pyproject.toml
+          sudo cp ./rendered/agent/uv.lock ./rendered/agent/docker_context/uv.lock
+      - name: Build Dockerfile
+        working-directory: ./rendered/agent/docker_context
+        run: |
+          docker build --platform linux/amd64 -f ${{ matrix.dockerfile }} -t test-agent:latest .
+      - name: Test Codespaces server in Docker container
+        run: |
+          # Start the container in the background
+          CONTAINER_ID=$(docker run -d -p 8889:8889 test-agent:latest /etc/system/kernel/start_server.sh)
+          echo "Started container: $CONTAINER_ID"
+          # Wait for the server to start
+          echo "Waiting for Codespaces server to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8889/ > /dev/null; then
+              echo "Codespaces server is up and responding."
+              break
+            fi
+            sleep 1
+          done
+          # Check if server responded
+          if ! curl -s http://localhost:8889/ > /dev/null; then
+            echo "Codespaces server did not respond on port 8889 after 30 seconds."
+            docker logs "$CONTAINER_ID"
+            docker stop "$CONTAINER_ID"
+            exit 1
+          fi
+          # Stop the container after success
+          docker stop "$CONTAINER_ID"
+          echo "Stopped container: $CONTAINER_ID"
+      - name: Test DRUM server in Docker container
+        run: |
+          # Start the container in the background
+          sudo chmod a+x $(pwd)/fixtures/code/start_server.sh
+          export TARGET_NAME="response"
+          CONTAINER_ID=$(docker run \
+            -d \
+            -p 8080:8080 \
+            -e TARGET_TYPE=agenticworkflow \
+            -e TARGET_NAME=response \
+            -v "$(pwd)/fixtures/code:/opt/code" \
+            test-agent:latest /opt/code/start_server.sh)
+          echo "Started container: $CONTAINER_ID"
+          # Wait for the server to start
+          echo "Waiting for DRUM server to start..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8080/ > /dev/null; then
+              echo "DRUM server is up and responding."
+              break
+            fi
+            sleep 1
+          done
+          # Check if server responded
+          if ! curl -s http://localhost:8080/ > /dev/null; then
+            echo "DRUM server did not respond on port 8080 after 30 seconds."
+            docker logs "$CONTAINER_ID"
+            docker stop "$CONTAINER_ID"
+            exit 1
+          fi
+          # Stop the container after success
+          docker stop "$CONTAINER_ID"
+          echo "Stopped container: $CONTAINER_ID"
