@@ -51,9 +51,11 @@ jobs:
           UV_CACHE_DIR: /.uv_cache
       - name: Run linter
         shell: sh
-        working-directory: ./rendered
+        working-directory: ./rendered/infra
         run: |
-          uvx --from go-task-bin task infra:lint-check
+          uv run ruff format --check --diff .
+          uv run ruff check --diff .
+          uv run mypy --pretty .
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: Create pulumi stack
@@ -67,7 +69,7 @@ jobs:
         shell: sh
         working-directory: ./rendered
         run: |
-          uvx --from go-task-bin task infra:test-coverage
+          uv run pytest --disable-warnings -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/
         env:
           UV_CACHE_DIR: /.uv_cache
           PULUMI_CONFIG_PASSPHRASE: "123"
