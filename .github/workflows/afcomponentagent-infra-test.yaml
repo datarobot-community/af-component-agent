@@ -67,7 +67,7 @@ jobs:
           PULUMI_CONFIG_PASSPHRASE: "123"
       - name: Run unit tests
         shell: sh
-        working-directory: ./rendered
+        working-directory: ./rendered/infra
         run: |
           uv run pytest --disable-warnings -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/
         env:
