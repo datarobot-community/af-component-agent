@@ -59,7 +59,7 @@ jobs:
         if: matrix.python == 'python3.11'
         uses: apache/skywalking-eyes/header@main
         with:
-          config: .github/.licenserc.yaml
+          config: .licenserc.yaml
       - name: Run linter
         shell: sh
         working-directory: ./rendered/${{ matrix.framework.agent_name }}
