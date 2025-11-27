@@ -34,13 +34,6 @@ jobs:
             agent_name: agent_langgraph
           - name: llamaindex
             agent_name: agent_llamaindex
-          - name: nat
-            agent_name: agent_nat
-        exclude:
-          - python: python3.10
-            framework:
-              name: nat
-              agent_name: agent_nat
     steps:
       - name: Checkout
         uses: "actions/checkout@v5"
@@ -59,7 +52,7 @@ jobs:
         shell: sh
         working-directory: ./rendered/${{ matrix.framework.agent_name }}
         run: |
-          uvx --from go-task-bin task -t Taskfile_agent.yml install
+          uvx --from go-task-bin task -t Taskfile_${{ matrix.framework.agent_name }}.yml install
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: License Header Check

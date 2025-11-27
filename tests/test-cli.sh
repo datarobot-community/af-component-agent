@@ -64,7 +64,7 @@ echo "DATAROBOT_ENDPOINT = https://test.com/api/v2" >> .env
 
 # Run the CLI command with a sample user prompt
 echo "Initial execution"
-uvx --from go-task-bin task agent:cli -- \
+uvx --from go-task-bin task agent_test:agent:cli -- \
     execute \
     --show_output \
     --user_prompt '{"topic": "Artificial Intelligence"}' \
@@ -121,7 +121,7 @@ fi
 
 # Run the CLI command with a sample user prompt
 echo "Initial execution"
-uvx --from go-task-bin task agent:cli -- \
+uvx --from go-task-bin task agent_test:agent:cli -- \
     execute \
     --show_output \
     --completion_json "example-completion.json" \
@@ -149,7 +149,7 @@ fi
 
 # Run the CLI command with a sample user prompt
 echo "Initial execution"
-uvx --from go-task-bin task agent:cli -- \
+uvx --from go-task-bin task agent_test:agent:cli -- \
     execute \
     --show_output \
     --user_prompt '{"topic": "Artificial Intelligence"}' \
