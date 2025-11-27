@@ -271,7 +271,7 @@ class MyAgent:
         print("Running agent with inputs:", inputs, flush=True)
 
         # Run the crew with the inputs
-        crew_output: CrewOutput = self.crew().kickoff(inputs=inputs)  # type: ignore[assignment]
+        crew_output = self.crew().kickoff(inputs=inputs)
 
         # Extract the response text from the crew output
         response_text = str(crew_output.raw)
