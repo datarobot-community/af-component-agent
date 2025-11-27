@@ -2,7 +2,7 @@
 name: af-component-agent Release
 on:
   push:
-    branches: ["main"]
+    branches: ["release/11.1"]
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false

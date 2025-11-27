@@ -2,13 +2,13 @@
 name: af-component-agent Docker
 on:
   push:
-    branches: ["main"]
+    branches: ["release/11.1"]
     paths:
       - "**/*pyproject*"
       - "**/*uv.lock*"
       - ".github/workflows/afcomponentagent-docker-test.yaml"
   pull_request:
-    branches: ["main"]
+    branches: ["release/11.1"]
     paths:
       - "**/*pyproject*"
       - "**/*uv.lock*"

@@ -2,13 +2,13 @@
 name: af-component-agent Infra
 on:
   push:
-    branches: ["main"]
+    branches: ["release/11.1"]
     paths:
       - "fixtures/**"
       - "template/infra/**"
       - ".github/workflows/afcomponentagent-infra-test.yaml"
   pull_request:
-    branches: ["main"]
+    branches: ["release/11.1"]
     paths:
       - "fixtures/**"
       - "template/infra/**"

@@ -2,13 +2,13 @@
 name: af-component-agent Frameworks
 on:
   push:
-    branches: ["main"]
+    branches: ["release/11.1"]
     paths:
       - "fixtures/**"
       - "template/**"
       - ".github/workflows/afcomponentagent-framework-test.yaml"
   pull_request:
-    branches: ["main"]
+    branches: ["release/11.1"]
     paths:
       - "fixtures/**"
       - "template/**"
