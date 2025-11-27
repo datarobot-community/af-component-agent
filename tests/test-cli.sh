@@ -62,15 +62,6 @@ cd "${BASE_RENDER_DIR}"
 echo "DATAROBOT_API_TOKEN = secret" >> .env
 echo "DATAROBOT_ENDPOINT = https://test.com/api/v2" >> .env
 
-# Start the server, colorize output via process substitution and keep the real PID
-stdbuf -oL uvx --from go-task-bin task agent:dev > >(awk '{print "\033[34m" $0 "\033[0m"}') &
-SERVER_PID=$!
-
-if ! wait_for_port "localhost" 8842 60 1; then
-    echo "Dev server did not start listening on port 8842"
-    exit 1
-fi
-
 # Run the CLI command with a sample user prompt
 echo "Initial execution"
 uvx --from go-task-bin task agent:cli -- \
