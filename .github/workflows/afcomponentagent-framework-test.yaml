@@ -52,7 +52,7 @@ jobs:
         shell: sh
         working-directory: ./rendered/${{ matrix.framework.agent_name }}
         run: |
-          uvx --from go-task-bin task -t Taskfile_${{ matrix.framework.agent_name }}.yml install
+          uvx --from go-task-bin task install
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: License Header Check
