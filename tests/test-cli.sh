@@ -68,7 +68,6 @@ uvx --from go-task-bin task agent_test:agent:cli -- \
     execute \
     --user_prompt '{"topic": "Artificial Intelligence"}' \
     > ./agent/output.log 2>&1
-cat ./agent/output.log
 
 # Check if the log file was created
 if [ $(wc -l < ./agent/output.log) -ge 13 ] ; then
@@ -81,11 +80,6 @@ if [ $(wc -l < ./agent/output.log) -ge 13 ] ; then
     exit 1
 fi
 
-echo "-------------------------------"
-echo "Printing log file for debugging:"
-cat ./agent/output.log
-echo "-------------------------------"
-
 # Check the logger showed the first command
 if cat ./agent/output.log | grep -q 'Running CLI execute' ; then
     echo "Test passed: cli.py returned log for starting cli"
@@ -95,7 +89,7 @@ if cat ./agent/output.log | grep -q 'Running CLI execute' ; then
 fi
 
 # Check the execution result
-if cat ./agent/output.log | grep -q 'Stored Execution result:' ; then
+if cat ./agent/output.log | grep -q 'Stored Execution Result:' ; then
     echo "Test passed: cli.py returned log containing execution result"
     else
     echo "Test failed: cli.py did not return log containing execution result"
