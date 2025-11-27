@@ -43,7 +43,7 @@ jobs:
         run: |
           docker run --rm -v "$(pwd):/workspace" -w /workspace ghcr.io/astral-sh/uv:python3.11-bookworm bash -c "
             cd ./rendered
-            uvx --from go-task-bin task agent:install
+            uvx --from go-task-bin task -t Taskfile_agent.yml agent:install
           "
           # Copy the pyproject.toml and uv.lock into the docker_context for the build
           sudo cp ./rendered/agent/pyproject.toml ./rendered/agent/docker_context/pyproject.toml
