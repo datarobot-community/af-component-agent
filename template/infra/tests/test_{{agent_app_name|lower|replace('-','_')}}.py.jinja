@@ -638,25 +638,30 @@ class TestMaybeImportFromModule:
 
 
 class TestGetMcpCustomModelRuntimeParameters:
-    def test_get_mcp_custom_model_runtime_parameters_from_module(self):
-        """Test that MCP runtime parameters are loaded from the module when available."""
+    def test_export_mcp_parameters_from_module(self):
+        """Test that MCP parameters are loaded from the module when available."""
         import infra.{{agent_app_name}} as agent_infra
 
-        result = agent_infra.get_mcp_custom_model_runtime_parameters()
+        agent_infra.pulumi.export.reset_mock()
+
+        agent_infra.export_mcp_parameters()
         # The fixture sets up a mock module with empty list
-        assert isinstance(result, list)
+        agent_infra.pulumi.export.assert_not_called()
 
     def test_get_mcp_custom_model_runtime_parameters_fallback_to_env(self, monkeypatch):
         """Test that MCP runtime parameters fall back to environment variables when module is unavailable."""
         import infra.{{agent_app_name}} as agent_infra
 
         # Set up environment variables
-        monkeypatch.setenv("MCP_DEPLOYMENT_ID", "test-deployment-123")
-        monkeypatch.setenv("EXTERNAL_MCP_URL", "https://example.com/mcp")
-        monkeypatch.setenv(
-            "EXTERNAL_MCP_HEADERS", '{"Authorization": "Bearer token123"}'
-        )
-        monkeypatch.setenv("EXTERNAL_MCP_TRANSPORT", "sse")
+        mcp_deployment_id = "test-deployment-123"
+        external_mcp_url = "https://example.com/mcp"
+        external_mcp_headers = '{"Authorization": "Bearer token123"}'
+        external_mcp_transport = "sse"
+
+        monkeypatch.setenv("MCP_DEPLOYMENT_ID", mcp_deployment_id)
+        monkeypatch.setenv("EXTERNAL_MCP_URL", external_mcp_url)
+        monkeypatch.setenv("EXTERNAL_MCP_HEADERS", external_mcp_headers)
+        monkeypatch.setenv("EXTERNAL_MCP_TRANSPORT", external_mcp_transport)
 
         # Mock importlib.import_module to raise ImportError
         def mock_import_module(name, package=None):
@@ -664,45 +669,30 @@ class TestGetMcpCustomModelRuntimeParameters:
 
         monkeypatch.setattr("importlib.import_module", mock_import_module)
 
-        # Get runtime parameters - should fall back to environment variables
-        result = agent_infra.get_mcp_custom_model_runtime_parameters()
+        agent_infra.pulumi.export.reset_mock()
 
-        assert isinstance(result, list)
-        assert len(result) == 4
+        # Export MCP parameters - should fall back to environment variables
+        agent_infra.export_mcp_parameters()
+
+        assert agent_infra.pulumi.export.call_count == 4
 
         # Check MCP_DEPLOYMENT_ID parameter
-        mcp_deployment_param = next(
-            (p for p in result if p.key == "MCP_DEPLOYMENT_ID"), None
+        agent_infra.pulumi.export.assert_any_call(
+            "MCP_DEPLOYMENT_ID", mcp_deployment_id
         )
-        assert mcp_deployment_param is not None
-        assert mcp_deployment_param.type == "string"
-        assert mcp_deployment_param.value == "test-deployment-123"
 
         # Check EXTERNAL_MCP_URL parameter
-        external_mcp_param = next(
-            (p for p in result if p.key == "EXTERNAL_MCP_URL"), None
-        )
-        assert external_mcp_param is not None
-        assert external_mcp_param.type == "string"
-        assert external_mcp_param.value == "https://example.com/mcp"
+        agent_infra.pulumi.export.assert_any_call("EXTERNAL_MCP_URL", external_mcp_url)
 
         # Check EXTERNAL_MCP_HEADERS parameter
-        external_mcp_headers_param = next(
-            (p for p in result if p.key == "EXTERNAL_MCP_HEADERS"), None
-        )
-        assert external_mcp_headers_param is not None
-        assert external_mcp_headers_param.type == "string"
-        assert external_mcp_headers_param.value == (
-            '{"Authorization": "Bearer token123"}'
+        agent_infra.pulumi.export.assert_any_call(
+            "EXTERNAL_MCP_HEADERS", external_mcp_headers
         )
 
         # Check EXTERNAL_MCP_TRANSPORT parameter
-        external_mcp_transport_param = next(
-            (p for p in result if p.key == "EXTERNAL_MCP_TRANSPORT"), None
+        agent_infra.pulumi.export.assert_any_call(
+            "EXTERNAL_MCP_TRANSPORT", external_mcp_transport
         )
-        assert external_mcp_transport_param is not None
-        assert external_mcp_transport_param.type == "string"
-        assert external_mcp_transport_param.value == "sse"
 
 
 class TestGenerateMetadataYaml:
