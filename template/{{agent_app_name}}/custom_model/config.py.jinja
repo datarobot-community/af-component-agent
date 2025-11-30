@@ -39,7 +39,7 @@ class Config(DataRobotAppFrameworkBaseSettings):
     external_mcp_url: str | None = None
 
     agent_endpoint: str = Field(
-        default="http://localhost:8842", validation_alias="{{agent_app_name|upper}}_ENDPOINT"
+        default="http://localhost:{{ agent_development_port }}", validation_alias="{{agent_app_name|upper}}_ENDPOINT"
     )
 
     @property

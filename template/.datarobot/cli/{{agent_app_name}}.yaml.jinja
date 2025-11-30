@@ -1,7 +1,7 @@
 root:
   - env: {{agent_app_name|upper}}_ENDPOINT
     type: string
-    default: "http://localhost:8842"
+    default: "http://localhost:{{ agent_development_port }}"
     optional: true
     help: "The local endpoint to access the agent. Should have a unique port."
   - env: DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT

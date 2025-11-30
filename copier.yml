@@ -9,6 +9,11 @@ agent_app_name:
     {% elif not agent_app_name.isidentifier() %}ERROR: Agent app name must be a valid Python identifier (letters, numbers, underscores only, cannot start with number)
     {% endif %}
 
+agent_development_port:
+  type: int
+  default: 8842
+  validator: "{% if agent_development_port < 1 or agent_development_port > 65536%}Must be in the range 1-65536{% endif %}"
+
 use_low_code_interface:
   type: bool
   help: "Do you want to use low-code yaml configuration interface for your agent?"
