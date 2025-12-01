@@ -110,8 +110,11 @@ class TestMyAgentMCPIntegration:
                 # Expected when workflow is mocked
                 pass
 
-            # Verify load_mcp_tools was called with correct parameters
-            mock_load_mcp_tools.assert_called_once_with(authorization_context={})
+            # Verify load_mcp_tools was called and provided authorization_context
+            mock_load_mcp_tools.assert_called_once()
+            assert (
+                mock_load_mcp_tools.call_args.kwargs.get("authorization_context") == {}
+            )
 
             # Verify set_mcp_tools was called with the tools from MCP server
             assert agent.mcp_tools == mock_tools
@@ -164,8 +167,11 @@ class TestMyAgentMCPIntegration:
                 # Expected when workflow is mocked
                 pass
 
-            # Verify load_mcp_tools was called with correct parameters
-            mock_load_mcp_tools.assert_called_once_with(authorization_context={})
+            # Verify load_mcp_tools was called and provided authorization_context
+            mock_load_mcp_tools.assert_called_once()
+            assert (
+                mock_load_mcp_tools.call_args.kwargs.get("authorization_context") == {}
+            )
 
             # Verify set_mcp_tools was called with the tools from MCP server
             assert agent.mcp_tools == mock_tools

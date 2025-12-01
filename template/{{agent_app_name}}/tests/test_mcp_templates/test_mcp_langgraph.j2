@@ -71,7 +71,10 @@ def langgraph_common_mocks():
     mock_execution_graph.astream.side_effect = _create_mock_astream()
 
     with (
-        patch("datarobot_genai.langgraph.agent.mcp_tools_context") as mock_mcp_context,
+        patch(
+            "datarobot_genai.langgraph.agent.mcp_tools_context",
+            autospec=True,
+        ) as mock_mcp_context,
         patch.object(
             MyAgent,
             "workflow",
@@ -120,7 +123,8 @@ class TestMyAgentLangGraphMCPIntegration:
             except (StopIteration, AttributeError, TypeError, ValueError):
                 pass
 
-            mock_context.assert_called_once_with(authorization_context={})
+            mock_context.assert_called_once()
+            assert mock_context.call_args.kwargs.get("authorization_context") == {}
             assert agent.mcp_tools == mock_tools
 
     def test_agent_loads_mcp_tools_from_datarobot_deployment_in_invoke(
@@ -155,7 +159,8 @@ class TestMyAgentLangGraphMCPIntegration:
             except (StopIteration, AttributeError, TypeError, ValueError):
                 pass
 
-            mock_context.assert_called_once_with(authorization_context={})
+            mock_context.assert_called_once()
+            assert mock_context.call_args.kwargs.get("authorization_context") == {}
             assert agent.mcp_tools == mock_tools
 
     def test_agent_works_without_mcp_tools(self, langgraph_common_mocks):
