@@ -10,11 +10,13 @@ includes:
     taskfile: ./{{ agent_app_name }}/Taskfile.yml
     dir: ./{{ agent_app_name }}
   # Source the infra Taskfile as flat tasks and point at the infra directory
+  {% if include_taskfile_infra -%}
   infra:
     # REMOVE YOUR INFRASTRUCTURE TASKFILE IF PRESENT
     # rm ./infra/Taskfile.yml
     taskfile: ./{{ agent_app_name }}/Taskfile_infra.yml
     dir: ./infra
+  {% endif -%}
 tasks:
   default:
     desc: "ℹ️ Show all available tasks (run `task --list-all` to see hidden tasks)"
