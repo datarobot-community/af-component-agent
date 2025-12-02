@@ -10,13 +10,11 @@ includes:
     taskfile: ./{{ agent_app_name }}/Taskfile.yml
     dir: ./{{ agent_app_name }}
   # Source the infra Taskfile as flat tasks and point at the infra directory
-  {% if include_taskfile_infra -%}
-  infra:
+  {% if include_taskfile_infra -%}infra:
     # REMOVE YOUR INFRASTRUCTURE TASKFILE IF PRESENT
     # rm ./infra/Taskfile.yml
     taskfile: ./{{ agent_app_name }}/Taskfile_infra.yml
-    dir: ./infra
-  {% endif -%}
+    dir: ./infra{% endif %}
 tasks:
   default:
     desc: "ℹ️ Show all available tasks (run `task --list-all` to see hidden tasks)"
@@ -27,9 +25,9 @@ tasks:
     desc: "🛠️ Install all dependencies for agent and infra"
     cmds:
       - task: agent:install
-      - task: infra:install
+      {% if include_taskfile_infra -%}- task: infra:install{% endif %}
     silent: true
-  build:
+  {% if include_taskfile_infra -%}build:
     cmds:
       - task: infra:build
   deploy:
@@ -37,4 +35,4 @@ tasks:
       - task: infra:deploy
   destroy:
     cmds:
-      - task: infra:destroy
+      - task: infra:destroy{% endif %}
