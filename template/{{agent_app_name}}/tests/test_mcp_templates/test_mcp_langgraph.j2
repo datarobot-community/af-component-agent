@@ -205,11 +205,10 @@ class TestMyAgentLangGraphMCPIntegration:
 
             _ = agent.agent_planner
             _ = agent.agent_writer
-            _ = agent.agent_editor
 
         assert agent._mcp_tools == mock_tools
-        assert access_count["count"] >= 3, (
-            f"Expected at least 3 accesses (one per agent), got {access_count['count']}"
+        assert access_count["count"] >= 2, (
+            f"Expected at least 2 accesses (one per agent), got {access_count['count']}"
         )
 
     @patch("datarobot_genai.langgraph.mcp.load_mcp_tools", new_callable=AsyncMock)

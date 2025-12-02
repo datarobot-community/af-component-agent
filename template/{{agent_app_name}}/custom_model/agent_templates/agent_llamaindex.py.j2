@@ -68,12 +68,11 @@ class MyAgent(LlamaIndexAgent):
 
     def build_workflow(self) -> AgentWorkflow:
         return AgentWorkflow(
-            agents=[self.agent_planner, self.agent_writer, self.agent_editor],
+            agents=[self.agent_planner, self.agent_writer],
             root_agent=self.agent_planner.name,
             initial_state={
                 "research_notes": {},
                 "report_content": "Not written yet.",
-                "review": "Review required.",
             },
         )
 
@@ -124,27 +123,11 @@ class MyAgent(LlamaIndexAgent):
             system_prompt=(
                 "You are the WriteAgent that can write a report on a given topic. "
                 "Your report should be in a markdown format. The content should be grounded in the research notes. "
-                "Once the report is written, you should get feedback at least once from the EditorAgent."
+                "Once the report is written, you should send the completed markdown report."
             ),
             llm=self.llm(preferred_model="datarobot/azure/gpt-4o-mini"),
             tools=[self.write_report, *self.mcp_tools],
-            can_handoff_to=["EditorAgent"],
-        )
-
-    @property
-    def agent_editor(self) -> FunctionAgent:
-        return FunctionAgent(
-            name="EditorAgent",
-            description="Useful for reviewing a report and providing feedback.",
-            system_prompt=(
-                "You are the ReviewAgent that can review the write report and provide feedback. "
-                "Your review should either approve the current report or request changes for the "
-                "WriterAgent to implement. If you have feedback that requires changes, you should ensure the "
-                "WriterAgent implements the changes after submitting the review."
-            ),
-            llm=self.llm(),
-            tools=[self.review_report, *self.mcp_tools],
-            # Editor is terminal in this simple flow; no handoff
+            # Writer is terminal in this simple flow; no handoff
         )
 
     @staticmethod
@@ -162,10 +145,3 @@ class MyAgent(LlamaIndexAgent):
         current_state["report_content"] = report_content
         await ctx.set("state", current_state)
         return "Report written."
-
-    @staticmethod
-    async def review_report(ctx: Context, review: str) -> str:
-        current_state = await ctx.get("state")
-        current_state["review"] = review
-        await ctx.set("state", current_state)
-        return "Report reviewed."
