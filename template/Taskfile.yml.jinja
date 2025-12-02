@@ -9,8 +9,9 @@ includes:
   agent:
     taskfile: ./{{ agent_app_name }}/Taskfile.yml
     dir: ./{{ agent_app_name }}
+  {% if include_taskfile_infra -%}
   # Source the infra Taskfile as flat tasks and point at the infra directory
-  {% if include_taskfile_infra -%}infra:
+  infra:
     # REMOVE YOUR INFRASTRUCTURE TASKFILE IF PRESENT
     # rm ./infra/Taskfile.yml
     taskfile: ./{{ agent_app_name }}/Taskfile_infra.yml
