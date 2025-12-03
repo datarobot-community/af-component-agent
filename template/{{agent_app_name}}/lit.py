@@ -40,7 +40,7 @@ async def on_message(message: cl.Message) -> None:
     stream = await client.chat.completions.create(
         messages=message_history,
         stream=True,
-        model="datarobot/azure/gpt-4o-mini",
+        model="datarobot/azure/gpt-5-mini-2025-08-07",
     )
     async for part in stream:
         if token := part.choices[0].delta.content or "":

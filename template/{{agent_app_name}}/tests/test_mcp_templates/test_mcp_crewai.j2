@@ -37,7 +37,7 @@ def crewai_common_mocks():
     ):
         mock_llm_call.return_value = "mock-response"
         mock_llm_instance = MagicMock()
-        mock_llm_instance.model = "datarobot/azure/gpt-4o-mini"
+        mock_llm_instance.model = "datarobot/azure/gpt-5-mini-2025-08-07"
         mock_llm_instance.api_key = "mock-api-key"
         mock_llm_instance.base_url = "https://mock-llm/api"
         mock_llm_method.return_value = mock_llm_instance

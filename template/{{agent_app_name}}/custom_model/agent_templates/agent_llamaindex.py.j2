@@ -111,7 +111,7 @@ class MyAgent(LlamaIndexAgent):
                 "WriterAgent to write a report on the topic. You should have at least some notes on a topic "
                 "before handing off control to the WriterAgent."
             ),
-            llm=self.llm(preferred_model="datarobot/azure/gpt-4o-mini"),
+            llm=self.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07"),
             tools=[self.record_notes, *self.mcp_tools],
             can_handoff_to=["WriterAgent"],
         )
@@ -126,7 +126,7 @@ class MyAgent(LlamaIndexAgent):
                 "Your report should be in a markdown format. The content should be grounded in the research notes. "
                 "Once the report is written, you should get feedback at least once from the EditorAgent."
             ),
-            llm=self.llm(preferred_model="datarobot/azure/gpt-4o-mini"),
+            llm=self.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07"),
             tools=[self.write_report, *self.mcp_tools],
             can_handoff_to=["EditorAgent"],
         )
