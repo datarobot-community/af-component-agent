@@ -336,6 +336,10 @@ def test_custom_model_created_pinned_version_id(monkeypatch):
     monkeypatch.setenv(
         "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID", "690cd2f698419673f938f7c4"
     )
+    monkeypatch.setattr(
+        "pulumi_datarobot.ExecutionEnvironment",
+        MagicMock(return_value=MagicMock(version_id="690cd2f698419673f938f7c4"))
+    )
 
     import importlib
     import infra.{{agent_app_name}} as agent_infra
@@ -348,6 +352,12 @@ def test_custom_model_created_pinned_version_id(monkeypatch):
     }
     with patch.dict(os.environ, environment_variables):
         importlib.reload(agent_infra)
+
+    agent_infra.pulumi_datarobot.ExecutionEnvironment.get.assert_called_once()
+    args, kwargs = agent_infra.pulumi_datarobot.ExecutionEnvironment.get.call_args
+
+    assert kwargs["id"] == "python-311-genai-agents-id"
+    assert kwargs["version_id"] == "690cd2f698419673f938f7c4"
 
     agent_infra.pulumi_datarobot.CustomModel.assert_called_once()
     args, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
