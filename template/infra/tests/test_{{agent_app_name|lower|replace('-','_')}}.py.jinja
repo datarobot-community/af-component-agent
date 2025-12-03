@@ -202,7 +202,7 @@ def test_execution_environment_default_set(monkeypatch):
     args, kwargs = agent_infra.pulumi_datarobot.ExecutionEnvironment.get.call_args
 
     assert kwargs["id"] == "python-311-genai-agents-id"
-    assert kwargs["version_id"] is None
+    assert kwargs["version_id"] == ""
     assert kwargs["resource_name"] == "[unittest] [{{agent_app_name}}] Execution Environment"
 
     # ExecutionEnvironment constructor should not be called when using default env
@@ -230,7 +230,7 @@ def test_execution_environment_pinned_set(monkeypatch):
         "Using default GenAI Agentic Execution Environment."
     )
     agent_infra.pulumi.info.assert_any_call(
-        "Using existing execution environment: [DataRobot] Python 3.11 GenAI Agents Version ID: 690cd2f698419673f938f7c4"
+        "Using existing execution environment: python-311-genai-agents-id Version ID: 690cd2f698419673f938f7c4"
     )
 
     # Check that ExecutionEnvironment.get was called with the correct parameters
@@ -269,7 +269,7 @@ def test_execution_environment_custom_set(monkeypatch):
     args, kwargs = agent_infra.pulumi_datarobot.ExecutionEnvironment.get.call_args
 
     assert kwargs["id"] == "Custom Execution Environment"
-    assert kwargs["version_id"] is None
+    assert kwargs["version_id"] == ""
     assert kwargs["resource_name"] == "[unittest] [{{agent_app_name}}] Execution Environment"
 
     # ExecutionEnvironment constructor should not be called when using custom env
