@@ -287,13 +287,15 @@ if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
     if DEFAULT_EXECUTION_ENVIRONMENT in execution_environment_id:
         pulumi.info("Using default GenAI Agentic Execution Environment.")
         execution_environment_id = RuntimeEnvironments.PYTHON_311_GENAI_AGENTS.value.id
-    
+
     # Get the pinned version ID if provided
     execution_environment_version_id = os.environ.get(
         "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID", ""
     )
     if not re.match("^[a-f\d]{24}$", execution_environment_version_id):
-        pulumi.info("No valid execution environment version ID provided, using latest version.")
+        pulumi.info(
+            "No valid execution environment version ID provided, using latest version."
+        )
         execution_environment_version_id = ""
 
     pulumi.info(
@@ -302,7 +304,7 @@ if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
         + " Version ID: "
         + execution_environment_version_id
     )
-    
+
     {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
         id=execution_environment_id,
         version_id=execution_environment_version_id,
