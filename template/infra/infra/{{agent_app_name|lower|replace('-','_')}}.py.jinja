@@ -283,24 +283,26 @@ pulumi.info("NOTE: [unknown] values will be populated after performing an update
 # Start of Pulumi settings and application infrastructure
 if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
     # Get the default execution environment from environment variable
-    pinned_environment_id = os.environ[
-        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT"
-    ]
-    if DEFAULT_EXECUTION_ENVIRONMENT in pinned_environment_id:
+    execution_environment_id = os.environ["DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT"]
+    if DEFAULT_EXECUTION_ENVIRONMENT in execution_environment_id:
+        pulumi.info("Using default GenAI Agentic Execution Environment.")
         execution_environment_id = RuntimeEnvironments.PYTHON_311_GENAI_AGENTS.value.id
-
-
-    pinned_version_id = os.environ.get(
+    
+    # Get the pinned version ID if provided
+    execution_environment_version_id = os.environ.get(
         "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID", ""
     )
-    if pinned_version_id and re.match("^[a-f\d]{24}$", pinned_version_id):
-        execution_environment_version_id = pinned_version_id
+    if not re.match("^[a-f\d]{24}$", execution_environment_version_id):
+        pulumi.info("No valid execution environment version ID provided, using latest version.")
+        execution_environment_version_id = ""
 
     pulumi.info(
-        "Using existing execution environment Name: " +
-        pinned_environment_id + " [" + execution_environment_id +
-        "] Version ID: " + pinned_version_id
+        "Using existing execution environment: "
+        + execution_environment_id
+        + " Version ID: "
+        + execution_environment_version_id
     )
+    
     {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
         id=execution_environment_id,
         version_id=execution_environment_version_id,
