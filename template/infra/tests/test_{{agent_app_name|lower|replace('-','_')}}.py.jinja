@@ -338,7 +338,7 @@ def test_custom_model_created_pinned_version_id(monkeypatch):
     )
     monkeypatch.setattr(
         "pulumi_datarobot.ExecutionEnvironment",
-        MagicMock(return_value=MagicMock(version_id="690cd2f698419673f938f7c4")),
+        MagicMock(return_value=MagicMock(id="default-id", version_id="690cd2f698419673f938f7c4")),
     )
 
     import importlib
@@ -355,6 +355,7 @@ def test_custom_model_created_pinned_version_id(monkeypatch):
 
     agent_infra.pulumi_datarobot.CustomModel.assert_called_once()
     args, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
+    assert kwargs["base_environment_id"] == "default-id"
     assert kwargs["base_environment_version_id"] == "690cd2f698419673f938f7c4"
 
 
