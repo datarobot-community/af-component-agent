@@ -360,7 +360,6 @@ class TestMyAgentCrewAI:
         with (
             patch.object(MyAgent, "task_plan"),
             patch.object(MyAgent, "task_write"),
-            patch.object(MyAgent, "task_edit"),
             patch(
                 "datarobot_genai.crewai.agent.create_pipeline_interactions_from_messages",
                 return_value=MultiTurnSample(user_input=events),
