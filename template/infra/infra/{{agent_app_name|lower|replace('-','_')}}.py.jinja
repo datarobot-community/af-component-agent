@@ -56,7 +56,6 @@ EXCLUDE_PATTERNS = [
 __all__ = [
     "{{agent_app_name}}_application_name",
     "{{agent_app_name}}_application_path",
-    "{{agent_app_name}}_execution_environment_id",
     "{{agent_app_name}}_prediction_environment",
     "{{agent_app_name}}_custom_model",
     "{{agent_app_name}}_agent_deployment_id",
@@ -283,27 +282,30 @@ pulumi.info("NOTE: [unknown] values will be populated after performing an update
 
 # Start of Pulumi settings and application infrastructure
 if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
-    {{agent_app_name}}_execution_environment_id = os.environ[
+    # Get the default execution environment from environment variable
+    pinned_environment_id = os.environ[
         "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT"
     ]
+    if DEFAULT_EXECUTION_ENVIRONMENT in pinned_environment_id:
+        execution_environment_id = RuntimeEnvironments.PYTHON_311_GENAI_AGENTS.value.id
 
-    if DEFAULT_EXECUTION_ENVIRONMENT in {{agent_app_name}}_execution_environment_id:
-        pulumi.info(
-            "Using default GenAI Agents execution environment "
-            + {{agent_app_name}}_execution_environment_id
-        )
-        {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
-            id=RuntimeEnvironments.PYTHON_311_GENAI_AGENTS.value.id,
-            resource_name={{agent_app_name}}_asset_name + " Execution Environment",
-        )
-    else:
-        pulumi.info(
-            "Using existing execution environment " + {{agent_app_name}}_execution_environment_id
-        )
-        {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
-            id={{agent_app_name}}_execution_environment_id,
-            resource_name={{agent_app_name}}_asset_name + " Execution Environment",
-        )
+
+    pinned_version_id = os.environ.get(
+        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID", ""
+    )
+    if pinned_version_id and re.match("^[a-f\d]{24}$", pinned_version_id):
+        execution_environment_version_id = pinned_version_id
+
+    pulumi.info(
+        "Using existing execution environment Name: " +
+        pinned_environment_id + " [" + execution_environment_id +
+        "] Version ID: " + pinned_version_id
+    )
+    {{agent_app_name}}_execution_environment = pulumi_datarobot.ExecutionEnvironment.get(
+        id=execution_environment_id,
+        version_id=execution_environment_version_id,
+        resource_name={{agent_app_name}}_asset_name + " Execution Environment",
+    )
 else:
     {{agent_app_name}}_exec_env_use_cases = ["customModel", "notebook"]
     if os.path.exists(
@@ -357,15 +359,6 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
         ),
     )
 
-base_environment_version_id: str | pulumi.Output[str] = (
-    {{agent_app_name}}_execution_environment.version_id
-)
-pinned_version_id = os.environ.get(
-    "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID", ""
-)
-if pinned_version_id and re.match("^[a-f\d]{24}$", pinned_version_id):
-    base_environment_version_id = pinned_version_id
-
 {{agent_app_name}}_custom_model_files = get_custom_model_files(
     custom_model_folder=str(os.path.join(str({{agent_app_name}}_application_path), "custom_model")),
     runtime_parameter_values=agent_runtime_parameter_values,
@@ -375,7 +368,7 @@ if pinned_version_id and re.match("^[a-f\d]{24}$", pinned_version_id):
     resource_name={{agent_app_name}}_asset_name + " Custom Model",
     name={{agent_app_name}}_asset_name + " Custom Model",
     base_environment_id={{agent_app_name}}_execution_environment.id,
-    base_environment_version_id=base_environment_version_id,
+    base_environment_version_id={{agent_app_name}}_execution_environment.version_id,
     target_type="AgenticWorkflow",
     target_name="response",
     language="python",
