@@ -39,7 +39,7 @@ jobs:
         if: steps.setup-cache.outputs.cache-hit != 'true'
         uses: ./.github/actions/render-copier-instance
         with:
-          copier-args: '--defaults'
+          copier-args: '--defaults --data include_taskfile_infra=yes'
       - name: Setup infra files and install dependencies
         shell: sh
         working-directory: ./rendered
