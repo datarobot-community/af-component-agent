@@ -23,10 +23,10 @@ from datarobot_genai.crewai.events import CrewAIEventListener
 
 
 class MyAgent(CrewAIAgent):
-    """MyAgent is a custom agent that uses CrewAI to plan, write, and edit content.
+    """MyAgent is a custom agent that uses CrewAI to plan and write content.
     It utilizes DataRobot's LLM Gateway or a specific deployment for language model interactions.
-    This example illustrates 3 agents that handle content creation tasks, including planning, writing,
-    and editing blog posts.
+    This example illustrates 2 agents that handle content creation tasks, including planning and writing
+    blog posts.
     """
 
     def __init__(
@@ -108,11 +108,11 @@ class MyAgent(CrewAIAgent):
 
     @property
     def agents(self) -> List[Agent]:
-        return [self.agent_planner, self.agent_writer, self.agent_editor]
+        return [self.agent_planner, self.agent_writer]
 
     @property
     def tasks(self) -> List[Task]:
-        return [self.task_plan, self.task_write, self.task_edit]
+        return [self.task_plan, self.task_write]
 
     @property
     def agent_planner(self) -> Agent:
@@ -148,22 +148,6 @@ class MyAgent(CrewAIAgent):
         )
 
     @property
-    def agent_editor(self) -> Agent:
-        """Editor agent."""
-        return Agent(
-            role="Editor",
-            goal="Edit a given blog post to align with the writing style of the organization.",
-            backstory="You are an editor who receives a blog post from the Content Writer. Your goal is to review "
-            "the blog post to ensure that it follows journalistic best practices, provides balanced viewpoints "
-            "when providing opinions or assertions, and also avoids major controversial topics or opinions when "
-            "possible.",
-            allow_delegation=False,
-            verbose=self.verbose,
-            llm=self.llm(),
-            tools=self.mcp_tools,
-        )
-
-    @property
     def task_plan(self) -> Task:
         return Task(
             description=(
@@ -191,15 +175,4 @@ class MyAgent(CrewAIAgent):
             expected_output="A well-written blog post in markdown format, ready for publication, each section should "
             "have 2 or 3 paragraphs.",
             agent=self.agent_writer,
-        )
-
-    @property
-    def task_edit(self) -> Task:
-        return Task(
-            description=(
-                "Proofread the given blog post for grammatical errors and alignment with the brand's voice."
-            ),
-            expected_output="A well-written blog post in markdown format, ready for publication, each section should "
-            "have 2 or 3 paragraphs.",
-            agent=self.agent_editor,
         )

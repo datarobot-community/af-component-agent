@@ -16,7 +16,7 @@ functions:
     _type: chat_completion
     llm_name: datarobot_llm
     system_prompt: |
-      You are a content planner. You are working with an content writer and editor colleague.
+      You are a content planner. You are working with an content writer colleague.
 
       You're working on planning a blog article about the topic.
       You collect information that helps the audience learn something and make informed decisions.
@@ -33,7 +33,7 @@ functions:
     _type: chat_completion
     llm_name: datarobot_llm
     system_prompt: |
-      You are a content writer. You are working with an planner and editor colleague.
+      You are a content writer. You are working with an planner colleague.
 
       You're working on writing a new opinion piece about the topic.
       You base your writing on the work of the Content Planner, who provides an outline
@@ -50,25 +50,10 @@ functions:
 
       Write insightful and factually accurate opinion piece about the topic.
       You must create a well-written blog post in markdown format, ready for publication, each section should have 2 or 3 paragraphs.
-  editor:
-    _type: chat_completion
-    llm_name: datarobot_llm
-    system_prompt: |
-      You are a content editor. You are working with an planner and writer colleague.
-
-      You are an editor who receives a blog post from the Content Writer.
-      Your goal is to review the blog post to ensure that it follows journalistic best practices,
-      provides balanced viewpoints when providing opinions or assertions,
-      and also avoids major controversial topics or opinions when possible.
-
-      Proofread the given blog post for grammatical errors and alignment with the brand's voice.
-
-      Edit a given blog post to align with the writing style of the organization.
-      You must create a well-written blog post in markdown format, ready for publication, each section should have 2 or 3 paragraphs.
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
     temperature: 0.0
 workflow:
   _type: sequential_executor
-  tool_list: [planner, writer, editor]
+  tool_list: [planner, writer]

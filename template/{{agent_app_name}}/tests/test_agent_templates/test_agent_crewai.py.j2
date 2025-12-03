@@ -290,22 +290,6 @@ class TestMyAgentCrewAI:
                 tools=ANY,
             )
 
-    @patch("agent.Agent")
-    def test_agent_editor_property(self, mock_agent, agent):
-        # Mock the llm property
-        mock_llm = Mock()
-        with patch.object(MyAgent, "llm", return_value=mock_llm):
-            agent.agent_editor
-            mock_agent.assert_called_once_with(
-                role="Editor",
-                goal=ANY,
-                backstory=ANY,
-                allow_delegation=False,
-                verbose=True,
-                llm=ANY,
-                tools=ANY,
-            )
-
     @patch("agent.Task")
     def test_task_plan_property(self, mock_task, agent):
         # Mock the agent_planner property
@@ -324,18 +308,6 @@ class TestMyAgentCrewAI:
         mock_planner = Mock()
         with patch.object(MyAgent, "agent_writer", return_value=mock_planner):
             agent.task_write
-            mock_task.assert_called_once_with(
-                description=ANY,
-                expected_output=ANY,
-                agent=ANY,
-            )
-
-    @patch("agent.Task")
-    def test_task_edit_property(self, mock_task, agent):
-        # Mock the agent_planner property
-        mock_planner = Mock()
-        with patch.object(MyAgent, "agent_editor", return_value=mock_planner):
-            agent.task_edit
             mock_task.assert_called_once_with(
                 description=ANY,
                 expected_output=ANY,
@@ -388,7 +360,6 @@ class TestMyAgentCrewAI:
         with (
             patch.object(MyAgent, "task_plan"),
             patch.object(MyAgent, "task_write"),
-            patch.object(MyAgent, "task_edit"),
             patch(
                 "datarobot_genai.crewai.agent.create_pipeline_interactions_from_messages",
                 return_value=MultiTurnSample(user_input=events),
@@ -456,37 +427,14 @@ class TestMyAgentMCPIntegration:
         writer = agent.agent_writer
         assert writer.tools == mock_tools
 
-    def test_agent_editor_with_mcp_tools(self, agent):
-        """Test that editor agent uses MCP tools when configured."""
-        from crewai.tools import BaseTool
-
-        # Create mock MCP tools
-        class MockTool(BaseTool):
-            name: str = "test_mcp_tool"
-            description: str = "Test MCP tool"
-
-            def _run(self, **kwargs):
-                return "mcp_result"
-
-        mock_tools = [MockTool()]
-
-        # Set MCP tools using the new method
-        agent.set_mcp_tools(mock_tools)
-
-        # Test editor agent
-        editor = agent.agent_editor
-        assert editor.tools == mock_tools
-
     def test_agent_with_no_mcp_tools(self, agent):
         """Test that agents work when no MCP tools are available."""
         # Test all agents have no tools by default
         planner = agent.agent_planner
         writer = agent.agent_writer
-        editor = agent.agent_editor
 
         assert planner.tools == []
         assert writer.tools == []
-        assert editor.tools == []
 
     def test_agent_with_specific_mcp_tools(self, agent):
         """Test that agents can use specific MCP tools."""
@@ -565,24 +513,3 @@ class TestMyAgentMCPIntegration:
         # Test writer agent
         writer = agent.agent_writer
         assert writer.tools == mock_tools
-
-    def test_agent_editor_all_tools(self, agent):
-        """Test that editor agent gets all available tools."""
-        from crewai.tools import BaseTool
-
-        # Create mock tools
-        class Tool1(BaseTool):
-            name: str = "tool1"
-            description: str = "Tool 1"
-
-            def _run(self, **kwargs):
-                return "result1"
-
-        mock_tools = [Tool1()]
-
-        # Set MCP tools using the new method
-        agent.set_mcp_tools(mock_tools)
-
-        # Test editor agent
-        editor = agent.agent_editor
-        assert editor.tools == mock_tools
