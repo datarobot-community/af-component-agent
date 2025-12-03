@@ -200,82 +200,43 @@ def maybe_import_from_module(module: str, object_name: str) -> Optional[Any]:
         return None
 
 
-def get_mcp_runtime_parameters_from_env() -> list[
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs
-]:
-    mcp_runtime_parameters: list[
-        pulumi_datarobot.CustomModelRuntimeParameterValueArgs
-    ] = []
-
-    # Add MCP runtime parameters if configured
-    if os.environ.get("MCP_DEPLOYMENT_ID"):
-        mcp_deployment_id = os.environ["MCP_DEPLOYMENT_ID"]
-        mcp_runtime_parameters.append(
-            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-                key="MCP_DEPLOYMENT_ID",
-                type="string",
-                value=mcp_deployment_id,
-            )
-        )
-        pulumi.info(f"MCP configured with DataRobot MCP Server: {mcp_deployment_id}")
-
-    # Allow external mcp server. Currently, code will use MCP_DEPLOYMENT_ID first and if that is empty
-    # then use the EXTERNAL_MCP_URL
-    if os.environ.get("EXTERNAL_MCP_URL"):
-        external_mcp_url = os.environ["EXTERNAL_MCP_URL"].rstrip("/")
-        mcp_runtime_parameters.append(
-            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-                key="EXTERNAL_MCP_URL",
-                type="string",
-                value=external_mcp_url,
-            )
-        )
-        pulumi.info(f"MCP configured with external server: {external_mcp_url}")
-
-    # Add optional EXTERNAL_MCP_HEADERS
-    external_mcp_headers = os.environ.get("EXTERNAL_MCP_HEADERS")
-    if external_mcp_headers:
-        mcp_runtime_parameters.append(
-            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-                key="EXTERNAL_MCP_HEADERS",
-                type="string",
-                value=external_mcp_headers,
-            )
-        )
-        pulumi.info(f"External MCP configured with headers: {external_mcp_headers}")
-
-    # Add optional EXTERNAL_MCP_TRANSPORT parameter
-    external_mcp_transport = os.environ.get("EXTERNAL_MCP_TRANSPORT")
-    if external_mcp_transport:
-        external_mcp_transport = os.environ["EXTERNAL_MCP_TRANSPORT"]
-        mcp_runtime_parameters.append(
-            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-                key="EXTERNAL_MCP_TRANSPORT",
-                type="string",
-                value=external_mcp_transport,
-            )
-        )
-        pulumi.info(f"External MCP configured with transport: {external_mcp_transport}")
-
-    return mcp_runtime_parameters
-
-
-def get_mcp_custom_model_runtime_parameters() -> list[
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs
-]:
+def export_mcp_parameters():
     """
-    Load MCP runtime parameters from the MCP Deployment module if available,
-    otherwise fall back to environment variables.
+    Export MCP parameters to Pulumi outputs from the MCP Deployment module if available.
+    Otherwise, fall back to environment variables.
     """
+
     mcp_module = "{{ _external_data.fastmcp.fastmcp_app_name }}"
 
     mcp_params = maybe_import_from_module(
         mcp_module, "mcp_custom_model_runtime_parameters"
     )
     if mcp_params is not None:
-        return mcp_params
+        for mcp_param in mcp_params:
+            pulumi.export(mcp_param.key, mcp_param.value)
+        return
 
-    return get_mcp_runtime_parameters_from_env()
+    # Add MCP runtime parameters if configured
+    if mcp_deployment_id := os.environ.get("MCP_DEPLOYMENT_ID"):
+        pulumi.export("MCP_DEPLOYMENT_ID", mcp_deployment_id)
+        pulumi.info(f"MCP configured with DataRobot MCP Server: {mcp_deployment_id}")
+
+    # Allow external mcp server. Currently, code will use MCP_DEPLOYMENT_ID first and if that is empty
+    # then use the EXTERNAL_MCP_URL
+    if os.environ.get("EXTERNAL_MCP_URL"):
+        external_mcp_url = os.environ["EXTERNAL_MCP_URL"].rstrip("/")
+        pulumi.export("EXTERNAL_MCP_URL", external_mcp_url)
+        pulumi.info(f"MCP configured with external server: {external_mcp_url}")
+
+    # Add optional EXTERNAL_MCP_HEADERS
+    if external_mcp_headers := os.environ.get("EXTERNAL_MCP_HEADERS"):
+        pulumi.export("EXTERNAL_MCP_HEADERS", external_mcp_headers)
+        pulumi.info(f"External MCP configured with headers: {external_mcp_headers}")
+
+    # Add optional EXTERNAL_MCP_TRANSPORT parameter
+    if external_mcp_transport := os.environ.get("EXTERNAL_MCP_TRANSPORT"):
+        pulumi.export("EXTERNAL_MCP_TRANSPORT", external_mcp_transport)
+        pulumi.info(f"External MCP configured with transport: {external_mcp_transport}")
 
 
 synchronize_pyproject_dependencies()
@@ -338,7 +299,7 @@ else:
 # Prepare runtime parameters for agent custom model deployment
 agent_runtime_parameter_values: list[
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs
-] = [] + llm_custom_model_runtime_parameters + get_mcp_custom_model_runtime_parameters()
+] = [] + llm_custom_model_runtime_parameters
 
 # Handle session secret key credential
 SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
@@ -365,6 +326,9 @@ pinned_version_id = os.environ.get(
 )
 if pinned_version_id and re.match("^[a-f\d]{24}$", pinned_version_id):
     base_environment_version_id = pinned_version_id
+
+# Export MCP parameters to Pulumi outputs if configured
+export_mcp_parameters()
 
 {{agent_app_name}}_custom_model_files = get_custom_model_files(
     custom_model_folder=str(os.path.join(str({{agent_app_name}}_application_path), "custom_model")),
