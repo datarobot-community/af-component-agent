@@ -36,6 +36,11 @@ agent_template_framework:
     - nat
   when: "{{not use_low_code_interface}}"
 
+include_taskfile_infra:
+  type: bool
+  help: "Include agent-specific Taskfile infrastructure for development and deployment?"
+  default: no
+
 base_answers_file:
   type: str
   default: ".datarobot/answers/base.yml"
