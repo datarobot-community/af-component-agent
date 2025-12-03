@@ -158,9 +158,9 @@ class TestMyAgentLlamaIndex:
             agent = MyAgent(api_base=api_base)
             agent.config.use_datarobot_llm_gateway = True
             # We're using the LLM Gateway, it should use the preferred_model
-            _ = agent.llm(preferred_model="datarobot/azure/gpt-4o-mini")
+            _ = agent.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07")
             mock_llm.assert_called_once_with(
-                model="datarobot/azure/gpt-4o-mini",
+                model="datarobot/azure/gpt-5-mini-2025-08-07",
                 api_base=expected_result,
                 api_key=None,
                 timeout=90,
@@ -225,10 +225,10 @@ class TestMyAgentLlamaIndex:
         with patch.dict(os.environ, {"{{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEPLOYMENT_ID": "test-id"}, clear=True):
             agent = MyAgent(api_base=api_base)
             # We have a deployment, it should override the preferred_model
-            _ = agent.llm(preferred_model="datarobot/azure/gpt-4o-mini")
+            _ = agent.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07")
 
             mock_llm.assert_called_once_with(
-                model="datarobot/azure/gpt-4o-mini",
+                model="datarobot/azure/gpt-5-mini-2025-08-07",
                 api_base=expected_result,
                 api_key=None,
                 timeout=90,

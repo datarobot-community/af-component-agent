@@ -33,7 +33,7 @@ class Config(DataRobotAppFrameworkBaseSettings):
     """
 
     {{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id: str | None = None
-    {{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model: str = "datarobot/azure/gpt-4o-mini"
+    {{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model: str = "datarobot/azure/gpt-5-mini-2025-08-07"
     use_datarobot_llm_gateway: bool = False
     mcp_deployment_id: str | None = None
     external_mcp_url: str | None = None
