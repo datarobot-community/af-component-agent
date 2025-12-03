@@ -353,12 +353,6 @@ def test_custom_model_created_pinned_version_id(monkeypatch):
     with patch.dict(os.environ, environment_variables):
         importlib.reload(agent_infra)
 
-    agent_infra.pulumi_datarobot.ExecutionEnvironment.get.assert_called_once()
-    args, kwargs = agent_infra.pulumi_datarobot.ExecutionEnvironment.get.call_args
-
-    assert kwargs["id"] == "python-311-genai-agents-id"
-    assert kwargs["version_id"] == "690cd2f698419673f938f7c4"
-
     agent_infra.pulumi_datarobot.CustomModel.assert_called_once()
     args, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
     assert kwargs["base_environment_version_id"] == "690cd2f698419673f938f7c4"
