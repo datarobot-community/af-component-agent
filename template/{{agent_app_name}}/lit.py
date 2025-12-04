@@ -22,7 +22,7 @@ config = Config()
 client = AsyncOpenAI(base_url=config.agent_endpoint, api_key="empty")
 
 
-@cl.on_chat_start  # type: ignore[untyped-decorator]
+@cl.on_chat_start
 def start_chat() -> None:
     cl.user_session.set(
         "message_history",
@@ -30,7 +30,7 @@ def start_chat() -> None:
     )
 
 
-@cl.on_message  # type: ignore[untyped-decorator]
+@cl.on_message
 async def on_message(message: cl.Message) -> None:
     message_history = cl.user_session.get("message_history")
     message_history.append({"role": "user", "content": message.content})
