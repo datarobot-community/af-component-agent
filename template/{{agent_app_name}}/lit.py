@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# mypy: disable-error-code="ignore-without-code"
+
 import chainlit as cl
 from openai import AsyncOpenAI
 
