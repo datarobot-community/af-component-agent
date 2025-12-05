@@ -27,7 +27,7 @@ jobs:
      image: ghcr.io/astral-sh/uv:python3.11-bookworm
    steps:
      - name: Checkout
-       uses: "actions/checkout@v5"
+       uses: "actions/checkout@v6"
      - name: Render copier instance
        uses: ./.github/actions/render-copier-instance
      - name: Create docker context
@@ -92,7 +92,7 @@ jobs:
         dockerfile: [Dockerfile]
     steps:
       - name: Checkout
-        uses: "actions/checkout@v5"
+        uses: "actions/checkout@v6"
       - name: Setup caching
         uses: ./.github/actions/setup-caching
         id: setup-cache
