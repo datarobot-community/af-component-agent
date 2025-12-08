@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Install DR CLI
+        run: |
+          curl https://cli.datarobot.com/install | sh
       - name: Send notification to Slack
         if: github.event_name == 'pull_request'
         run: |
