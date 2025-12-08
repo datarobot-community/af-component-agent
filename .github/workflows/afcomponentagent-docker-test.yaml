@@ -103,6 +103,8 @@ jobs:
         uses: ./.github/actions/render-copier-instance
       - name: Create docker context
         uses: ./.github/actions/create-docker-context
+        with:
+          branch: anatolii/BUZZOK-28660
       - name: Lint Dockerfile
         uses: hadolint/hadolint-action@v3.3.0
         with:
