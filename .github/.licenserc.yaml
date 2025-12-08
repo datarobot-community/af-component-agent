@@ -45,7 +45,7 @@ header:
     # - You can temporarily list files below which will be ignored when running the tool locally.
     # - 'scratch.py'
     - "build/"
-    - "__init__.py"
+    - "**/.venv"
 
     # these files appear to have come from the Internet, and do not belong to DataRobot
     #
