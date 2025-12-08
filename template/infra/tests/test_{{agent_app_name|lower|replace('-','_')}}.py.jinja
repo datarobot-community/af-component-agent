@@ -261,7 +261,7 @@ def test_execution_environment_custom_set(monkeypatch):
         "No valid execution environment version ID provided, using latest version."
     )
     agent_infra.pulumi.info.assert_any_call(
-        "Using existing execution environment: Custom Execution Environment Version ID: "
+        "Using existing execution environment: Custom Execution Environment Version ID:"
     )
 
     # Check that ExecutionEnvironment.get was called with the correct parameters
