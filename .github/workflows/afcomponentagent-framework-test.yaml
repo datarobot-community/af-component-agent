@@ -85,7 +85,7 @@ jobs:
         shell: sh
         working-directory: ./rendered/${{ matrix.framework.agent_name }}
         run: |
-          uv sync --extra agentic_playground
+          uv sync --extra agentic_playground --extra dev
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: Run unit tests with agentic playground dependencies
