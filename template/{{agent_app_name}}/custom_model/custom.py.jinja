@@ -40,10 +40,10 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, AsyncGenerator, Iterator, Union
 
-from datarobot.models.genai.agent.auth import resolve_authorization_context
 from datarobot_genai.core.chat import (
     CustomModelChatResponse,
     CustomModelStreamingResponse,
+    resolve_authorization_context,
     to_custom_model_chat_response,
     to_custom_model_streaming_response,
 )
@@ -118,9 +118,7 @@ def chat(
     # The list of the headers to forward into the Agent and MCP Server.
     incoming_headers = kwargs.get("headers", {}) or {}
     allowed_headers = {"x-datarobot-api-token", "x-datarobot-api-key"}
-    forwarded_headers = {
-        k: v for k, v in incoming_headers.items() if k.lower() in allowed_headers
-    }
+    forwarded_headers = {k: v for k, v in incoming_headers.items() if k.lower() in allowed_headers}
     completion_create_params["forwarded_headers"] = forwarded_headers
 
     # Instantiate the agent, all fields from the completion_create_params are passed to the agent
@@ -201,9 +199,7 @@ def chat(
     # The list of the headers to forward into the Agent and MCP Server.
     incoming_headers = kwargs.get("headers", {}) or {}
     allowed_headers = {"x-datarobot-api-token", "x-datarobot-api-key"}
-    forwarded_headers = {
-        k: v for k, v in incoming_headers.items() if k.lower() in allowed_headers
-    }
+    forwarded_headers = {k: v for k, v in incoming_headers.items() if k.lower() in allowed_headers}
     completion_create_params["forwarded_headers"] = forwarded_headers
 
     # Instantiate the agent, all fields from the completion_create_params are passed to the agent
