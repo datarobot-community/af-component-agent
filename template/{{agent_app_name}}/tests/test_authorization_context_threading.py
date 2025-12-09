@@ -78,7 +78,6 @@ class TestAuthorizationContextPropagation:
         assert agent_instance.authorization_context == {}
 
 
-
 class TestHeaderForwarding:
     def test_forwarded_headers_whitelisted(
         self, mock_agent, load_model_result, completion_params
@@ -147,5 +146,3 @@ class TestHeaderForwarding:
         assert hasattr(agent_instance, "forwarded_headers")
         forwarded = agent_instance.forwarded_headers
         assert len(forwarded) == 0
-
-

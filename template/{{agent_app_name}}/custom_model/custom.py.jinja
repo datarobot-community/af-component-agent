@@ -119,7 +119,7 @@ def chat(
     incoming_headers = kwargs.get("headers", {}) or {}
     allowed_headers = {"x-datarobot-api-token", "x-datarobot-api-key"}
     forwarded_headers = {
-        k.lower(): v for k, v in incoming_headers.items() if k.lower() in allowed_headers
+        k: v for k, v in incoming_headers.items() if k.lower() in allowed_headers
     }
     completion_create_params["forwarded_headers"] = forwarded_headers
 
@@ -202,7 +202,7 @@ def chat(
     incoming_headers = kwargs.get("headers", {}) or {}
     allowed_headers = {"x-datarobot-api-token", "x-datarobot-api-key"}
     forwarded_headers = {
-        k.lower(): v for k, v in incoming_headers.items() if k.lower() in allowed_headers
+        k: v for k, v in incoming_headers.items() if k.lower() in allowed_headers
     }
     completion_create_params["forwarded_headers"] = forwarded_headers
 
