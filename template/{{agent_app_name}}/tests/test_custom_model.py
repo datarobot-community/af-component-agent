@@ -94,6 +94,8 @@ class TestCustomModel:
                 "messages": [{"role": "user", "content": '{"topic": "test"}'}],
                 "environment_var": True,
                 "stream": stream,
+                "authorization_context": {},
+                "forwarded_headers": {},
             },
         )
 

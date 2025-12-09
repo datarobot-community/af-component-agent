@@ -129,8 +129,8 @@ class TestHeaderForwarding:
         call_kwargs = mock_class.call_args[1]
         forwarded = call_kwargs["forwarded_headers"]
         assert len(forwarded) == 2
-        assert header1.lower() in forwarded
-        assert header2.lower() in forwarded
+        assert header1 in forwarded
+        assert header2 in forwarded
 
     def test_forwarded_headers_empty_when_no_headers(
         self, mock_agent, load_model_result, completion_params
