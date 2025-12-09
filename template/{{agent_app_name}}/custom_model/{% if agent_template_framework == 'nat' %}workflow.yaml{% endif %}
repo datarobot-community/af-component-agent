@@ -53,7 +53,6 @@ functions:
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
-    temperature: 0.0
 workflow:
   _type: sequential_executor
   tool_list: [planner, writer]
