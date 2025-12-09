@@ -231,6 +231,7 @@ def execute_deployment(
         deployment_id=deployment_id,
         user_prompt=user_prompt,
         completion_json=completion_json,
+        stream=stream,
     )
     if stream:
         display_response_streaming(response)
