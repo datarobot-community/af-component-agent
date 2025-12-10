@@ -23,7 +23,7 @@ from openai.types.chat import (
     ChatCompletionChunk,
 )
 
-from custom_model.config import Config
+from agentic_workflow.config import Config
 
 pass_environment = click.make_pass_decorator(AgentEnvironment)
 
