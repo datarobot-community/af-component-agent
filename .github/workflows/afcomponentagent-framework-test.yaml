@@ -30,7 +30,7 @@ jobs:
             agent_name: agent_generic_base
           - name: crewai
             agent_name: agent_crewai
-          - name: langgraph  
+          - name: langgraph
             agent_name: agent_langgraph
           - name: llamaindex
             agent_name: agent_llamaindex
@@ -38,7 +38,7 @@ jobs:
             agent_name: agent_nat
         exclude:
           - python: python3.10
-            framework: 
+            framework:
               name: nat
               agent_name: agent_nat
     steps:
@@ -75,6 +75,20 @@ jobs:
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: Run unit tests
+        shell: sh
+        working-directory: ./rendered/${{ matrix.framework.agent_name }}
+        run: |
+          uvx --from go-task-bin task test-coverage
+        env:
+          UV_CACHE_DIR: /.uv_cache
+      - name: Install agentic playground dependencies
+        shell: sh
+        working-directory: ./rendered/${{ matrix.framework.agent_name }}
+        run: |
+          uv sync --extra agentic_playground --extra dev
+        env:
+          UV_CACHE_DIR: /.uv_cache
+      - name: Run unit tests with agentic playground dependencies
         shell: sh
         working-directory: ./rendered/${{ matrix.framework.agent_name }}
         run: |

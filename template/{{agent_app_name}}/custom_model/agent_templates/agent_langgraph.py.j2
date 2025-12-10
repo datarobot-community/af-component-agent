@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from datetime import datetime
-from functools import partial
 from typing import Any
 
 from config import Config
@@ -20,12 +19,10 @@ from datarobot_genai.core.agents import (
     make_system_prompt,
 )
 from datarobot_genai.langgraph.agent import LangGraphAgent
-from langchain_core.messages import HumanMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_litellm.chat_models import ChatLiteLLM
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import create_react_agent
-from langgraph.types import Command
 
 config = Config()
 
@@ -116,9 +113,7 @@ class MyAgent(LangGraphAgent):
                 "Plan engaging and factually accurate content on the topic. You must create a comprehensive content "
                 "plan document with an outline, audience analysis, SEO keywords, and resources.",
             ),
-            post_model_hook=partial(
-                self._add_the_last_message_and_go_to_next_node, "writer_node"
-            ),
+            name="Planner Agent",
         )
 
     @property
@@ -144,26 +139,5 @@ class MyAgent(LangGraphAgent):
                 "well-written blog post in markdown format, ready for publication, each section should have 2 or 3 "
                 "paragraphs.",
             ),
-            post_model_hook=partial(
-                self._add_the_last_message_and_go_to_next_node, END
-            ),
-        )
-
-    def _add_the_last_message_and_go_to_next_node(
-        self, node_name: str, result: MessagesState
-    ) -> Command[Any]:
-        last_msg = result["messages"][-1]
-        tool_calls = getattr(last_msg, "tool_calls", [])
-        # If the agent hasn't called all the tools it wants yet, leave the execution of the
-        # graph to the langgraph engine
-        if tool_calls:
-            return Command()
-        result["messages"][-1] = HumanMessage(
-            content=result["messages"][-1].content, name=node_name
-        )
-        return Command(
-            update={
-                # share internal message history with other agents
-                "messages": result["messages"],
-            },
+            name="Writer Agent",
         )
