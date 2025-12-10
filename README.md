@@ -55,6 +55,11 @@ uvx copier update -a .datarobot/answers/agent-{ agent_app }.yml -A
 Please see the [Development Documentation](/docs/development.md).
 
 
+## Known limitations
+
+- Running the Chainlit UI from this template inside DataRobot Codespaces is currently not supported. To use Chainlit, run the template locally or in an environment where Chainlit owns the root path.
+
+
 # Get help
 
 If you encounter issues or have questions, try the following:
