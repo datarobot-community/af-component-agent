@@ -17,7 +17,7 @@
 import chainlit as cl
 from openai import AsyncOpenAI
 
-from custom_model.config import Config
+from agentic_workflow.config import Config
 
 config = Config()
 
