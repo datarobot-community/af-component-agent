@@ -641,7 +641,9 @@ name = "old-project"
         agent_infra.synchronize_pyproject_dependencies()
 
         # Check that the old files were overwritten with new content
-        assert (tmp_path / "agentic_workflow" / "pyproject.toml").read_text() == new_content
+        assert (
+            tmp_path / "agentic_workflow" / "pyproject.toml"
+        ).read_text() == new_content
         assert (
             tmp_path / "docker_context" / "pyproject.toml"
         ).read_text() == new_content
