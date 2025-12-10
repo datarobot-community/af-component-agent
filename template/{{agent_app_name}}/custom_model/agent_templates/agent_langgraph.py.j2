@@ -14,6 +14,7 @@
 from datetime import datetime
 from typing import Any
 
+from config import Config
 from datarobot_genai.core.agents import (
     make_system_prompt,
 )
@@ -23,7 +24,6 @@ from langchain_litellm.chat_models import ChatLiteLLM
 from langgraph.graph import END, START, MessagesState, StateGraph
 from langgraph.prebuilt import create_react_agent
 
-from config import Config
 
 config = Config()
 
@@ -53,7 +53,7 @@ class MyAgent(LangGraphAgent):
             [
                 (
                     "user",
-                    f"The topic is {{topic}}. Make sure you find any interesting and relevant information given the current year is {datetime.now().year}.",
+                    f"The topic is {% raw %}{{topic}}{% endraw %}. Make sure you find any interesting and relevant information given the current year is {datetime.now().year}.",
                 ),
             ]
         )
@@ -78,12 +78,12 @@ class MyAgent(LangGraphAgent):
         Returns:
             ChatLiteLLM: The model to use.
         """
-        api_base = self.litellm_api_base(config.llm_deployment_id)
+        api_base = self.litellm_api_base(config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id)
         model = preferred_model
         if preferred_model is None:
-            model = config.llm_default_model
+            model = config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
         if auto_model_override and not config.use_datarobot_llm_gateway:
-            model = config.llm_default_model
+            model = config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
         if self.verbose:
             print(f"Using model: {model}")
         return ChatLiteLLM(
