@@ -1,0 +1,32 @@
+---
+# https://taskfile.dev
+version: '3'
+env:
+  ENV: testing
+dotenv: ['.env']
+includes:
+  # Source the agent Taskfile
+  agent:
+    taskfile: ./agent/Taskfile.yml
+    dir: ./agent
+  infra:
+    taskfile: ./infra/Taskfile.yml
+    dir: ./infra
+tasks:
+  default:
+    cmds:
+      - task --list --sort none
+    silent: true
+  install:
+    cmds:
+      - task: agent:install
+      - task: infra:install
+  build:
+    cmds:
+      - task: infra:build
+  deploy:
+    cmds:
+      - task: infra:deploy
+  destroy:
+    cmds:
+      - task: infra:destroy

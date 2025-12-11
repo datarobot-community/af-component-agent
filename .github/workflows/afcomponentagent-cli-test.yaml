@@ -27,7 +27,7 @@ jobs:
         if: steps.setup-cache.outputs.cache-hit != 'true'
         uses: ./.github/actions/render-copier-instance
         with:
-          copier-args: '--defaults --data include_taskfile_infra=yes'
+          copier-args: '--defaults'
       - name: Setup infra files and install dependencies
         shell: sh
         working-directory: ./rendered
@@ -41,3 +41,4 @@ jobs:
         run: ./tests/test-cli.sh rendered
         env:
           UV_CACHE_DIR: /.uv_cache
+          BASE_RENDER_DIR: ./rendered

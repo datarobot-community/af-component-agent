@@ -26,6 +26,8 @@ runs:
           uvx copier copy . ./rendered ${{ inputs.copier-args }}
 
           # For infra testing
+          cp ./fixtures/Taskfile.yml ./rendered/Taskfile.yml
+          cp ./fixtures/infra/Taskfile.yml ./rendered/infra/Taskfile.yml
           cp ./fixtures/infra/pyproject.toml ./rendered/infra/pyproject.toml
           cp ./fixtures/infra/__init__.py ./rendered/infra/infra/__init__.py
           cp ./fixtures/infra/Pulumi.yaml ./rendered/infra/Pulumi.yaml
@@ -42,6 +44,8 @@ runs:
             uvx copier copy . ./rendered ${{ inputs.copier-args }}
 
             # For infra testing
+            cp ./fixtures/Taskfile.yml ./rendered/Taskfile.yml
+            cp ./fixtures/infra/Taskfile.yml ./rendered/infra/Taskfile.yml
             cp ./fixtures/infra/pyproject.toml ./rendered/infra/pyproject.toml
             cp ./fixtures/infra/__init__.py ./rendered/infra/infra/__init__.py
             cp ./fixtures/infra/Pulumi.yaml ./rendered/infra/Pulumi.yaml
