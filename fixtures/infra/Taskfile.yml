@@ -1,0 +1,54 @@
+---
+# https://taskfile.dev
+version: '3'
+vars:
+  UV_CMD:
+    sh: echo "uv"
+  PULUMI_STACK_COMMAND:
+    sh: echo ""
+tasks:
+  install:
+    silent: true
+    desc: 🛠️ [infra] Install infra uv dependencies
+    cmds:
+      - echo "Updating local dependencies for infra"
+      - "{{.UV_CMD}} sync --extra dev --quiet"
+  install-pulumi-plugin:
+    silent: true
+    # desc: "⬇️ Install DataRobot Pulumi plugins"
+    cmds:
+      - "{{.UV_CMD}} run pulumi plugin install resource datarobot v0.10.22 --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/v0.10.22/"
+  lint-check:
+    silent: true
+    # desc: "🧹 Check whether the codebase is linted"
+    cmds:
+      - "{{.UV_CMD}} run ruff format --check --diff ."
+      - "{{.UV_CMD}} run ruff check  --diff ."
+      - "{{.UV_CMD}} run mypy --pretty ."
+  test-coverage:
+    # Hidden to avoid showing in task list, run `task --list-all` to see it
+    # desc: 🧪 [infra] Run tests with coverage
+    cmds:
+      - echo "Running pytest on tests"
+      - "{{.UV_CMD}} run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/"
+    silent: true
+  build:
+    desc: "🔵 Deploy only playground testing resources with pulumi"
+    env:
+      AGENT_DEPLOY: 0
+    cmds:
+      - echo "[infra] Running pulumi up with [BUILD] mode"
+      - task: install-pulumi-plugin
+      - task: select-env-stack
+      - "{{.UV_CMD}} run pulumi up {{.PULUMI_STACK_COMMAND}} {{.CLI_ARGS}}"
+    silent: true
+  deploy:
+    desc: "🟢 Deploy all resources with pulumi"
+    env:
+      AGENT_DEPLOY: 1
+    cmds:
+      - echo "Running pulumi up with [DEPLOY] mode"
+      - task: install-pulumi-plugin
+      - task: select-env-stack
+      - "{{.UV_CMD}} run pulumi up {{.PULUMI_STACK_COMMAND}} {{.CLI_ARGS}}"
+    silent: true

@@ -9,6 +9,9 @@ includes:
   agent:
     taskfile: ./agent/Taskfile.yml
     dir: ./agent
+  infra:
+    taskfile: ./infra/Taskfile.yml
+    dir: ./infra
 tasks:
   default:
     desc: "ℹ️ Show all available tasks (run `task --list-all` to see hidden tasks)"
@@ -19,3 +22,13 @@ tasks:
     desc: "🛠️ Install all dependencies for agent and infra"
     cmds:
       - task: agent:install
+      - task: infra:install
+    silent: true
+    cmds:
+      - task: infra:build
+  deploy:
+    cmds:
+      - task: infra:deploy
+  destroy:
+    cmds:
+      - task: infra:destroy
