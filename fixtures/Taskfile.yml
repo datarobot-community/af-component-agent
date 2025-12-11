@@ -14,16 +14,14 @@ includes:
     dir: ./infra
 tasks:
   default:
-    desc: "ℹ️ Show all available tasks (run `task --list-all` to see hidden tasks)"
     cmds:
       - task --list --sort none
     silent: true
   install:
-    desc: "🛠️ Install all dependencies for agent and infra"
     cmds:
       - task: agent:install
       - task: infra:install
-    silent: true
+  build:
     cmds:
       - task: infra:build
   deploy:
