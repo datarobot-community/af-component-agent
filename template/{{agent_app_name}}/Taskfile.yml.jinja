@@ -200,7 +200,7 @@ tasks:
     cmds:
       - echo "Building Docker image"
       - cp pyproject.toml docker_context/pyproject.toml
-      - cd docker_context && docker build --platform linux/amd64 -f Dockerfile -t {{ agent_app_name }}:latest .
+      - cd docker_context && uv sync && docker build --platform linux/amd64 -f Dockerfile -t {{ agent_app_name }}:latest .
   build-docker-context:
     desc: 🐳 Build the Docker image
     cmds:
