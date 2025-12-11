@@ -7,8 +7,8 @@ dotenv: ['.env']
 includes:
   # Source the agent Taskfile
   agent:
-    taskfile: ./{{ agent_app_name }}/Taskfile.yml
-    dir: ./{{ agent_app_name }}
+    taskfile: ./agent/Taskfile.yml
+    dir: ./agent
 tasks:
   default:
     desc: "ℹ️ Show all available tasks (run `task --list-all` to see hidden tasks)"
