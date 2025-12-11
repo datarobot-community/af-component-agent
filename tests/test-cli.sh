@@ -57,12 +57,6 @@ if [ -n "$1" ] && [ "$1" != "$BASE_RENDER_DIR" ]; then
     echo "⚠️  tests/test-cli.sh always runs against ${BASE_RENDER_DIR}; ignoring '$1'"
 fi
 
-ls -la
-ls -la "${BASE_RENDER_DIR}"
-ls -la "${BASE_RENDER_DIR}/agent"
-ls -la "${BASE_RENDER_DIR}/infra"
-
-
 cd "${BASE_RENDER_DIR}"
 
 echo "DATAROBOT_API_TOKEN = secret" >> .env
