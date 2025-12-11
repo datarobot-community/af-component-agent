@@ -464,7 +464,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         ),
         predictions_settings=(
             pulumi_datarobot.DeploymentPredictionsSettingsArgs(
-                min_computes=0, max_computes=2
+                min_computes=0, max_computes=2, resource_bundle_id="{% if agent_template_framework == 'nat' %}cpu.large{% else %}cpu.medium{% endif %}"
             )
         ),
     )
