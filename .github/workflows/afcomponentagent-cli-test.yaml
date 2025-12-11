@@ -30,14 +30,9 @@ jobs:
           copier-args: '--defaults'
       - name: Setup infra files and install dependencies
         shell: sh
-        working-directory:
+        working-directory: ./rendered
         run: |
-          ls -la
-          ls -la ./rendered
-          ls -la ./rendered/agent_base
-          cp ./fixtures/Taskfile.yml ./rendered/agent_base/Taskfile.yml
-          cp ./fixtures/infra/Taskfile.yml ./rendered/agent_base/infra/Taskfile.yml
-          cd ./rendered/agent_base && uvx --from go-task-bin task install
+          uvx --from go-task-bin task install
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: Run CLI Tests
@@ -46,3 +41,4 @@ jobs:
         run: ./tests/test-cli.sh rendered
         env:
           UV_CACHE_DIR: /.uv_cache
+          BASE_RENDER_DIR: ./rendered

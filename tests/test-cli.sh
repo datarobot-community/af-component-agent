@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BASE_RENDER_DIR=".rendered/agent_base"
+BASE_RENDER_DIR="${BASE_RENDER_DIR:-.rendered/agent_base}"
 # Always smoke-test the CLI against the base agent:
 # - LangGraph calls ChatLiteLLM, which would try to reach a real endpoint.
 # - This script only verifies the CLI plumbing (dev server + CLI command), which is identical for all agents.
