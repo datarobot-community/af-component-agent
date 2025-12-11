@@ -5,7 +5,7 @@ description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
 {% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% elif agent_template_framework == "nat" %}requires-python = ">=3.11, <3.13"{% else %}requires-python = ">=3.10, <3.13"{% endif %}
 dependencies = [
-    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, drmcp, langgraph, llamaindex, nat, pydanticai]{% elif agent_template_framework == 'crewai' %}[crewai]{% elif agent_template_framework == 'langgraph' %}[langgraph]{% elif agent_template_framework == 'llamaindex' %}[llamaindex]{% elif agent_template_framework == 'nat' %}[nat]{% endif %}>=0.2.0,<0.3.0",
+    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, drmcp, langgraph, llamaindex, nat, pydanticai]{% elif agent_template_framework == 'crewai' %}[crewai]{% elif agent_template_framework == 'langgraph' %}[langgraph]{% elif agent_template_framework == 'llamaindex' %}[llamaindex]{% elif agent_template_framework == 'nat' %}[nat]{% endif %}>=0.2.3,<0.3.0",
     "datarobot-moderations>=11.2.4,<11.3.0",
     "datarobot-drum>=1.17.5,<1.18.0",
     "datarobot-mlops>=11.1.0",
