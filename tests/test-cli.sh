@@ -60,6 +60,7 @@ fi
 ls -la
 ls -la "${BASE_RENDER_DIR}"
 ls -la "${BASE_RENDER_DIR}/agent"
+ls -la "${BASE_RENDER_DIR}/infra"
 
 
 cd "${BASE_RENDER_DIR}"
