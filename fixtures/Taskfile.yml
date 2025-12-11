@@ -1,0 +1,21 @@
+---
+# https://taskfile.dev
+version: '3'
+env:
+  ENV: testing
+dotenv: ['.env']
+includes:
+  # Source the agent Taskfile
+  agent:
+    taskfile: ./{{ agent_app_name }}/Taskfile.yml
+    dir: ./{{ agent_app_name }}
+tasks:
+  default:
+    desc: "ℹ️ Show all available tasks (run `task --list-all` to see hidden tasks)"
+    cmds:
+      - task --list --sort none
+    silent: true
+  install:
+    desc: "🛠️ Install all dependencies for agent and infra"
+    cmds:
+      - task: agent:install
