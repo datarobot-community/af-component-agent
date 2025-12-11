@@ -32,6 +32,9 @@ jobs:
         shell: sh
         working-directory:
         run: |
+          ls -la
+          ls -la ./rendered
+          ls -la ./rendered/agent_base
           cp ./fixtures/Taskfile.yml ./rendered/agent_base/Taskfile.yml
           cp ./fixtures/infra/Taskfile.yml ./rendered/agent_base/infra/Taskfile.yml
           cd ./rendered/agent_base && uvx --from go-task-bin task install
