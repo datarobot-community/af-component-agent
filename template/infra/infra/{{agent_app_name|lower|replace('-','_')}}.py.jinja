@@ -346,28 +346,32 @@ else:
 # Prepare runtime parameters for agent custom model deployment
 agent_runtime_parameter_values: list[
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs
-] = [
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        type="numeric",
-        key="CUSTOM_MODEL_WORKERS",
-        value=2,
-    ),
+] = (
+    [
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        type="string",
-        key="DRUM_SERVER_TYPE",
-        value="gunicorn",
-    ),
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        type="string",
-        key="DRUM_GUNICORN_WORKER_CLASS",
-        value="gevent",
-    ),
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        type="numeric",
-        key="DRUM_WORKER_CONNECTIONS",
-        value="5",
-    ),
-    ] + llm_custom_model_runtime_parameters + get_mcp_custom_model_runtime_parameters()
+            type="numeric",
+            key="CUSTOM_MODEL_WORKERS",
+            value="2",
+        ),
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            type="string",
+            key="DRUM_SERVER_TYPE",
+            value="gunicorn",
+        ),
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            type="string",
+            key="DRUM_GUNICORN_WORKER_CLASS",
+            value="gevent",
+        ),
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            type="numeric",
+            key="DRUM_WORKER_CONNECTIONS",
+            value="5",
+        ),
+    ]
+    + llm_custom_model_runtime_parameters
+    + get_mcp_custom_model_runtime_parameters()
+)
 
 # Handle session secret key credential
 SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
