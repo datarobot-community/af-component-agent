@@ -379,6 +379,7 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
     base_environment_version_id={{agent_app_name}}_execution_environment.version_id,
     target_type="AgenticWorkflow",
     target_name="response",
+    resource_bundle_id="{% if agent_template_framework == 'nat' %}cpu.large{% else %}cpu.medium{% endif %}",
     language="python",
     use_case_ids=[use_case.id],
     files={{agent_app_name}}_custom_model_files,
@@ -464,7 +465,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         ),
         predictions_settings=(
             pulumi_datarobot.DeploymentPredictionsSettingsArgs(
-                min_computes=0, max_computes=2, resource_bundle_id="{% if agent_template_framework == 'nat' %}cpu.large{% else %}cpu.medium{% endif %}"
+                min_computes=0, max_computes=2
             )
         ),
     )
