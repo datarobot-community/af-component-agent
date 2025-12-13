@@ -16,7 +16,7 @@ agent_development_port:
 
 use_low_code_interface:
   type: bool
-  help: "Do you want to use low-code yaml configuration interface for your agent?"
+  help: "Do you want to use low-code YAML-based configuration (i.e. NeMo Agent Toolkit) for your agent? (default: no)"
   default: no
 
 agent_template_framework:
@@ -27,13 +27,13 @@ agent_template_framework:
     {%- else -%}
       base
     {%- endif %}
-  help: "Choose the agentic framework template to start with"
+  help: "Choose the agentic framework template to start with:"
   choices:
-    - base
-    - crewai
-    - langgraph
-    - llamaindex
-    - nat
+    Base: base
+    CrewAI: crewai
+    LangGraph: langgraph
+    LlamaIndex: llamaindex
+    "NeMo Agent Toolkit (NAT)": nat
   when: "{{not use_low_code_interface}}"
 
 base_answers_file:
