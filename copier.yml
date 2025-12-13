@@ -33,7 +33,7 @@ agent_template_framework:
     CrewAI: crewai
     LangGraph: langgraph
     LlamaIndex: llamaindex
-    "NeMo Agent Toolkit (nat)": nat
+    "NeMo Agent Toolkit (NAT)": nat
   when: "{{not use_low_code_interface}}"
 
 base_answers_file:
