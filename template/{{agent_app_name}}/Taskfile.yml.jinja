@@ -55,7 +55,7 @@ tasks:
       - echo "Linting the codebase"
       - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff check . --fix"
       - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff format ."
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run mypy --pretty ."
+      - "{% raw %}{{.UV_CMD}}{% endraw %} tool run ty@0.0.1a34 check --verbose ."
       - "{% raw %}{{.UV_CMD}}{% endraw %} run yamlfix agentic_workflow"
     silent: true
   lint-check:
@@ -67,7 +67,7 @@ tasks:
       - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff format --check --diff ."
       - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff check --diff ."
       - echo "Checking type hints"
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run mypy --pretty ."
+      - "{% raw %}{{.UV_CMD}}{% endraw %} tool run ty@0.0.1a34 check --verbose ."
     silent: true
   test:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
