@@ -20,6 +20,23 @@ tasks:
       - rm pyproject.toml
       - mv pyproject.toml.bak pyproject.toml
       - uv sync --all-extras
+
+  install-e2e:
+    desc: "Install dependencies needed to run E2E tests (prefers active venv when activated)"
+    cmds:
+      - echo "Installing E2E dependencies"
+      - |
+          if [ -n "${VIRTUAL_ENV:-}" ]; then
+            uv sync --all-extras --active
+          else
+            uv sync --all-extras
+          fi
+
+  e2e:
+    desc: "Install + run full deployment E2E (Codespaces)"
+    cmds:
+      - task: install-e2e
+      - task: test-e2e
   render-template:
     desc: "Render template"
     cmds:
@@ -244,4 +261,4 @@ tasks:
     desc: "🚀 Run full deployment E2E (Codespaces) for all agents (requires DATAROBOT_ENDPOINT + DATAROBOT_API_TOKEN)"
     cmds:
       - echo "Running full deployment E2E (all agent frameworks)"
-      - RUN_E2E=1 uv run pytest -vv -s ./tests/e2e/test_agent_e2e.py
+      - RUN_E2E=1 uv run --all-extras --active pytest -vv -s ./tests/e2e/test_agent_e2e.py
