@@ -30,8 +30,18 @@ tasks:
       - cp ./fixtures/.datarobot/answers/llm-llm.yml ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/llm-llm.yml
       - cp ./fixtures/.datarobot/answers/fastmcp-mcp_server.yml ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/fastmcp-mcp_server.yml
       - uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_template_framework={{.AGENT}} --vcs-ref=HEAD
+      # Add base component scaffolding used by our tests (Taskfiles + minimal infra entrypoint/files).
+      - cp ./fixtures/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/Taskfile.yml
+      - mkdir -p ./$RENDER_DIR/agent_{{.AGENT}}/infra
+      - cp ./fixtures/infra/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/infra/Taskfile.yml
+      # Inject minimal infra scaffolding so `pulumi up` can run in this component repo.
+      # (In a real AF project this is provided by the base/llm/mcp components.)
+      - cp ./fixtures/infra/Pulumi.yaml ./$RENDER_DIR/agent_{{.AGENT}}/infra/Pulumi.yaml
+      - cp ./fixtures/infra/__main__.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/__main__.py
       - cp ./fixtures/infra/pyproject.toml ./$RENDER_DIR/agent_{{.AGENT}}/infra/pyproject.toml
       - cp ./fixtures/infra/__init__.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/__init__.py
+      - cp ./fixtures/infra/llm.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/llm.py
+      - cp ./fixtures/infra/mcp_server.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/mcp_server.py
   install-rendered:
     desc: "Install dev"
     cmds:
@@ -229,3 +239,9 @@ tasks:
       - task: build-docker
         vars:
           AGENT: nat
+
+  test-e2e:
+    desc: "🚀 Run full deployment E2E (Codespaces) for all agents (requires DATAROBOT_ENDPOINT + DATAROBOT_API_TOKEN)"
+    cmds:
+      - echo "Running full deployment E2E (all agent frameworks)"
+      - RUN_E2E=1 uv run pytest -vv -s ./tests/e2e/test_agent_e2e.py

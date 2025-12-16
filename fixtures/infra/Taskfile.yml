@@ -5,7 +5,12 @@ vars:
   UV_CMD:
     sh: echo "uv"
   PULUMI_STACK_COMMAND:
-    sh: echo ""
+    sh: |
+      if [ -n "${PULUMI_STACK:-}" ]; then
+        echo "--stack $PULUMI_STACK"
+      else
+        echo ""
+      fi
 tasks:
   install:
     silent: true
@@ -32,6 +37,14 @@ tasks:
       - echo "Running pytest on tests"
       - "{{.UV_CMD}} run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/"
     silent: true
+  select-env-stack:
+    silent: true
+    desc: "🚂 Select (or create) Pulumi stack from PULUMI_STACK env var"
+    cmds:
+      - |
+        if [ -n "${PULUMI_STACK:-}" ]; then
+          {{.UV_CMD}} run pulumi stack select -c "$PULUMI_STACK"
+        fi
   build:
     desc: "🔵 Deploy only playground testing resources with pulumi"
     env:
@@ -51,4 +64,12 @@ tasks:
       - task: install-pulumi-plugin
       - task: select-env-stack
       - "{{.UV_CMD}} run pulumi up {{.PULUMI_STACK_COMMAND}} {{.CLI_ARGS}}"
+    silent: true
+  destroy:
+    desc: "🔴 Teardown all deployed resources with pulumi"
+    cmds:
+      - echo "Running pulumi destroy"
+      - task: install-pulumi-plugin
+      - task: select-env-stack
+      - "{{.UV_CMD}} run pulumi destroy {{.PULUMI_STACK_COMMAND}} {{.CLI_ARGS}}"
     silent: true

@@ -54,6 +54,26 @@ uvx copier update -a .datarobot/answers/agent-{ agent_app }.yml -A
 ## Developer Guide
 Please see the [Development Documentation](/docs/development.md).
 
+## Full deployment E2E (Playground Codespaces)
+
+This repo includes an **optional** end-to-end test that exercises a full lifecycle:
+**render → build → deploy → test → destroy**.
+
+- **Prereqs**: set `DATAROBOT_ENDPOINT` and `DATAROBOT_API_TOKEN` either:
+  - as environment variables in your Codespace, **or**
+  - in a local `af-component-agent/.env` file (it is gitignored via `.env*`).
+- **Run**:
+
+```bash
+cd af-component-agent
+task test-e2e
+```
+
+Notes:
+- By default the E2E test runs for **all agent frameworks** (base/crewai/langgraph/llamaindex/nat).
+- To run a subset, set `E2E_AGENT_FRAMEWORKS`, e.g. `E2E_AGENT_FRAMEWORKS=base,nat`.
+- The test uses a **local Pulumi backend** (`pulumi login --local`) and a unique stack name per run, then cleans up with `pulumi destroy` + `pulumi stack rm`.
+
 
 # Get help
 
