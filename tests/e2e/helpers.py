@@ -790,12 +790,16 @@ class AgentE2EHelper:
                 env=cleanup_env,
                 check=False,
             )
-            _run_capture(
+            fprint(f"Attempting to remove Pulumi stack: {pulumi_stack}")
+            rm_out = _run_capture(
                 ["uv", "run", "pulumi", "stack", "rm", "-f", "-y", pulumi_stack],
                 cwd=project.infra_dir,
                 env={"PULUMI_CONFIG_PASSPHRASE": ""},
                 check=False,
             )
+            if rm_out.strip():
+                fprint("Pulumi stack rm output (best-effort):")
+                fprint(rm_out.strip())
         finally:
             # Always remove rendered .env to avoid leaving credentials on disk.
             if env_file and env_file.exists():
