@@ -214,10 +214,25 @@ def render_all_selected_frameworks() -> dict[str, RenderedProject]:
 
 @dataclass(frozen=True)
 class RenderedProject:
+    agent_framework: str
     repo_root: Path
     rendered_dir: Path
     infra_dir: Path
     agent_dir: Path  # The agent subdirectory within rendered_dir
+
+
+def _validate_rendered_project(project: RenderedProject, *, expected_framework: str) -> None:
+    if project.agent_framework != expected_framework:
+        raise AssertionError(
+            "RenderedProject framework mismatch: "
+            f"expected={expected_framework!r} got={project.agent_framework!r}"
+        )
+    if not project.rendered_dir.exists():
+        raise AssertionError(f"Rendered dir missing: {project.rendered_dir}")
+    if not project.infra_dir.exists():
+        raise AssertionError(f"Rendered infra dir missing: {project.infra_dir}")
+    if not project.agent_dir.exists():
+        raise AssertionError(f"Rendered agent dir missing: {project.agent_dir}")
 
 
 def _run_capture(
@@ -331,6 +346,8 @@ def _assert_response_text_ok(
     lowered = text.lower()
     if lowered.startswith("error:") or "failed to obtain agent chat response" in lowered:
         raise AssertionError(f"{context}: agent execution returned an error:\n{_truncate(text)}")
+
+
 def _extract_id_from_url(url: str, *, marker: str) -> str:
     parts = url.strip("/").split("/")
     try:
@@ -413,6 +430,7 @@ def _render_project(*, repo_root: Path, agent_framework: str) -> RenderedProject
         raise AssertionError(f"Rendered agent dir missing: {agent_dir}")
 
     return RenderedProject(
+        agent_framework=agent_framework,
         repo_root=repo_root,
         rendered_dir=rendered_dir,
         infra_dir=infra_dir,
@@ -505,7 +523,13 @@ class AgentE2EHelper:
         self._datarobot_endpoint: str | None = None
         self._datarobot_api_token: str | None = None
 
-    def run(self, *, datarobot_endpoint: str, datarobot_api_token: str) -> None:
+    def run(
+        self,
+        *,
+        datarobot_endpoint: str,
+        datarobot_api_token: str,
+        project: RenderedProject | None = None,
+    ) -> None:
         """
         Run the full E2E test flow:
         1. Render template
@@ -537,7 +561,13 @@ class AgentE2EHelper:
         fprint(f"Pulumi stack: {pulumi_stack}")
         fprint("==================================================")
 
-        project = _render_project(repo_root=self.repo_root, agent_framework=self.agent_framework)
+        if project is None:
+            project = _render_project(
+                repo_root=self.repo_root, agent_framework=self.agent_framework
+            )
+        else:
+            _validate_rendered_project(project, expected_framework=self.agent_framework)
+            fprint(f"Using pre-rendered template at: {project.rendered_dir}")
 
         # Build extra environment variables for the rendered project
         extra_env: dict[str, str] = {
@@ -659,6 +689,11 @@ class AgentE2EHelper:
 
         snippet_chars = int(os.environ.get("E2E_RESPONSE_SNIPPET_CHARS", "50"))
         response_text = _extract_cli_response_after_wait(result)
+        if not response_text.strip():
+            raise AssertionError(
+                "Custom model execution: could not extract response text from CLI output. "
+                f"Output (truncated): {_truncate(result)}"
+            )
 
         # Validate the response (previously this step could silently "pass")
         _assert_response_text_ok(
@@ -705,7 +740,13 @@ class AgentE2EHelper:
         Verify the CLI output contains a valid OpenAI response (mirrors templates repo).
         """
         result = cast(str, cli_output)
-        json_result = result.split("Execution result:")[-1]
+        marker = "Execution result:"
+        if marker not in result:
+            raise AssertionError(
+                f"Expected CLI output to contain {marker!r} but it was missing.\n"
+                f"Output (truncated): {_truncate(result)}"
+            )
+        json_result = result.split(marker, 1)[1]
         if "CLI exited with" in json_result:
             json_result = json_result.split("CLI exited with")[0]
 

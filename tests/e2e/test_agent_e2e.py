@@ -14,69 +14,30 @@
 
 import pytest
 
-from .helpers import AgentE2EHelper
-from .helpers import require_datarobot_env
-from .helpers import require_e2e_enabled
-from .helpers import should_run_framework
+from .helpers import (
+    ALL_FRAMEWORKS,
+    AgentE2EHelper,
+    require_datarobot_env,
+    require_e2e_enabled,
+    should_run_framework,
+)
 
 
 @pytest.mark.e2e
-def test_e2e_agent_base() -> None:
+@pytest.mark.parametrize("framework", ALL_FRAMEWORKS, ids=list(ALL_FRAMEWORKS))
+def test_e2e_agent_framework(framework: str, prerender_all_agents) -> None:
     require_e2e_enabled()
-    if not should_run_framework("base"):
+    if not should_run_framework(framework):
         pytest.skip("Skipping due to E2E_AGENT_FRAMEWORKS selection")
+
     datarobot_endpoint, datarobot_api_token = require_datarobot_env()
-    AgentE2EHelper(agent_framework="base").run(
+    rendered = prerender_all_agents or {}
+    project = rendered.get(framework) if isinstance(rendered, dict) else None
+
+    AgentE2EHelper(agent_framework=framework).run(
         datarobot_endpoint=datarobot_endpoint,
         datarobot_api_token=datarobot_api_token,
-    )
-
-
-@pytest.mark.e2e
-def test_e2e_agent_crewai() -> None:
-    require_e2e_enabled()
-    if not should_run_framework("crewai"):
-        pytest.skip("Skipping due to E2E_AGENT_FRAMEWORKS selection")
-    datarobot_endpoint, datarobot_api_token = require_datarobot_env()
-    AgentE2EHelper(agent_framework="crewai").run(
-        datarobot_endpoint=datarobot_endpoint,
-        datarobot_api_token=datarobot_api_token,
-    )
-
-
-@pytest.mark.e2e
-def test_e2e_agent_langgraph() -> None:
-    require_e2e_enabled()
-    if not should_run_framework("langgraph"):
-        pytest.skip("Skipping due to E2E_AGENT_FRAMEWORKS selection")
-    datarobot_endpoint, datarobot_api_token = require_datarobot_env()
-    AgentE2EHelper(agent_framework="langgraph").run(
-        datarobot_endpoint=datarobot_endpoint,
-        datarobot_api_token=datarobot_api_token,
-    )
-
-
-@pytest.mark.e2e
-def test_e2e_agent_llamaindex() -> None:
-    require_e2e_enabled()
-    if not should_run_framework("llamaindex"):
-        pytest.skip("Skipping due to E2E_AGENT_FRAMEWORKS selection")
-    datarobot_endpoint, datarobot_api_token = require_datarobot_env()
-    AgentE2EHelper(agent_framework="llamaindex").run(
-        datarobot_endpoint=datarobot_endpoint,
-        datarobot_api_token=datarobot_api_token,
-    )
-
-
-@pytest.mark.e2e
-def test_e2e_agent_nat() -> None:
-    require_e2e_enabled()
-    if not should_run_framework("nat"):
-        pytest.skip("Skipping due to E2E_AGENT_FRAMEWORKS selection")
-    datarobot_endpoint, datarobot_api_token = require_datarobot_env()
-    AgentE2EHelper(agent_framework="nat").run(
-        datarobot_endpoint=datarobot_endpoint,
-        datarobot_api_token=datarobot_api_token,
+        project=project,
     )
 
 

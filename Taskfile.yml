@@ -258,7 +258,12 @@ tasks:
           AGENT: nat
 
   e2e:
-    desc: "🚀 Run full deployment E2E (Codespaces) for all agents (requires DATAROBOT_ENDPOINT + DATAROBOT_API_TOKEN)"
+    desc: "Run full deployment E2E (Codespaces) for all agents (requires DATAROBOT_ENDPOINT + DATAROBOT_API_TOKEN)"
     cmds:
       - echo "Running full deployment E2E (all agent frameworks)"
-      - RUN_E2E=1 uv run --all-extras --active pytest -vv -s ./tests/e2e/test_agent_e2e.py
+      - |
+          if [ -n "${VIRTUAL_ENV:-}" ]; then
+            RUN_E2E=1 uv run --all-extras --active pytest -vv -s ./tests/e2e/test_agent_e2e.py
+          else
+            RUN_E2E=1 uv run --all-extras pytest -vv -s ./tests/e2e/test_agent_e2e.py
+          fi
