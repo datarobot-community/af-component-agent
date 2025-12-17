@@ -39,7 +39,6 @@ tasks:
     silent: true
   select-env-stack:
     silent: true
-    desc: "Select (or create) Pulumi stack from PULUMI_STACK env var"
     cmds:
       - |
         if [ -n "${PULUMI_STACK:-}" ]; then
