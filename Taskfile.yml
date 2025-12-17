@@ -271,6 +271,14 @@ tasks:
     cmds:
       - echo "Running full deployment E2E (all agent frameworks)"
       - |
+          # Load local repo `.env` (gitignored) if present.
+          # Keep it scoped to E2E so credentials don't leak into unrelated tasks.
+          set -a
+          if [ -f ".env" ]; then
+            . ".env"
+          fi
+          set +a
+
           if [ -n "${VIRTUAL_ENV:-}" ]; then
             RUN_E2E=1 uv run --all-extras --active pytest --import-mode=importlib -vv -s ./tests/e2e/test_agent_e2e.py
           else
