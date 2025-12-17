@@ -21,8 +21,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-from subprocess_utils import _run_live
-from task_runner import _task_cmd
+from .subprocess_utils import _run_live
+from .task_runner import _task_cmd
 
 
 @dataclass(frozen=True)

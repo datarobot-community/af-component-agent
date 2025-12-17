@@ -24,7 +24,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from utils import _truncate
+from .utils import _truncate
 
 
 def extract_id_from_url(url: str, *, marker: str) -> str:

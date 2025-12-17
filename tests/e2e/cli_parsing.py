@@ -22,7 +22,7 @@ import json
 import os
 from typing import Any, cast
 
-from utils import _is_truthy, _response_snippet, _truncate, fprint
+from .utils import _is_truthy, _response_snippet, _truncate, fprint
 
 
 def extract_cli_response_after_wait(output: str) -> str:
@@ -62,15 +62,17 @@ def assert_response_text_ok(
     """
     Shared validation for text-only responses (e.g., custom-model CLI output).
     """
+    prefix = f"{context} [{agent_framework}]"
+
     text = (response_text or "").strip()
     if len(text) <= 5:
-        raise AssertionError(f"{context}: response too short: {text!r}")
+        raise AssertionError(f"{prefix}: response too short: {text!r}")
 
     # Templates-style: fail on actual execution errors (even if the wrapper exits 0).
     # We still allow placeholders like "Not written yet." to match recipe templates behavior.
     lowered = text.lower()
     if lowered.startswith("error:") or "failed to obtain agent chat response" in lowered:
-        raise AssertionError(f"{context}: agent execution returned an error:\n{_truncate(text)}")
+        raise AssertionError(f"{prefix}: agent execution returned an error:\n{_truncate(text)}")
 
 
 def verify_openai_response(cli_output: str) -> None:

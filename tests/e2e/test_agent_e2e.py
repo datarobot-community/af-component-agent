@@ -14,7 +14,7 @@
 
 import pytest
 
-from helpers import (  # noqa: E402
+from .helpers import (
     ALL_FRAMEWORKS,
     AgentE2EHelper,
     require_datarobot_env,

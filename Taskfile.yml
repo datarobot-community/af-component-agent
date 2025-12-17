@@ -272,7 +272,7 @@ tasks:
       - echo "Running full deployment E2E (all agent frameworks)"
       - |
           if [ -n "${VIRTUAL_ENV:-}" ]; then
-            RUN_E2E=1 uv run --all-extras --active pytest -vv -s ./tests/e2e/test_agent_e2e.py
+            RUN_E2E=1 uv run --all-extras --active pytest --import-mode=importlib -vv -s ./tests/e2e/test_agent_e2e.py
           else
-            RUN_E2E=1 uv run --all-extras pytest -vv -s ./tests/e2e/test_agent_e2e.py
+            RUN_E2E=1 uv run --all-extras pytest --import-mode=importlib -vv -s ./tests/e2e/test_agent_e2e.py
           fi

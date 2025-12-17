@@ -25,7 +25,7 @@ import subprocess
 import threading
 from pathlib import Path
 
-from utils import fprint
+from .utils import fprint
 
 
 def _cmd_timeout_seconds() -> int:

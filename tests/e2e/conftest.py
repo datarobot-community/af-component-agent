@@ -22,15 +22,10 @@ including pre-rendering all selected agent templates to catch issues early.
 from __future__ import annotations
 
 import os
-from pathlib import Path
-import sys
 
 import pytest
 
-E2E_DIR = Path(__file__).resolve().parent
-sys.path.insert(0, str(E2E_DIR))
-
-from helpers import _is_truthy, fprint, render_all_selected_frameworks, selected_frameworks  # noqa: E402
+from .helpers import _is_truthy, fprint, render_all_selected_frameworks, selected_frameworks
 
 
 @pytest.fixture(scope="session", autouse=True)

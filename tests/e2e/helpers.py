@@ -28,10 +28,10 @@ from pathlib import Path
 
 import pytest
 
-from constants import ALL_FRAMEWORKS
-from rendering import RenderedProject, render_project
-from runner import AgentE2EHelper
-from utils import _is_truthy, fprint
+from .constants import ALL_FRAMEWORKS
+from .rendering import RenderedProject, render_project
+from .runner import AgentE2EHelper
+from .utils import _is_truthy, fprint
 
 __all__ = [
     "ALL_FRAMEWORKS",

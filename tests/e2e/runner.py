@@ -27,17 +27,17 @@ import uuid
 from pathlib import Path
 from typing import Any, Callable
 
-from cli_parsing import (
+from .cli_parsing import (
     assert_response_text_ok,
     extract_cli_response_after_wait,
     verify_openai_response,
 )
-from constants import ALL_FRAMEWORKS
-from pulumi import extract_id_from_url, find_output, pulumi_stack_outputs_json
-from rendering import RenderedProject, render_project, validate_rendered_project
-from subprocess_utils import _run_capture, _run_live
-from task_runner import _task_cmd
-from utils import _is_truthy, _response_snippet, _truncate, fprint
+from .constants import ALL_FRAMEWORKS
+from .pulumi import extract_id_from_url, find_output, pulumi_stack_outputs_json
+from .rendering import RenderedProject, render_project, validate_rendered_project
+from .subprocess_utils import _run_capture, _run_live
+from .task_runner import _task_cmd
+from .utils import _is_truthy, _response_snippet, _truncate, fprint
 
 
 def _write_testing_env(
