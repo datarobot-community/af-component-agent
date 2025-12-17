@@ -1,9 +1,8 @@
 root:
-  - env: {{agent_app_name|upper}}_ENDPOINT
+  - env: {{agent_app_name|upper}}_PORT
     type: string
-    default: "http://localhost:{{ agent_development_port }}"
-    optional: true
-    help: "Enter the local endpoint to access the agent. Should have a unique port."
+    default: "8842"
+    help: "Enter the local port to access the agent. Should be a unique value."
   - env: DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT
     type: string
     default: "[DataRobot] Python 3.11 GenAI Agents"
