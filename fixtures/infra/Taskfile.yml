@@ -32,7 +32,7 @@ tasks:
       - "{{.UV_CMD}} run mypy --pretty ."
   test-coverage:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
-    # desc: [infra] Run tests with coverage
+    # desc: 🧪 [infra] Run tests with coverage
     cmds:
       - echo "Running pytest on tests"
       - "{{.UV_CMD}} run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/"
@@ -46,7 +46,7 @@ tasks:
           {{.UV_CMD}} run pulumi stack select -c $PULUMI_STACK
         fi
   build:
-    desc: "Deploy only playground testing resources with pulumi"
+    desc: "🔵 Deploy only playground testing resources with pulumi"
     env:
       AGENT_DEPLOY: 0
     cmds:
@@ -56,7 +56,7 @@ tasks:
       - "{{.UV_CMD}} run pulumi up {{.PULUMI_STACK_COMMAND}} {{.CLI_ARGS}}"
     silent: true
   deploy:
-    desc: "Deploy all resources with pulumi"
+    desc: "🟢 Deploy all resources with pulumi"
     env:
       AGENT_DEPLOY: 1
     cmds:
@@ -66,7 +66,7 @@ tasks:
       - "{{.UV_CMD}} run pulumi up {{.PULUMI_STACK_COMMAND}} {{.CLI_ARGS}}"
     silent: true
   destroy:
-    desc: "Teardown all deployed resources with pulumi"
+    desc: "🔴 Teardown all deployed resources with pulumi"
     cmds:
       - echo "Running pulumi destroy"
       - task: install-pulumi-plugin
