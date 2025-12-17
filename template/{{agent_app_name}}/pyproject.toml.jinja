@@ -135,43 +135,9 @@ docstring-code-line-length = "dynamic"
 allow_duplicate_keys = true
 line_length = 120
 
-[tool.ty.src]
-exclude = [
-    "output",
-    "docker_context",
-    "include",
-    ".venv",
-    ".cache",
-    "e2e",
-    "tests",
-]
-
-[tool.ty.src]
-exclude = [
-    "output",
-    "docker_context",
-    "include",
-    ".venv",
-    ".cache",
-    "e2e",
-    "tests",
-]
-
-[tool.mypy]
+[tool.ty]
 strict = true
 python_version = "3.11"
-plugins = "pydantic.mypy"
-exclude = """(?x)(
-    output/ # exclude files starting with "output"
-    | deployment_.*/
-    | docker_context/
-    | include/   # or files starting with "include."
-    | venv/
-    | .venv/
-    | .cache
-    | e2e/
-    | tests/
-  )"""
 check_untyped_defs = true
 disallow_any_generics = true
 disallow_incomplete_defs = true
@@ -179,8 +145,6 @@ disallow_subclassing_any = true
 disallow_untyped_calls = true
 disallow_untyped_decorators = true
 disallow_untyped_defs = true
-disable_error_code = ["typeddict-unknown-key"]
-enable_error_code = "ignore-without-code"
 implicit_reexport = true
 ignore_missing_imports = true
 no_implicit_optional = true
@@ -189,8 +153,23 @@ warn_redundant_casts = true
 warn_return_any = true
 warn_unused_configs = true
 warn_unused_ignores = true
+disable_error_code = ["typeddict-unknown-key"]
+enable_error_code = ["ignore-without-code"]
 
-[[tool.mypy.overrides]]
+[tool.ty.src]
+exclude = [
+    "output",
+    "deployment_*",
+    "docker_context",
+    "include",
+    "venv",
+    ".venv",
+    ".cache",
+    "e2e",
+    "tests",
+]
+
+[[tool.ty.overrides]]
 module = "datarobot.*"
 implicit_reexport = true
 
