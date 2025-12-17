@@ -146,6 +146,17 @@ exclude = [
     "tests",
 ]
 
+[tool.ty.src]
+exclude = [
+    "output",
+    "docker_context",
+    "include",
+    ".venv",
+    ".cache",
+    "e2e",
+    "tests",
+]
+
 [tool.mypy]
 strict = true
 python_version = "3.11"
