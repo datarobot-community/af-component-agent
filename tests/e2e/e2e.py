@@ -279,7 +279,7 @@ def pulumi_stack_outputs_json(
     IMPORTANT: keep stderr separate so uv/pulumi warnings don't break JSON parsing.
     """
     merged_env = os.environ.copy()
-    merged_env.update({"PULUMI_CONFIG_PASSPHRASE": ""})
+    merged_env.update({"PULUMI_CONFIG_PASSPHRASE": "123"})
 
     if pulumi_home is not None:
         merged_env["PULUMI_HOME"] = str(pulumi_home)
@@ -527,7 +527,7 @@ def _write_testing_env(
         "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT=Python 3.11 GenAI Agents",
         "SESSION_SECRET_KEY=test-secret-key",
         f"PULUMI_STACK={pulumi_stack}",
-        "PULUMI_CONFIG_PASSPHRASE=",
+        "PULUMI_CONFIG_PASSPHRASE=123",
         f"PULUMI_HOME={pulumi_home}",
     ]
     if extra_env:
@@ -657,7 +657,7 @@ class AgentE2EHelper:
         _run_capture(
             ["uv", "run", "pulumi", "login", "--local"],
             cwd=project.infra_dir,
-            env={"PULUMI_CONFIG_PASSPHRASE": "", "PULUMI_HOME": str(pulumi_home)},
+            env={"PULUMI_CONFIG_PASSPHRASE": "123", "PULUMI_HOME": str(pulumi_home)},
         )
 
         try:
@@ -806,7 +806,7 @@ class AgentE2EHelper:
         cleanup_env: dict[str, str] = {}
         if pulumi_stack:
             cleanup_env["PULUMI_STACK"] = pulumi_stack
-        cleanup_env["PULUMI_CONFIG_PASSPHRASE"] = ""
+        cleanup_env["PULUMI_CONFIG_PASSPHRASE"] = "123"
         if pulumi_home is not None:
             cleanup_env["PULUMI_HOME"] = str(pulumi_home)
         if datarobot_endpoint:
@@ -831,9 +831,9 @@ class AgentE2EHelper:
             _run_capture(
                 ["uv", "run", "pulumi", "cancel", "--yes", "--stack", pulumi_stack],
                 cwd=project.infra_dir,
-                env={"PULUMI_CONFIG_PASSPHRASE": "", "PULUMI_HOME": str(pulumi_home)}
+                env={"PULUMI_CONFIG_PASSPHRASE": "123", "PULUMI_HOME": str(pulumi_home)}
                 if pulumi_home is not None
-                else {"PULUMI_CONFIG_PASSPHRASE": ""},
+                else {"PULUMI_CONFIG_PASSPHRASE": "123"},
                 check=False,
             )
             _run_live(
@@ -846,9 +846,9 @@ class AgentE2EHelper:
             rm_out = _run_capture(
                 ["uv", "run", "pulumi", "stack", "rm", "-f", "-y", pulumi_stack],
                 cwd=project.infra_dir,
-                env={"PULUMI_CONFIG_PASSPHRASE": "", "PULUMI_HOME": str(pulumi_home)}
+                env={"PULUMI_CONFIG_PASSPHRASE": "123", "PULUMI_HOME": str(pulumi_home)}
                 if pulumi_home is not None
-                else {"PULUMI_CONFIG_PASSPHRASE": ""},
+                else {"PULUMI_CONFIG_PASSPHRASE": "123"},
                 check=False,
             )
             if rm_out.strip():
