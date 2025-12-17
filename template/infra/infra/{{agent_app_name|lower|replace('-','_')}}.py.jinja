@@ -294,7 +294,7 @@ if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
     execution_environment_version_id = os.environ.get(
         "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID", None
     )
-    if not re.match(r"^[a-f\d]{24}$", str(execution_environment_version_id)):
+    if not re.match("^[a-f\d]{24}$", str(execution_environment_version_id)):
         pulumi.info(
             "No valid execution environment version ID provided, using latest version."
         )

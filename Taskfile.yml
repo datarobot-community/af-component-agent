@@ -47,9 +47,16 @@ tasks:
       - cp ./fixtures/.datarobot/answers/llm-llm.yml ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/llm-llm.yml
       - cp ./fixtures/.datarobot/answers/fastmcp-mcp_server.yml ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/fastmcp-mcp_server.yml
       - uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_template_framework={{.AGENT}} --vcs-ref=HEAD
+
+  render-template-e2e:
+    desc: "Render template + inject test scaffolding used by E2E (Taskfiles + minimal infra entrypoint/files)"
+    cmds:
+      - task: render-template
+        vars:
+          AGENT: "{{.AGENT}}"
       # Add base component scaffolding used by our tests (Taskfiles + minimal infra entrypoint/files).
       - cp ./fixtures/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/Taskfile.yml
-      - mkdir -p ./$RENDER_DIR/agent_{{.AGENT}}/infra
+      - mkdir -p ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra
       - cp ./fixtures/infra/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/infra/Taskfile.yml
       # Inject minimal infra scaffolding so `pulumi up` can run in this component repo.
       # (In a real AF project this is provided by the base/llm/mcp components.)
@@ -63,7 +70,7 @@ tasks:
     desc: "Install dev"
     cmds:
       - echo "Installing dev for {{.AGENT}}"
-      - task: render-template
+      - task: render-template-e2e
         vars:
           AGENT: "{{.AGENT}}"
       - task agent:install --dir $RENDER_DIR/agent_{{.AGENT}}

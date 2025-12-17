@@ -419,7 +419,7 @@ def _render_project(*, repo_root: Path, agent_framework: str) -> RenderedProject
     agent_dir = rendered_dir / "agent"
 
     _run_live(
-        ["task", "render-template", f"AGENT={agent_framework}"],
+        ["task", "render-template-e2e", f"AGENT={agent_framework}"],
         cwd=repo_root,
         env=None,
     )
