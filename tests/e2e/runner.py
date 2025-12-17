@@ -46,6 +46,7 @@ def _write_testing_env(
     datarobot_endpoint: str,
     datarobot_api_token: str,
     pulumi_stack: str,
+    pulumi_home: Path,
     extra_env: dict[str, str] | None = None,
 ) -> Path:
     # Our test Taskfile fixture loads `.env`.
@@ -59,6 +60,7 @@ def _write_testing_env(
         "SESSION_SECRET_KEY=test-secret-key",
         f"PULUMI_STACK={pulumi_stack}",
         "PULUMI_CONFIG_PASSPHRASE=",
+        f"PULUMI_HOME={pulumi_home}",
     ]
     if extra_env:
         for k, v in extra_env.items():
@@ -122,6 +124,7 @@ class AgentE2EHelper:
         self._project: RenderedProject | None = None
         self._env_file: Path | None = None
         self._pulumi_stack: str | None = None
+        self._pulumi_home: Path | None = None
         self._datarobot_endpoint: str | None = None
         self._datarobot_api_token: str | None = None
 
@@ -180,17 +183,22 @@ class AgentE2EHelper:
         if self.agent_framework == "crewai":
             extra_env["CREWAI_TESTING"] = "true"
 
+        pulumi_home = project.rendered_dir / ".pulumi_home"
+        pulumi_home.mkdir(parents=True, exist_ok=True)
+
         env_file = _write_testing_env(
             project,
             datarobot_endpoint=datarobot_endpoint,
             datarobot_api_token=datarobot_api_token,
             pulumi_stack=pulumi_stack,
+            pulumi_home=pulumi_home,
             extra_env=extra_env,
         )
 
         self._project = project
         self._env_file = env_file
         self._pulumi_stack = pulumi_stack
+        self._pulumi_home = pulumi_home
         self._datarobot_endpoint = datarobot_endpoint
         self._datarobot_api_token = datarobot_api_token
 
@@ -198,7 +206,7 @@ class AgentE2EHelper:
         _run_capture(
             ["uv", "run", "pulumi", "login", "--local"],
             cwd=project.infra_dir,
-            env={"PULUMI_CONFIG_PASSPHRASE": ""},
+            env={"PULUMI_CONFIG_PASSPHRASE": "", "PULUMI_HOME": str(pulumi_home)},
         )
 
         try:
@@ -212,7 +220,11 @@ class AgentE2EHelper:
             )
 
             # 3. Get custom model ID from Pulumi outputs
-            outputs = pulumi_stack_outputs_json(project.infra_dir, stack=pulumi_stack)
+            outputs = pulumi_stack_outputs_json(
+                project.infra_dir,
+                stack=pulumi_stack,
+                pulumi_home=pulumi_home,
+            )
             custom_model_chat_endpoint = find_output(
                 outputs, contains="Agent Custom Model Chat Endpoint"
             )
@@ -239,7 +251,11 @@ class AgentE2EHelper:
             )
 
             # 6. Get deployment ID from Pulumi outputs
-            outputs = pulumi_stack_outputs_json(project.infra_dir, stack=pulumi_stack)
+            outputs = pulumi_stack_outputs_json(
+                project.infra_dir,
+                stack=pulumi_stack,
+                pulumi_home=pulumi_home,
+            )
             deployment_chat_endpoint = find_output(
                 outputs, contains="Agent Deployment Chat Endpoint"
             )
@@ -328,6 +344,7 @@ class AgentE2EHelper:
     def cleanup(self) -> None:
         project = self._project
         pulumi_stack = self._pulumi_stack
+        pulumi_home = self._pulumi_home
         datarobot_endpoint = self._datarobot_endpoint
         datarobot_api_token = self._datarobot_api_token
         env_file = self._env_file
@@ -336,6 +353,8 @@ class AgentE2EHelper:
         if pulumi_stack:
             cleanup_env["PULUMI_STACK"] = pulumi_stack
         cleanup_env["PULUMI_CONFIG_PASSPHRASE"] = ""
+        if pulumi_home is not None:
+            cleanup_env["PULUMI_HOME"] = str(pulumi_home)
         if datarobot_endpoint:
             cleanup_env["DATAROBOT_ENDPOINT"] = datarobot_endpoint
         if datarobot_api_token:
@@ -358,7 +377,9 @@ class AgentE2EHelper:
             _run_capture(
                 ["uv", "run", "pulumi", "cancel", "--yes", "--stack", pulumi_stack],
                 cwd=project.infra_dir,
-                env={"PULUMI_CONFIG_PASSPHRASE": ""},
+                env={"PULUMI_CONFIG_PASSPHRASE": "", "PULUMI_HOME": str(pulumi_home)}
+                if pulumi_home is not None
+                else {"PULUMI_CONFIG_PASSPHRASE": ""},
                 check=False,
             )
             _run_live(
@@ -371,7 +392,9 @@ class AgentE2EHelper:
             rm_out = _run_capture(
                 ["uv", "run", "pulumi", "stack", "rm", "-f", "-y", pulumi_stack],
                 cwd=project.infra_dir,
-                env={"PULUMI_CONFIG_PASSPHRASE": ""},
+                env={"PULUMI_CONFIG_PASSPHRASE": "", "PULUMI_HOME": str(pulumi_home)}
+                if pulumi_home is not None
+                else {"PULUMI_CONFIG_PASSPHRASE": ""},
                 check=False,
             )
             if rm_out.strip():

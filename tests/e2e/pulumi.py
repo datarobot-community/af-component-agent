@@ -38,7 +38,12 @@ def extract_id_from_url(url: str, *, marker: str) -> str:
     return parts[idx + 1]
 
 
-def pulumi_stack_outputs_json(infra_dir: Path, *, stack: str) -> dict[str, Any]:
+def pulumi_stack_outputs_json(
+    infra_dir: Path,
+    *,
+    stack: str,
+    pulumi_home: Path | None = None,
+) -> dict[str, Any]:
     """
     Read Pulumi stack outputs as JSON.
 
@@ -46,6 +51,9 @@ def pulumi_stack_outputs_json(infra_dir: Path, *, stack: str) -> dict[str, Any]:
     """
     merged_env = os.environ.copy()
     merged_env.update({"PULUMI_CONFIG_PASSPHRASE": ""})
+
+    if pulumi_home is not None:
+        merged_env["PULUMI_HOME"] = str(pulumi_home)
 
     proc = subprocess.run(
         ["uv", "run", "pulumi", "stack", "output", "--json", "--stack", stack],
