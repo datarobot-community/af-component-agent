@@ -344,7 +344,7 @@ else:
         )
 
 # Prepare runtime parameters for agent custom model deployment
-agent_runtime_parameter_values: list[
+{{agent_app_name}}_runtime_parameter_values: list[
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs
 ] = [] + llm_custom_model_runtime_parameters + get_mcp_custom_model_runtime_parameters()
 
@@ -357,13 +357,32 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
         {{agent_app_name}}_asset_name + " Session Secret Key",
         args=pulumi_datarobot.ApiTokenCredentialArgs(api_token=str(session_secret_key)),
     )
-    agent_runtime_parameter_values.append(
+    {{agent_app_name}}_runtime_parameter_values.append(
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
             type="credential",
             key=SESSION_SECRET_KEY,
             value=session_secret_cred.id,
         ),
     )
+
+# Concurrency settings
+{{agent_app_name}}_runtime_parameter_values += [
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        type="numeric",
+        key="CUSTOM_MODEL_WORKERS",
+        value="4",
+    ),
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        type="string",
+        key="DRUM_SERVER_TYPE",
+        value="gunicorn",
+    ),
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        type="string",
+        key="DRUM_GUNICORN_WORKER_CLASS",
+        value="sync",
+    ),
+]
 
 {{agent_app_name}}_custom_model_files = get_custom_model_files(
     custom_model_folder=str(
@@ -379,11 +398,11 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
     base_environment_version_id={{agent_app_name}}_execution_environment.version_id,
     target_type="AgenticWorkflow",
     target_name="response",
-    resource_bundle_id="{% if agent_template_framework == 'nat' %}cpu.large{% else %}cpu.medium{% endif %}",
+    resource_bundle_id="cpu.5xlarge",
     language="python",
     use_case_ids=[use_case.id],
     files={{agent_app_name}}_custom_model_files,
-    runtime_parameter_values=agent_runtime_parameter_values,
+    runtime_parameter_values={{agent_app_name}}_runtime_parameter_values,
 )
 
 {{agent_app_name}}_custom_model_endpoint = {{agent_app_name}}_custom_model.id.apply(
