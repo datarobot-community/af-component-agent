@@ -70,7 +70,7 @@ tasks:
     desc: "Install dev"
     cmds:
       - echo "Installing dev for {{.AGENT}}"
-      - task: render-template-e2e
+      - task: render-template
         vars:
           AGENT: "{{.AGENT}}"
       - task agent:install --dir $RENDER_DIR/agent_{{.AGENT}}

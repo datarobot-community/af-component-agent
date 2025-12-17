@@ -12,9 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+from pathlib import Path
+
 import pytest
 
-from .helpers import (
+E2E_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(E2E_DIR))
+
+from helpers import (  # noqa: E402
     ALL_FRAMEWORKS,
     AgentE2EHelper,
     require_datarobot_env,

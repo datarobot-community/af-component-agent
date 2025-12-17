@@ -41,6 +41,17 @@ def fprint(msg: str) -> None:
     print(msg, flush=True)
 
 
+def _task_base_cmd() -> list[str]:
+    """
+    Return a task runner command.
+    """
+    return ["uvx", "--from", "go-task-bin", "task"]
+
+
+def _task_cmd(*args: str) -> list[str]:
+    return _task_base_cmd() + list(args)
+
+
 def _is_truthy(value: str | None) -> bool:
     return (value or "").strip().lower() in {"1", "true", "yes", "on"}
 
@@ -147,7 +158,7 @@ def require_datarobot_env() -> tuple[str, str]:
             f"DATAROBOT_ENDPOINT looks like a placeholder ({datarobot_endpoint!r}). "
             f"Source: {source}. Set it to a real DataRobot API URL (must include '/api/v2')."
         )
-    if datarobot_endpoint.rstrip("/").endswith("/api/v2") is False:
+    if not datarobot_endpoint.rstrip("/").endswith("/api/v2"):
         pytest.fail(
             f"DATAROBOT_ENDPOINT must include '/api/v2' (got {datarobot_endpoint!r})."
         )
@@ -418,11 +429,7 @@ def _render_project(*, repo_root: Path, agent_framework: str) -> RenderedProject
     infra_dir = rendered_dir / "infra"
     agent_dir = rendered_dir / "agent"
 
-    _run_live(
-        ["task", "render-template-e2e", f"AGENT={agent_framework}"],
-        cwd=repo_root,
-        env=None,
-    )
+    _run_live(_task_cmd("render-template-e2e", f"AGENT={agent_framework}"), cwd=repo_root, env=None)
 
     if not infra_dir.exists():
         raise AssertionError(f"Rendered infra dir missing: {infra_dir}")
@@ -601,11 +608,11 @@ class AgentE2EHelper:
 
         try:
             # 1. Install dependencies
-            _run_live(["task", "install"], cwd=project.rendered_dir, env=None)
+            _run_live(_task_cmd("install"), cwd=project.rendered_dir, env=None)
 
             # 2. Build custom model
             _run_live(
-                ["task", "build", "--", "--yes", "--skip-preview"],
+                _task_cmd("build", "--", "--yes", "--skip-preview"),
                 cwd=project.rendered_dir,
                 env=None,
             )
@@ -634,7 +641,7 @@ class AgentE2EHelper:
 
             # 5. Deploy
             _run_live(
-                ["task", "deploy", "--", "--yes", "--skip-preview"],
+                _task_cmd("deploy", "--", "--yes", "--skip-preview"),
                 cwd=project.rendered_dir,
                 env=None,
             )
@@ -678,12 +685,15 @@ class AgentE2EHelper:
         assert self._project is not None
         # Avoid dumping large model outputs to logs; capture and print a short snippet instead.
         result = _run_capture(
-            [
-                "task", "agent:cli", "--",
+            _task_cmd(
+                "agent:cli",
+                "--",
                 "execute-custom-model",
-                "--user_prompt", user_prompt,
-                "--custom_model_id", custom_model_id,
-            ],
+                "--user_prompt",
+                user_prompt,
+                "--custom_model_id",
+                custom_model_id,
+            ),
             cwd=self._project.rendered_dir,
         )
 
@@ -722,13 +732,16 @@ class AgentE2EHelper:
         assert self._project is not None
         # Avoid dumping the full OpenAI JSON (which can be huge); capture and print a short snippet instead.
         result = _run_capture(
-            [
-                "task", "agent:cli", "--",
+            _task_cmd(
+                "agent:cli",
+                "--",
                 "execute-deployment",
-                "--user_prompt", user_prompt,
-                "--deployment_id", deployment_id,
+                "--user_prompt",
+                user_prompt,
+                "--deployment_id",
+                deployment_id,
                 "--show_output",
-            ],
+            ),
             cwd=self._project.rendered_dir,
         )
 
@@ -826,7 +839,7 @@ class AgentE2EHelper:
                 check=False,
             )
             _run_live(
-                ["task", "destroy", "--", "--yes", "--skip-preview"],
+                _task_cmd("destroy", "--", "--yes", "--skip-preview"),
                 cwd=project.rendered_dir,
                 env=cleanup_env,
                 check=False,

@@ -50,7 +50,7 @@ trap cleanup EXIT
 
 if [ ! -d "${BASE_RENDER_DIR}/agent" ]; then
     echo "Rendering base agent for CLI smoke test"
-    uvx --from go-task-bin task render-template-e2e AGENT=base
+    uvx --from go-task-bin task render-template AGENT=base
 fi
 
 if [ -n "$1" ] && [ "$1" != "$BASE_RENDER_DIR" ]; then
