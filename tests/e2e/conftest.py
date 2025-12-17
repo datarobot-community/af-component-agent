@@ -25,7 +25,7 @@ import os
 
 import pytest
 
-from .helpers import _is_truthy, fprint, render_all_selected_frameworks, selected_frameworks
+from .e2e import _is_truthy, fprint, render_all_selected_frameworks, selected_frameworks
 
 
 @pytest.fixture(scope="session", autouse=True)

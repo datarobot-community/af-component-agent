@@ -14,7 +14,7 @@
 
 import pytest
 
-from .helpers import (
+from .e2e import (
     ALL_FRAMEWORKS,
     AgentE2EHelper,
     require_datarobot_env,
