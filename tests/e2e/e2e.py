@@ -601,6 +601,7 @@ class AgentE2EHelper:
         datarobot_api_token: str,
         project: RenderedProject | None = None,
     ) -> None:
+        # Step 0: Select prompt + allocate a unique Pulumi stack for this run.
         default_user_prompt = "Write a single tweet (under 280 characters) about AI."
         user_prompt = os.environ.get("E2E_USER_PROMPT", default_user_prompt)
 
@@ -614,22 +615,28 @@ class AgentE2EHelper:
         fprint("==================================================")
 
         if project is None:
+            # Step 1: Render template for the selected agent framework.
             project = render_project(
                 repo_root=self.repo_root, agent_framework=self.agent_framework
             )
         else:
+            # Step 1 (alt): Use a pre-rendered template from the session pre-flight.
             validate_rendered_project(project, expected_framework=self.agent_framework)
             fprint(f"Using pre-rendered template at: {project.rendered_dir}")
 
+        # Step 2: Prepare E2E-specific runtime env (written into rendered project's `.env`).
         extra_env: dict[str, str] = {
             "USE_DATAROBOT_LLM_GATEWAY": "1",
         }
         if self.agent_framework == "crewai":
             extra_env["CREWAI_TESTING"] = "true"
 
+        # Step 3: Create an isolated Pulumi home under the rendered project to avoid
+        # shared state and to keep the run self-contained.
         pulumi_home = project.rendered_dir / ".pulumi_home"
         pulumi_home.mkdir(parents=True, exist_ok=True)
 
+        # Step 4: Write the rendered project's `.env` file (Taskfile loads this).
         env_file = _write_testing_env(
             project,
             datarobot_endpoint=datarobot_endpoint,
@@ -646,6 +653,7 @@ class AgentE2EHelper:
         self._datarobot_endpoint = datarobot_endpoint
         self._datarobot_api_token = datarobot_api_token
 
+        # Step 5: Ensure Pulumi uses the local backend (no Pulumi Cloud auth needed).
         _run_capture(
             ["uv", "run", "pulumi", "login", "--local"],
             cwd=project.infra_dir,
@@ -653,13 +661,17 @@ class AgentE2EHelper:
         )
 
         try:
+            # Step 6: Install dependencies in the rendered project (agent + infra).
             _run_live(_task_cmd("install"), cwd=project.rendered_dir)
 
+            # Step 7: Build phase (Pulumi up with AGENT_DEPLOY=0).
+            # Creates the Custom Model (and other baseline infra) but not the Deployment.
             _run_live(
                 _task_cmd("build", "--", "--yes", "--skip-preview"),
                 cwd=project.rendered_dir,
             )
 
+            # Step 8: Read outputs from Pulumi to locate the Custom Model ID.
             outputs = pulumi_stack_outputs_json(
                 project.infra_dir,
                 stack=pulumi_stack,
@@ -673,6 +685,7 @@ class AgentE2EHelper:
             )
             fprint(f"Custom Model ID: {custom_model_id}")
 
+            # Step 9: Execute the Custom Model via CLI and validate response.
             _retry(
                 lambda: self.run_custom_model_execution(
                     user_prompt=user_prompt,
@@ -683,11 +696,14 @@ class AgentE2EHelper:
                 label="Custom model execution",
             )
 
+            # Step 10: Deploy phase (Pulumi up with AGENT_DEPLOY=1).
+            # Creates the Deployment for the Custom Model.
             _run_live(
                 _task_cmd("deploy", "--", "--yes", "--skip-preview"),
                 cwd=project.rendered_dir,
             )
 
+            # Step 11: Read outputs from Pulumi to locate the Deployment ID.
             outputs = pulumi_stack_outputs_json(
                 project.infra_dir,
                 stack=pulumi_stack,
@@ -701,6 +717,7 @@ class AgentE2EHelper:
             )
             fprint(f"Deployment ID: {deployment_id}")
 
+            # Step 12: Execute the Deployment via CLI and validate OpenAI response shape.
             _retry(
                 lambda: self.run_deployment_execution(
                     user_prompt=user_prompt,
@@ -714,6 +731,7 @@ class AgentE2EHelper:
             fprint("Agent execution completed successfully")
 
         finally:
+            # Step 13: Cleanup (Pulumi cancel + destroy + stack rm, and delete rendered `.env`).
             self.cleanup()
 
     def run_custom_model_execution(self, user_prompt: str, custom_model_id: str) -> None:
