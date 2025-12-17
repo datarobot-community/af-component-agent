@@ -145,17 +145,8 @@ class AgentE2EHelper:
         6. Test deployment via CLI
         7. Cleanup
         """
-        # Framework-specific default prompts:
-        # - llamaindex: needs a TOPIC (wrapped in "write a detailed report about {topic}")
-        # - others: can handle direct instructions
-        default_prompts = {
-            "llamaindex": "AI trends in 2025",  # Topic for report-style workflow
-            "default": "Write a single tweet (under 280 characters) about AI.",
-        }
-        user_prompt = os.environ.get(
-            "E2E_USER_PROMPT",
-            default_prompts.get(self.agent_framework, default_prompts["default"]),
-        )
+        default_user_prompt = "Write a single tweet (under 280 characters) about AI."
+        user_prompt = os.environ.get("E2E_USER_PROMPT", default_user_prompt)
 
         pulumi_stack = (
             f"af-component-agent-e2e-{self.agent_framework}-{int(time.time())}-{uuid.uuid4().hex[:8]}"
