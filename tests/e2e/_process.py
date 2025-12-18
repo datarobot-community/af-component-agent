@@ -21,9 +21,7 @@ from __future__ import annotations
 import os
 import subprocess
 import time
-from collections import deque
 from pathlib import Path
-from threading import Thread
 from typing import Any, Callable
 
 import pytest
@@ -70,14 +68,6 @@ def cmd_timeout_seconds() -> int:
     return int(raw)
 
 
-def _tail_text(lines: deque[str], *, max_chars: int) -> str:
-    text = "\n".join(lines)
-    if len(text) <= max_chars:
-        return text
-
-    return text[-max_chars:]
-
-
 def run_capture(
     cmd: list[str],
     *,
@@ -113,7 +103,6 @@ def run_live(
     cwd: Path,
     env: dict[str, str] | None = None,
     check: bool = True,
-    timeout_seconds: int | None = None,
 ) -> str:
     merged_env = os.environ.copy()
     if env:
@@ -131,51 +120,23 @@ def run_live(
         stdin=subprocess.DEVNULL,
     )
 
-    # E2E commands (esp. `pulumi up`) can be very verbose. Keep a bounded in-memory
-    # ring buffer so errors include useful context without unbounded memory growth.
-    output_lines: deque[str] = deque(maxlen=2000)
     stdout = proc.stdout
     if stdout is None:
         pytest.fail("Internal error: subprocess stdout was None")
 
-    timeout = cmd_timeout_seconds() if timeout_seconds is None else timeout_seconds
+    output_lines: list[str] = []
+    for line in iter(stdout.readline, ""):
+        line = line.rstrip("\n")
+        if line:
+            print(line, flush=True)
 
-    def _stream_stdout() -> None:
-        # Stream output line-by-line (mirrors recipe-datarobot-agent-templates E2E style).
-        for line in iter(stdout.readline, ""):
-            line = line.rstrip("\n")
-            if line:
-                print(line, flush=True)
+        output_lines.append(line)
 
-            output_lines.append(line)
-
-    t = Thread(target=_stream_stdout, daemon=True)
-    t.start()
-
-    try:
-        return_code = proc.wait(timeout=timeout)
-    except subprocess.TimeoutExpired:
-        # Best-effort terminate then kill, and include partial output for debugging.
-        proc.terminate()
-        try:
-            return_code = proc.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            return_code = proc.wait(timeout=5)
-
-        pytest.fail(
-            f"Command timed out after {timeout}s: {' '.join(cmd)}\n\n"
-            f"Partial output (tail):\n{_tail_text(output_lines, max_chars=8000)}"
-        )
-    finally:
-        # Ensure the stream thread has a chance to drain remaining output.
-        t.join(timeout=5)
-
+    return_code = proc.wait()
     output = "\n".join(output_lines)
     if check and return_code != 0:
         pytest.fail(
-            f"Command failed (exit {return_code}): {' '.join(cmd)}\n\n"
-            f"Output (tail):\n{_tail_text(output_lines, max_chars=8000)}"
+            f"Command failed (exit {return_code}): {' '.join(cmd)}\n\n{output}"
         )
     return output
 

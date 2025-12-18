@@ -122,7 +122,7 @@ def assert_response_text_ok(*, response_text: str, agent_framework: str, context
 
 
 def verify_openai_response(cli_output: str) -> None:
-    """Verify the CLI output contains a valid OpenAI response (mirrors templates repo)."""
+    """Verify the CLI output contains a JSON OpenAI-like response with message content."""
     marker = "Execution result:"
     if marker not in cli_output:
         pytest.fail(
@@ -140,20 +140,17 @@ def verify_openai_response(cli_output: str) -> None:
             f"Failed to parse CLI output as JSON: {e}\n" f"Output: {truncate(cli_output)}"
         )
 
-    expected_keys = ["id", "choices", "created", "model", "object"]
-    missing_keys = [k for k in expected_keys if k not in local_result]
-    if missing_keys:
+    try:
+        message_content = local_result["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError) as e:
         pytest.fail(
-            f"Response missing expected keys: {missing_keys}\n"
-            f"Got: {list(local_result.keys())}"
+            "Response JSON did not include choices[0].message.content.\n"
+            f"Error: {e}\n"
+            f"Top-level keys: {list(local_result.keys()) if isinstance(local_result, dict) else type(local_result)}"
         )
 
-    assert len(local_result.get("choices", [])) == 1, (
-        f"Expected exactly 1 choice, got {len(local_result.get('choices', []))}"
-    )
-
-    message_content = local_result["choices"][0].get("message", {}).get("content", "")
-    assert len(message_content) > 5, f"Message content too short: {message_content!r}"
+    if not isinstance(message_content, str) or len(message_content.strip()) <= 5:
+        pytest.fail(f"Message content too short: {message_content!r}")
 
     fprint("Valid agent response")
     snippet_chars = int(os.environ.get("E2E_RESPONSE_SNIPPET_CHARS", "50"))

@@ -16,9 +16,9 @@ import pytest
 
 from .e2e import (
     ALL_FRAMEWORKS,
-    AgentE2EHelper,
     require_datarobot_env,
     require_e2e_enabled,
+    run_agent_e2e,
     should_run_framework,
 )
 
@@ -32,7 +32,8 @@ def test_e2e_agent_framework(framework: str) -> None:
 
     datarobot_endpoint, datarobot_api_token = require_datarobot_env()
 
-    AgentE2EHelper(agent_framework=framework).run(
+    run_agent_e2e(
+        agent_framework=framework,
         datarobot_endpoint=datarobot_endpoint,
         datarobot_api_token=datarobot_api_token,
     )
