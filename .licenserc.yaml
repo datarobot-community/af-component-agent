@@ -44,7 +44,6 @@ header:
     - '**/.venv/**'
     - '**/.idea/'
     - '**/.poetry_cache/'
-    - '**/.mypy_cache/'
     - '**/.pytest_cache/**'
     - '**/*.json'
     - '**/*.md'

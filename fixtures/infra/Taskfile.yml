@@ -24,7 +24,7 @@ tasks:
     cmds:
       - "{{.UV_CMD}} run ruff format --check --diff ."
       - "{{.UV_CMD}} run ruff check  --diff ."
-      - "{{.UV_CMD}} run mypy --pretty ."
+      - "{{.UV_CMD}} tool run ty@0.0.1a34 check --verbose ."
   test-coverage:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
     # desc: 🧪 [infra] Run tests with coverage

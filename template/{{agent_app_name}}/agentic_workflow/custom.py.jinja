@@ -111,7 +111,7 @@ def chat(
 
     # Initialize the authorization context for downstream agents and tools to retrieve
     # access tokens for external services.
-    completion_create_params["authorization_context"] = resolve_authorization_context(
+    completion_create_params["authorization_context"] = resolve_authorization_context(  # type: ignore[index]
         completion_create_params, **kwargs
     )
 
@@ -121,7 +121,7 @@ def chat(
     forwarded_headers = {
         k: v for k, v in incoming_headers.items() if k.lower() in allowed_headers
     }
-    completion_create_params["forwarded_headers"] = forwarded_headers
+    completion_create_params["forwarded_headers"] = forwarded_headers  # type: ignore[index]
 
     # Instantiate the agent, all fields from the completion_create_params are passed to the agent
     # allowing environment variables to be passed during execution
@@ -194,7 +194,7 @@ def chat(
 
     # Initialize the authorization context for downstream agents and tools to retrieve
     # access tokens for external services.
-    completion_create_params["authorization_context"] = resolve_authorization_context(
+    completion_create_params["authorization_context"] = resolve_authorization_context(  # type: ignore[index]
         completion_create_params, **kwargs
     )
 
@@ -204,7 +204,7 @@ def chat(
     forwarded_headers = {
         k: v for k, v in incoming_headers.items() if k.lower() in allowed_headers
     }
-    completion_create_params["forwarded_headers"] = forwarded_headers
+    completion_create_params["forwarded_headers"] = forwarded_headers  # type: ignore[index]
 
     # Instantiate the agent, all fields from the completion_create_params are passed to the agent
     # allowing environment variables to be passed during execution
