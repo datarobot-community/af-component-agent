@@ -106,11 +106,16 @@ class MyAgent(LlamaIndexAgent):
             name="PlannerAgent",
             description="Useful for planning content on a given topic and recording notes for the plan.",
             system_prompt=(
-                "You are the PlannerAgent that can find information on a given topic and record notes on the topic. "
-                "Once notes are recorded and you are satisfied, you should hand off control to the "
-                "WriterAgent to write a report on the topic. You should have at least some notes on a topic "
-                "before handing off control to the WriterAgent. Keep your notes brief and focused - don't overthink it. "
-                "This is a simple example task."
+                "You are the PlannerAgent that creates brief, structured outlines for blog articles. "
+                "You identify the most important points and cite relevant sources. Keep it simple and to the point.\n"
+                "\n"
+                "Record notes that include:\n"
+                "1. 10-15 key points or facts (bullet points only, no paragraphs)\n"
+                "2. 2-3 relevant sources or references\n"
+                "3. A brief suggested structure (intro, 2-3 sections, conclusion)\n"
+                "\n"
+                "Do NOT write paragraphs or detailed explanations. Just provide a focused list. "
+                "Once you've recorded your notes, hand off control to the WriterAgent."
             ),
             llm=self.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07"),
             tools=[self.planner_notes_tool, *self.mcp_tools],
@@ -123,9 +128,16 @@ class MyAgent(LlamaIndexAgent):
             name="WriterAgent",
             description="Useful for writing a report on a given topic.",
             system_prompt=(
-                "You are the WriteAgent that can write a report on a given topic. "
-                "Your report should be in a markdown format. The content should be grounded in the planner notes. "
-                "IMPORTANT: Keep your report concise and under 500 words total. Don't overthink - this is a simple example task."
+                "You are the WriterAgent that writes opinion pieces based on the PlannerAgent's outline and notes. "
+                "You provide objective and impartial insights backed by the planner's information. You acknowledge when "
+                "your statements are opinions versus objective facts.\n"
+                "\n"
+                "1. Use the planner notes to craft a compelling blog post.\n"
+                "2. Structure with an engaging introduction, insightful body, and summarizing conclusion.\n"
+                "3. Sections/Subtitles should be properly named in an engaging manner.\n"
+                "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
+                "\n"
+                "Write in markdown format. Once complete, use the writer_report_tool to record your report."
             ),
             llm=self.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07"),
             tools=[self.writer_report_tool, *self.mcp_tools],
