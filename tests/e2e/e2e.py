@@ -75,19 +75,7 @@ def _cmd_timeout_seconds() -> int:
     if not raw:
         return 20 * 60
 
-    try:
-        value = int(raw)
-    except ValueError as e:
-        raise AssertionError(
-            f"Invalid E2E_CMD_TIMEOUT_SECONDS={raw!r} (must be an integer number of seconds)"
-        ) from e
-
-    if value <= 0:
-        raise AssertionError(
-            f"Invalid E2E_CMD_TIMEOUT_SECONDS={raw!r} (must be > 0 seconds)"
-        )
-
-    return value
+    return int(raw)
 
 
 def _tail_text(lines: deque[str], *, max_chars: int) -> str:
@@ -104,13 +92,12 @@ def _run_capture(
     cwd: Path,
     env: dict[str, str] | None = None,
     check: bool = True,
-    timeout_seconds: int | None = None,
+    timeout_seconds: int = _cmd_timeout_seconds(),
 ) -> str:
     merged_env = os.environ.copy()
     if env:
         merged_env.update(env)
 
-    timeout = _cmd_timeout_seconds() if timeout_seconds is None else timeout_seconds
     proc = subprocess.run(
         cmd,
         cwd=str(cwd),
@@ -118,12 +105,10 @@ def _run_capture(
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        timeout=timeout,
+        timeout=timeout_seconds,
     )
-    if check and proc.returncode != 0:
-        raise AssertionError(
-            f"Command failed (exit {proc.returncode}): {' '.join(cmd)}\n\n{proc.stdout}"
-        )
+
+    assert not check or proc.returncode == 0, f"Command failed (exit {proc.returncode}): {' '.join(cmd)}\n\n{proc.stdout}"
     return proc.stdout
 
 
@@ -133,13 +118,12 @@ def _run_live(
     cwd: Path,
     env: dict[str, str] | None = None,
     check: bool = True,
-    timeout_seconds: int | None = None,
+    timeout_seconds: int = _cmd_timeout_seconds(),
 ) -> str:
     merged_env = os.environ.copy()
     if env:
         merged_env.update(env)
 
-    timeout = _cmd_timeout_seconds() if timeout_seconds is None else timeout_seconds
     fprint(f"$ {' '.join(cmd)}  (cwd={cwd})")
     proc = subprocess.Popen(
         cmd,
@@ -168,7 +152,7 @@ def _run_live(
     t.start()
 
     try:
-        return_code = proc.wait(timeout=timeout)
+        return_code = proc.wait(timeout=timeout_seconds)
     except subprocess.TimeoutExpired as e:
         # Best-effort terminate then kill, and include partial output for debugging.
         proc.terminate()
@@ -189,7 +173,7 @@ def _run_live(
             t.join(timeout=2)
 
         raise AssertionError(
-            f"Command timed out after {timeout}s: {' '.join(cmd)}\n\n"
+            f"Command timed out after {timeout_seconds}s: {' '.join(cmd)}\n\n"
             f"Partial output (tail):\n{_tail_text(output_lines, max_chars=8000)}"
         ) from e
 
