@@ -14,20 +14,19 @@
 
 """
 Low-level helpers for E2E tests.
-
-This module is intentionally small and focused: subprocess execution, timeouts,
-bounded output capture for useful error messages, and small string utilities.
 """
 
 from __future__ import annotations
 
 import os
+import select
 import subprocess
-import threading
 import time
 from collections import deque
 from pathlib import Path
 from typing import Any, Callable
+
+import pytest
 
 
 def fprint(msg: str) -> None:
@@ -100,9 +99,10 @@ def run_capture(
         timeout=cmd_timeout_seconds() if timeout_seconds is None else timeout_seconds,
     )
 
-    assert not check or proc.returncode == 0, (
-        f"Command failed (exit {proc.returncode}): {' '.join(cmd)}\n\n{proc.stdout}"
-    )
+    if check and proc.returncode != 0:
+        pytest.fail(
+            f"Command failed (exit {proc.returncode}): {' '.join(cmd)}\n\n{proc.stdout}"
+        )
     return proc.stdout
 
 
@@ -133,22 +133,39 @@ def run_live(
     # ring buffer so errors include useful context without unbounded memory growth.
     output_lines: deque[str] = deque(maxlen=2000)
     stdout = proc.stdout
-    assert stdout is not None
-
-    def _pump_stdout() -> None:
-        for line in stdout:
-            line = line.rstrip("\n")
-            if line:
-                print(line, flush=True)
-            output_lines.append(line)
-
-    t = threading.Thread(target=_pump_stdout, daemon=True)
-    t.start()
+    if stdout is None:
+        pytest.fail("Internal error: subprocess stdout was None")
 
     timeout = cmd_timeout_seconds() if timeout_seconds is None else timeout_seconds
+    deadline = time.time() + timeout
+
     try:
-        return_code = proc.wait(timeout=timeout)
-    except subprocess.TimeoutExpired as e:
+        # Read stdout in the main thread (templates-style), but guard against hangs with a timeout.
+        while True:
+            remaining = deadline - time.time()
+            if remaining <= 0:
+                raise subprocess.TimeoutExpired(cmd=" ".join(cmd), timeout=timeout)
+
+            rlist, _, _ = select.select([stdout], [], [], min(1.0, remaining))
+            if rlist:
+                line = stdout.readline()
+                if line == "":
+                    if proc.poll() is not None:
+                        break
+                    continue
+
+                line = line.rstrip("\n")
+                if line:
+                    print(line, flush=True)
+                output_lines.append(line)
+                continue
+
+            # No stdout ready. If the process is done, we're done.
+            if proc.poll() is not None:
+                break
+
+        return_code = proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
         # Best-effort terminate then kill, and include partial output for debugging.
         proc.terminate()
         try:
@@ -157,34 +174,14 @@ def run_live(
             proc.kill()
             return_code = proc.wait(timeout=5)
 
-        # Give the stdout pump a moment to drain any remaining buffered output.
-        t.join(timeout=2)
-        if t.is_alive():
-            # Best-effort: close stdout to unblock the reader, then try again.
-            try:
-                stdout.close()
-            except OSError:
-                pass
-            t.join(timeout=2)
-
-        raise AssertionError(
+        pytest.fail(
             f"Command timed out after {timeout}s: {' '.join(cmd)}\n\n"
             f"Partial output (tail):\n{_tail_text(output_lines, max_chars=8000)}"
-        ) from e
-
-    # Give the stdout pump a moment to drain any remaining buffered output.
-    t.join(timeout=2)
-    if t.is_alive():
-        # Best-effort: close stdout to unblock the reader, then try again.
-        try:
-            stdout.close()
-        except OSError:
-            pass
-        t.join(timeout=2)
+        )
 
     output = "\n".join(output_lines)
     if check and return_code != 0:
-        raise AssertionError(
+        pytest.fail(
             f"Command failed (exit {return_code}): {' '.join(cmd)}\n\n"
             f"Output (tail):\n{_tail_text(output_lines, max_chars=8000)}"
         )
