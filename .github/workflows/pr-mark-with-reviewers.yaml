@@ -1,0 +1,41 @@
+name: Log Affected CODEOWNERS
+
+on:
+  pull_request:
+    types: [labeled]
+
+jobs:
+  log-codeowners:
+    runs-on: ubuntu-latest
+    if: contains(github.event.label.name, 'ready for review')
+    
+    steps:
+      - name: Log requested reviewers (from CODEOWNERS)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "========================================="
+          echo "Reviewers for PR #${{ github.event.pull_request.number }}"
+          echo "========================================="
+          
+          # Get requested reviewers (individuals)
+          REVIEWERS=$(gh pr view ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --json reviewRequests --jq '.reviewRequests[].login' 2>/dev/null || echo "")
+          
+          # Get requested review teams
+          TEAMS=$(gh pr view ${{ github.event.pull_request.number }} --repo ${{ github.repository }} --json reviewRequests --jq '.reviewRequests[].name' 2>/dev/null || echo "")
+          
+          if [ -n "$REVIEWERS" ]; then
+            echo "Individual reviewers:"
+            echo "$REVIEWERS" | sed 's/^/  - @/'
+          fi
+          
+          if [ -n "$TEAMS" ]; then
+            echo "Team reviewers:"
+            echo "$TEAMS" | sed 's/^/  - @/'
+          fi
+          
+          if [ -z "$REVIEWERS" ] && [ -z "$TEAMS" ]; then
+            echo "No reviewers have been requested for this PR"
+          fi
+          
+          echo "========================================="
