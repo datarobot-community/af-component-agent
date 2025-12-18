@@ -20,6 +20,23 @@ tasks:
       - rm pyproject.toml
       - mv pyproject.toml.bak pyproject.toml
       - uv sync --all-extras
+
+  install-e2e:
+    desc: "Install dependencies needed to run E2E tests (prefers active venv when activated)"
+    cmds:
+      - echo "Installing E2E dependencies"
+      - |
+          if [ -n "${VIRTUAL_ENV:-}" ]; then
+            uv sync --all-extras --active
+          else
+            uv sync --all-extras
+          fi
+
+  test-e2e:
+    desc: "Install + run full deployment E2E"
+    cmds:
+      - task: install-e2e
+      - task: e2e
   render-template:
     desc: "Render template"
     cmds:
@@ -32,6 +49,25 @@ tasks:
       - uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_template_framework={{.AGENT}} --vcs-ref=HEAD
       - cp ./fixtures/infra/pyproject.toml ./$RENDER_DIR/agent_{{.AGENT}}/infra/pyproject.toml
       - cp ./fixtures/infra/__init__.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/__init__.py
+
+  render-template-e2e:
+    desc: "Render template + inject test scaffolding used by E2E (Taskfiles + minimal infra entrypoint/files)"
+    cmds:
+      - task: render-template
+        vars:
+          AGENT: "{{.AGENT}}"
+      # Add base component scaffolding used by our tests (Taskfiles + minimal infra entrypoint/files).
+      - cp ./fixtures/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/Taskfile.yml
+      - mkdir -p ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra
+      - cp ./fixtures/infra/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/infra/Taskfile.yml
+      # Inject minimal infra scaffolding so `pulumi up` can run in this component repo.
+      # (In a real AF project this is provided by the base/llm/mcp components.)
+      - cp ./fixtures/infra/Pulumi.yaml ./$RENDER_DIR/agent_{{.AGENT}}/infra/Pulumi.yaml
+      - cp ./fixtures/infra/__main__.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/__main__.py
+      - cp ./fixtures/infra/pyproject.toml ./$RENDER_DIR/agent_{{.AGENT}}/infra/pyproject.toml
+      - cp ./fixtures/infra/__init__.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/__init__.py
+      - cp ./fixtures/infra/llm.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/llm.py
+      - cp ./fixtures/infra/mcp_server.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/mcp_server.py
   install-rendered:
     desc: "Install dev"
     cmds:
@@ -229,3 +265,22 @@ tasks:
       - task: build-docker
         vars:
           AGENT: nat
+
+  e2e:
+    desc: "Run full deployment E2E for all agents (requires DATAROBOT_ENDPOINT + DATAROBOT_API_TOKEN)"
+    cmds:
+      - echo "Running full deployment E2E (all agent frameworks)"
+      - |
+          # Load local repo `.env` (gitignored) if present.
+          # Keep it scoped to E2E so credentials don't leak into unrelated tasks.
+          set -a
+          if [ -f ".env" ]; then
+            . ".env"
+          fi
+          set +a
+
+          if [ -n "${VIRTUAL_ENV:-}" ]; then
+            RUN_E2E=1 uv run --all-extras --active pytest --import-mode=importlib -vv -s ./tests/e2e/test_agent_e2e.py
+          else
+            RUN_E2E=1 uv run --all-extras pytest --import-mode=importlib -vv -s ./tests/e2e/test_agent_e2e.py
+          fi

@@ -19,6 +19,11 @@ dev = [
 [tool.uv]
 required-version = ">=0.7.0"
 
+[tool.pytest.ini_options]
+markers = [
+    "e2e: end-to-end tests that require external services (DataRobot, Pulumi, etc.)",
+]
+
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.
 exclude = [
