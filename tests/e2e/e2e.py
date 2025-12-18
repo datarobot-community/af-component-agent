@@ -15,208 +15,43 @@
 """
 E2E harness for af-component-agent.
 
-This module intentionally consolidates E2E functionality into a single file to
-keep maintenance overhead low:
-render → install → build → validate → deploy → validate → destroy.
+This module is the primary entrypoint for pytest tests. Lower-level helpers
+for subprocess execution live in `_process.py`.
 """
 
 from __future__ import annotations
 
 import json
 import os
-import subprocess
-import threading
+import re
 import time
 import uuid
-from collections import deque
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, cast
+from typing import Any, cast
 
 import pytest
 
+from ._process import (
+    fprint,
+    is_truthy,
+    response_snippet,
+    retry,
+    run_capture,
+    run_live,
+    task_cmd,
+    truncate,
+)
+
 ALL_FRAMEWORKS = ("base", "crewai", "langgraph", "llamaindex", "nat")
-
-
-def fprint(msg: str) -> None:
-    print(msg, flush=True)
-
-
-def _is_truthy(value: str | None) -> bool:
-    return (value or "").strip().lower() in {"1", "true", "yes", "on"}
-
-
-def _truncate(text: str, *, max_chars: int = 800) -> str:
-    s = (text or "").strip()
-    if len(s) <= max_chars:
-        return s
-    return s[:max_chars] + "…"
-
-
-def _response_snippet(text: str, *, max_chars: int) -> str:
-    """Return a compact one-line snippet for logs."""
-    compact = " ".join((text or "").strip().split())
-    return _truncate(compact, max_chars=max_chars)
-
-
-def _task_cmd(*args: str) -> list[str]:
-    # `uvx --from go-task-bin task`.
-    return ["uvx", "--from", "go-task-bin", "task"] + list(args)
-
-
-def _cmd_timeout_seconds() -> int:
-    """
-    Default timeout for E2E external commands.
-
-    E2E can take a while (pulumi up + build/deploy), but should not hang forever.
-    Configure via E2E_CMD_TIMEOUT_SECONDS. Defaults to 20 minutes.
-    """
-    raw = os.environ.get("E2E_CMD_TIMEOUT_SECONDS", "").strip()
-    if not raw:
-        return 20 * 60
-
-    return int(raw)
-
-
-def _tail_text(lines: deque[str], *, max_chars: int) -> str:
-    text = "\n".join(lines)
-    if len(text) <= max_chars:
-        return text
-
-    return text[-max_chars:]
-
-
-def _run_capture(
-    cmd: list[str],
-    *,
-    cwd: Path,
-    env: dict[str, str] | None = None,
-    check: bool = True,
-    timeout_seconds: int = _cmd_timeout_seconds(),
-) -> str:
-    merged_env = os.environ.copy()
-    if env:
-        merged_env.update(env)
-
-    proc = subprocess.run(
-        cmd,
-        cwd=str(cwd),
-        env=merged_env,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        timeout=timeout_seconds,
-    )
-
-    assert not check or proc.returncode == 0, f"Command failed (exit {proc.returncode}): {' '.join(cmd)}\n\n{proc.stdout}"
-    return proc.stdout
-
-
-def _run_live(
-    cmd: list[str],
-    *,
-    cwd: Path,
-    env: dict[str, str] | None = None,
-    check: bool = True,
-    timeout_seconds: int = _cmd_timeout_seconds(),
-) -> str:
-    merged_env = os.environ.copy()
-    if env:
-        merged_env.update(env)
-
-    fprint(f"$ {' '.join(cmd)}  (cwd={cwd})")
-    proc = subprocess.Popen(
-        cmd,
-        cwd=str(cwd),
-        env=merged_env,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        stdin=subprocess.DEVNULL,
-    )
-
-    # E2E commands (esp. `pulumi up`) can be very verbose. Keep a bounded in-memory
-    # ring buffer so errors include useful context without unbounded memory growth.
-    output_lines: deque[str] = deque(maxlen=2000)
-    stdout = proc.stdout
-    assert stdout is not None
-
-    def _pump_stdout() -> None:
-        for line in stdout:
-            line = line.rstrip("\n")
-            if line:
-                print(line, flush=True)
-            output_lines.append(line)
-
-    t = threading.Thread(target=_pump_stdout, daemon=True)
-    t.start()
-
-    try:
-        return_code = proc.wait(timeout=timeout_seconds)
-    except subprocess.TimeoutExpired as e:
-        # Best-effort terminate then kill, and include partial output for debugging.
-        proc.terminate()
-        try:
-            return_code = proc.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            return_code = proc.wait(timeout=5)
-
-        # Give the stdout pump a moment to drain any remaining buffered output.
-        t.join(timeout=2)
-        if t.is_alive():
-            # Best-effort: close stdout to unblock the reader, then try again.
-            try:
-                stdout.close()
-            except OSError:
-                pass
-            t.join(timeout=2)
-
-        raise AssertionError(
-            f"Command timed out after {timeout_seconds}s: {' '.join(cmd)}\n\n"
-            f"Partial output (tail):\n{_tail_text(output_lines, max_chars=8000)}"
-        ) from e
-
-    # Give the stdout pump a moment to drain any remaining buffered output.
-    t.join(timeout=2)
-    if t.is_alive():
-        # Best-effort: close stdout to unblock the reader, then try again.
-        try:
-            stdout.close()
-        except OSError:
-            pass
-        t.join(timeout=2)
-
-    output = "\n".join(output_lines)
-    if check and return_code != 0:
-        raise AssertionError(
-            f"Command failed (exit {return_code}): {' '.join(cmd)}\n\n"
-            f"Output (tail):\n{_tail_text(output_lines, max_chars=8000)}"
-        )
-    return output
 
 
 @dataclass(frozen=True)
 class RenderedProject:
     agent_framework: str
-    repo_root: Path
     rendered_dir: Path
     infra_dir: Path
     agent_dir: Path  # The agent subdirectory within rendered_dir
-
-
-def validate_rendered_project(project: RenderedProject, *, expected_framework: str) -> None:
-    if project.agent_framework != expected_framework:
-        raise AssertionError(
-            "RenderedProject framework mismatch: "
-            f"expected={expected_framework!r} got={project.agent_framework!r}"
-        )
-    if not project.rendered_dir.exists():
-        raise AssertionError(f"Rendered dir missing: {project.rendered_dir}")
-    if not project.infra_dir.exists():
-        raise AssertionError(f"Rendered infra dir missing: {project.infra_dir}")
-    if not project.agent_dir.exists():
-        raise AssertionError(f"Rendered agent dir missing: {project.agent_dir}")
 
 
 def render_project(*, repo_root: Path, agent_framework: str) -> RenderedProject:
@@ -224,7 +59,7 @@ def render_project(*, repo_root: Path, agent_framework: str) -> RenderedProject:
     infra_dir = rendered_dir / "infra"
     agent_dir = rendered_dir / "agent"
 
-    _run_live(_task_cmd("render-template-e2e", f"AGENT={agent_framework}"), cwd=repo_root)
+    run_live(task_cmd("render-template-e2e", f"AGENT={agent_framework}"), cwd=repo_root)
 
     if not infra_dir.exists():
         raise AssertionError(f"Rendered infra dir missing: {infra_dir}")
@@ -233,7 +68,6 @@ def render_project(*, repo_root: Path, agent_framework: str) -> RenderedProject:
 
     return RenderedProject(
         agent_framework=agent_framework,
-        repo_root=repo_root,
         rendered_dir=rendered_dir,
         infra_dir=infra_dir,
         agent_dir=agent_dir,
@@ -251,68 +85,38 @@ def extract_id_from_url(url: str, *, marker: str) -> str:
     return parts[idx + 1]
 
 
-def pulumi_stack_outputs_json(
-    infra_dir: Path,
-    *,
-    stack: str,
-    pulumi_home: Path | None = None,
-) -> dict[str, Any]:
+def _extract_output_url(task_output: str, *, contains: str) -> str:
     """
-    Read Pulumi stack outputs as JSON.
+    Extract a URL from Pulumi `up` output.
 
-    IMPORTANT: keep stderr separate so uv/pulumi warnings don't break JSON parsing.
+    Mirrors recipe-datarobot-agent-templates shortcut: parse IDs from `task build/deploy`
+    stdout instead of calling `pulumi stack output --json`.
     """
-    merged_env = os.environ.copy()
-    merged_env.update({"PULUMI_CONFIG_PASSPHRASE": "123"})
-
-    if pulumi_home is not None:
-        merged_env["PULUMI_HOME"] = str(pulumi_home)
-
-    proc = subprocess.run(
-        ["uv", "run", "pulumi", "stack", "output", "--json", "--stack", stack],
-        cwd=str(infra_dir),
-        env=merged_env,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-    if proc.returncode != 0:
+    lines = (task_output or "").splitlines()
+    matches = [line for line in lines if contains in line]
+    if not matches:
         raise AssertionError(
-            "Failed to read pulumi stack outputs.\n"
-            f"stdout:\n{proc.stdout}\n\nstderr:\n{proc.stderr}"
+            f"Could not find output line containing {contains!r}.\n"
+            f"Output (tail):\n{truncate(task_output, max_chars=8000)}"
         )
 
-    stdout = (proc.stdout or "").strip()
-    if not stdout:
-        raise AssertionError(
-            "Pulumi stack output returned empty stdout.\n" f"stderr:\n{proc.stderr}"
-        )
+    line = matches[-1]
 
-    try:
-        return json.loads(stdout)
-    except json.JSONDecodeError:
-        # Fallback: try to extract the JSON object from noisy stdout.
-        start = stdout.find("{")
-        end = stdout.rfind("}")
-        if start != -1 and end != -1 and end > start:
-            try:
-                return json.loads(stdout[start : end + 1])
-            except json.JSONDecodeError:
-                pass
-        raise AssertionError(
-            "Failed to parse pulumi outputs JSON.\n"
-            f"stdout:\n{_truncate(proc.stdout)}\n\nstderr:\n{_truncate(proc.stderr)}"
-        )
+    # Common Pulumi output format is `Key: "https://..."`.
+    if '"' in line:
+        parts = line.split('"')
+        if len(parts) >= 2:
+            candidate = parts[-2].strip()
+            if candidate.startswith("http"):
+                return candidate
 
+    # Fallback: search for a URL-shaped substring.
+    m = re.search(r"https?://\S+", line)
+    if m:
+        return m.group(0).strip('"')
 
-def find_output(outputs: dict[str, Any], *, contains: str) -> str:
-    for key, value in outputs.items():
-        if contains in key:
-            if not isinstance(value, str):
-                raise AssertionError(f"Unexpected output type for '{key}': {type(value)}")
-            return value
     raise AssertionError(
-        f"Pulumi output not found containing: {contains!r}. Keys: {list(outputs)}"
+        f"Could not extract URL from line containing {contains!r}: {line!r}"
     )
 
 
@@ -344,13 +148,7 @@ def extract_cli_response_after_wait(output: str) -> str:
     return "\n".join(trimmed).strip()
 
 
-def assert_response_text_ok(
-    *,
-    response_text: str,
-    agent_framework: str,
-    context: str,
-) -> None:
-    """Shared validation for text-only responses (e.g., custom-model CLI output)."""
+def assert_response_text_ok(*, response_text: str, agent_framework: str, context: str) -> None:
     prefix = f"{context} [{agent_framework}]"
 
     text = (response_text or "").strip()
@@ -359,7 +157,9 @@ def assert_response_text_ok(
 
     lowered = text.lower()
     if lowered.startswith("error:") or "failed to obtain agent chat response" in lowered:
-        raise AssertionError(f"{prefix}: agent execution returned an error:\n{_truncate(text)}")
+        raise AssertionError(
+            f"{prefix}: agent execution returned an error:\n{truncate(text)}"
+        )
 
 
 def verify_openai_response(cli_output: str) -> None:
@@ -369,7 +169,7 @@ def verify_openai_response(cli_output: str) -> None:
     if marker not in result:
         raise AssertionError(
             f"Expected CLI output to contain {marker!r} but it was missing.\n"
-            f"Output (truncated): {_truncate(result)}"
+            f"Output (truncated): {truncate(result)}"
         )
     json_result = result.split(marker, 1)[1]
     if "CLI exited with" in json_result:
@@ -379,7 +179,7 @@ def verify_openai_response(cli_output: str) -> None:
         local_result = cast(dict[str, Any], json.loads(json_result.strip()))
     except json.JSONDecodeError as e:
         raise AssertionError(
-            f"Failed to parse CLI output as JSON: {e}\n" f"Output: {_truncate(cli_output)}"
+            f"Failed to parse CLI output as JSON: {e}\n" f"Output: {truncate(cli_output)}"
         ) from e
 
     expected_keys = ["id", "choices", "created", "model", "object"]
@@ -403,14 +203,14 @@ def verify_openai_response(cli_output: str) -> None:
     snippet_chars = int(os.environ.get("E2E_RESPONSE_SNIPPET_CHARS", "50"))
     fprint(
         f"Response content (first {snippet_chars} chars): "
-        f"{_response_snippet(cast(str, message_content), max_chars=snippet_chars)!r}"
+        f"{response_snippet(cast(str, message_content), max_chars=snippet_chars)!r}"
     )
-    if _is_truthy(os.environ.get("E2E_DEBUG")):
-        fprint(f"Full response content (truncated): {_truncate(cast(str, message_content))}")
+    if is_truthy(os.environ.get("E2E_DEBUG")):
+        fprint(f"Full response content (truncated): {truncate(cast(str, message_content))}")
 
 
 def require_e2e_enabled() -> None:
-    if not _is_truthy(os.environ.get("RUN_E2E")):
+    if not is_truthy(os.environ.get("RUN_E2E")):
         pytest.skip("Set RUN_E2E=1 to enable full deployment E2E tests.")
 
 
@@ -466,32 +266,6 @@ def should_run_framework(framework: str) -> bool:
     return framework in set(selected_frameworks())
 
 
-def render_all_selected_frameworks() -> dict[str, RenderedProject]:
-    repo_root = Path(__file__).resolve().parents[2]
-    frameworks = selected_frameworks()
-
-    fprint("=" * 60)
-    fprint(f"PRE-RENDERING ALL SELECTED FRAMEWORKS: {frameworks}")
-    fprint("=" * 60)
-
-    rendered: dict[str, RenderedProject] = {}
-    for fw in frameworks:
-        fprint(f"\n>>> Rendering template: {fw}")
-        try:
-            project = render_project(repo_root=repo_root, agent_framework=fw)
-            rendered[fw] = project
-            fprint(f"    ✓ {fw} rendered successfully")
-        except Exception as e:
-            fprint(f"    ✗ {fw} FAILED to render: {e}")
-            raise AssertionError(f"Failed to render {fw}: {e}") from e
-
-    fprint("\n" + "=" * 60)
-    fprint(f"ALL {len(rendered)} FRAMEWORKS RENDERED SUCCESSFULLY")
-    fprint("=" * 60 + "\n")
-
-    return rendered
-
-
 def _write_testing_env(
     project: RenderedProject,
     *,
@@ -521,29 +295,6 @@ def _write_testing_env(
     return env_path
 
 
-def _retry(
-    func: Callable[[], Any],
-    *,
-    max_retries: int,
-    delay_seconds: int,
-    label: str,
-) -> Any:
-    last_exc: Exception | None = None
-    for attempt in range(max_retries + 1):
-        try:
-            if attempt > 0:
-                fprint(f"Retrying {label} (attempt {attempt + 1}/{max_retries + 1})...")
-            return func()
-        except Exception as e:
-            last_exc = e
-            if attempt >= max_retries:
-                raise
-            fprint(f"{label} failed: {e}")
-            fprint(f"Waiting {delay_seconds}s before retry...")
-            time.sleep(delay_seconds)
-    raise last_exc or RuntimeError(f"{label} failed")
-
-
 class AgentE2EHelper:
     """
     E2E test helper for agent frameworks.
@@ -565,9 +316,7 @@ class AgentE2EHelper:
         self.agent_framework = agent_framework
         self.repo_root = repo_root or Path(__file__).resolve().parents[2]
         self.skip_cleanup = (
-            _is_truthy(os.environ.get("SKIP_CLEANUP"))
-            if skip_cleanup is None
-            else skip_cleanup
+            is_truthy(os.environ.get("SKIP_CLEANUP")) if skip_cleanup is None else skip_cleanup
         )
 
         self._project: RenderedProject | None = None
@@ -577,13 +326,7 @@ class AgentE2EHelper:
         self._datarobot_endpoint: str | None = None
         self._datarobot_api_token: str | None = None
 
-    def run(
-        self,
-        *,
-        datarobot_endpoint: str,
-        datarobot_api_token: str,
-        project: RenderedProject | None = None,
-    ) -> None:
+    def run(self, *, datarobot_endpoint: str, datarobot_api_token: str) -> None:
         # Step 0: Select prompt + allocate a unique Pulumi stack for this run.
         default_user_prompt = "Write a single tweet (under 280 characters) about AI."
         user_prompt = os.environ.get("E2E_USER_PROMPT", default_user_prompt)
@@ -597,25 +340,15 @@ class AgentE2EHelper:
         fprint(f"Pulumi stack: {pulumi_stack}")
         fprint("==================================================")
 
-        if project is None:
-            # Step 1: Render template for the selected agent framework.
-            project = render_project(
-                repo_root=self.repo_root, agent_framework=self.agent_framework
-            )
-        else:
-            # Step 1 (alt): Use a pre-rendered template from the session pre-flight.
-            validate_rendered_project(project, expected_framework=self.agent_framework)
-            fprint(f"Using pre-rendered template at: {project.rendered_dir}")
+        # Step 1: Render the template for the selected agent framework.
+        project = render_project(repo_root=self.repo_root, agent_framework=self.agent_framework)
 
         # Step 2: Prepare E2E-specific runtime env (written into rendered project's `.env`).
-        extra_env: dict[str, str] = {
-            "USE_DATAROBOT_LLM_GATEWAY": "1",
-        }
+        extra_env: dict[str, str] = {"USE_DATAROBOT_LLM_GATEWAY": "1"}
         if self.agent_framework == "crewai":
             extra_env["CREWAI_TESTING"] = "true"
 
-        # Step 3: Create an isolated Pulumi home under the rendered project to avoid
-        # shared state and to keep the run self-contained.
+        # Step 3: Create an isolated Pulumi home under the rendered project to avoid shared state.
         pulumi_home = project.rendered_dir / ".pulumi_home"
         pulumi_home.mkdir(parents=True, exist_ok=True)
 
@@ -637,7 +370,7 @@ class AgentE2EHelper:
         self._datarobot_api_token = datarobot_api_token
 
         # Step 5: Ensure Pulumi uses the local backend (no Pulumi Cloud auth needed).
-        _run_capture(
+        run_capture(
             ["uv", "run", "pulumi", "login", "--local"],
             cwd=project.infra_dir,
             env={"PULUMI_CONFIG_PASSPHRASE": "123", "PULUMI_HOME": str(pulumi_home)},
@@ -645,31 +378,24 @@ class AgentE2EHelper:
 
         try:
             # Step 6: Install dependencies in the rendered project (agent + infra).
-            _run_live(_task_cmd("install"), cwd=project.rendered_dir)
+            run_live(task_cmd("install"), cwd=project.rendered_dir)
 
             # Step 7: Build phase (Pulumi up with AGENT_DEPLOY=0).
-            # Creates the Custom Model (and other baseline infra) but not the Deployment.
-            _run_live(
-                _task_cmd("build", "--", "--yes", "--skip-preview"),
+            # Creates the Custom Model (and baseline infra) but not the Deployment.
+            build_output = run_live(
+                task_cmd("build", "--", "--yes", "--skip-preview"),
                 cwd=project.rendered_dir,
             )
 
-            # Step 8: Read outputs from Pulumi to locate the Custom Model ID.
-            outputs = pulumi_stack_outputs_json(
-                project.infra_dir,
-                stack=pulumi_stack,
-                pulumi_home=pulumi_home,
+            # Step 8: Parse the Custom Model ID from `task build` stdout (templates-style shortcut).
+            custom_model_chat_endpoint = _extract_output_url(
+                build_output, contains="Custom Model Chat Endpoint"
             )
-            custom_model_chat_endpoint = find_output(
-                outputs, contains="Agent Custom Model Chat Endpoint"
-            )
-            custom_model_id = extract_id_from_url(
-                custom_model_chat_endpoint, marker="fromCustomModel"
-            )
+            custom_model_id = extract_id_from_url(custom_model_chat_endpoint, marker="fromCustomModel")
             fprint(f"Custom Model ID: {custom_model_id}")
 
-            # Step 9: Execute the Custom Model via CLI and validate response.
-            _retry(
+            # Step 9: Execute the Custom Model and validate the response.
+            retry(
                 lambda: self.run_custom_model_execution(
                     user_prompt=user_prompt,
                     custom_model_id=custom_model_id,
@@ -681,27 +407,20 @@ class AgentE2EHelper:
 
             # Step 10: Deploy phase (Pulumi up with AGENT_DEPLOY=1).
             # Creates the Deployment for the Custom Model.
-            _run_live(
-                _task_cmd("deploy", "--", "--yes", "--skip-preview"),
+            deploy_output = run_live(
+                task_cmd("deploy", "--", "--yes", "--skip-preview"),
                 cwd=project.rendered_dir,
             )
 
-            # Step 11: Read outputs from Pulumi to locate the Deployment ID.
-            outputs = pulumi_stack_outputs_json(
-                project.infra_dir,
-                stack=pulumi_stack,
-                pulumi_home=pulumi_home,
+            # Step 11: Parse the Deployment ID from `task deploy` stdout (templates-style shortcut).
+            deployment_chat_endpoint = _extract_output_url(
+                deploy_output, contains="Deployment Chat Endpoint"
             )
-            deployment_chat_endpoint = find_output(
-                outputs, contains="Agent Deployment Chat Endpoint"
-            )
-            deployment_id = extract_id_from_url(
-                deployment_chat_endpoint, marker="deployments"
-            )
+            deployment_id = extract_id_from_url(deployment_chat_endpoint, marker="deployments")
             fprint(f"Deployment ID: {deployment_id}")
 
-            # Step 12: Execute the Deployment via CLI and validate OpenAI response shape.
-            _retry(
+            # Step 12: Execute the Deployment and validate OpenAI response shape.
+            retry(
                 lambda: self.run_deployment_execution(
                     user_prompt=user_prompt,
                     deployment_id=deployment_id,
@@ -712,7 +431,6 @@ class AgentE2EHelper:
             )
 
             fprint("Agent execution completed successfully")
-
         finally:
             # Step 13: Cleanup (Pulumi cancel + destroy + stack rm, and delete rendered `.env`).
             self.cleanup()
@@ -722,8 +440,8 @@ class AgentE2EHelper:
         fprint("====================================")
 
         assert self._project is not None
-        result = _run_capture(
-            _task_cmd(
+        result = run_capture(
+            task_cmd(
                 "agent:cli",
                 "--",
                 "execute-custom-model",
@@ -740,7 +458,7 @@ class AgentE2EHelper:
         if not response_text.strip():
             raise AssertionError(
                 "Custom model execution: could not extract response text from CLI output. "
-                f"Output (truncated): {_truncate(result)}"
+                f"Output (truncated): {truncate(result)}"
             )
 
         assert_response_text_ok(
@@ -752,18 +470,18 @@ class AgentE2EHelper:
         fprint("Custom model execution completed")
         fprint(
             f"Custom model response (first {snippet_chars} chars): "
-            f"{_response_snippet(response_text, max_chars=snippet_chars)!r}"
+            f"{response_snippet(response_text, max_chars=snippet_chars)!r}"
         )
-        if _is_truthy(os.environ.get("E2E_DEBUG")):
-            fprint(f"CLI output (truncated): {_truncate(result)}")
+        if is_truthy(os.environ.get("E2E_DEBUG")):
+            fprint(f"CLI output (truncated): {truncate(result)}")
 
     def run_deployment_execution(self, user_prompt: str, deployment_id: str) -> None:
         fprint("Running deployed agent execution")
         fprint("================================")
 
         assert self._project is not None
-        result = _run_capture(
-            _task_cmd(
+        result = run_capture(
+            task_cmd(
                 "agent:cli",
                 "--",
                 "execute-deployment",
@@ -811,7 +529,7 @@ class AgentE2EHelper:
             if not project or not pulumi_stack:
                 return
 
-            _run_capture(
+            run_capture(
                 ["uv", "run", "pulumi", "cancel", "--yes", "--stack", pulumi_stack],
                 cwd=project.infra_dir,
                 env={"PULUMI_CONFIG_PASSPHRASE": "123", "PULUMI_HOME": str(pulumi_home)}
@@ -819,14 +537,14 @@ class AgentE2EHelper:
                 else {"PULUMI_CONFIG_PASSPHRASE": "123"},
                 check=False,
             )
-            _run_live(
-                _task_cmd("destroy", "--", "--yes", "--skip-preview"),
+            run_live(
+                task_cmd("destroy", "--", "--yes", "--skip-preview"),
                 cwd=project.rendered_dir,
                 env=cleanup_env,
                 check=False,
             )
             fprint(f"Attempting to remove Pulumi stack: {pulumi_stack}")
-            rm_out = _run_capture(
+            rm_out = run_capture(
                 ["uv", "run", "pulumi", "stack", "rm", "-f", "-y", pulumi_stack],
                 cwd=project.infra_dir,
                 env={"PULUMI_CONFIG_PASSPHRASE": "123", "PULUMI_HOME": str(pulumi_home)}
@@ -840,5 +558,14 @@ class AgentE2EHelper:
         finally:
             if env_file and env_file.exists():
                 env_file.unlink()
+
+__all__ = [
+    "ALL_FRAMEWORKS",
+    "AgentE2EHelper",
+    "fprint",
+    "require_datarobot_env",
+    "require_e2e_enabled",
+    "should_run_framework",
+]
 
 
