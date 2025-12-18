@@ -56,11 +56,12 @@ def task_cmd(*args: str) -> list[str]:
     return ["uvx", "--from", "go-task-bin", "task", *args]
 
 
-def run_capture(
+def run_cmd(
     cmd: list[str],
     *,
     cwd: Path,
     env: dict[str, str] | None = None,
+    capture: bool = False,
     check: bool = True,
     timeout_seconds: int | None = None,
 ) -> str:
@@ -68,65 +69,49 @@ def run_capture(
     if env:
         merged_env.update(env)
 
-    proc = subprocess.run(
-        cmd,
-        cwd=str(cwd),
-        env=merged_env,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        timeout=DEFAULT_CMD_TIMEOUT_SECONDS if timeout_seconds is None else timeout_seconds,
-    )
-
-    if check and proc.returncode != 0:
-        pytest.fail(
-            f"Command failed (exit {proc.returncode}): {' '.join(cmd)}\n\n{proc.stdout}"
-        )
-    return proc.stdout
-
-
-def run_live(
-    cmd: list[str],
-    *,
-    cwd: Path,
-    env: dict[str, str] | None = None,
-    check: bool = True,
-) -> str:
-    merged_env = os.environ.copy()
-    if env:
-        merged_env.update(env)
-
     fprint(f"$ {' '.join(cmd)}  (cwd={cwd})")
-    proc = subprocess.Popen(
-        cmd,
-        cwd=str(cwd),
-        env=merged_env,
-        text=True,
-        bufsize=1,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        stdin=subprocess.DEVNULL,
-    )
 
-    stdout = proc.stdout
-    if stdout is None:
-        pytest.fail("Internal error: subprocess stdout was None")
+    timeout = DEFAULT_CMD_TIMEOUT_SECONDS if timeout_seconds is None else timeout_seconds
+    try:
+        if capture:
+            proc = subprocess.run(
+                cmd,
+                cwd=str(cwd),
+                env=merged_env,
+                text=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                timeout=timeout,
+                check=check,
+            )
+            return proc.stdout or ""
 
-    output_lines: list[str] = []
-    for line in iter(stdout.readline, ""):
-        line = line.rstrip("\n")
-        if line:
-            print(line, flush=True)
-
-        output_lines.append(line)
-
-    return_code = proc.wait()
-    output = "\n".join(output_lines)
-    if check and return_code != 0:
-        pytest.fail(
-            f"Command failed (exit {return_code}): {' '.join(cmd)}\n\n{output}"
+        subprocess.run(
+            cmd,
+            cwd=str(cwd),
+            env=merged_env,
+            text=True,
+            timeout=timeout,
+            check=check,
         )
-    return output
+        return ""
+    except subprocess.TimeoutExpired as e:
+        out = ""
+        if capture and isinstance(e.stdout, str):
+            out = e.stdout
+        pytest.fail(
+            f"Command timed out after {timeout}s: {' '.join(cmd)}\n\n{out}".rstrip()
+        )
+    except subprocess.CalledProcessError as e:
+        out = ""
+        if capture:
+            if isinstance(e.stdout, str) and e.stdout.strip():
+                out = e.stdout
+            elif isinstance(e.output, str) and e.output.strip():
+                out = e.output
+        pytest.fail(
+            f"Command failed (exit {e.returncode}): {' '.join(cmd)}\n\n{out}".rstrip()
+        )
 
 
 def retry(

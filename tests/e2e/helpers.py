@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from ._process import fprint, is_truthy, response_snippet, run_live, task_cmd, truncate
+from ._process import fprint, is_truthy, response_snippet, run_cmd, task_cmd, truncate
 
 ALL_FRAMEWORKS = ("base", "crewai", "langgraph", "llamaindex", "nat")
 RESPONSE_SNIPPET_CHARS = 50
@@ -34,7 +34,7 @@ def render_project(*, repo_root: Path, agent_framework: str) -> tuple[Path, Path
     rendered_dir = repo_root / ".rendered" / f"agent_{agent_framework}"
     infra_dir = rendered_dir / "infra"
 
-    run_live(task_cmd("render-template-e2e", f"AGENT={agent_framework}"), cwd=repo_root)
+    run_cmd(task_cmd("render-template-e2e", f"AGENT={agent_framework}"), cwd=repo_root)
 
     if not infra_dir.exists():
         pytest.fail(f"Rendered infra dir missing: {infra_dir}")
@@ -53,31 +53,54 @@ def extract_id_from_url(url: str, *, marker: str) -> str:
     return parts[idx + 1]
 
 
-def extract_output_url(task_output: str, *, contains: str) -> str:
-    """
-    Extract a URL from Pulumi `up` output.
+def pulumi_stack_output_value(
+    *,
+    infra_dir: Path,
+    pulumi_stack: str,
+    pulumi_home: Path,
+    contains: str,
+) -> str:
+    raw = run_cmd(
+        ["uv", "run", "pulumi", "stack", "output", "--json", "--stack", pulumi_stack],
+        cwd=infra_dir,
+        env={"PULUMI_CONFIG_PASSPHRASE": "123", "PULUMI_HOME": str(pulumi_home)},
+        capture=True,
+    )
 
-    Mirrors recipe-datarobot-agent-templates shortcut: parse IDs from `task build/deploy`
-    stdout instead of calling `pulumi stack output --json`.
-    """
-    lines = (task_output or "").splitlines()
-    matches = [line for line in lines if contains in line]
-    if not matches:
+    text = (raw or "").lstrip()
+    obj_start = -1
+    for ch in ("{", "["):
+        idx = text.find(ch)
+        if idx != -1 and (obj_start == -1 or idx < obj_start):
+            obj_start = idx
+    if obj_start > 0:
+        text = text[obj_start:]
+
+    try:
+        outputs, _ = json.JSONDecoder().raw_decode(text or "{}")
+    except json.JSONDecodeError as e:
         pytest.fail(
-            f"Could not find output line containing {contains!r}.\n"
-            f"Output (tail):\n{truncate(task_output, max_chars=8000)}"
+            f"Failed to parse `pulumi stack output --json`: {e}\n"
+            f"Output (truncated): {truncate(raw, max_chars=2000)}"
         )
 
-    line = matches[-1]
+    if not isinstance(outputs, dict):
+        pytest.fail(
+            "Unexpected `pulumi stack output --json` shape.\n"
+            f"Type: {type(outputs)}\n"
+            f"Output (truncated): {truncate(raw, max_chars=2000)}"
+        )
 
-    # Typical Pulumi output format is `Key: "https://..."`.
-    parts = line.split('"')
-    if len(parts) >= 3:
-        candidate = parts[-2].strip()
-        if candidate.startswith("http"):
-            return candidate
+    matches = [k for k in outputs.keys() if contains in k]
+    if not matches:
+        pytest.fail(f"Could not find Pulumi stack output key containing {contains!r}.")
 
-    pytest.fail(f"Could not extract quoted URL from: {line!r}")
+    val = outputs[matches[-1]]
+    if not isinstance(val, str) or not val.strip():
+        pytest.fail(
+            f"Pulumi stack output value for {matches[-1]!r} was not a non-empty string: {val!r}"
+        )
+    return val.strip()
 
 
 def extract_cli_response_after_wait(output: str) -> str:

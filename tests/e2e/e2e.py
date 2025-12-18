@@ -30,7 +30,7 @@ from .helpers import (
     assert_response_text_ok,
     extract_cli_response_after_wait,
     extract_id_from_url,
-    extract_output_url,
+    pulumi_stack_output_value,
     render_project,
     require_datarobot_env,
     require_e2e_enabled,
@@ -43,8 +43,7 @@ from ._process import (
     is_truthy,
     response_snippet,
     retry,
-    run_capture,
-    run_live,
+    run_cmd,
     task_cmd,
     truncate,
 )
@@ -62,7 +61,7 @@ def _execute_custom_model(
     fprint("Running custom model agent execution")
     fprint("====================================")
 
-    result = run_capture(
+    result = run_cmd(
         task_cmd(
             "agent:cli",
             "--",
@@ -73,6 +72,7 @@ def _execute_custom_model(
             custom_model_id,
         ),
         cwd=rendered_dir,
+        capture=True,
     )
 
     response_text = extract_cli_response_after_wait(result)
@@ -106,7 +106,7 @@ def _execute_deployment(
     fprint("Running deployed agent execution")
     fprint("================================")
 
-    result = run_capture(
+    result = run_cmd(
         task_cmd(
             "agent:cli",
             "--",
@@ -118,6 +118,7 @@ def _execute_deployment(
             "--show_output",
         ),
         cwd=rendered_dir,
+        capture=True,
     )
 
     verify_openai_response(result)
@@ -140,26 +141,28 @@ def _cleanup_e2e(
         if not rendered_dir or not infra_dir or not pulumi_stack:
             return
 
-        run_capture(
+        run_cmd(
             ["uv", "run", "pulumi", "cancel", "--yes", "--stack", pulumi_stack],
             cwd=infra_dir,
             env={"PULUMI_CONFIG_PASSPHRASE": "123", "PULUMI_HOME": str(pulumi_home)}
             if pulumi_home is not None
             else {"PULUMI_CONFIG_PASSPHRASE": "123"},
+            capture=True,
             check=False,
         )
-        run_live(
+        run_cmd(
             task_cmd("destroy", "--", "--yes", "--skip-preview"),
             cwd=rendered_dir,
             check=False,
         )
         fprint(f"Attempting to remove Pulumi stack: {pulumi_stack}")
-        rm_out = run_capture(
+        rm_out = run_cmd(
             ["uv", "run", "pulumi", "stack", "rm", "-f", "-y", pulumi_stack],
             cwd=infra_dir,
             env={"PULUMI_CONFIG_PASSPHRASE": "123", "PULUMI_HOME": str(pulumi_home)}
             if pulumi_home is not None
             else {"PULUMI_CONFIG_PASSPHRASE": "123"},
+            capture=True,
             check=False,
         )
         if rm_out.strip():
@@ -229,26 +232,30 @@ def run_agent_e2e(
     )
 
     # Step 5: Ensure Pulumi uses the local backend (no Pulumi Cloud auth needed).
-    run_capture(
+    run_cmd(
         ["uv", "run", "pulumi", "login", "--local"],
         cwd=infra_dir,
         env={"PULUMI_CONFIG_PASSPHRASE": "123", "PULUMI_HOME": str(pulumi_home)},
+        capture=True,
     )
 
     try:
         # Step 6: Install dependencies in the rendered project (agent + infra).
-        run_live(task_cmd("install"), cwd=rendered_dir)
+        run_cmd(task_cmd("install"), cwd=rendered_dir)
 
         # Step 7: Build phase (Pulumi up with AGENT_DEPLOY=0).
         # Creates the Custom Model (and baseline infra) but not the Deployment.
-        build_output = run_live(
+        run_cmd(
             task_cmd("build", "--", "--yes", "--skip-preview"),
             cwd=rendered_dir,
         )
 
-        # Step 8: Parse the Custom Model ID from `task build` stdout (templates-style shortcut).
-        custom_model_chat_endpoint = extract_output_url(
-            build_output, contains="Custom Model Chat Endpoint"
+        # Step 8: Fetch the Custom Model endpoint from Pulumi stack outputs.
+        custom_model_chat_endpoint = pulumi_stack_output_value(
+            infra_dir=infra_dir,
+            pulumi_stack=pulumi_stack,
+            pulumi_home=pulumi_home,
+            contains="Custom Model Chat Endpoint",
         )
         custom_model_id = extract_id_from_url(
             custom_model_chat_endpoint, marker="fromCustomModel"
@@ -270,13 +277,18 @@ def run_agent_e2e(
 
         # Step 10: Deploy phase (Pulumi up with AGENT_DEPLOY=1).
         # Creates the Deployment for the Custom Model.
-        deploy_output = run_live(
+        run_cmd(
             task_cmd("deploy", "--", "--yes", "--skip-preview"),
             cwd=rendered_dir,
         )
 
-        # Step 11: Parse the Deployment ID from `task deploy` stdout (templates-style shortcut).
-        deployment_chat_endpoint = extract_output_url(deploy_output, contains="Deployment Chat Endpoint")
+        # Step 11: Fetch the Deployment endpoint from Pulumi stack outputs.
+        deployment_chat_endpoint = pulumi_stack_output_value(
+            infra_dir=infra_dir,
+            pulumi_stack=pulumi_stack,
+            pulumi_home=pulumi_home,
+            contains="Deployment Chat Endpoint",
+        )
         deployment_id = extract_id_from_url(deployment_chat_endpoint, marker="deployments")
         fprint(f"Deployment ID: {deployment_id}")
 
