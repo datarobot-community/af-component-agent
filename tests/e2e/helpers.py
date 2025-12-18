@@ -67,17 +67,8 @@ def pulumi_stack_output_value(
         capture=True,
     )
 
-    text = (raw or "").lstrip()
-    obj_start = -1
-    for ch in ("{", "["):
-        idx = text.find(ch)
-        if idx != -1 and (obj_start == -1 or idx < obj_start):
-            obj_start = idx
-    if obj_start > 0:
-        text = text[obj_start:]
-
     try:
-        outputs, _ = json.JSONDecoder().raw_decode(text or "{}")
+        outputs = json.loads((raw or "").strip() or "{}")
     except json.JSONDecodeError as e:
         pytest.fail(
             f"Failed to parse `pulumi stack output --json`: {e}\n"

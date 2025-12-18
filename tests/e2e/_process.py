@@ -80,7 +80,7 @@ def run_cmd(
                 env=merged_env,
                 text=True,
                 stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
+                stderr=subprocess.PIPE,
                 timeout=timeout,
                 check=check,
             )
@@ -97,20 +97,41 @@ def run_cmd(
         return ""
     except subprocess.TimeoutExpired as e:
         out = ""
-        if capture and isinstance(e.stdout, str):
-            out = e.stdout
+        err = ""
+        if capture:
+            if isinstance(e.stdout, str):
+                out = e.stdout
+
+            if isinstance(e.stderr, str):
+                err = e.stderr
+
+        details = ""
+        if out.strip():
+            details += f"\n\nstdout:\n{out}".rstrip()
+        if err.strip():
+            details += f"\n\nstderr:\n{err}".rstrip()
+
         pytest.fail(
-            f"Command timed out after {timeout}s: {' '.join(cmd)}\n\n{out}".rstrip()
+            f"Command timed out after {timeout}s: {' '.join(cmd)}{details}".rstrip()
         )
     except subprocess.CalledProcessError as e:
         out = ""
+        err = ""
         if capture:
-            if isinstance(e.stdout, str) and e.stdout.strip():
+            if isinstance(e.stdout, str):
                 out = e.stdout
-            elif isinstance(e.output, str) and e.output.strip():
-                out = e.output
+
+            if isinstance(e.stderr, str):
+                err = e.stderr
+
+        details = ""
+        if out.strip():
+            details += f"\n\nstdout:\n{out}".rstrip()
+        if err.strip():
+            details += f"\n\nstderr:\n{err}".rstrip()
+
         pytest.fail(
-            f"Command failed (exit {e.returncode}): {' '.join(cmd)}\n\n{out}".rstrip()
+            f"Command failed (exit {e.returncode}): {' '.join(cmd)}{details}".rstrip()
         )
 
 
