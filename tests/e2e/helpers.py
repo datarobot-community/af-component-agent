@@ -27,6 +27,7 @@ import pytest
 from ._process import fprint, is_truthy, response_snippet, run_live, task_cmd, truncate
 
 ALL_FRAMEWORKS = ("base", "crewai", "langgraph", "llamaindex", "nat")
+RESPONSE_SNIPPET_CHARS = 50
 
 
 def render_project(*, repo_root: Path, agent_framework: str) -> tuple[Path, Path]:
@@ -153,10 +154,9 @@ def verify_openai_response(cli_output: str) -> None:
         pytest.fail(f"Message content too short: {message_content!r}")
 
     fprint("Valid agent response")
-    snippet_chars = int(os.environ.get("E2E_RESPONSE_SNIPPET_CHARS", "50"))
     fprint(
-        f"Response content (first {snippet_chars} chars): "
-        f"{response_snippet(message_content, max_chars=snippet_chars)!r}"
+        f"Response content (first {RESPONSE_SNIPPET_CHARS} chars): "
+        f"{response_snippet(message_content, max_chars=RESPONSE_SNIPPET_CHARS)!r}"
     )
     if is_truthy(os.environ.get("E2E_DEBUG")):
         fprint(f"Full response content (truncated): {truncate(message_content)}")

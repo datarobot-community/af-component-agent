@@ -49,6 +49,8 @@ from ._process import (
     truncate,
 )
 
+RESPONSE_SNIPPET_CHARS = 50
+
 
 def _execute_custom_model(
     *,
@@ -73,7 +75,6 @@ def _execute_custom_model(
         cwd=rendered_dir,
     )
 
-    snippet_chars = int(os.environ.get("E2E_RESPONSE_SNIPPET_CHARS", "50"))
     response_text = extract_cli_response_after_wait(result)
     if not response_text.strip():
         pytest.fail(
@@ -89,8 +90,8 @@ def _execute_custom_model(
 
     fprint("Custom model execution completed")
     fprint(
-        f"Custom model response (first {snippet_chars} chars): "
-        f"{response_snippet(response_text, max_chars=snippet_chars)!r}"
+        f"Custom model response (first {RESPONSE_SNIPPET_CHARS} chars): "
+        f"{response_snippet(response_text, max_chars=RESPONSE_SNIPPET_CHARS)!r}"
     )
     if is_truthy(os.environ.get("E2E_DEBUG")):
         fprint(f"CLI output (truncated): {truncate(result)}")

@@ -27,6 +27,8 @@ from typing import Any, Callable
 import pytest
 from _pytest.outcomes import Failed
 
+DEFAULT_CMD_TIMEOUT_SECONDS = 20 * 60
+
 
 def fprint(msg: str) -> None:
     print(msg, flush=True)
@@ -54,20 +56,6 @@ def task_cmd(*args: str) -> list[str]:
     return ["uvx", "--from", "go-task-bin", "task", *args]
 
 
-def cmd_timeout_seconds() -> int:
-    """
-    Default timeout for E2E external commands.
-
-    E2E can take a while (pulumi up + build/deploy), but should not hang forever.
-    Configure via E2E_CMD_TIMEOUT_SECONDS. Defaults to 20 minutes.
-    """
-    raw = os.environ.get("E2E_CMD_TIMEOUT_SECONDS", "").strip()
-    if not raw:
-        return 20 * 60
-
-    return int(raw)
-
-
 def run_capture(
     cmd: list[str],
     *,
@@ -87,7 +75,7 @@ def run_capture(
         text=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
-        timeout=cmd_timeout_seconds() if timeout_seconds is None else timeout_seconds,
+        timeout=DEFAULT_CMD_TIMEOUT_SECONDS if timeout_seconds is None else timeout_seconds,
     )
 
     if check and proc.returncode != 0:
