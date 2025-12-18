@@ -19,14 +19,15 @@ Low-level helpers for E2E tests.
 from __future__ import annotations
 
 import os
-import select
 import subprocess
 import time
 from collections import deque
 from pathlib import Path
+from threading import Thread
 from typing import Any, Callable
 
 import pytest
+from _pytest.outcomes import Failed
 
 
 def fprint(msg: str) -> None:
@@ -124,6 +125,7 @@ def run_live(
         cwd=str(cwd),
         env=merged_env,
         text=True,
+        bufsize=1,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         stdin=subprocess.DEVNULL,
@@ -137,34 +139,21 @@ def run_live(
         pytest.fail("Internal error: subprocess stdout was None")
 
     timeout = cmd_timeout_seconds() if timeout_seconds is None else timeout_seconds
-    deadline = time.time() + timeout
+
+    def _stream_stdout() -> None:
+        # Stream output line-by-line (mirrors recipe-datarobot-agent-templates E2E style).
+        for line in iter(stdout.readline, ""):
+            line = line.rstrip("\n")
+            if line:
+                print(line, flush=True)
+
+            output_lines.append(line)
+
+    t = Thread(target=_stream_stdout, daemon=True)
+    t.start()
 
     try:
-        # Read stdout in the main thread (templates-style), but guard against hangs with a timeout.
-        while True:
-            remaining = deadline - time.time()
-            if remaining <= 0:
-                raise subprocess.TimeoutExpired(cmd=" ".join(cmd), timeout=timeout)
-
-            rlist, _, _ = select.select([stdout], [], [], min(1.0, remaining))
-            if rlist:
-                line = stdout.readline()
-                if line == "":
-                    if proc.poll() is not None:
-                        break
-                    continue
-
-                line = line.rstrip("\n")
-                if line:
-                    print(line, flush=True)
-                output_lines.append(line)
-                continue
-
-            # No stdout ready. If the process is done, we're done.
-            if proc.poll() is not None:
-                break
-
-        return_code = proc.wait(timeout=5)
+        return_code = proc.wait(timeout=timeout)
     except subprocess.TimeoutExpired:
         # Best-effort terminate then kill, and include partial output for debugging.
         proc.terminate()
@@ -178,6 +167,9 @@ def run_live(
             f"Command timed out after {timeout}s: {' '.join(cmd)}\n\n"
             f"Partial output (tail):\n{_tail_text(output_lines, max_chars=8000)}"
         )
+    finally:
+        # Ensure the stream thread has a chance to drain remaining output.
+        t.join(timeout=5)
 
     output = "\n".join(output_lines)
     if check and return_code != 0:
@@ -195,7 +187,7 @@ def retry(
     delay_seconds: int,
     label: str,
 ) -> Any:
-    last_exc: Exception | None = None
+    last_exc: BaseException | None = None
     for attempt in range(max_retries + 1):
         try:
             if attempt > 0:
@@ -203,7 +195,7 @@ def retry(
                     f"Retrying {label} (attempt {attempt + 1}/{max_retries + 1})..."
                 )
             return func()
-        except Exception as e:
+        except (Failed, Exception) as e:
             last_exc = e
             if attempt >= max_retries:
                 raise

@@ -50,6 +50,146 @@ from ._process import (
 )
 
 
+def _execute_custom_model(
+    *,
+    rendered_dir: Path,
+    agent_framework: str,
+    user_prompt: str,
+    custom_model_id: str,
+) -> None:
+    fprint("Running custom model agent execution")
+    fprint("====================================")
+
+    result = run_capture(
+        task_cmd(
+            "agent:cli",
+            "--",
+            "execute-custom-model",
+            "--user_prompt",
+            user_prompt,
+            "--custom_model_id",
+            custom_model_id,
+        ),
+        cwd=rendered_dir,
+    )
+
+    snippet_chars = int(os.environ.get("E2E_RESPONSE_SNIPPET_CHARS", "50"))
+    response_text = extract_cli_response_after_wait(result)
+    if not response_text.strip():
+        pytest.fail(
+            "Custom model execution: could not extract response text from CLI output. "
+            f"Output (truncated): {truncate(result)}"
+        )
+
+    assert_response_text_ok(
+        response_text=response_text,
+        agent_framework=agent_framework,
+        context="Custom model execution",
+    )
+
+    fprint("Custom model execution completed")
+    fprint(
+        f"Custom model response (first {snippet_chars} chars): "
+        f"{response_snippet(response_text, max_chars=snippet_chars)!r}"
+    )
+    if is_truthy(os.environ.get("E2E_DEBUG")):
+        fprint(f"CLI output (truncated): {truncate(result)}")
+
+
+def _execute_deployment(
+    *,
+    rendered_dir: Path,
+    user_prompt: str,
+    deployment_id: str,
+) -> None:
+    fprint("Running deployed agent execution")
+    fprint("================================")
+
+    result = run_capture(
+        task_cmd(
+            "agent:cli",
+            "--",
+            "execute-deployment",
+            "--user_prompt",
+            user_prompt,
+            "--deployment_id",
+            deployment_id,
+            "--show_output",
+        ),
+        cwd=rendered_dir,
+    )
+
+    verify_openai_response(result)
+
+
+def _cleanup_e2e(
+    *,
+    rendered_dir: Path | None,
+    infra_dir: Path | None,
+    pulumi_stack: str | None,
+    pulumi_home: Path | None,
+    env_file: Path | None,
+    datarobot_endpoint: str | None,
+    datarobot_api_token: str | None,
+    agent_framework: str,
+    skip_cleanup: bool,
+) -> None:
+    cleanup_env: dict[str, str] = {}
+    if pulumi_stack:
+        cleanup_env["PULUMI_STACK"] = pulumi_stack
+    cleanup_env["PULUMI_CONFIG_PASSPHRASE"] = "123"
+    if pulumi_home is not None:
+        cleanup_env["PULUMI_HOME"] = str(pulumi_home)
+    if datarobot_endpoint:
+        cleanup_env["DATAROBOT_ENDPOINT"] = datarobot_endpoint
+    if datarobot_api_token:
+        cleanup_env["DATAROBOT_API_TOKEN"] = datarobot_api_token
+    cleanup_env.setdefault(
+        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "Python 3.11 GenAI Agents"
+    )
+    cleanup_env.setdefault("SESSION_SECRET_KEY", "test-secret-key")
+    if agent_framework == "crewai":
+        cleanup_env.setdefault("CREWAI_TESTING", "true")
+
+    try:
+        if skip_cleanup:
+            fprint("SKIP_CLEANUP is set, skipping Pulumi destroy/stack rm")
+            return
+
+        if not rendered_dir or not infra_dir or not pulumi_stack:
+            return
+
+        run_capture(
+            ["uv", "run", "pulumi", "cancel", "--yes", "--stack", pulumi_stack],
+            cwd=infra_dir,
+            env={"PULUMI_CONFIG_PASSPHRASE": "123", "PULUMI_HOME": str(pulumi_home)}
+            if pulumi_home is not None
+            else {"PULUMI_CONFIG_PASSPHRASE": "123"},
+            check=False,
+        )
+        run_live(
+            task_cmd("destroy", "--", "--yes", "--skip-preview"),
+            cwd=rendered_dir,
+            env=cleanup_env,
+            check=False,
+        )
+        fprint(f"Attempting to remove Pulumi stack: {pulumi_stack}")
+        rm_out = run_capture(
+            ["uv", "run", "pulumi", "stack", "rm", "-f", "-y", pulumi_stack],
+            cwd=infra_dir,
+            env={"PULUMI_CONFIG_PASSPHRASE": "123", "PULUMI_HOME": str(pulumi_home)}
+            if pulumi_home is not None
+            else {"PULUMI_CONFIG_PASSPHRASE": "123"},
+            check=False,
+        )
+        if rm_out.strip():
+            fprint("Pulumi stack rm output (best-effort):")
+            fprint(rm_out.strip())
+    finally:
+        if env_file and env_file.exists():
+            env_file.unlink()
+
+
 class AgentE2EHelper:
     """
     E2E test helper for agent frameworks.
@@ -73,14 +213,6 @@ class AgentE2EHelper:
         self.skip_cleanup = (
             is_truthy(os.environ.get("SKIP_CLEANUP")) if skip_cleanup is None else skip_cleanup
         )
-
-        self._rendered_dir: Path | None = None
-        self._infra_dir: Path | None = None
-        self._env_file: Path | None = None
-        self._pulumi_stack: str | None = None
-        self._pulumi_home: Path | None = None
-        self._datarobot_endpoint: str | None = None
-        self._datarobot_api_token: str | None = None
 
     def run(self, *, datarobot_endpoint: str, datarobot_api_token: str) -> None:
         # Step 0: Select prompt + allocate a unique Pulumi stack for this run.
@@ -120,14 +252,6 @@ class AgentE2EHelper:
             extra_env=extra_env,
         )
 
-        self._rendered_dir = rendered_dir
-        self._infra_dir = infra_dir
-        self._env_file = env_file
-        self._pulumi_stack = pulumi_stack
-        self._pulumi_home = pulumi_home
-        self._datarobot_endpoint = datarobot_endpoint
-        self._datarobot_api_token = datarobot_api_token
-
         # Step 5: Ensure Pulumi uses the local backend (no Pulumi Cloud auth needed).
         run_capture(
             ["uv", "run", "pulumi", "login", "--local"],
@@ -155,7 +279,9 @@ class AgentE2EHelper:
 
             # Step 9: Execute the Custom Model and validate the response.
             retry(
-                lambda: self.run_custom_model_execution(
+                lambda: _execute_custom_model(
+                    rendered_dir=rendered_dir,
+                    agent_framework=self.agent_framework,
                     user_prompt=user_prompt,
                     custom_model_id=custom_model_id,
                 ),
@@ -180,7 +306,8 @@ class AgentE2EHelper:
 
             # Step 12: Execute the Deployment and validate OpenAI response shape.
             retry(
-                lambda: self.run_deployment_execution(
+                lambda: _execute_deployment(
+                    rendered_dir=rendered_dir,
                     user_prompt=user_prompt,
                     deployment_id=deployment_id,
                 ),
@@ -192,136 +319,17 @@ class AgentE2EHelper:
             fprint("Agent execution completed successfully")
         finally:
             # Step 13: Cleanup (Pulumi cancel + destroy + stack rm, and delete rendered `.env`).
-            self.cleanup()
-
-    def run_custom_model_execution(self, user_prompt: str, custom_model_id: str) -> None:
-        fprint("Running custom model agent execution")
-        fprint("====================================")
-
-        rendered_dir = self._rendered_dir
-        if rendered_dir is None:
-            pytest.fail("Internal error: rendered_dir missing")
-        result = run_capture(
-            task_cmd(
-                "agent:cli",
-                "--",
-                "execute-custom-model",
-                "--user_prompt",
-                user_prompt,
-                "--custom_model_id",
-                custom_model_id,
-            ),
-            cwd=rendered_dir,
-        )
-
-        snippet_chars = int(os.environ.get("E2E_RESPONSE_SNIPPET_CHARS", "50"))
-        response_text = extract_cli_response_after_wait(result)
-        if not response_text.strip():
-            pytest.fail(
-                "Custom model execution: could not extract response text from CLI output. "
-                f"Output (truncated): {truncate(result)}"
+            _cleanup_e2e(
+                rendered_dir=rendered_dir,
+                infra_dir=infra_dir,
+                pulumi_stack=pulumi_stack,
+                pulumi_home=pulumi_home,
+                env_file=env_file,
+                datarobot_endpoint=datarobot_endpoint,
+                datarobot_api_token=datarobot_api_token,
+                agent_framework=self.agent_framework,
+                skip_cleanup=self.skip_cleanup,
             )
-
-        assert_response_text_ok(
-            response_text=response_text,
-            agent_framework=self.agent_framework,
-            context="Custom model execution",
-        )
-
-        fprint("Custom model execution completed")
-        fprint(
-            f"Custom model response (first {snippet_chars} chars): "
-            f"{response_snippet(response_text, max_chars=snippet_chars)!r}"
-        )
-        if is_truthy(os.environ.get("E2E_DEBUG")):
-            fprint(f"CLI output (truncated): {truncate(result)}")
-
-    def run_deployment_execution(self, user_prompt: str, deployment_id: str) -> None:
-        fprint("Running deployed agent execution")
-        fprint("================================")
-
-        rendered_dir = self._rendered_dir
-        if rendered_dir is None:
-            pytest.fail("Internal error: rendered_dir missing")
-        result = run_capture(
-            task_cmd(
-                "agent:cli",
-                "--",
-                "execute-deployment",
-                "--user_prompt",
-                user_prompt,
-                "--deployment_id",
-                deployment_id,
-                "--show_output",
-            ),
-            cwd=rendered_dir,
-        )
-
-        verify_openai_response(result)
-
-    def cleanup(self) -> None:
-        rendered_dir = self._rendered_dir
-        infra_dir = self._infra_dir
-        pulumi_stack = self._pulumi_stack
-        pulumi_home = self._pulumi_home
-        datarobot_endpoint = self._datarobot_endpoint
-        datarobot_api_token = self._datarobot_api_token
-        env_file = self._env_file
-
-        cleanup_env: dict[str, str] = {}
-        if pulumi_stack:
-            cleanup_env["PULUMI_STACK"] = pulumi_stack
-        cleanup_env["PULUMI_CONFIG_PASSPHRASE"] = "123"
-        if pulumi_home is not None:
-            cleanup_env["PULUMI_HOME"] = str(pulumi_home)
-        if datarobot_endpoint:
-            cleanup_env["DATAROBOT_ENDPOINT"] = datarobot_endpoint
-        if datarobot_api_token:
-            cleanup_env["DATAROBOT_API_TOKEN"] = datarobot_api_token
-        cleanup_env.setdefault(
-            "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "Python 3.11 GenAI Agents"
-        )
-        cleanup_env.setdefault("SESSION_SECRET_KEY", "test-secret-key")
-        if self.agent_framework == "crewai":
-            cleanup_env.setdefault("CREWAI_TESTING", "true")
-
-        try:
-            if self.skip_cleanup:
-                fprint("SKIP_CLEANUP is set, skipping Pulumi destroy/stack rm")
-                return
-
-            if not rendered_dir or not infra_dir or not pulumi_stack:
-                return
-
-            run_capture(
-                ["uv", "run", "pulumi", "cancel", "--yes", "--stack", pulumi_stack],
-                cwd=infra_dir,
-                env={"PULUMI_CONFIG_PASSPHRASE": "123", "PULUMI_HOME": str(pulumi_home)}
-                if pulumi_home is not None
-                else {"PULUMI_CONFIG_PASSPHRASE": "123"},
-                check=False,
-            )
-            run_live(
-                task_cmd("destroy", "--", "--yes", "--skip-preview"),
-                cwd=rendered_dir,
-                env=cleanup_env,
-                check=False,
-            )
-            fprint(f"Attempting to remove Pulumi stack: {pulumi_stack}")
-            rm_out = run_capture(
-                ["uv", "run", "pulumi", "stack", "rm", "-f", "-y", pulumi_stack],
-                cwd=infra_dir,
-                env={"PULUMI_CONFIG_PASSPHRASE": "123", "PULUMI_HOME": str(pulumi_home)}
-                if pulumi_home is not None
-                else {"PULUMI_CONFIG_PASSPHRASE": "123"},
-                check=False,
-            )
-            if rm_out.strip():
-                fprint("Pulumi stack rm output (best-effort):")
-                fprint(rm_out.strip())
-        finally:
-            if env_file and env_file.exists():
-                env_file.unlink()
 
 __all__ = [
     "ALL_FRAMEWORKS",
