@@ -33,7 +33,7 @@ tasks:
           fi
 
   test-e2e:
-    desc: "Install + run full deployment E2E (Codespaces)"
+    desc: "Install + run full deployment E2E"
     cmds:
       - task: install-e2e
       - task: e2e
@@ -267,7 +267,7 @@ tasks:
           AGENT: nat
 
   e2e:
-    desc: "Run full deployment E2E (Codespaces) for all agents (requires DATAROBOT_ENDPOINT + DATAROBOT_API_TOKEN)"
+    desc: "Run full deployment E2E for all agents (requires DATAROBOT_ENDPOINT + DATAROBOT_API_TOKEN)"
     cmds:
       - echo "Running full deployment E2E (all agent frameworks)"
       - |

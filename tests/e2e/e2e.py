@@ -60,7 +60,7 @@ def _response_snippet(text: str, *, max_chars: int) -> str:
 
 
 def _task_cmd(*args: str) -> list[str]:
-    # Repo-standard invocation (matches shell tests): `uvx --from go-task-bin task`.
+    # `uvx --from go-task-bin task`.
     return ["uvx", "--from", "go-task-bin", "task"] + list(args)
 
 
@@ -520,7 +520,6 @@ def _write_testing_env(
     # Our test Taskfile fixture loads `.env`.
     env_path = project.rendered_dir / ".env"
 
-    # IMPORTANT: default exec env prevents Pulumi from trying to build a docker_context.
     lines = [
         f"DATAROBOT_ENDPOINT={datarobot_endpoint}",
         f"DATAROBOT_API_TOKEN={datarobot_api_token}",
