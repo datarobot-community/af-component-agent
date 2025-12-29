@@ -60,14 +60,27 @@ jobs:
             "https://api.github.com/repos/${REPO_NAME}/pulls?state=open&per_page=100")
           echo "All open PRs (before filtering):"
           echo "$PRS_JSON" | jq -r '.[] | "Title: " + .title + " | Labels: " + ([.labels[].name] | join(", "))'
-          # Filter PRS_JSON to only PRs with a label containing 'ready for review' (case-insensitive)
-          PRS_JSON=$(echo "$PRS_JSON" | jq '[.[] | select(.labels[]?.name | ascii_downcase | test("ready for review"))]')
-          echo "Open PRs after filtering for 'ready for review' label (case-insensitive):"
+          # Filter PRS_JSON to only PRs with a label containing 'ready for review' (case-insensitive) and exclude those with "00 - Reviewed" label
+          PRS_JSON=$(echo "$PRS_JSON" | jq '[.[] | select(
+            (.labels[]?.name | ascii_downcase | test("ready for review")) and
+            (.labels | map(.name) | any(. == "00 - Reviewed") | not)
+          )]')
+          echo "Open PRs after filtering for 'ready for review' label (excluding '00 - Reviewed'):"
           echo "$PRS_JSON" | jq -r '.[] | "Title: " + .title + " | Labels: " + ([.labels[].name] | join(", "))'
           
           # Filter PRs with "Ready for Review" label and format them (fetching details for correct additions/deletions)
           PR_LIST=""
           for PR_NUMBER in $(echo "$PRS_JSON" | jq -r '.[].number'); do
+            # Check if PR has any approved reviews
+            REVIEWS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/repos/${REPO_NAME}/pulls/${PR_NUMBER}/reviews")
+            HAS_APPROVAL=$(echo "$REVIEWS" | jq '[.[] | select(.state == "APPROVED")] | length > 0')
+
+            if [ "$HAS_APPROVAL" = "true" ]; then
+              echo "Skipping PR #$PR_NUMBER - already has an approval"
+              continue
+            fi
+
             PR_DETAIL=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
               "https://api.github.com/repos/${REPO_NAME}/pulls/${PR_NUMBER}")
             TITLE=$(echo "$PR_DETAIL" | jq -r '.title')
