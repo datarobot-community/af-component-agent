@@ -24,7 +24,7 @@ jobs:
           echo "should-continue=true" >> $GITHUB_OUTPUT
           
       - name: Add team-specific labels based on reviewers
-        if: github.event_name == 'pull_request' && steps.check-label.outputs.should-continue == 'true'
+        if: false
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
