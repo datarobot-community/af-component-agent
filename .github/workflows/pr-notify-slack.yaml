@@ -61,8 +61,8 @@ jobs:
             HTML_URL=$(echo "$PR_DETAIL" | jq -r '.html_url')
             LINE="• PR <$HTML_URL|#$PR_NUMBER: $TITLE> by $USER needs a review: \`+$ADDITIONS -$DELETIONS\`"
             echo "Found PR marked as ready for review: $LINE"
-            # Escape special characters for JSON and bash
-            ESCAPED_LINE=$(echo "$LINE" | sed 's/\\/\\\\/g; s/"/\\"/g; s/`/\\`/g; s/\$/\\$/g; s/\t/\\t/g; s/\r/\\r/g')
+            # Escape special characters for JSON
+            ESCAPED_LINE=$(echo "$LINE" | sed 's/\\/\\\\/g; s/"/\\"/g')
             if [ -z "$PR_LIST" ]; then
               PR_LIST="$ESCAPED_LINE"
             else
