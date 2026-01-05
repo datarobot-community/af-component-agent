@@ -52,7 +52,8 @@ class MyAgent(LangGraphAgent):
             [
                 (
                     "user",
-                    f"The topic is {% raw %}{{topic}}{% endraw %}. Make sure you find any interesting and relevant information given the current year is {datetime.now().year}.",
+                    f"The topic is {% raw %}{{topic}}{% endraw %}. Make sure you find any interesting and "
+                    f"relevant information given the current year is {datetime.now().year}.",
                 ),
             ]
         )
@@ -100,20 +101,16 @@ class MyAgent(LangGraphAgent):
             self.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07"),
             tools=self.mcp_tools,
             prompt=make_system_prompt(
-                "You are a content planner. You are working with a content writer colleague.\n"
-                "You're working on planning a blog article about the topic. You collect information that helps the "
-                "audience learn something and make informed decisions. Your work is the basis for the Content Writer "
-                "to write an article on this topic. Keep your plan focused and concise - don't overthink it. "
-                "This is a simple example task."
+                "You are a content planner. You create brief, structured outlines for blog articles. "
+                "You identify the most important points and cite relevant sources. Keep it simple and to the point - "
+                "this is just an outline for the writer.\n"
                 "\n"
-                "1. Prioritize the latest trends, key players, and noteworthy news on the topic.\n"
-                "2. Identify the target audience, considering their interests and pain points.\n"
-                "3. Develop a detailed content outline including an introduction, key points, and a call to action.\n"
-                "4. Include SEO keywords and relevant data or sources."
+                "Create a simple outline with:\n"
+                "1. 10-15 key points or facts (bullet points only, no paragraphs)\n"
+                "2. 2-3 relevant sources or references\n"
+                "3. A brief suggested structure (intro, 2-3 sections, conclusion)\n"
                 "\n"
-                "Plan engaging and factually accurate content on the topic. You must create a concise content "
-                "plan document with an outline, audience analysis, SEO keywords, and resources. Keep it brief and "
-                "to the point.",
+                "Do NOT write paragraphs or detailed explanations. Just provide a focused list.",
             ),
             name="Planner Agent",
         )
@@ -124,24 +121,17 @@ class MyAgent(LangGraphAgent):
             self.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07"),
             tools=self.mcp_tools,
             prompt=make_system_prompt(
-                "You are a content writer. You are working with a planner colleague.\n"
-                "You're working on writing a new opinion piece about the topic. You base your writing on the work "
-                "of the Content Planner, who provides an outline and relevant context about the topic. You follow "
-                "the main objectives and direction of the outline, as provided by the Content Planner. You also "
-                "provide objective and impartial insights and back them up with information provided by the Content "
-                "Planner. You acknowledge in your opinion piece when your statements are opinions as opposed to "
-                "objective statements. IMPORTANT: Keep your output concise and under 500 words total. Don't overthink - "
-                "this is a simple example task.\n"
+                "You are a content writer working with a planner colleague.\n"
+                "You write opinion pieces based on the planner's outline and context. You provide objective and "
+                "impartial insights backed by the planner's information. You acknowledge when your statements are "
+                "opinions versus objective facts.\n"
+                "\n"
                 "1. Use the content plan to craft a compelling blog post.\n"
-                "2. Incorporate SEO keywords naturally.\n"
+                "2. Structure with an engaging introduction, insightful body, and summarizing conclusion.\n"
                 "3. Sections/Subtitles are properly named in an engaging manner.\n"
-                "4. Ensure the post is structured with an engaging introduction, insightful body, and a summarizing "
-                "conclusion.\n"
-                "5. Proofread for grammatical errors and alignment with the brand's voice.\n"
-                "6. CRITICAL: Keep the total output under 500 words. Be concise and don't overthink it.\n"
-                "Write a concise, insightful opinion piece about the topic. You must create a "
-                "well-written blog post in markdown format, ready for publication. Maximum 500 words total. "
-                "Each section should have 1-2 brief paragraphs.",
+                "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
+                "\n"
+                "Write in markdown format, ready for publication.",
             ),
             name="Writer Agent",
         )

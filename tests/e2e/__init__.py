@@ -11,17 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-function_groups:
-  mcp_tools:
-    _type: datarobot_mcp_client
-authentication:
-  datarobot_mcp_auth:
-    _type: datarobot_mcp_auth
-llms:
-  datarobot_llm:
-    _type: datarobot-llm-component
-workflow:
-  _type: react_agent
-  llm_name: datarobot_llm
-  tool_names:
-    - mcp_tools
+
+"""
+End-to-end test package for af-component-agent.
+
+Keeping this as a proper Python package allows sibling modules to use relative imports.
+"""
+
+

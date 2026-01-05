@@ -119,11 +119,10 @@ class MyAgent(CrewAIAgent):
         """Content Planner agent."""
         return Agent(
             role="Planner",
-            goal="Plan engaging and factually accurate content on {topic}. Be concise and focused.",
-            backstory="You're working on planning a blog article about the topic: {topic}. You collect "
-            "information that helps the audience learn something and make informed decisions. Your work is "
-            "the basis for the Content Writer to write an article on this topic. Keep your plan focused and "
-            "concise - don't overthink it. This is a simple example task.",
+            goal="Create a simple, focused outline for {topic} with key points and sources.",
+            backstory="You create brief, structured outlines for blog articles. "
+            "You identify the most important points and cite relevant sources. "
+            "Keep it simple and to the point - this is just an outline for the writer.",
             allow_delegation=False,
             verbose=self.verbose,
             llm=self.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07"),
@@ -136,13 +135,9 @@ class MyAgent(CrewAIAgent):
         return Agent(
             role="Writer",
             goal="Write a concise, insightful opinion piece about {topic}. Maximum 500 words.",
-            backstory="You're working on writing a new opinion piece about the topic: {topic}. You base your writing "
-            "on the work of the Content Planner, who provides an outline and relevant context about the topic. "
-            "You follow the main objectives and direction of the outline, as provided by the Content Planner. "
-            "You also provide objective and impartial insights and back them up with information provided by the "
-            "Content Planner. You acknowledge in your opinion piece when your statements are opinions as opposed "
-            "to objective statements. IMPORTANT: Keep your output concise and under 500 words total. Don't overthink - "
-            "this is a simple example task.",
+            backstory="You write opinion pieces based on the planner's outline and context. "
+            "You provide objective and impartial insights backed by the planner's information. "
+            "You acknowledge when your statements are opinions versus objective facts.",
             allow_delegation=False,
             verbose=self.verbose,
             llm=self.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07"),
@@ -153,14 +148,14 @@ class MyAgent(CrewAIAgent):
     def task_plan(self) -> Task:
         return Task(
             description=(
-                "1. Prioritize the latest trends, key players, and noteworthy news on {topic}.\n"
-                "2. Identify the target audience, considering their interests and pain points.\n"
-                "3. Develop a detailed content outline including an introduction, key points, and a call to action.\n"
-                "4. Include SEO keywords and relevant data or sources.\n"
-                "Keep it brief and focused - don't overthink this."
+                "Create a simple outline for {topic} with:\n"
+                "1. 10-15 key points or facts (bullet points only, no paragraphs)\n"
+                "2. 2-3 relevant sources or references\n"
+                "3. A brief suggested structure (intro, 2-3 sections, conclusion)\n"
+                "Do NOT write paragraphs or detailed explanations. Just provide a focused list."
             ),
-            expected_output="A concise content plan document with an outline, audience analysis, SEO keywords, "
-            "and resources. Keep it brief and to the point.",
+            expected_output="A simple outline with 10-15 bullet points, 2-3 sources, and a basic structure. "
+            "No paragraphs or lengthy explanations.",
             agent=self.agent_planner,
         )
 
@@ -169,14 +164,10 @@ class MyAgent(CrewAIAgent):
         return Task(
             description=(
                 "1. Use the content plan to craft a compelling blog post on {topic}.\n"
-                "2. Incorporate SEO keywords naturally.\n"
+                "2. Structure with an engaging introduction, insightful body, and summarizing conclusion.\n"
                 "3. Sections/Subtitles are properly named in an engaging manner.\n"
-                "4. Ensure the post is structured with an engaging introduction, insightful body, and a summarizing "
-                "conclusion.\n"
-                "5. Proofread for grammatical errors and alignment with the brand's voice.\n"
-                "6. CRITICAL: Keep the total output under 500 words. Be concise and don't overthink it."
+                "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs."
             ),
-            expected_output="A concise, well-written blog post in markdown format, ready for publication. "
-            "Maximum 500 words total. Each section should have 1-2 brief paragraphs.",
+            expected_output="A well-written blog post in markdown format, ready for publication. Maximum 500 words total.",
             agent=self.agent_writer,
         )
