@@ -160,12 +160,6 @@ tasks:
     cmds:
       - echo "Stopping development server"
       - pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || echo "No development server process found"
-  chainlit:
-    desc: "🛝 Run the ChainLit playground"
-    cmds:
-      - echo "🛝 Starting ChainLit playground"
-      - "{% raw %}{{.UV_CMD}}{% endraw %} sync --all-extras"
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run chainlit run --host 0.0.0.0 --port 8083 -w lit.py"
   create-docker-context:
     desc: 🐳 Create the template for a local docker_context image
     vars:
