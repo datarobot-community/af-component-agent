@@ -122,7 +122,9 @@ class MyAgent(CrewAIAgent):
             goal="Create a simple, focused outline for {topic} with key points and sources.",
             backstory="You create brief, structured outlines for blog articles. "
             "You identify the most important points and cite relevant sources. "
-            "Keep it simple and to the point - this is just an outline for the writer.",
+            "Keep it simple and to the point - this is just an outline for the writer. "
+            "You have access to tools that can help you research and gather information. Use these tools when "
+            "required to collect accurate and up-to-date information about the topic for your planning and research.",
             allow_delegation=False,
             verbose=self.verbose,
             llm=self.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07"),
@@ -137,7 +139,9 @@ class MyAgent(CrewAIAgent):
             goal="Write a concise, insightful opinion piece about {topic}. Maximum 500 words.",
             backstory="You write opinion pieces based on the planner's outline and context. "
             "You provide objective and impartial insights backed by the planner's information. "
-            "You acknowledge when your statements are opinions versus objective facts.",
+            "You acknowledge when your statements are opinions versus objective facts. "
+            "You have access to tools that can help you verify facts and gather additional supporting information. "
+            "Use these tools when required to ensure accuracy and find relevant details while writing.",
             allow_delegation=False,
             verbose=self.verbose,
             llm=self.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07"),
