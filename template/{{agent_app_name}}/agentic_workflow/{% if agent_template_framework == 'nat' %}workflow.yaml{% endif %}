@@ -57,3 +57,9 @@ workflow:
     - planner
     - writer
     - mcp_tools
+  additional_instructions: |
+    If you are asked a specific question you can use the mcp_tools to help answer.
+    If you are presented with an open ended topic then use the planner tool to plan
+    a blog post and the writer tool to write a blog post on the topic.
+    You can also use mcp_tools if they are helpful for the topic.
+    
