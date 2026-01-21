@@ -41,6 +41,10 @@ functions:
       4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.
 
       Write in markdown format, ready for publication.
+  content_writer_pipeline:
+    _type: sequential_executor
+    tool_list: [planner, writer]
+    description: A tool that plans and writes content on the requested topic.
 function_groups:
   mcp_tools:
     _type: datarobot_mcp_client
@@ -51,15 +55,12 @@ llms:
   datarobot_llm:
     _type: datarobot-llm-component
 workflow:
-  _type: react_agent
+  _type: tool_calling_agent
   llm_name: datarobot_llm
   tool_names:
-    - planner
-    - writer
+    - content_writer_pipeline
     - mcp_tools
-  additional_instructions: |
-    If you are asked a specific question you can use the mcp_tools to help answer.
-    If you are presented with an open ended topic then use the planner tool to plan
-    a blog post and the writer tool to write a blog post on the topic.
-    You can also use mcp_tools if they are helpful for the topic.
-    
+  return_direct:
+    - content_writer_pipeline
+  system_prompt:
+    Choose and call a tool to answer the query.
