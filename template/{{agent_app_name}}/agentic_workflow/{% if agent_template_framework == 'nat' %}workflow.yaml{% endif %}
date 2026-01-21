@@ -41,9 +41,19 @@ functions:
       4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.
 
       Write in markdown format, ready for publication.
+function_groups:
+  mcp_tools:
+    _type: datarobot_mcp_client
+authentication:
+  datarobot_mcp_auth:
+    _type: datarobot_mcp_auth
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
 workflow:
-  _type: sequential_executor
-  tool_list: [planner, writer]
+  _type: react_agent
+  llm_name: datarobot_llm
+  tool_names:
+    - planner
+    - writer
+    - mcp_tools
