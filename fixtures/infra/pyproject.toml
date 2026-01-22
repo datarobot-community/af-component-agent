@@ -10,7 +10,8 @@ dependencies = [
     "datarobot-pulumi-utils>=0.0.2.post11",
     "pulumi>=3.175.0",
     "pulumi-datarobot>=0.10.27",
-    "jinja2>=3.1.5,<4.0"
+    "jinja2>=3.1.5,<4.0",
+    "pytz>=2024.1" # Temporary fix for datarobot pandas issue
 ]
 
 

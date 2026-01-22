@@ -481,6 +481,9 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         deployment_args={{agent_app_name}}_deployment_args,
     )
     {{agent_app_name}}_agent_deployment_id = {{agent_app_name}}_agent_deployment.id.apply(lambda id: f"{id}")
+    {{agent_app_name}}_deployment_endpoint = {{agent_app_name}}_agent_deployment.id.apply(
+        lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}"
+    )
     {{agent_app_name}}_deployment_completions_endpoint = {{agent_app_name}}_agent_deployment.id.apply(
         lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/chat/completions"
     )
@@ -499,5 +502,10 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         key={{agent_app_name}}_application_name.upper() + "_DEPLOYMENT_ID",
         type="string",
         value={{agent_app_name}}_agent_deployment_id,
+    ),
+    pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
+        key={{agent_app_name}}_application_name.upper() + "_ENDPOINT",
+        type="string",
+        value={{agent_app_name}}_deployment_endpoint,
     ),
 ]
