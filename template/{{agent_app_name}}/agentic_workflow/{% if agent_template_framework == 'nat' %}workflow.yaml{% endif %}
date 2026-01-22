@@ -41,9 +41,26 @@ functions:
       4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.
 
       Write in markdown format, ready for publication.
+  content_writer_pipeline:
+    _type: sequential_executor
+    tool_list: [planner, writer]
+    description: A tool that plans and writes content on the requested topic.
+function_groups:
+  mcp_tools:
+    _type: datarobot_mcp_client
+authentication:
+  datarobot_mcp_auth:
+    _type: datarobot_mcp_auth
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
 workflow:
-  _type: sequential_executor
-  tool_list: [planner, writer]
+  _type: tool_calling_agent
+  llm_name: datarobot_llm
+  tool_names:
+    - content_writer_pipeline
+    - mcp_tools
+  return_direct:
+    - content_writer_pipeline
+  system_prompt:
+    Choose and call a tool to answer the query.
