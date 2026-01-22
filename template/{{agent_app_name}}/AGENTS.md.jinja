@@ -7,7 +7,7 @@ Agent in this template are built using **LangGraph** and inherit from the `LangG
 Should be ran after agent code modification:
 
 ```shell
-dr task run agent:install
+dr task run {{ agent_app_name }}:install
 ```
 
 ## Agent Structure
@@ -115,7 +115,7 @@ def agent_node(self) -> Any:
 **IMPORTANT**: Add required tools in the `{{ agent_app_name }}/agentic_workflow` directory. Do not add/modify any files outside of this directory. If some of the tools require adding new packages, they should be added to the pyproject.toml and properly installed using command
 
 ```shell
-dr task run agent:install
+dr task run {{ agent_app_name }}:install
 ```
 
 **IMPORTANT**: Tools must be imported and used in `MyAgent` implementation.
@@ -132,11 +132,11 @@ Preferred model should be set in each ```self.llm(preferred_model="{preffered_mo
 Run the following shell commands to run the agent locally:
 
 ```shell
-dr task run agent:lint
+dr task run {{ agent_app_name }}:lint
 ```
 
 ```shell
-dr task run agent:test
+dr task run {{ agent_app_name }}:test
 ```
 
 ## Agent Deployment
@@ -159,5 +159,5 @@ dr task run infra:down-yes
 Run the following shell command to validate the agent after deployment. If the response has no errors then the deployment is successful.
 
 ```shell
-task agent:cli -- execute-deployment --user_prompt "Agent specific prompt to validate that it's working" --deployment_id <deployment_id>
+task {{ agent_app_name }}:cli -- execute-deployment --user_prompt "Agent specific prompt to validate that it's working" --deployment_id <deployment_id>
 ```
