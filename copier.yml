@@ -49,20 +49,23 @@ llm_answers_file:
     {% elif '.datarobot/answers' not in llm_answers_file %}ERROR: LLM answers file must contain '.datarobot/answers' in the path
     {% endif %}
 
-fastmcp_answers_file:
+mcp_answers_file:
   type: str
-  default: ".datarobot/answers/fastmcp-mcp_server.yml"
-  help: "Path to the fastmcp component answers file (must contain '.datarobot/answers')"
+  default: ".datarobot/answers/drmcp-mcp_server.yml"
+  help: "Path to the DataRobot MCP component answers file (must contain '.datarobot/answers')"
   validator: >-
-    {% if not fastmcp_answers_file %}ERROR: FastMCP answers file path cannot be empty
-    {% elif '.datarobot/answers' not in fastmcp_answers_file %}ERROR: FastMCP answers file must contain '.datarobot/answers' in the path
+    {% if not mcp_answers_file %}ERROR: DataRobot MCP answers file path cannot be empty
+    {% elif '.datarobot/answers' not in mcp_answers_file %}ERROR: DataRobot MCP answers file must contain '.datarobot/answers' in the path
     {% endif %}
 
 # Grab the base component answers to re-use answers
+# WARNING: This MCP dependency is necessary because if a user has an agent and an MCP. They will need to know about each other.
+# BUT do not use the variables from this external dependency in a way that makes the dependency a hard requirements.
+# BECAUSE the agent MUST still be able to run without the MCP.
 _external_data:
   base: "{{ base_answers_file }}"
   llm: "{{ llm_answers_file }}"
-  fastmcp: "{{ fastmcp_answers_file }}"
+  mcp: "{{ mcp_answers_file }}"
 
 _subdirectory: template
 _answers_file: ".datarobot/answers/agent-{{ agent_app_name }}.yml"

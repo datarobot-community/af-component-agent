@@ -40,7 +40,7 @@ def pulumi_mocks(monkeypatch, tmp_path):
     # interface required for this module.
     mock_mcp_module = MagicMock()
     mock_mcp_module.mcp_custom_model_runtime_parameters = []
-    monkeypatch.setitem(sys.modules, "infra.{{ _external_data.fastmcp.fastmcp_app_name }}", mock_mcp_module)
+    monkeypatch.setitem(sys.modules, "infra.{{ _external_data.mcp.mcp_app_name }}", mock_mcp_module)
     # Mock pulumi_datarobot resources
     monkeypatch.setattr("pulumi_datarobot.ExecutionEnvironment", MagicMock())
     monkeypatch.setattr("pulumi_datarobot.CustomModel", MagicMock())
@@ -651,20 +651,20 @@ name = "old-project"
 
 class TestMaybeImportFromModule:
     @pytest.fixture
-    def skip_if_no_fastmcp(self):
-        """Skip tests if fastmcp module is not available."""
-        mcp_module = "{{ _external_data.fastmcp.fastmcp_app_name }}"
+    def skip_if_no_mcp(self):
+        """Skip tests if mcp module is not available."""
+        mcp_module = "{{ _external_data.mcp.mcp_app_name }}"
         if not mcp_module:
             pytest.skip("Skipping tests of existing MCP when module is not provided.")
 
-    @pytest.mark.usefixtures("skip_if_no_fastmcp")
+    @pytest.mark.usefixtures("skip_if_no_mcp")
     def test_maybe_import_from_module_success(self):
         """Test that maybe_import_from_module successfully imports an existing module."""
         import infra.{{agent_app_name}} as agent_infra
 
         # The fixture sets up the mocked MCP module with mcp_custom_model_runtime_parameters
         result = agent_infra.maybe_import_from_module(
-            "{{ _external_data.fastmcp.fastmcp_app_name }}", "mcp_custom_model_runtime_parameters"
+            "{{ _external_data.mcp.mcp_app_name }}", "mcp_custom_model_runtime_parameters"
         )
         assert result is not None
 
@@ -680,7 +680,7 @@ class TestMaybeImportFromModule:
 
         # Attempt to import from the non-existent module
         result = agent_infra.maybe_import_from_module(
-            "{{ _external_data.fastmcp.fastmcp_app_name }}", "mcp_custom_model_runtime_parameters"
+            "{{ _external_data.mcp.mcp_app_name }}", "mcp_custom_model_runtime_parameters"
         )
         assert result is None
 
