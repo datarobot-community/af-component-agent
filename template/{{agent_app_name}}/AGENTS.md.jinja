@@ -138,26 +138,3 @@ dr task run {{ agent_app_name }}:lint
 ```shell
 dr task run {{ agent_app_name }}:test
 ```
-
-## Agent Deployment
-
-Run the following shell commands to deploy the agent:
-
-```shell
-dr task run infra:up-yes
-```
-
-In case the deployment fails, you can try deleting it by running the following command:
-
-```shell
-dr task run infra:down-yes
-```
-
-
-## Post Deployment Validation
-
-Run the following shell command to validate the agent after deployment. If the response has no errors then the deployment is successful.
-
-```shell
-task {{ agent_app_name }}:cli -- execute-deployment --user_prompt "Agent specific prompt to validate that it's working" --deployment_id <deployment_id>
-```
