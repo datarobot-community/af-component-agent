@@ -2,6 +2,7 @@ import os
 from unittest.mock import patch
 
 import pytest
+
 from agent import MyAgent
 
 
@@ -151,7 +152,7 @@ class TestMyAgentLlamaIndex:
             (None, "https://app.datarobot.com/"),
         ],
     )
-    @patch("agent.DataRobotLiteLLM")
+    @patch("agent.myagent.DataRobotLiteLLM")
     def test_llm_gateway_with_api_base(self, mock_llm, api_base, expected_result):
         """Test api_base_litellm property with various URL formats."""
         with patch.dict(os.environ, {}, clear=True):
@@ -219,7 +220,7 @@ class TestMyAgentLlamaIndex:
             ),
         ],
     )
-    @patch("agent.DataRobotLiteLLM")
+    @patch("agent.myagent.DataRobotLiteLLM")
     def test_llm_deployment_with_api_base(self, mock_llm, api_base, expected_result):
         """Test api_base_litellm property with various URL formats."""
         with patch.dict(os.environ, {"{{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEPLOYMENT_ID": "test-id"}, clear=True):

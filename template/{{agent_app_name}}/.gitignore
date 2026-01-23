@@ -186,4 +186,4 @@ cython_debug/
 Pulumi.*.yaml
 
 # Rendered jinja template for runtime parameters
-agentic_workflow/model-metadata.yaml
+model-metadata.yaml

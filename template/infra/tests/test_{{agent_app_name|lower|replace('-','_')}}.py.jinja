@@ -732,7 +732,7 @@ class TestGenerateMetadataYaml:
             MagicMock(key="PARAM_WITH_UNDERSCORE_123", type="string"),
         ]
 
-        # Call the function with tmp_path as the agentic_workflow folder
+        # Call the function with tmp_path as the custom model folder
         agent_infra._generate_metadata_yaml("{{agent_app_name}}", str(tmp_path), mock_params)
 
         # Read and parse the generated YAML

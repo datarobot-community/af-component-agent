@@ -15,7 +15,6 @@
 from datetime import datetime
 from typing import Any, Optional, Union
 
-from agent.config import Config
 from datarobot_genai.core.agents import extract_user_prompt_content
 from datarobot_genai.llama_index import (
     DataRobotLiteLLM,
@@ -26,6 +25,8 @@ from llama_index.core.agent.workflow import (
     FunctionAgent,
 )
 from llama_index.core.workflow import Context
+
+from agent.config import Config
 
 
 class MyAgent(LlamaIndexAgent):

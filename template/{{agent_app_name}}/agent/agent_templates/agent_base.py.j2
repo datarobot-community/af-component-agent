@@ -13,7 +13,6 @@
 # limitations under the License.
 from typing import Any, Optional, Union
 
-from agent.config import Config
 from datarobot_genai.core.agents import (
     BaseAgent,
     InvokeReturn,
@@ -23,6 +22,8 @@ from datarobot_genai.core.agents import (
     is_streaming,
 )
 from openai.types.chat import CompletionCreateParams
+
+from agent.config import Config
 
 
 class MyAgent(BaseAgent[None]):

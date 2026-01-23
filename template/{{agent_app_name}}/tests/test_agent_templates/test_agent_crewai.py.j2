@@ -3,9 +3,10 @@ import os
 from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
-from agent import MyAgent
 from ragas import MultiTurnSample
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
+
+from agent import MyAgent
 
 
 class TestMyAgentCrewAI:
@@ -258,7 +259,7 @@ class TestMyAgentCrewAI:
                 timeout=90,
             )
 
-    @patch("agent.Agent")
+    @patch("agent.myagent.Agent")
     def test_agent_planner_property(self, mock_agent, agent):
         # Mock the llm property
         mock_llm = Mock()
@@ -274,7 +275,7 @@ class TestMyAgentCrewAI:
                 tools=ANY,
             )
 
-    @patch("agent.Agent")
+    @patch("agent.myagent.Agent")
     def test_agent_writer_property(self, mock_agent, agent):
         # Mock the llm property
         mock_llm = Mock()
@@ -290,7 +291,7 @@ class TestMyAgentCrewAI:
                 tools=ANY,
             )
 
-    @patch("agent.Task")
+    @patch("agent.myagent.Task")
     def test_task_plan_property(self, mock_task, agent):
         # Mock the agent_planner property
         mock_planner = Mock()
@@ -302,7 +303,7 @@ class TestMyAgentCrewAI:
                 agent=ANY,
             )
 
-    @patch("agent.Task")
+    @patch("agent.myagent.Task")
     def test_task_write_property(self, mock_task, agent):
         # Mock the agent_planner property
         mock_planner = Mock()
@@ -315,8 +316,8 @@ class TestMyAgentCrewAI:
             )
 
     @patch("datarobot_genai.crewai.base.Crew")
-    @patch("agent.CrewAIEventListener")
-    @patch("agent.Agent")
+    @patch("agent.myagent.CrewAIEventListener")
+    @patch("agent.myagent.Agent")
     def test_chat(
         self, mock_agent, mock_event_listener, mock_crew, agent, load_model_result
     ):

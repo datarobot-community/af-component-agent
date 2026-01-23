@@ -16,4 +16,3 @@ from agent.config import Config
 from agent.myagent import MyAgent
 
 __all__ = ["MyAgent", "Config"]
-
