@@ -47,7 +47,7 @@ agentic_playground = [
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
-pythonpath = ["agentic_workflow"]
+pythonpath = ["."]
 asyncio_mode = "auto"
 
 [tool.ruff]
@@ -185,3 +185,9 @@ override-dependencies = [
 
 [dependency-groups]
 extras = []
+
+[tool.uv]
+package = true
+
+[tool.setuptools.packages.find]
+include = ["agent*"]

@@ -15,10 +15,7 @@
 from datetime import datetime
 from typing import Any, Optional, Union
 
-# isort: off
-from config import Config
-
-# isort: on
+from agent.config import Config
 from datarobot_genai.core.agents import extract_user_prompt_content
 from datarobot_genai.llama_index import (
     DataRobotLiteLLM,
