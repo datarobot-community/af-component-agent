@@ -273,9 +273,16 @@ def get_mcp_custom_model_runtime_parameters() -> list[
     mcp_params = maybe_import_from_module(
         mcp_module, "mcp_custom_model_runtime_parameters"
     )
+    def log_params(params):
+        for p in params:
+            p.value.apply(lambda v, key=p.key: pulumi.info(f"Key {key}, Value {v}"))
+        return params
+
+    pulumi.info('Loaded the followig MCP parameters')
+    mcp_params = log_params(mcp_params)
     if mcp_params is not None:
         return mcp_params
-
+    pulumi.info("Couldn't find MCP module, falling back to environment variables.")
     return get_mcp_runtime_parameters_from_env()
 
 
