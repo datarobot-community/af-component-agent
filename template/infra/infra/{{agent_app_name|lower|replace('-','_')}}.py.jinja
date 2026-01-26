@@ -269,18 +269,21 @@ def get_mcp_custom_model_runtime_parameters() -> list[
     otherwise fall back to environment variables.
     """
     mcp_module = "{{ _external_data.fastmcp.fastmcp_app_name }}"
-    pulumi.info(f'MCP module name {mcp_module}')
-    # Print mcp_server.py file for debugging
+    pulumi.info(f'MCP module name "{mcp_module}"')
+    # Print all files of the current directory for debugging
+    pulumi.info(f"Agent.py file:")
+    _print_file(os.path.join(
+        # Location of this file
+        Path(__file__).parent,
+        "agent.py",
+    ))
+
     mcp_server_path = os.path.join(
         # Location of this file
         Path(__file__).parent, "mcp_server.py"
     )
     pulumi.info(f'MCP server path {mcp_server_path}')
-    if os.path.exists(mcp_server_path):
-        with open(mcp_server_path, "r", encoding="utf-8") as f:
-            pulumi.info(f"Contents of {mcp_server_path}:\n{f.read()}")
-    else:
-        pulumi.info(f"{mcp_server_path} does not exist.")
+    _print_file(mcp_server_path)
     mcp_params = maybe_import_from_module(
         mcp_module, "mcp_custom_model_runtime_parameters"
     )
@@ -296,6 +299,12 @@ def get_mcp_custom_model_runtime_parameters() -> list[
     pulumi.info("Couldn't find MCP module, falling back to environment variables.")
     return get_mcp_runtime_parameters_from_env()
 
+def _print_file(mcp_server_path: str):
+    if os.path.exists(mcp_server_path):
+        with open(mcp_server_path, "r", encoding="utf-8") as f:
+            print(f"Contents of {mcp_server_path}:\n{f.read()}")
+    else:
+        print(f"{mcp_server_path} does not exist.")
 
 synchronize_pyproject_dependencies()
 pulumi.info("NOTE: [unknown] values will be populated after performing an update.")  # fmt: skip
