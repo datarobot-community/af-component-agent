@@ -145,9 +145,6 @@ def get_custom_model_files(
 def synchronize_pyproject_dependencies():
     pyproject_toml_path = os.path.join(str({{agent_app_name}}_application_path), "pyproject.toml")
     uv_lock_path = os.path.join(str({{agent_app_name}}_application_path), "uv.lock")
-    custom_model_folder = str(
-        os.path.join(str({{agent_app_name}}_application_path), "agentic_workflow")
-    )
     docker_context_folder = str(
         os.path.join(str({{agent_app_name}}_application_path), "docker_context")
     )
@@ -155,16 +152,6 @@ def synchronize_pyproject_dependencies():
     # Check if pyproject.toml exists in the application path
     if not os.path.exists(pyproject_toml_path):
         return
-
-    # Copy pyproject.toml to custom_model folder if it exists
-    if os.path.exists(custom_model_folder):
-        custom_model_pyproject_path = os.path.join(
-            custom_model_folder, "pyproject.toml"
-        )
-        shutil.copy2(pyproject_toml_path, custom_model_pyproject_path)
-        if os.path.exists(uv_lock_path):
-            custom_model_uv_lock_path = os.path.join(custom_model_folder, "uv.lock")
-            shutil.copy2(uv_lock_path, custom_model_uv_lock_path)
 
     # Copy pyproject.toml to docker_context folder if it exists
     if os.path.exists(docker_context_folder):
@@ -368,9 +355,7 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
     )
 
 {{agent_app_name}}_custom_model_files = get_custom_model_files(
-    custom_model_folder=str(
-        os.path.join(str({{agent_app_name}}_application_path), "agentic_workflow")
-    ),
+    custom_model_folder=str({{agent_app_name}}_application_path),
     runtime_parameter_values=agent_runtime_parameter_values,
 )
 

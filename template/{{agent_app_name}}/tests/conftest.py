@@ -12,28 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import asyncio
-import os
-import sys
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
-
-
-@pytest.fixture
-def tests_path():
-    path = os.path.split(os.path.abspath(__file__))[0]
-    return path
-
-
-@pytest.fixture
-def root_path(tests_path):
-    path = os.path.split(tests_path)[0]
-    return path
-
-
-@pytest.fixture(autouse=True)
-def agentic_workflow_environment(root_path):
-    sys.path.append(os.path.join(root_path, "agentic_workflow"))
 
 
 @pytest.fixture

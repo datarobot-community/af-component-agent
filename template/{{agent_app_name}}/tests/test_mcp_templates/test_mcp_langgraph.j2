@@ -9,8 +9,9 @@ from typing import Any
 from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
-from agent import MyAgent
 from langchain_core.messages import AIMessage
+
+from agent import MyAgent
 
 
 def create_mock_mcp_tool(name: str):
