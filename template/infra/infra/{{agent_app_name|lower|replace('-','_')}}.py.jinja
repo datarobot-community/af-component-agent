@@ -269,7 +269,18 @@ def get_mcp_custom_model_runtime_parameters() -> list[
     otherwise fall back to environment variables.
     """
     mcp_module = "{{ _external_data.fastmcp.fastmcp_app_name }}"
-
+    pulumi.info(f'MCP module name {mcp_module}')
+    # Print mcp_server.py file for debugging
+    mcp_server_path = os.path.join(
+        # Location of this file
+        Path(__file__).parent, "mcp_server.py"
+    )
+    pulumi.info(f'MCP server path {mcp_server_path}')
+    if os.path.exists(mcp_server_path):
+        with open(mcp_server_path, "r", encoding="utf-8") as f:
+            pulumi.info(f"Contents of {mcp_server_path}:\n{f.read()}")
+    else:
+        pulumi.info(f"{mcp_server_path} does not exist.")
     mcp_params = maybe_import_from_module(
         mcp_module, "mcp_custom_model_runtime_parameters"
     )
