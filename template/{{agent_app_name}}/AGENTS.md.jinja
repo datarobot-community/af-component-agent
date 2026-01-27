@@ -12,7 +12,7 @@ dr task run {{ agent_app_name }}:install
 
 ## Agent Structure
 
-Agent must be implemented in the following location withing the `{{ agent_app_name }}/agentic_workflow` directory. None of the other files outside of this directory are related.
+Agent must be implemented in the following location withing the `{{ agent_app_name }}/agent` directory. None of the other files outside of this directory are related.
 
 {% if agent_template_framework == "crewai" %}
 
@@ -82,7 +82,7 @@ def tasks(self) -> List[Task]:
 
 ### 4. Agent tools
 
-**IMPORTANT**: Add required tools in the `{{ agent_app_name }}/agentic_workflow` directory. Do not add/modify any files outside of this directory. If some of the tools require adding new packages, they should be added to the pyproject.toml and properly installed using command
+**IMPORTANT**: Add required tools in the `{{ agent_app_name }}/agent` directory. Do not add/modify any files outside of this directory. If some of the tools require adding new packages, they should be added to the pyproject.toml and properly installed using command
 
 ```shell
 dr task run {{ agent_app_name }}:install
@@ -196,7 +196,7 @@ def agent_node(self) -> Any:
 
 ### 4. Agent tools
 
-**IMPORTANT**: Add required tools in the `{{ agent_app_name }}/agentic_workflow` directory. Do not add/modify any files outside of this directory. If some of the tools require adding new packages, they should be added to the pyproject.toml and properly installed using command
+**IMPORTANT**: Add required tools in the `{{ agent_app_name }}/agent` directory. Do not add/modify any files outside of this directory. If some of the tools require adding new packages, they should be added to the pyproject.toml and properly installed using command
 
 ```shell
 dr task run {{ agent_app_name }}:install
@@ -306,7 +306,7 @@ def build_workflow(self) -> AgentWorkflow:
 
 ### 4. Agent tools
 
-**IMPORTANT**: Add required tools in the `{{ agent_app_name }}/agentic_workflow` directory. Do not add/modify any files outside of this directory. If some of the tools require adding new packages, they should be added to the pyproject.toml and properly installed using command
+**IMPORTANT**: Add required tools in the `{{ agent_app_name }}/agent` directory. Do not add/modify any files outside of this directory. If some of the tools require adding new packages, they should be added to the pyproject.toml and properly installed using command
 
 ```shell
 dr task run {{ agent_app_name }}:install
