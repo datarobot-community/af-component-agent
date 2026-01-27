@@ -43,18 +43,18 @@ dependencies = [
     "ragas @ git+https://github.com/explodinggradients/ragas@5d59549ad5ef511f621502c563bc55ac5aeb9188#subdirectory=ragas",
     # pyarrow==21.0.0 breaks the current ragas version https://github.com/apache/arrow/issues/47155
     "pyarrow<21.0.0",
-    "requests~=2.32.4",
+    "requests>=2.32.4",
     "traceloop-sdk~=0.40.2",
-    "uvicorn~=0.35.0",
+    "uvicorn>=0.35.0",
     # CVE fixes
-    "starlette~=0.49.1",
+    "starlette>=0.49.1",
     "langchain-core~=0.3.80",
     "langchain-text-splitters~=0.3.9",
     "h2~=4.3.0",
-    "pdfminer.six>=20251107",
+    "pdfminer.six>=20251230",
     "langgraph-checkpoint~=3.0.0",
-    "aiohttp~=3.12.14",
-    "pypdf~=6.4.0",
+    "aiohttp>=3.13.3",
+    "pypdf>=6.6.2",
 ]
 exclude-dependencies = [
     "uv",
