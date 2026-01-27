@@ -256,7 +256,7 @@ def get_mcp_custom_model_runtime_parameters() -> list[
     Load MCP runtime parameters from the MCP Deployment module if available,
     otherwise fall back to environment variables.
     """
-    mcp_module = "{{ _external_data.fastmcp.fastmcp_app_name }}"
+    mcp_module = "{{ _external_data.mcp.mcp_app_name }}"
 
     mcp_params = maybe_import_from_module(
         mcp_module, "mcp_custom_model_runtime_parameters"

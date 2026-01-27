@@ -22,7 +22,7 @@ runs:
           apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
           mkdir -p ./rendered/.datarobot/answers/
           cp ./fixtures/.datarobot/answers/llm-llm.yml ./rendered/.datarobot/answers/llm-llm.yml
-          cp ./fixtures/.datarobot/answers/fastmcp-mcp_server.yml ./rendered/.datarobot/answers/fastmcp-mcp_server.yml
+          cp ./fixtures/.datarobot/answers/drmcp-mcp_server.yml ./rendered/.datarobot/answers/drmcp-mcp_server.yml
           uvx copier copy . ./rendered ${{ inputs.copier-args }}
 
           # For infra testing
@@ -40,7 +40,7 @@ runs:
             apt update --allow-releaseinfo-change && apt install -y git g++ --no-install-recommends
             mkdir -p ./rendered/.datarobot/answers/
             cp ./fixtures/.datarobot/answers/llm-llm.yml ./rendered/.datarobot/answers/llm-llm.yml
-            cp ./fixtures/.datarobot/answers/fastmcp-mcp_server.yml ./rendered/.datarobot/answers/fastmcp-mcp_server.yml
+            cp ./fixtures/.datarobot/answers/drmcp-mcp_server.yml ./rendered/.datarobot/answers/drmcp-mcp_server.yml
             uvx copier copy . ./rendered ${{ inputs.copier-args }}
 
             # For infra testing
