@@ -39,6 +39,19 @@ def render_project(*, repo_root: Path, agent_framework: str) -> tuple[Path, Path
     if not infra_dir.exists():
         pytest.fail(f"Rendered infra dir missing: {infra_dir}")
 
+    # Verify that the AGENTS.md file exists
+    agents_md_file = rendered_dir / "agent" / "AGENTS.md"
+    if not agents_md_file.exists():
+        pytest.fail(f"Rendered AGENTS.md file missing: {agents_md_file}")
+
+    # Verify that the agent directory exists
+    # This directory is referenced in the AGENTS.md file
+    # Make sure to update the AGENTS.md file if the structure changes
+    agent_dir = rendered_dir / "agent" / "agent"
+    if not agent_dir.exists():
+        pytest.fail(f"Rendered agent dir missing: {agent_dir}")
+
+
     return rendered_dir, infra_dir
 
 
