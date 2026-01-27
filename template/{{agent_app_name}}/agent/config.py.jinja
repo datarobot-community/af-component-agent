@@ -38,7 +38,7 @@ class Config(DataRobotAppFrameworkBaseSettings):
     external_mcp_url: str | None = None
 
     local_dev_port: int = Field(
-        default=8842, validation_alias="{{agent_app_name|upper}}_PORT", ge=1, le=65536
+        default=8842, validation_alias="{{agent_app_name|upper}}_PORT", ge=1, le=65535
     )
 
     @model_validator(mode="before")
