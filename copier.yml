@@ -42,7 +42,7 @@ base_answers_file:
 
 llm_answers_file:
   type: str
-  default: ".datarobot/answers/llm-llm.yml" 
+  default: ".datarobot/answers/llm-llm.yml"
   help: "Path to the llm component answers file (must contain '.datarobot/answers')"
   validator: >-
     {% if not llm_answers_file %}ERROR: LLM answers file path cannot be empty
