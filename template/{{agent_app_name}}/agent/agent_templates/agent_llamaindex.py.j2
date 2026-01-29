@@ -80,13 +80,10 @@ class MyAgent(LlamaIndexAgent):
 
     def llm(
         self,
-        preferred_model: str | None = None,
         auto_model_override: bool = True,
     ) -> DataRobotLiteLLM:
         api_base = self.litellm_api_base(self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id)
-        model = preferred_model
-        if preferred_model is None:
-            model = self.default_model
+        model = self.model or self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:
             model = self.default_model
         if self.verbose:
@@ -118,7 +115,7 @@ class MyAgent(LlamaIndexAgent):
                 "Do NOT write paragraphs or detailed explanations. Just provide a focused list. "
                 "Once you've recorded your notes, hand off control to the WriterAgent."
             ),
-            llm=self.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07"),
+            llm=self.llm(),
             tools=[self.planner_notes_tool, *self.mcp_tools],
             can_handoff_to=["WriterAgent"],
         )
@@ -143,7 +140,7 @@ class MyAgent(LlamaIndexAgent):
                 "\n"
                 "Write in markdown format. Once complete, use the writer_report_tool to record your report."
             ),
-            llm=self.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07"),
+            llm=self.llm(),
             tools=[self.writer_report_tool, *self.mcp_tools],
             # Writer is terminal in this simple flow; no handoff
         )

@@ -12,7 +12,7 @@ from agent import MyAgent
 class TestMyAgentCrewAI:
     @pytest.fixture
     def agent(self):
-        return MyAgent(api_key="test_key", api_base="test_base", verbose=True)
+        return MyAgent(api_key="test_key", api_base="test_base", verbose=True, model="datarobot/azure/gpt-5-mini-2025-08-07")
 
     def test_init_with_explicit_parameters(self):
         """Test initialization with explicitly provided parameters."""
@@ -159,8 +159,8 @@ class TestMyAgentCrewAI:
     def test_llm_gateway_with_api_base(self, mock_llm, api_base, expected_result):
         """Test api_base_litellm property with various URL formats."""
         with patch.dict(os.environ, {}, clear=True):
-            agent = MyAgent(api_base=api_base)
-            _ = agent.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07")
+            agent = MyAgent(api_base=api_base, model="datarobot/azure/gpt-5-mini-2025-08-07")
+            _ = agent.llm()
             mock_llm.assert_called_once_with(
                 model="datarobot/azure/gpt-5-mini-2025-08-07",
                 api_base=expected_result,
@@ -225,9 +225,9 @@ class TestMyAgentCrewAI:
     def test_llm_deployment_with_api_base(self, mock_llm, api_base, expected_result):
         """Test api_base_litellm property with various URL formats."""
         with patch.dict(os.environ, {"{{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEPLOYMENT_ID": "test-id"}, clear=True):
-            agent = MyAgent(api_base=api_base)
+            agent = MyAgent(api_base=api_base, model="datarobot/azure/gpt-5-mini-2025-08-07")
             agent.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model = "datarobot/azure/gpt-5-mini-2025-08-07"
-            _ = agent.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07")
+            _ = agent.llm()
             mock_llm.assert_called_once_with(
                 model="datarobot/azure/gpt-5-mini-2025-08-07",
                 api_base=expected_result,
@@ -250,7 +250,7 @@ class TestMyAgentCrewAI:
     def test_llm_property_with_no_api_base(self, mock_llm, agent):
         # Test that LLM is created with correct parameters
         with patch.dict(os.environ, {}, clear=True):
-            agent = MyAgent(api_key="test_key", verbose=True)
+            agent = MyAgent(api_key="test_key", verbose=True, model="datarobot/azure/gpt-5-mini-2025-08-07")
             agent.llm()
             mock_llm.assert_called_once_with(
                 model="datarobot/azure/gpt-5-mini-2025-08-07",

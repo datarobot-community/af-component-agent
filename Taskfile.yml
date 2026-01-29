@@ -52,6 +52,8 @@ tasks:
       - cp ./fixtures/infra/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/infra/Taskfile.yml
       - cp ./fixtures/infra/pyproject.toml ./$RENDER_DIR/agent_{{.AGENT}}/infra/pyproject.toml
       - cp ./fixtures/infra/__init__.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/__init__.py
+      - cp ./fixtures/infra/llm.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/llm.py
+      - cp ./fixtures/infra/mcp_server.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/mcp_server.py
 
   render-template-e2e:
     desc: "Render template + inject test scaffolding used by E2E (Taskfiles + minimal infra entrypoint/files)"
