@@ -98,7 +98,6 @@ class MyAgent(LangGraphAgent):
 
     def llm(
         self,
-        preferred_model: str | None = None,
         auto_model_override: bool = True,
     ) -> ChatLiteLLM:
         """Returns the ChatLiteLLM to use for a given model.

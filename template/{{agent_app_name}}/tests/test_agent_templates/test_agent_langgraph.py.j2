@@ -1,17 +1,15 @@
-import json
 import os
-from unittest.mock import ANY, MagicMock, Mock, patch
+from unittest.mock import ANY, Mock, patch
 
 import pytest
-from ragas import MultiTurnSample
-from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
+from langchain_core.prompts import ChatPromptTemplate
 
 from agent import MyAgent
 
 
-class TestMyAgentCrewAI:
+class TestMyAgentLangGraph:
     @pytest.fixture
-    def agent(self):
+    def agent(self) -> MyAgent:
         return MyAgent(
             api_key="test_key",
             api_base="test_base",
@@ -160,19 +158,22 @@ class TestMyAgentCrewAI:
             (None, "https://app.datarobot.com/"),
         ],
     )
-    @patch("agent.myagent.LLM")
+    @patch("agent.myagent.ChatLiteLLM")
     def test_llm_gateway_with_api_base(self, mock_llm, api_base, expected_result):
         """Test api_base_litellm property with various URL formats."""
         with patch.dict(os.environ, {}, clear=True):
             agent = MyAgent(
                 api_base=api_base, model="datarobot/azure/gpt-5-mini-2025-08-07"
             )
+            agent.config.use_datarobot_llm_gateway = True
             _ = agent.llm()
             mock_llm.assert_called_once_with(
                 model="datarobot/azure/gpt-5-mini-2025-08-07",
                 api_base=expected_result,
                 api_key=None,
                 timeout=90,
+                streaming=True,
+                max_retries=3,
             )
 
     @pytest.mark.parametrize(
@@ -228,7 +229,7 @@ class TestMyAgentCrewAI:
             ),
         ],
     )
-    @patch("agent.myagent.LLM")
+    @patch("agent.myagent.ChatLiteLLM")
     def test_llm_deployment_with_api_base(self, mock_llm, api_base, expected_result):
         """Test api_base_litellm property with various URL formats."""
         with patch.dict(os.environ, {"{{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEPLOYMENT_ID": "test-id"}, clear=True):
@@ -240,22 +241,26 @@ class TestMyAgentCrewAI:
                 api_base=expected_result,
                 api_key=None,
                 timeout=90,
+                streaming=True,
+                max_retries=3,
             )
 
-    @patch("agent.myagent.LLM")
+    @patch("agent.myagent.ChatLiteLLM")
     def test_llm(self, mock_llm, agent):
-        # Test that LLM is created with correct parameters
+        # Test that ChatLiteLLM is created with correct parameters
         agent.llm()
         mock_llm.assert_called_once_with(
             model="datarobot/azure/gpt-5-mini-2025-08-07",
             api_base="test_base/",
             api_key="test_key",
             timeout=90,
+            streaming=True,
+            max_retries=3,
         )
 
-    @patch("agent.myagent.LLM")
+    @patch("agent.myagent.ChatLiteLLM")
     def test_llm_property_with_no_api_base(self, mock_llm, agent):
-        # Test that LLM is created with correct parameters
+        # Test that ChatLiteLLM is created with correct parameters
         with patch.dict(os.environ, {}, clear=True):
             agent = MyAgent(
                 api_key="test_key",
@@ -268,123 +273,49 @@ class TestMyAgentCrewAI:
                 api_base="https://app.datarobot.com/",
                 api_key="test_key",
                 timeout=90,
+                streaming=True,
+                max_retries=3,
             )
 
-    @patch("agent.myagent.Agent")
-    def test_agent_planner_property(self, mock_agent, agent):
-        # Mock the llm property
+    @patch("agent.myagent.create_react_agent")
+    def test_agent_planner_property(self, mock_create_agent, agent):
+        """Test that agent_planner creates a react agent."""
         mock_llm = Mock()
         with patch.object(MyAgent, "llm", return_value=mock_llm):
-            agent.agent_planner
-            mock_agent.assert_called_once_with(
-                role="Planner",
-                goal=ANY,
-                backstory=ANY,
-                allow_delegation=False,
-                verbose=True,
-                llm=ANY,
+            _ = agent.agent_planner
+            mock_create_agent.assert_called_once_with(
+                mock_llm,
                 tools=ANY,
+                prompt=ANY,
+                name="Planner Agent",
             )
 
-    @patch("agent.myagent.Agent")
-    def test_agent_writer_property(self, mock_agent, agent):
-        # Mock the llm property
+    @patch("agent.myagent.create_react_agent")
+    def test_agent_writer_property(self, mock_create_agent, agent):
+        """Test that agent_writer creates a react agent."""
         mock_llm = Mock()
         with patch.object(MyAgent, "llm", return_value=mock_llm):
-            agent.agent_writer
-            mock_agent.assert_called_once_with(
-                role="Writer",
-                goal=ANY,
-                backstory=ANY,
-                allow_delegation=False,
-                verbose=True,
-                llm=ANY,
+            _ = agent.agent_writer
+            mock_create_agent.assert_called_once_with(
+                mock_llm,
                 tools=ANY,
+                prompt=ANY,
+                name="Writer Agent",
             )
 
-    @patch("agent.myagent.Task")
-    def test_task_plan_property(self, mock_task, agent):
-        # Mock the agent_planner property
-        mock_planner = Mock()
-        with patch.object(MyAgent, "agent_planner", return_value=mock_planner):
-            agent.task_plan
-            mock_task.assert_called_once_with(
-                description=ANY,
-                expected_output=ANY,
-                agent=ANY,
-            )
+    def test_workflow_property(self, agent):
+        """Test that workflow returns a StateGraph with correct structure."""
+        mock_llm = Mock()
+        with patch.object(MyAgent, "llm", return_value=mock_llm):
+            with patch("agent.myagent.create_react_agent"):
+                workflow = agent.workflow
+                # Verify it's a StateGraph (basic check)
+                assert workflow is not None
+                assert "planner_node" in workflow.nodes
+                assert "writer_node" in workflow.nodes
 
-    @patch("agent.myagent.Task")
-    def test_task_write_property(self, mock_task, agent):
-        # Mock the agent_planner property
-        mock_planner = Mock()
-        with patch.object(MyAgent, "agent_writer", return_value=mock_planner):
-            agent.task_write
-            mock_task.assert_called_once_with(
-                description=ANY,
-                expected_output=ANY,
-                agent=ANY,
-            )
-
-    @patch("datarobot_genai.crewai.base.Crew")
-    @patch("agent.myagent.CrewAIEventListener")
-    @patch("agent.myagent.Agent")
-    def test_chat(
-        self, mock_agent, mock_event_listener, mock_crew, agent, load_model_result
-    ):
-        # This test case covers testing that the agent invoke runs with the llm interactions mocked
-        from custom import chat
-
-        _ = mock_agent, agent  # Uncalled but left for global test setup
-
-        crew_output = Mock(
-            raw="agent result",
-            token_usage=Mock(
-                completion_tokens=1,
-                prompt_tokens=2,
-                total_tokens=3,
-            ),
-        )
-        mock_crew.return_value = Mock(kickoff=MagicMock(return_value=crew_output))
-
-        events = [
-            HumanMessage(content="Hi"),
-            AIMessage(
-                content="Which language should I use?",
-                tool_calls=[
-                    ToolCall(name="find_language", args={"input_language": "en"})
-                ],
-            ),
-            ToolMessage(content="Use en"),
-            AIMessage(content="How are you today?"),
-        ]
-        mock_event_listener.return_value = Mock(messages=events)
-        # Ensure the actual agent instance uses our mocked event listener
-        agent.event_listener = mock_event_listener.return_value
-
-        # Setup mocks
-        completion_create_params = {
-            "model": "test-model",
-            "messages": [{"role": "user", "content": '{"topic": "test"}'}],
-            "environment_var": True,
-        }
-
-        with (
-            patch.object(MyAgent, "task_plan"),
-            patch.object(MyAgent, "task_write"),
-            patch(
-                "datarobot_genai.crewai.agent.create_pipeline_interactions_from_messages",
-                return_value=MultiTurnSample(user_input=events),
-            ),
-        ):
-            response = chat(
-                completion_create_params, load_model_result=load_model_result
-            )
-
-        # Assert results - check the pipeline_interactions - other sections of the
-        # results are already being checked in test_custom_model.py::test_chat
-        completion = json.loads(response.model_dump_json())
-        actual_events = json.loads(completion["pipeline_interactions"])["user_input"]
-        for expected_message, actual_message in zip(events, actual_events):
-            assert expected_message.content == actual_message["content"]
-            assert expected_message.type == actual_message["type"]
+    def test_prompt_template_property(self, agent):
+        """Test that prompt_template returns a ChatPromptTemplate."""
+        template = agent.prompt_template
+        assert template is not None
+        assert isinstance(template, ChatPromptTemplate)
