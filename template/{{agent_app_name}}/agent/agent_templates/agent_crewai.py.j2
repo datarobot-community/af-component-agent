@@ -14,10 +14,7 @@
 from typing import Any, List, Optional, Union
 
 from crewai import LLM, Agent, Task
-from datarobot_genai.crewai.agent import (
-    build_llm,
-)
-from datarobot_genai.crewai.base import CrewAIAgent
+from datarobot_genai.crewai.agent import CrewAIAgent
 from datarobot_genai.crewai.events import CrewAIEventListener
 
 from agent.config import Config
@@ -72,17 +69,15 @@ class MyAgent(CrewAIAgent):
 
     def llm(
         self,
-        preferred_model: str | None = None,
         auto_model_override: bool = True,
     ) -> LLM:
         """Returns the LLM to use for a given model.
 
-        If a `preferred_model` is provided, it will be used. Otherwise, the default model will be used.
+        If a `self.model` is provided, it will be used. Otherwise, the default model will be used.
         If auto_model_override is True, it will try and use the model specified in the request
         but automatically back out to the default model if the LLM Gateway is not configured
 
         Args:
-            preferred_model: Optional[str]: The model to use. If none, it defaults to config.llm_default_model.
             auto_model_override: Optional[bool]: If True, it will try and use the model
                 specified in the request but automatically back out if the LLM Gateway is
                 not available.
@@ -90,16 +85,17 @@ class MyAgent(CrewAIAgent):
         Returns:
             LLM: The model to use.
         """
-        model = preferred_model or self.default_model
+        api_base = self.litellm_api_base(self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id)
+        model = self.model or self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:
             model = self.default_model
         if self.verbose:
             print(f"Using model: {model}")
-        return build_llm(
-            api_base=self.api_base,
-            api_key=self.api_key,
+
+        return LLM(
             model=model,
-            deployment_id=self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id,
+            api_base=api_base,
+            api_key=self.api_key,
             timeout=self.timeout,
         )
 
@@ -128,7 +124,7 @@ class MyAgent(CrewAIAgent):
             "required to collect accurate and up-to-date information about the topic for your planning and research.",
             allow_delegation=False,
             verbose=self.verbose,
-            llm=self.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07"),
+            llm=self.llm(),
             tools=self.mcp_tools,
         )
 
@@ -145,7 +141,7 @@ class MyAgent(CrewAIAgent):
             "Use these tools when required to ensure accuracy and find relevant details while writing.",
             allow_delegation=False,
             verbose=self.verbose,
-            llm=self.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07"),
+            llm=self.llm(),
             tools=self.mcp_tools,
         )
 

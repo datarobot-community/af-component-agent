@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from datetime import datetime
-from typing import Any
+from typing import Any, Optional, Union
 
 from datarobot_genai.core.agents import (
     make_system_prompt,
@@ -25,15 +25,52 @@ from langgraph.prebuilt import create_react_agent
 
 from agent.config import Config
 
-config = Config()
-
 
 class MyAgent(LangGraphAgent):
-    """MyAgent is a custom agent that uses Langgraph to plan, write, and edit content.
+    """MyAgent is a custom agent that uses Langgraph to plan and write content.
     It utilizes DataRobot's LLM Gateway or a specific deployment for language model interactions.
-    This example illustrates 3 agents that handle content creation tasks, including planning, writing,
-    and editing blog posts.
+    This example illustrates 2 agents that handle content creation tasks, including planning
+    and writing blog posts.
     """
+
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        api_base: Optional[str] = None,
+        model: Optional[str] = None,
+        verbose: Optional[Union[bool, str]] = True,
+        timeout: Optional[int] = 90,
+        **kwargs: Any,
+    ):
+        """Initializes the MyAgent class with API key, base URL, model, and verbosity settings.
+
+        Args:
+            api_key: Optional[str]: API key for authentication with DataRobot services.
+                Defaults to None, in which case it will use the DATAROBOT_API_TOKEN environment variable.
+            api_base: Optional[str]: Base URL for the DataRobot API.
+                Defaults to None, in which case it will use the DATAROBOT_ENDPOINT environment variable.
+            model: Optional[str]: The LLM model to use.
+                Defaults to None.
+            verbose: Optional[Union[bool, str]]: Whether to enable verbose logging.
+                Accepts boolean or string values ("true"/"false"). Defaults to True.
+            timeout: Optional[int]: How long to wait for the agent to respond.
+                Defaults to 90 seconds.
+            **kwargs: Any: Additional keyword arguments passed to the agent.
+                Contains any parameters received in the CompletionCreateParams.
+
+        Returns:
+            None
+        """
+        super().__init__(
+            api_key=api_key,
+            api_base=api_base,
+            model=model,
+            verbose=verbose,
+            timeout=timeout,
+            **kwargs,
+        )
+        self.config = Config()
+        self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
 
     @property
     def workflow(self) -> StateGraph[MessagesState]:
@@ -61,17 +98,15 @@ class MyAgent(LangGraphAgent):
 
     def llm(
         self,
-        preferred_model: str | None = None,
         auto_model_override: bool = True,
     ) -> ChatLiteLLM:
         """Returns the ChatLiteLLM to use for a given model.
 
-        If a `preferred_model` is provided, it will be used. Otherwise, the default model will be used.
+        If a `self.model` is provided, it will be used. Otherwise, the default model will be used.
         If auto_model_override is True, it will try and use the model specified in the request
         but automatically back out to the default model if the LLM Gateway is not configured
 
         Args:
-            preferred_model: Optional[str]: The model to use. If none, it defaults to config.llm_default_model.
             auto_model_override: Optional[bool]: If True, it will try and use the model
                 specified in the request but automatically back out if the LLM Gateway is
                 not available.
@@ -79,12 +114,10 @@ class MyAgent(LangGraphAgent):
         Returns:
             ChatLiteLLM: The model to use.
         """
-        api_base = self.litellm_api_base(config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id)
-        model = preferred_model
-        if preferred_model is None:
-            model = config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
-        if auto_model_override and not config.use_datarobot_llm_gateway:
-            model = config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
+        api_base = self.litellm_api_base(self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id)
+        model = self.model or self.default_model
+        if auto_model_override and not self.config.use_datarobot_llm_gateway:
+            model = self.default_model
         if self.verbose:
             print(f"Using model: {model}")
         return ChatLiteLLM(
@@ -99,7 +132,7 @@ class MyAgent(LangGraphAgent):
     @property
     def agent_planner(self) -> Any:
         return create_react_agent(
-            self.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07"),
+            self.llm(),
             tools=self.mcp_tools,
             prompt=make_system_prompt(
                 "You are a content planner. You create brief, structured outlines for blog articles. "
@@ -122,7 +155,7 @@ class MyAgent(LangGraphAgent):
     @property
     def agent_writer(self) -> Any:
         return create_react_agent(
-            self.llm(preferred_model="datarobot/azure/gpt-5-mini-2025-08-07"),
+            self.llm(),
             tools=self.mcp_tools,
             prompt=make_system_prompt(
                 "You are a content writer working with a planner colleague.\n"

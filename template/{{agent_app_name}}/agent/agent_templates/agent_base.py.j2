@@ -68,7 +68,6 @@ class MyAgent(BaseAgent[None]):
             **kwargs,
         )
         self.config = Config()
-        self.model = model
 
     async def invoke(
         self, completion_create_params: CompletionCreateParams

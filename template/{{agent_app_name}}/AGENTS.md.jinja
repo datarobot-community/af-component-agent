@@ -20,10 +20,7 @@ Agent must implement the following components:
 
 ```python
 from crewai import LLM, Agent, Task
-from datarobot_genai.crewai.agent import (
-    build_llm,
-)
-from datarobot_genai.crewai.base import CrewAIAgent
+from datarobot_genai.crewai.agent import CrewAIAgent
 
 class MyAgent(CrewAIAgent):
     """Your agent description here."""
@@ -40,19 +37,19 @@ class MyAgent(CrewAIAgent):
 ```python
 def llm(
         self,
-        preferred_model: str | None = None,
         auto_model_override: bool = True,
     ) -> LLM:
-        model = preferred_model or self.default_model
+        api_base = self.litellm_api_base(self.config.llm_deployment_id)
+        model = self.model or self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:
             model = self.default_model
         if self.verbose:
             print(f"Using model: {model}")
-        return build_llm(
-            api_base=self.api_base,
-            api_key=self.api_key,
+
+        return LLM(
             model=model,
-            deployment_id=self.config.llm_deployment_id,
+            api_base=api_base,
+            api_key=self.api_key,
             timeout=self.timeout,
         )
 ```
@@ -91,8 +88,8 @@ dr task run {{ agent_app_name }}:install
 
 ### 5. Preferred LLM model
 
-Preferred model should be set in each ```self.llm(preferred_model="{preffered_model_here}")``` invocation.
-**Important**: `preferred_model` parameter must be prefixed with `datarobot/`.
+Preferred model should be set using ```self.model = "{preferred_model_here}"``` which will then be read in each ```self.llm()``` invocation.
+**Important**: `self.model` parameter must be prefixed with `datarobot/`.
 
 {% elif agent_template_framework == "langgraph" %}
 
@@ -118,15 +115,12 @@ class MyAgent(LangGraphAgent):
 ```python
 def llm(
     self,
-    preferred_model: str | None = None,
     auto_model_override: bool = True,
 ) -> ChatLiteLLM:
-    api_base = self.litellm_api_base(config.llm_deployment_id)
-    model = preferred_model
-    if preferred_model is None:
-        model = config.llm_default_model
-    if auto_model_override and not config.use_datarobot_llm_gateway:
-        model = config.llm_default_model
+    api_base = self.litellm_api_base(self.config.llm_deployment_id)
+    model = self.model or self.default_model
+    if auto_model_override and not self.config.use_datarobot_llm_gateway:
+        model = self.default_model
     if self.verbose:
         print(f"Using model: {model}")
     return ChatLiteLLM(
@@ -184,7 +178,7 @@ Agent nodes are typically created using `create_react_agent`.
 @property
 def agent_node(self) -> Any:
     return create_react_agent(
-        self.llm(preferred_model="datarobot/azure/gpt-4o-mini"),
+        self.llm(),
         tools=self.tools,  # or [] for no tools
         prompt=make_system_prompt(
             "Your agent's system prompt here."
@@ -205,8 +199,8 @@ dr task run {{ agent_app_name }}:install
 
 ### 5. Preferred LLM model
 
-Preferred model should be set in each ```self.llm(preferred_model="{preffered_model_here}")``` invocation.
-**Important**: `preferred_model` parameter must be prefixed with `datarobot/`.
+Preferred model should be set using ```self.model = "{preferred_model_here}"``` which will then be read in each ```self.llm()``` invocation.
+**Important**: `self.model` parameter must be prefixed with `datarobot/`.
 
 {% elif agent_template_framework == "llamaindex" %}
 
@@ -219,7 +213,7 @@ from datarobot_genai.core.agents import extract_user_prompt_content
 from datarobot_genai.llama_index import (
     DataRobotLiteLLM,
 )
-from datarobot_genai.llama_index.base import LlamaIndexAgent
+from datarobot_genai.llama_index.agent import LlamaIndexAgent
 from llama_index.core.agent.workflow import (
     AgentWorkflow,
     FunctionAgent,
@@ -241,13 +235,10 @@ class MyAgent(LlamaIndexAgent):
 ```python
 def llm(
         self,
-        preferred_model: str | None = None,
         auto_model_override: bool = True,
     ) -> DataRobotLiteLLM:
         api_base = self.litellm_api_base(self.config.llm_deployment_id)
-        model = preferred_model
-        if preferred_model is None:
-            model = self.default_model
+        model = self.model or self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:
             model = self.default_model
         if self.verbose:
@@ -315,8 +306,8 @@ dr task run {{ agent_app_name }}:install
 
 ### 5. Preferred LLM model
 
-Preferred model should be set in each ```self.llm(preferred_model="{preffered_model_here}")``` invocation.
-**Important**: `preferred_model` parameter must be prefixed with `datarobot/`.
+Preferred model should be set using ```self.model = "{preferred_model_here}"``` which will then be read in each ```self.llm()``` invocation.
+**Important**: `self.model` parameter must be prefixed with `datarobot/`.
 
 {% elif agent_template_framework == "nat" %}
 
