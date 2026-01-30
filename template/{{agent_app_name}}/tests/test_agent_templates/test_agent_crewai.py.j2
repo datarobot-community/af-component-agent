@@ -13,10 +13,10 @@ class TestMyAgentCrewAI:
     @pytest.fixture
     def agent(self):
         return MyAgent(
-            api_key="test_key", 
-            api_base="test_base", 
-            verbose=True, 
-            model="datarobot/azure/gpt-5-mini-2025-08-07"
+            api_key="test_key",
+            api_base="test_base",
+            verbose=True,
+            model="datarobot/azure/gpt-5-mini-2025-08-07",
         )
 
     def test_init_with_explicit_parameters(self):
