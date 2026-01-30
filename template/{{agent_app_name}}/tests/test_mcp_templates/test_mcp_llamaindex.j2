@@ -61,7 +61,9 @@ def llamaindex_common_mocks():
     _ = MyAgent.build_workflow
 
     with (
-        patch("datarobot_genai.llama_index.base.load_mcp_tools") as mock_load_mcp_tools,
+        patch(
+            "datarobot_genai.llama_index.agent.load_mcp_tools"
+        ) as mock_load_mcp_tools,
         patch.object(MyAgent, "build_workflow") as mock_build_workflow,
     ):
         mock_load_mcp_tools.return_value = default_tools

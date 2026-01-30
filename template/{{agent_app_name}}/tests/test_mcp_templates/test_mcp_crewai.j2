@@ -173,7 +173,7 @@ class TestMyAgentMCPIntegration:
             assert len(planner.tools) == 1  # 1 MCP tool
             assert len(writer.tools) == 1  # 1 MCP tool
 
-    @patch("datarobot_genai.crewai.base.mcp_tools_context", autospec=True)
+    @patch("datarobot_genai.crewai.agent.mcp_tools_context", autospec=True)
     def test_agent_works_without_mcp_tools(
         self, mock_mcp_tools_context, crewai_common_mocks
     ):
@@ -227,7 +227,7 @@ class TestMyAgentMCPIntegration:
 
         assert access_count["count"] >= 2  # At least accessed by both agents
 
-    @patch("datarobot_genai.crewai.base.mcp_tools_context", autospec=True)
+    @patch("datarobot_genai.crewai.agent.mcp_tools_context", autospec=True)
     def test_mcp_tool_execution_makes_request_to_server(
         self, mock_mcp_tools_context, crewai_common_mocks
     ):

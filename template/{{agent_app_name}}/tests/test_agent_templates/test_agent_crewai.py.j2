@@ -326,7 +326,7 @@ class TestMyAgentCrewAI:
                 agent=ANY,
             )
 
-    @patch("datarobot_genai.crewai.base.Crew")
+    @patch("datarobot_genai.crewai.agent.Crew")
     @patch("agent.myagent.CrewAIEventListener")
     @patch("agent.myagent.Agent")
     def test_chat(
