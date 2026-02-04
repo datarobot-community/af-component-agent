@@ -73,7 +73,7 @@ class MyAgent(LangGraphAgent):
         self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
         # If the request passed a placeholder model (e.g. "unknown"), treat it as
         # "no model specified" so that llm() will fall back to self.default_model.
-        if model == "unknown" or model is None:
+        if model == "unknown":
             self.model = self.default_model
 
     @property
