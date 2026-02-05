@@ -79,7 +79,7 @@ _migrations:
       - >
         if [ -f "{{ agent_app_name }}/agentic_workflow/agent.py" ]; then
           mkdir -p "{{ agent_app_name }}/agent";
-          cp "{{ agent_app_name }}/agentic_workflow/agent.py" \
+          mv "{{ agent_app_name }}/agentic_workflow/agent.py" \
              "{{ agent_app_name }}/agent/myagent.py";
         fi
-    when: "{{ _stage == 'after' and _copier_operation == 'update' }}"
+    when: "{{ _stage == 'before'}}"
