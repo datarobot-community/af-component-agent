@@ -77,10 +77,9 @@ _migrations:
       - bash
       - -lc
       - >
-        if [ -f "{{ agent_app_name }}/agentic_workflow/agent.py" ] &&
-           [ ! -f "{{ agent_app_name }}/agent/agent/myagent.py" ]; then
-          mkdir -p "{{ agent_app_name }}/agent/agent";
+        if [ -f "{{ agent_app_name }}/agentic_workflow/agent.py" ]; then
+          mkdir -p "{{ agent_app_name }}/agent";
           cp "{{ agent_app_name }}/agentic_workflow/agent.py" \
-             "{{ agent_app_name }}/agent/agent/myagent.py";
+             "{{ agent_app_name }}/agent/myagent.py";
         fi
-    when: "{{ _stage == 'before' and _copier_operation == 'update' }}"
+    when: "{{ _stage == 'after' and _copier_operation == 'update' }}"
