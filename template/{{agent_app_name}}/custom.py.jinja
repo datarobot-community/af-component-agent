@@ -50,6 +50,7 @@ from typing import (
     cast,
 )
 
+from ag_ui.core import BaseEvent, TextMessageChunkEvent, TextMessageContentEvent
 from datarobot_genai.core.chat import (
     CustomModelChatResponse,
     CustomModelStreamingResponse,
@@ -70,7 +71,6 @@ try:  # pragma: no cover - flask is only required in DRUM
 except Exception:  # noqa: BLE001
     flask = None  # type: ignore[assignment]
 
-from ag_ui.core import BaseEvent, TextMessageChunkEvent, TextMessageContentEvent
 
 
 logger = logging.getLogger(__name__)
