@@ -87,30 +87,36 @@ _migrations:
       - -lc
       - |
         set -euo pipefail
-        APP="{{ agent_app_name }}"
-        SRC="$APP/agentic_workflow/agent.py"
-        DST="$APP/agent/myagent.py"
-        TMP_DIR="$APP/.copier_migration_tmp"
-        TMP_FILE="$TMP_DIR/agent.py"
+        # NOTE: During the "before" stage, some answer variables may not be
+        # available for templating yet, so we discover app folders using globs.
+        #
+        # Typical layout:
+        #   <app_name>/agentic_workflow/agent.py
+        for SRC in */agentic_workflow/agent.py; do
+          [ -f "$SRC" ] || continue
+          APP="${SRC%%/agentic_workflow/agent.py}"
+          DST="$APP/agent/myagent.py"
+          TMP_DIR="$APP/.copier_migration_tmp"
+          TMP_FILE="$TMP_DIR/agent.py"
 
-        if [ -f "$SRC" ] && [ ! -f "$DST" ]; then
-          mkdir -p "$TMP_DIR"
-          cp "$SRC" "$TMP_FILE"
-        fi
-    when: "{{ _stage == 'before' }}"
+          if [ ! -f "$DST" ]; then
+            mkdir -p "$TMP_DIR"
+            cp "$SRC" "$TMP_FILE"
+          fi
+        done
+    when: "{{ _stage == 'before' and _copier_operation == 'update' }}"
   - command:
       - bash
       - -lc
       - |
         set -euo pipefail
-        APP="{{ agent_app_name }}"
-        TMP_DIR="$APP/.copier_migration_tmp"
-        TMP_FILE="$TMP_DIR/agent.py"
-        DST="$APP/agent/myagent.py"
+        for TMP_FILE in */.copier_migration_tmp/agent.py; do
+          [ -f "$TMP_FILE" ] || continue
+          APP="${TMP_FILE%%/.copier_migration_tmp/agent.py}"
+          DST="$APP/agent/myagent.py"
 
-        if [ -f "$TMP_FILE" ]; then
           mkdir -p "$APP/agent"
           cp "$TMP_FILE" "$DST"
-          rm -rf "$TMP_DIR"
-        fi
-    when: "{{ _stage == 'after' }}"
+          rm -rf "$APP/.copier_migration_tmp"
+        done
+    when: "{{ _stage == 'after' and _copier_operation == 'update' }}"
