@@ -35,16 +35,29 @@ from agent import Config, MyAgent
 # isort: on
 # ------------------------------------------------------------------------------
 import asyncio
+import logging
 import os
-from concurrent.futures import ThreadPoolExecutor
-from typing import Any, AsyncGenerator, Iterator, Union
+import threading
+from queue import Queue
+from typing import (
+    Any,
+    AsyncGenerator,
+    AsyncIterator,
+    Coroutine,
+    Iterator,
+    TypeVar,
+    Union,
+    cast,
+)
 
 from datarobot_genai.core.chat import (
     CustomModelChatResponse,
     CustomModelStreamingResponse,
     resolve_authorization_context,
     to_custom_model_chat_response,
-    to_custom_model_streaming_response,
+)
+from datarobot_genai.core.chat.responses import (
+    streaming_iterator_to_custom_model_streaming_response,
 )
 from openai.types.chat import CompletionCreateParams
 from openai.types.chat.completion_create_params import (
@@ -52,29 +65,144 @@ from openai.types.chat.completion_create_params import (
     CompletionCreateParamsStreaming,
 )
 
+try:  # pragma: no cover - flask is only required in DRUM
+    import flask
+except Exception:  # noqa: BLE001
+    flask = None  # type: ignore[assignment]
 
-def load_model(code_dir: str) -> tuple[ThreadPoolExecutor, asyncio.AbstractEventLoop]:
-    """The agent is instantiated in this function and returned."""
-    thread_pool_executor = ThreadPoolExecutor(1)
-    event_loop = asyncio.new_event_loop()
-    thread_pool_executor.submit(asyncio.set_event_loop, event_loop).result()
-    return (thread_pool_executor, event_loop)
+try:  # pragma: no cover - ag-ui is an optional dependency for some agent templates
+    from ag_ui.core import BaseEvent, TextMessageChunkEvent, TextMessageContentEvent
+except Exception:  # noqa: BLE001
+
+    class BaseEvent:  # pragma: no cover
+        pass
+
+    class TextMessageChunkEvent(BaseEvent):  # pragma: no cover
+        delta: str | None = None
+
+    class TextMessageContentEvent(BaseEvent):  # pragma: no cover
+        delta: str | None = None
 
 
-{% if agent_template_framework == "nat" -%}
-from datarobot_genai.core.chat.responses import (
-    async_gen_to_sync_thread,
-    streaming_iterator_to_custom_model_streaming_response,
-)
+logger = logging.getLogger(__name__)
 
-_ = to_custom_model_streaming_response
+T = TypeVar("T")
+
+
+def get_drum_background_loop() -> asyncio.AbstractEventLoop | None:
+    """Get a background event loop created and managed by DRUM (if available)."""
+    if flask is None:
+        return None
+
+    try:
+        # `flask.current_app` and its attributes are not typed, so treat them as dynamic.
+        current_app = cast(Any, flask.current_app)
+        loop = cast(
+            asyncio.AbstractEventLoop | None,
+            getattr(current_app, "_drum_bg_loop", None),
+        )
+        if loop is not None and loop.is_running():
+            return loop
+    except RuntimeError as exc:
+        # Raised if there is no active Flask application context.
+        logger.warning("RuntimeError when getting DRUM background loop: %s", exc)
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.warning("Unexpected error when getting DRUM background loop: %s", exc)
+    return None
+
+
+def get_coroutine_result(
+    coro: Coroutine[Any, Any, T],
+    *,
+    timeout_seconds: float = 5 * 60,
+) -> T:
+    """Execute a coroutine in DRUM's background loop and return its result.
+
+    Falls back to ``asyncio.run`` in non-DRUM environments (e.g. inline executor,
+    local tests) where the background loop is not available.
+    """
+    background_loop = get_drum_background_loop()
+    if background_loop is not None:
+        future = asyncio.run_coroutine_threadsafe(coro, background_loop)
+        try:
+            return future.result(timeout=timeout_seconds)
+        except asyncio.TimeoutError:
+            future.cancel()
+            raise TimeoutError("Async operation timed out")  # noqa: B904
+
+    # Fallback: create and run a dedicated event loop for this coroutine.
+    return asyncio.run(coro)
+
+
+def async_iterator_to_sync_iterator(async_iter: AsyncIterator[T]) -> Iterator[T]:
+    """Consume an async iterator in DRUM's background loop and expose a sync iterator."""
+    # A synchronized queue to feed data from the async iterator thread
+    # to the calling thread that yields synchronous generator items.
+    queue: Queue[Any] = Queue()
+
+    # A special queue item to indicate that we are done iterating over the async generator.
+    done_marker = object()
+
+    flask_app = None
+    if flask is not None:
+        try:
+            if flask.has_app_context():
+                flask_app = flask.current_app._get_current_object()  # type: ignore[attr-defined]
+        except Exception:  # pragma: no cover - best-effort Flask integration
+            flask_app = None
+
+    def run_async_consumer() -> None:
+        if flask_app is not None:
+            with flask_app.app_context():
+                _run_async_consumer()
+        else:
+            _run_async_consumer()
+
+    def _run_async_consumer() -> None:
+        async def iterate_and_enqueue() -> None:
+            try:
+                async for chunk in async_iter:
+                    queue.put(chunk)
+            except Exception as exc:  # noqa: BLE001
+                queue.put(exc)
+            finally:
+                queue.put(done_marker)
+
+        # Use DRUM's background loop when available; fallback to asyncio.run otherwise.
+        get_coroutine_result(iterate_and_enqueue())
+
+    # Start the async consumer thread.
+    async_consumer_thread = threading.Thread(target=run_async_consumer, daemon=True)
+    async_consumer_thread.start()
+
+    # Yield from the synchronous generator until we consume the completion marker from the queue.
+    while True:
+        item = queue.get()
+        if item is done_marker:
+            break
+        if isinstance(item, Exception):
+            raise item
+        yield item
+
+    async_consumer_thread.join()
+
+def load_model(code_dir: str) -> object:  # noqa: ARG001
+    """DRUM hook for model loading.
+
+    The agent logic is executed in DRUM's shared background event loop, so we do not
+    create our own event loop here. This function is kept for DRUM compatibility.
+    """
+    # DRUM requires this hook to return a non-None model object so that it can be
+    # passed into the chat hook. The returned value is not used by this agent,
+    # but must be non-None to avoid DrumSerializationError during artifact load.
+    return {"agent": ""}
 
 
 def chat(
     completion_create_params: CompletionCreateParams
     | CompletionCreateParamsNonStreaming
     | CompletionCreateParamsStreaming,
-    load_model_result: tuple[ThreadPoolExecutor, asyncio.AbstractEventLoop],
+    load_model_result: object | None,  # kept for DRUM compatibility, currently unused
     **kwargs: Any,
 ) -> Union[CustomModelChatResponse, Iterator[CustomModelStreamingResponse]]:
     """When using the chat endpoint, this function is called.
@@ -98,7 +226,7 @@ def chat(
             ...
         )
     """
-    thread_pool_executor, event_loop = load_model_result
+    _ = load_model_result
 
     # Change working directory to the directory containing this file.
     # Some agent frameworks expect this for expected pathing.
@@ -126,22 +254,43 @@ def chat(
     # allowing environment variables to be passed during execution
     agent = MyAgent(**completion_create_params)
 
-    # Invoke the agent
-    result = thread_pool_executor.submit(
-        event_loop.run_until_complete,
-        agent.invoke(completion_create_params=completion_create_params),
-    ).result()
+    # Invoke the agent using DRUM's background event loop when available.
+    result = get_coroutine_result(
+        agent.invoke(completion_create_params=completion_create_params)
+    )
 
     # Check if the result is a generator (streaming response)
     if isinstance(result, AsyncGenerator):
         # Streaming response
-        streaming_response_iterator = async_gen_to_sync_thread(
-            result,
-            thread_pool_executor,
-            event_loop,
-        )
+        # Convert the async generator emitting (str | Event, pipeline_interactions, usage)
+        # into a sync iterator emitting only text chunks and metrics, since the OpenAI
+        # client expects `delta.content` to be a string (not Event objects).
+        def _normalize_streaming_iterator() -> Iterator[
+            tuple[str, Any | None, dict[str, int]]
+        ]:
+            for (
+                response_text_or_event,
+                pipeline_interactions,
+                usage_metrics,
+            ) in async_iterator_to_sync_iterator(result):
+                text = ""
+                if isinstance(response_text_or_event, str):
+                    text = response_text_or_event
+                elif isinstance(response_text_or_event, BaseEvent):
+                    if isinstance(
+                        response_text_or_event,
+                        (TextMessageContentEvent, TextMessageChunkEvent),
+                    ):
+                        text = response_text_or_event.delta or ""
+                # Cast to the iterator element type expected by
+                # `streaming_iterator_to_custom_model_streaming_response`.
+                yield cast(
+                    tuple[str, Any | None, dict[str, int]],
+                    (text, pipeline_interactions, cast(dict[str, int], usage_metrics)),
+                )
+
         return streaming_iterator_to_custom_model_streaming_response(
-            streaming_response_iterator,  # type: ignore[arg-type]
+            streaming_response_iterator=_normalize_streaming_iterator(),
             model=completion_create_params.get("model"),
         )
     else:
@@ -154,87 +303,3 @@ def chat(
             usage_metrics,  # type: ignore[arg-type]
             model=completion_create_params.get("model"),
         )
-{% else -%}
-def chat(
-    completion_create_params: CompletionCreateParams
-    | CompletionCreateParamsNonStreaming
-    | CompletionCreateParamsStreaming,
-    load_model_result: tuple[ThreadPoolExecutor, asyncio.AbstractEventLoop],
-    **kwargs: Any,
-) -> Union[CustomModelChatResponse, Iterator[CustomModelStreamingResponse]]:
-    """When using the chat endpoint, this function is called.
-
-    Agent inputs are in OpenAI message format and defined as the 'user' portion
-    of the input prompt.
-
-    Example:
-        prompt = {
-            "topic": "Artificial Intelligence",
-        }
-        client = OpenAI(...)
-        completion = client.chat.completions.create(
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": f"{json.dumps(prompt)}"},
-            ],
-            extra_body = {
-                "environment_var": True,
-            },
-            ...
-        )
-    """
-    thread_pool_executor, event_loop = load_model_result
-
-    # Change working directory to the directory containing this file.
-    # Some agent frameworks expect this for expected pathing.
-    os.chdir(os.path.dirname(os.path.abspath(__file__)))
-
-    # Load MCP runtime parameters and session secret if configured
-    # ["EXTERNAL_MCP_URL", "MCP_DEPLOYMENT_ID", "SESSION_SECRET_KEY"]
-    _ = Config()
-
-    # Initialize the authorization context for downstream agents and tools to retrieve
-    # access tokens for external services.
-    completion_create_params["authorization_context"] = resolve_authorization_context(
-        completion_create_params, **kwargs
-    )
-
-    # The list of the headers to forward into the Agent and MCP Server.
-    incoming_headers = kwargs.get("headers", {}) or {}
-    allowed_headers = {"x-datarobot-api-token", "x-datarobot-api-key"}
-    forwarded_headers = {
-        k: v for k, v in incoming_headers.items() if k.lower() in allowed_headers
-    }
-    completion_create_params["forwarded_headers"] = forwarded_headers
-
-    # Instantiate the agent, all fields from the completion_create_params are passed to the agent
-    # allowing environment variables to be passed during execution
-    agent = MyAgent(**completion_create_params)
-
-    # Invoke the agent
-    result = thread_pool_executor.submit(
-        event_loop.run_until_complete,
-        agent.invoke(completion_create_params=completion_create_params),
-    ).result()
-
-    # Check if the result is a generator (streaming response)
-    if isinstance(result, AsyncGenerator):
-        # Streaming response
-        return to_custom_model_streaming_response(
-            thread_pool_executor,
-            event_loop,
-            result,  # type: ignore[arg-type]
-            model=completion_create_params.get("model"),
-        )
-    else:
-        # Non-streaming response
-        response_text, pipeline_interactions, usage_metrics = result
-
-        return to_custom_model_chat_response(
-            response_text,
-            pipeline_interactions,
-            usage_metrics,  # type: ignore[arg-type]
-            model=completion_create_params.get("model"),
-        )
-{% endif -%}
-
