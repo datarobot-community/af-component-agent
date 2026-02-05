@@ -82,4 +82,4 @@ _migrations:
           mv "{{ agent_app_name }}/agentic_workflow/agent.py" \
              "{{ agent_app_name }}/agent/myagent.py";
         fi
-    when: "{{ _stage == 'before'}}"
+    when: "{{ _stage == 'after' and _copier_operation == 'update' }}"
