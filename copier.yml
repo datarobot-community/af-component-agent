@@ -42,7 +42,7 @@ base_answers_file:
 
 llm_answers_file:
   type: str
-  default: ".datarobot/answers/llm-llm.yml" 
+  default: ".datarobot/answers/llm-llm.yml"
   help: "Path to the llm component answers file (must contain '.datarobot/answers')"
   validator: >-
     {% if not llm_answers_file %}ERROR: LLM answers file path cannot be empty
@@ -71,3 +71,16 @@ _subdirectory: template
 _answers_file: ".datarobot/answers/agent-{{ agent_app_name }}.yml"
 _exclude:
     - "*.j2"
+
+_migrations:
+  - command:
+      - bash
+      - -lc
+      - >
+        if [ -f "{{ agent_app_name }}/agentic_workflow/agent.py" ] &&
+           [ ! -f "{{ agent_app_name }}/agent/agent/myagent.py" ]; then
+          mkdir -p "{{ agent_app_name }}/agent/agent";
+          cp "{{ agent_app_name }}/agentic_workflow/agent.py" \
+             "{{ agent_app_name }}/agent/agent/myagent.py";
+        fi
+    when: "{{ _stage == 'before' and _copier_operation == 'update' }}"
