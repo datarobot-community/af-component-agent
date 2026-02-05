@@ -73,13 +73,44 @@ _exclude:
     - "*.j2"
 
 _migrations:
+  # Migrate legacy agent implementation into the new package layout.
+  #
+  # Why 2 steps?
+  # - On update, the template may delete `agentic_workflow/agent.py`.
+  # - We therefore snapshot it in the "before" stage, then overwrite the
+  #   newly-rendered `agent/myagent.py` in the "after" stage.
+  #
+  # This only triggers for legacy projects that still have `agentic_workflow/agent.py`
+  # and do not already have `agent/myagent.py` before the update starts.
   - command:
       - bash
       - -lc
-      - >
-        if [ -f "{{ agent_app_name }}/agentic_workflow/agent.py" ]; then
-          mkdir -p "{{ agent_app_name }}/agent";
-          mv "{{ agent_app_name }}/agentic_workflow/agent.py" \
-             "{{ agent_app_name }}/agent/myagent.py";
+      - |
+        set -euo pipefail
+        APP="{{ agent_app_name }}"
+        SRC="$APP/agentic_workflow/agent.py"
+        DST="$APP/agent/myagent.py"
+        TMP_DIR="$APP/.copier_migration_tmp"
+        TMP_FILE="$TMP_DIR/agent.py"
+
+        if [ -f "$SRC" ] && [ ! -f "$DST" ]; then
+          mkdir -p "$TMP_DIR"
+          cp "$SRC" "$TMP_FILE"
         fi
-    when: "{{ _stage == 'after' and _copier_operation == 'update' }}"
+    when: "{{ _stage == 'before' }}"
+  - command:
+      - bash
+      - -lc
+      - |
+        set -euo pipefail
+        APP="{{ agent_app_name }}"
+        TMP_DIR="$APP/.copier_migration_tmp"
+        TMP_FILE="$TMP_DIR/agent.py"
+        DST="$APP/agent/myagent.py"
+
+        if [ -f "$TMP_FILE" ]; then
+          mkdir -p "$APP/agent"
+          cp "$TMP_FILE" "$DST"
+          rm -rf "$TMP_DIR"
+        fi
+    when: "{{ _stage == 'after' }}"
