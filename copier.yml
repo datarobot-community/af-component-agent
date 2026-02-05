@@ -83,7 +83,8 @@ _migrations:
   # This only triggers for legacy projects that still have `agentic_workflow/agent.py`
   # and do not already have `agent/myagent.py` before the update starts.
   # source: https://copier.readthedocs.io/en/stable/configuring/#migrations
-  - command:
+  - version: "11.5.9"
+    command:
       - bash
       - -lc
       - |
@@ -106,7 +107,8 @@ _migrations:
           fi
         done
     when: "{{ _stage == 'before' and _copier_operation == 'update' }}"
-  - command:
+  - version: "11.5.9"
+    command:
       - bash
       - -lc
       - |
