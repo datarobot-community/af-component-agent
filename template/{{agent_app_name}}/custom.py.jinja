@@ -70,18 +70,7 @@ try:  # pragma: no cover - flask is only required in DRUM
 except Exception:  # noqa: BLE001
     flask = None  # type: ignore[assignment]
 
-try:  # pragma: no cover - ag-ui is an optional dependency for some agent templates
-    from ag_ui.core import BaseEvent, TextMessageChunkEvent, TextMessageContentEvent
-except Exception:  # noqa: BLE001
-
-    class BaseEvent:  # pragma: no cover
-        pass
-
-    class TextMessageChunkEvent(BaseEvent):  # pragma: no cover
-        delta: str | None = None
-
-    class TextMessageContentEvent(BaseEvent):  # pragma: no cover
-        delta: str | None = None
+from ag_ui.core import BaseEvent, TextMessageChunkEvent, TextMessageContentEvent
 
 
 logger = logging.getLogger(__name__)
