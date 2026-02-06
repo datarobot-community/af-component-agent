@@ -277,6 +277,42 @@ class TestMyAgentLangGraph:
                 max_retries=3,
             )
 
+    @patch("agent.myagent.ChatLiteLLM")
+    @pytest.mark.parametrize("use_datarobot_llm_gateway", [True, False])
+    def test_llm_with_identity_token(self, mock_llm, use_datarobot_llm_gateway):
+        with patch.dict(os.environ, {"{{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEPLOYMENT_ID": "test-id"}, clear=True):
+            agent = MyAgent(
+                api_key="test_key",
+                verbose=True,
+                model="datarobot/azure/gpt-5-mini-2025-08-07",
+                forwarded_headers={
+                    "x-datarobot-api-key": "abc",
+                    "x-datarobot-identity-token": "xyz",
+                },
+            )
+            agent.config.use_datarobot_llm_gateway = use_datarobot_llm_gateway
+            agent.llm()
+
+            if use_datarobot_llm_gateway:
+                mock_llm.assert_called_once_with(
+                    model="datarobot/azure/gpt-5-mini-2025-08-07",
+                    api_base="https://app.datarobot.com/api/v2/deployments/test-id/chat/completions",
+                    api_key="test_key",
+                    timeout=90,
+                    streaming=True,
+                    max_retries=3,
+                )
+            else:
+                mock_llm.assert_called_once_with(
+                    model="datarobot/azure/gpt-5-mini-2025-08-07",
+                    api_base="https://app.datarobot.com/api/v2/deployments/test-id/chat/completions",
+                    api_key="test_key",
+                    timeout=90,
+                    streaming=True,
+                    max_retries=3,
+                    default_headers={"X-DataRobot-Identity-Token": "xyz"},
+                )
+
     @patch("agent.myagent.create_react_agent")
     def test_agent_planner_property(self, mock_create_agent, agent):
         """Test that agent_planner creates a react agent."""

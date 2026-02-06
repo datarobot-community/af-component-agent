@@ -92,12 +92,17 @@ class MyAgent(CrewAIAgent):
         if self.verbose:
             print(f"Using model: {model}")
 
-        return LLM(
-            model=model,
-            api_base=api_base,
-            api_key=self.api_key,
-            timeout=self.timeout,
-        )
+        config = {
+            "model": model,
+            "api_base": api_base,
+            "api_key": self.api_key,
+            "timeout": self.timeout,
+        }
+
+        if not self.config.use_datarobot_llm_gateway and self._identity_header:
+            config["extra_headers"] = self._identity_header  # type: ignore[assignment]
+
+        return LLM(**config)  # type: ignore[arg-type]
 
     def make_kickoff_inputs(self, user_prompt_content: str) -> dict[str, Any]:
         """Map the user prompt into Crew kickoff inputs expected by tasks/agents."""
