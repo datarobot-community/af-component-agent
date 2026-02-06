@@ -132,7 +132,7 @@ class MyAgent(LangGraphAgent):
             "max_retries": 3,
         }
 
-        if self._identity_header:
+        if self._identity_header and not self.config.use_datarobot_llm_gateway:
             config["default_headers"] = self._identity_header  # type: ignore[assignment]
 
         return ChatLiteLLM(**config)

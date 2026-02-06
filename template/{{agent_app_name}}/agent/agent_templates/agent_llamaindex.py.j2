@@ -96,7 +96,7 @@ class MyAgent(LlamaIndexAgent):
             "timeout": self.timeout,
         }
 
-        if self._identity_header:
+        if self._identity_header and not self.config.use_datarobot_llm_gateway:
             config["additional_kwargs"] = {"extra_headers": self._identity_header}  # type: ignore[assignment]
 
         return DataRobotLiteLLM(**config)

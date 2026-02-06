@@ -99,10 +99,10 @@ class MyAgent(CrewAIAgent):
             "timeout": self.timeout,
         }
 
-        if self._identity_header:
+        if self._identity_header and not self.config.use_datarobot_llm_gateway:
             config["extra_headers"] = self._identity_header  # type: ignore[assignment]
 
-        return LLM(**config)
+        return LLM(**config)  # type: ignore[arg-type]
 
     def make_kickoff_inputs(self, user_prompt_content: str) -> dict[str, Any]:
         """Map the user prompt into Crew kickoff inputs expected by tasks/agents."""
