@@ -13,7 +13,7 @@
 # limitations under the License.
 from typing import Any, List, Optional, Union
 
-from crewai import LLM, Agent, Task
+from crewai import LLM, Agent, Crew, Process, Task
 from datarobot_genai.crewai.agent import CrewAIAgent
 from datarobot_genai.crewai.events import CrewAIEventListener
 
@@ -176,4 +176,17 @@ class MyAgent(CrewAIAgent):
             ),
             expected_output="A well-written blog post in markdown format, ready for publication. Maximum 500 words total.",
             agent=self.agent_writer,
+        )
+
+    def crew(self) -> Crew:
+        """Create a CrewAI workflow instance.
+
+        Default implementation in base class `CrewAIAgent` constructs a Crew with provided agents and tasks.
+        Here you can override to customize Crew options.
+        """
+        return Crew(
+            agents=self.agents,
+            tasks=self.tasks,
+            verbose=self.verbose,
+            process=Process.sequential,
         )
