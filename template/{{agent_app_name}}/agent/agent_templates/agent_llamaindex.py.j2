@@ -97,7 +97,7 @@ class MyAgent(LlamaIndexAgent):
         }
 
         if self._identity_header:
-            config["additional_kwargs"] = {"extra_headers": self._identity_header}
+            config["additional_kwargs"] = {"extra_headers": self._identity_header} # type: ignore[assignment]
 
         return DataRobotLiteLLM(**config)
 
