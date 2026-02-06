@@ -42,7 +42,7 @@ base_answers_file:
 
 llm_answers_file:
   type: str
-  default: ".datarobot/answers/llm-llm.yml" 
+  default: ".datarobot/answers/llm-llm.yml"
   help: "Path to the llm component answers file (must contain '.datarobot/answers')"
   validator: >-
     {% if not llm_answers_file %}ERROR: LLM answers file path cannot be empty
@@ -71,3 +71,55 @@ _subdirectory: template
 _answers_file: ".datarobot/answers/agent-{{ agent_app_name }}.yml"
 _exclude:
     - "*.j2"
+
+_migrations:
+  # Migrate legacy agent implementation into the new package layout.
+  #
+  # Why 2 steps?
+  # - On update, the template may delete `agentic_workflow/agent.py`.
+  # - We therefore snapshot it in the "before" stage, then overwrite the
+  #   newly-rendered `agent/myagent.py` in the "after" stage.
+  #
+  # This only triggers for legacy projects that still have `agentic_workflow/agent.py`
+  # and do not already have `agent/myagent.py` before the update starts.
+  # source: https://copier.readthedocs.io/en/stable/configuring/#migrations
+  - version: "11.5.9"
+    command:
+      - bash
+      - -lc
+      - |
+        set -euo pipefail
+        # NOTE: During the "before" stage, some answer variables may not be
+        # available for templating yet, so we discover app folders using globs.
+        #
+        # Typical layout:
+        #   <app_name>/agentic_workflow/agent.py
+        for SRC in */agentic_workflow/agent.py; do
+          [ -f "$SRC" ] || continue
+          APP="${SRC%%/agentic_workflow/agent.py}"
+          DST="$APP/agent/myagent.py"
+          TMP_DIR="$APP/.copier_migration_tmp"
+          TMP_FILE="$TMP_DIR/agent.py"
+
+          if [ ! -f "$DST" ]; then
+            mkdir -p "$TMP_DIR"
+            cp "$SRC" "$TMP_FILE"
+          fi
+        done
+    when: "{{ _stage == 'before' and _copier_operation == 'update' }}"
+  - version: "11.5.9"
+    command:
+      - bash
+      - -lc
+      - |
+        set -euo pipefail
+        for TMP_FILE in */.copier_migration_tmp/agent.py; do
+          [ -f "$TMP_FILE" ] || continue
+          APP="${TMP_FILE%%/.copier_migration_tmp/agent.py}"
+          DST="$APP/agent/myagent.py"
+
+          mkdir -p "$APP/agent"
+          cp "$TMP_FILE" "$DST"
+          rm -rf "$APP/.copier_migration_tmp"
+        done
+    when: "{{ _stage == 'after' and _copier_operation == 'update' }}"
