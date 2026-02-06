@@ -24,7 +24,7 @@ jobs:
       image: ghcr.io/astral-sh/uv:${{ matrix.python }}-bookworm
     strategy:
       matrix:
-        python: [python3.10, python3.11, python3.12]
+        python: [python3.11, python3.12]
         framework:
           - name: base
             agent_name: agent_generic_base
@@ -36,11 +36,6 @@ jobs:
             agent_name: agent_llamaindex
           - name: nat
             agent_name: agent_nat
-        exclude:
-          - python: python3.10
-            framework:
-              name: nat
-              agent_name: agent_nat
     steps:
       - name: Checkout
         uses: "actions/checkout@v6"
