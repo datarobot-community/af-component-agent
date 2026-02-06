@@ -19,4 +19,26 @@ custom_model_runtime_parameters: list[
         type="string",
         value="datarobot/azure/gpt-5-mini-2025-08-07",
     ),
+    # Enable DRUM gunicorn/gevent server with a background event loop
+    # so that async operations can run on DRUM's shared loop.
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        key="CUSTOM_MODEL_WORKERS",
+        type="numeric",
+        value="1",
+    ),
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        key="DRUM_SERVER_TYPE",
+        type="string",
+        value="gunicorn",
+    ),
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        key="DRUM_GUNICORN_WORKER_CLASS",
+        type="string",
+        value="gevent",
+    ),
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        key="DRUM_WORKER_CONNECTIONS",
+        type="numeric",
+        value="100",
+    ),
 ]

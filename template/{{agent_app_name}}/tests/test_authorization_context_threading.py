@@ -36,10 +36,8 @@ def mock_agent():
 
 @pytest.fixture
 def load_model_result():
-    result = load_model("")
-    yield result
-    thread_pool_executor, event_loop = result
-    thread_pool_executor.shutdown(wait=True)
+    """Fixture for DRUM load_model_result argument (currently unused by agent)."""
+    return load_model("")
 
 
 @pytest.fixture

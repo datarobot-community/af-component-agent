@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
 import json
 import os
-from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import ANY, AsyncMock, MagicMock, Mock, patch
 
 import pytest
@@ -25,10 +23,8 @@ class TestCustomModel:
     def test_load_model(self):
         from custom import load_model
 
-        (thread_pool_executor, event_loop) = load_model("")
-        assert isinstance(thread_pool_executor, ThreadPoolExecutor)
-        assert isinstance(event_loop, type(asyncio.get_event_loop()))
-        thread_pool_executor.shutdown()
+        model = load_model("")
+        assert model is not None
 
     @patch("custom.MyAgent")
     @patch.dict(os.environ, {"LLM_DEPLOYMENT_ID": "TEST_VALUE"}, clear=True)

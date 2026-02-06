@@ -376,7 +376,9 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
 )
 
 {{agent_app_name}}_custom_model_endpoint = {{agent_app_name}}_custom_model.id.apply(
-    lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/genai/agents/fromCustomModel/{id}/chat/"
+    lambda id: (
+        f"{os.getenv('DATAROBOT_ENDPOINT')}/genai/agents/fromCustomModel/{id}/chat/"
+    )
 )
 
 {{agent_app_name}}_playground = pulumi_datarobot.Playground(
@@ -472,7 +474,9 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}"
     )
     {{agent_app_name}}_deployment_completions_endpoint = {{agent_app_name}}_agent_deployment.id.apply(
-        lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/chat/completions"
+        lambda id: (
+            f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/chat/completions"
+        )
     )
 
     export(
