@@ -88,12 +88,18 @@ class MyAgent(LlamaIndexAgent):
             model = self.default_model
         if self.verbose:
             print(f"Using model: {model}")
-        return DataRobotLiteLLM(
-            model=model,
-            api_base=api_base,
-            api_key=self.api_key,
-            timeout=self.timeout,
-        )
+
+        config = {
+            "model": model,
+            "api_base": api_base,
+            "api_key": self.api_key,
+            "timeout": self.timeout,
+        }
+
+        if self._identity_header:
+            config["additional_kwargs"] = {"extra_headers": self._identity_header}
+
+        return DataRobotLiteLLM(**config)
 
     @property
     def agent_planner(self) -> FunctionAgent:

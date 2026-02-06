@@ -120,14 +120,20 @@ class MyAgent(LangGraphAgent):
             model = self.default_model
         if self.verbose:
             print(f"Using model: {model}")
-        return ChatLiteLLM(
-            model=model,
-            api_base=api_base,
-            api_key=self.api_key,
-            timeout=self.timeout,
-            streaming=True,
-            max_retries=3,
-        )
+
+        config = {
+            "model": model,
+            "api_base": api_base,
+            "api_key": self.api_key,
+            "timeout": self.timeout,
+            "streaming": True,
+            "max_retries": 3,
+        }
+
+        if self._identity_header:
+            config["default_headers"] = self._identity_header
+
+        return ChatLiteLLM(**config)
 
     @property
     def agent_planner(self) -> Any:
