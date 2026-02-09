@@ -89,19 +89,27 @@ def _generate_metadata_yaml(
     Raises:
         OSError: If unable to write the metadata file
     """
+    # Build runtime parameter definitions, excluding Pulumi Output objects
+    runtime_param_defs = []
+    for param in runtime_parameter_values:
+        param_def = {
+            "fieldName": param.key,
+            "type": param.type,
+        }
+        # Only include defaultValue if it's a plain value (not a Pulumi Output)
+        if (
+            hasattr(param, "value")
+            and param.value
+            and not isinstance(param.value, pulumi.Output)
+        ):
+            param_def["defaultValue"] = param.value
+        runtime_param_defs.append(param_def)
+
     metadata = {
         "name": agent_name,
         "type": "inference",
         "targetType": "agenticworkflow",
-        "runtimeParameterDefinitions": [
-            {
-                "fieldName": param.key,
-                "type": param.type,
-                **({"defaultValue": param.value} if hasattr(param, "value") and param.value else {}),
-            }
-            for param in runtime_parameter_values
-        ]
-        or [],
+        "runtimeParameterDefinitions": runtime_param_defs,
     }
 
     # Write the file using yaml library for proper formatting
@@ -344,28 +352,30 @@ agent_runtime_parameter_values: list[
 ] = [] + llm_custom_model_runtime_parameters + get_mcp_custom_model_runtime_parameters()
 
 # DRUM runtime parameters for concurrency configuration
-agent_runtime_parameter_values.extend([
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        key="CUSTOM_MODEL_WORKERS",
-        type="numeric",
-        value="1",
-    ),
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        key="DRUM_SERVER_TYPE",
-        type="string",
-        value="gunicorn",
-    ),
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        key="DRUM_GUNICORN_WORKER_CLASS",
-        type="string",
-        value="sync",
-    ),
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        key="DRUM_WORKER_CONNECTIONS",
-        type="numeric",
-        value="1",
-    ),
-])
+agent_runtime_parameter_values.extend(
+    [
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key="CUSTOM_MODEL_WORKERS",
+            type="numeric",
+            value="1",
+        ),
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key="DRUM_SERVER_TYPE",
+            type="string",
+            value="gunicorn",
+        ),
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key="DRUM_GUNICORN_WORKER_CLASS",
+            type="string",
+            value="sync",
+        ),
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key="DRUM_WORKER_CONNECTIONS",
+            type="numeric",
+            value="1",
+        ),
+    ]
+)
 
 # Handle session secret key credential
 SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
@@ -404,7 +414,9 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
 )
 
 {{agent_app_name}}_custom_model_endpoint = {{agent_app_name}}_custom_model.id.apply(
-    lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/genai/agents/fromCustomModel/{id}/chat/"
+    lambda id: (
+        f"{os.getenv('DATAROBOT_ENDPOINT')}/genai/agents/fromCustomModel/{id}/chat/"
+    )
 )
 
 {{agent_app_name}}_playground = pulumi_datarobot.Playground(
@@ -500,7 +512,9 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}"
     )
     {{agent_app_name}}_deployment_completions_endpoint = {{agent_app_name}}_agent_deployment.id.apply(
-        lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/chat/completions"
+        lambda id: (
+            f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/chat/completions"
+        )
     )
 
     export(

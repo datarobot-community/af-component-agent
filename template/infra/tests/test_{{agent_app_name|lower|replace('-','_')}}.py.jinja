@@ -837,3 +837,70 @@ class TestGenerateMetadataYaml:
         assert "old" not in metadata
         assert metadata["name"] == "{{agent_app_name}}"
         assert metadata["runtimeParameterDefinitions"][0]["fieldName"] == "NEW_PARAM"
+
+
+class TestDrumRuntimeParameters:
+    def test_drum_runtime_parameters_included(self, monkeypatch):
+        """Test that DRUM concurrency runtime parameters are included in agent_runtime_parameter_values."""
+        monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
+
+        import importlib
+        import infra.{{agent_app_name}} as agent_infra
+
+        importlib.reload(agent_infra)
+
+        # Get all DRUM-related parameters
+        drum_params = {
+            param.key: param
+            for param in agent_infra.agent_runtime_parameter_values
+            if param.key
+            in [
+                "CUSTOM_MODEL_WORKERS",
+                "DRUM_SERVER_TYPE",
+                "DRUM_GUNICORN_WORKER_CLASS",
+                "DRUM_WORKER_CONNECTIONS",
+            ]
+        }
+
+        # Verify all 4 DRUM parameters are present
+        assert len(drum_params) == 4
+
+        # Check CUSTOM_MODEL_WORKERS
+        assert drum_params["CUSTOM_MODEL_WORKERS"].type == "numeric"
+        assert drum_params["CUSTOM_MODEL_WORKERS"].value == "1"
+
+        # Check DRUM_SERVER_TYPE
+        assert drum_params["DRUM_SERVER_TYPE"].type == "string"
+        assert drum_params["DRUM_SERVER_TYPE"].value == "gunicorn"
+
+        # Check DRUM_GUNICORN_WORKER_CLASS
+        assert drum_params["DRUM_GUNICORN_WORKER_CLASS"].type == "string"
+        assert drum_params["DRUM_GUNICORN_WORKER_CLASS"].value == "sync"
+
+        # Check DRUM_WORKER_CONNECTIONS
+        assert drum_params["DRUM_WORKER_CONNECTIONS"].type == "numeric"
+        assert drum_params["DRUM_WORKER_CONNECTIONS"].value == "1"
+
+    def test_drum_runtime_parameters_passed_to_custom_model(self, monkeypatch):
+        """Test that DRUM runtime parameters are passed to CustomModel."""
+        monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
+
+        import importlib
+        import infra.{{agent_app_name}} as agent_infra
+
+        agent_infra.pulumi_datarobot.CustomModel.reset_mock()
+        importlib.reload(agent_infra)
+
+        agent_infra.pulumi_datarobot.CustomModel.assert_called_once()
+        _, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
+
+        runtime_params = kwargs["runtime_parameter_values"]
+        drum_keys = [
+            "CUSTOM_MODEL_WORKERS",
+            "DRUM_SERVER_TYPE",
+            "DRUM_GUNICORN_WORKER_CLASS",
+            "DRUM_WORKER_CONNECTIONS",
+        ]
+
+        found_keys = [param.key for param in runtime_params if param.key in drum_keys]
+        assert set(found_keys) == set(drum_keys)
