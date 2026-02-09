@@ -67,6 +67,9 @@ class MyAgent(CrewAIAgent):
         self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
         self.event_listener = CrewAIEventListener()
 
+        if model in ("unknown", "datarobot-deployed-llm"):
+            self.model = self.default_model
+
     def llm(
         self,
         auto_model_override: bool = True,
