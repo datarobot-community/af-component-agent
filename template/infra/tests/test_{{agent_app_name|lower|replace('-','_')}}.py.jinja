@@ -16,6 +16,7 @@ import os
 from pathlib import Path
 import pytest
 from unittest.mock import patch, MagicMock, PropertyMock
+from collections import namedtuple
 
 # Ensure the test directory is in sys.path for proper imports
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -44,7 +45,6 @@ def pulumi_mocks(monkeypatch, tmp_path):
     # Mock pulumi_datarobot resources
     monkeypatch.setattr("pulumi_datarobot.ExecutionEnvironment", MagicMock())
     monkeypatch.setattr("pulumi_datarobot.CustomModel", MagicMock())
-    monkeypatch.setattr("pulumi_datarobot.ApiTokenCredential", MagicMock())
     monkeypatch.setattr("pulumi_datarobot.ApiTokenCredentialArgs", MagicMock())
     monkeypatch.setattr("pulumi_datarobot.Playground", MagicMock())
     monkeypatch.setattr("pulumi_datarobot.LlmBlueprint", MagicMock())
@@ -60,6 +60,16 @@ def pulumi_mocks(monkeypatch, tmp_path):
     )
     monkeypatch.setattr(
         "pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs", MagicMock()
+    )
+
+    # Mock CustomModelRuntimeParameterValueArgs to return simple namedtuple objects
+    # Namedtuples are YAML-safe and have the attributes we need
+    RuntimeParam = namedtuple(
+        "RuntimeParam", ["key", "type", "value"], defaults=[None, None, None]
+    )
+
+    monkeypatch.setattr(
+        "pulumi_datarobot.CustomModelRuntimeParameterValueArgs", RuntimeParam
     )
 
     # Patch the id property of the RuntimeEnvironment instance for PYTHON_311_GENAI_AGENTS
@@ -98,6 +108,20 @@ def pulumi_mocks(monkeypatch, tmp_path):
     MockOutput.from_input = MagicMock()
     MockOutput.format = MagicMock()
     monkeypatch.setattr("pulumi.Output", MockOutput)
+
+    # Mock ApiTokenCredential to return a mock with .id as a pulumi.Output
+    # This prevents MagicMock objects from being serialized to YAML
+    def create_api_token_credential(*args, **kwargs):
+        credential = MagicMock()
+        # Create a mock that will be recognized as pulumi.Output by isinstance check
+        output_mock = MagicMock(spec=MockOutput)
+        output_mock.__class__ = MockOutput
+        credential.id = output_mock
+        return credential
+
+    monkeypatch.setattr(
+        "pulumi_datarobot.ApiTokenCredential", create_api_token_credential
+    )
 
     yield
     patcher.stop()
@@ -324,10 +348,16 @@ def test_custom_model_created(monkeypatch):
 
     runtime_parameter_values = kwargs["runtime_parameter_values"]
 
-    assert len(runtime_parameter_values) == 1
-    assert runtime_parameter_values[0].type == "credential"
-    assert runtime_parameter_values[0].key == "SESSION_SECRET_KEY"
-    assert runtime_parameter_values[0].value is not None
+    # Should have 5 params: 1 SESSION_SECRET_KEY + 4 DRUM params
+    assert len(runtime_parameter_values) == 5
+
+    # Find the SESSION_SECRET_KEY parameter
+    session_secret_param = next(
+        (p for p in runtime_parameter_values if p.key == "SESSION_SECRET_KEY"), None
+    )
+    assert session_secret_param is not None
+    assert session_secret_param.type == "credential"
+    assert session_secret_param.value is not None
 
 
 def test_custom_model_created_pinned_version_id(monkeypatch):
