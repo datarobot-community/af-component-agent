@@ -771,10 +771,12 @@ class TestGenerateMetadataYaml:
         monkeypatch.setattr(agent_infra, "{{agent_app_name}}_application_path", tmp_path)
 
         # Create mixed runtime parameters with special characters
+        # Use simple objects instead of MagicMock to avoid YAML serialization issues
+        RuntimeParam = namedtuple("RuntimeParam", ["key", "type", "value"])
         mock_params = [
-            MagicMock(key="LLM_DEPLOYMENT_ID", type="string"),
-            MagicMock(key="SESSION_SECRET_KEY", type="credential"),
-            MagicMock(key="PARAM_WITH_UNDERSCORE_123", type="string"),
+            RuntimeParam(key="LLM_DEPLOYMENT_ID", type="string", value=None),
+            RuntimeParam(key="SESSION_SECRET_KEY", type="credential", value=None),
+            RuntimeParam(key="PARAM_WITH_UNDERSCORE_123", type="string", value=None),
         ]
 
         # Call the function with tmp_path as the custom model folder
@@ -848,7 +850,9 @@ class TestGenerateMetadataYaml:
         metadata_file = tmp_path / "model-metadata.yaml"
         metadata_file.write_text("old: content\n")
 
-        mock_params = [MagicMock(key="NEW_PARAM", type="string")]
+        # Use simple object instead of MagicMock to avoid YAML serialization issues
+        RuntimeParam = namedtuple("RuntimeParam", ["key", "type", "value"])
+        mock_params = [RuntimeParam(key="NEW_PARAM", type="string", value=None)]
         agent_infra._generate_metadata_yaml("{{agent_app_name}}", str(tmp_path), mock_params)
 
         # Check raw file format
