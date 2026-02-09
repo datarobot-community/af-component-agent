@@ -94,7 +94,11 @@ def _generate_metadata_yaml(
         "type": "inference",
         "targetType": "agenticworkflow",
         "runtimeParameterDefinitions": [
-            {"fieldName": param.key, "type": param.type}
+            {
+                "fieldName": param.key,
+                "type": param.type,
+                **({"defaultValue": param.value} if hasattr(param, "value") and param.value else {}),
+            }
             for param in runtime_parameter_values
         ]
         or [],
@@ -338,6 +342,30 @@ else:
 agent_runtime_parameter_values: list[
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs
 ] = [] + llm_custom_model_runtime_parameters + get_mcp_custom_model_runtime_parameters()
+
+# DRUM runtime parameters for concurrency configuration
+agent_runtime_parameter_values.extend([
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        key="CUSTOM_MODEL_WORKERS",
+        type="numeric",
+        value="1",
+    ),
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        key="DRUM_SERVER_TYPE",
+        type="string",
+        value="gunicorn",
+    ),
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        key="DRUM_GUNICORN_WORKER_CLASS",
+        type="string",
+        value="sync",
+    ),
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        key="DRUM_WORKER_CONNECTIONS",
+        type="numeric",
+        value="1",
+    ),
+])
 
 # Handle session secret key credential
 SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
