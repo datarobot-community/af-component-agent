@@ -37,15 +37,18 @@ from .{{ _external_data.llm.llm_app_name }} import custom_model_runtime_paramete
 
 DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
 
-# DRUM runtime parameter defaults for concurrency configuration
+# Custom Model DRUM runtime parameters (concurrency configuration)
 DEFAULT_CUSTOM_MODEL_WORKERS: Final[str] = "5"
 DEFAULT_DRUM_SERVER_TYPE: Final[str] = "gunicorn"
 DEFAULT_DRUM_GUNICORN_WORKER_CLASS: Final[str] = "sync"
 DEFAULT_DRUM_WORKER_CONNECTIONS: Final[str] = "1"
 
-# resource bundle configuration
+# Custom Model resource bundle configuration
 DEFAULT_AGENT_RESOURCE_BUNDLE_ID: Final[str] = "cpu.3xlarge"
 DEFAULT_AGENT_REPLICAS: Final[int] = 2
+
+# Agent deployment configuration (HPA autoscaling)
+DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES: Final[int] = 4
 
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
@@ -505,7 +508,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         ),
         predictions_settings=(
             pulumi_datarobot.DeploymentPredictionsSettingsArgs(
-                min_computes=0, max_computes=2
+                min_computes=0, max_computes=DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES
             )
         ),
     )

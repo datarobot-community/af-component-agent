@@ -507,6 +507,22 @@ def test_agent_deployment_not_created_when_env_zero(monkeypatch):
     agent_infra.CustomModelDeployment.assert_not_called()
 
 
+def test_agent_deployment_max_computes(monkeypatch):
+    """Test that agent deployment predictions_settings uses DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES."""
+    monkeypatch.setenv("AGENT_DEPLOY", "1")
+    monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
+
+    import importlib
+    import infra.{{agent_app_name}} as agent_infra
+
+    importlib.reload(agent_infra)
+
+    # Verify DeploymentPredictionsSettingsArgs was called with max_computes=4
+    agent_infra.pulumi_datarobot.DeploymentPredictionsSettingsArgs.assert_called_once_with(
+        min_computes=0, max_computes=4
+    )
+
+
 class TestGetCustomModelFiles:
     def test_get_custom_model_files_basic(self, tmp_path):
         import infra.{{agent_app_name}} as agent_infra
