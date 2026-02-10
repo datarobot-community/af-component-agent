@@ -48,6 +48,7 @@ DEFAULT_AGENT_RESOURCE_BUNDLE_ID: Final[str] = "cpu.3xlarge"
 DEFAULT_AGENT_REPLICAS: Final[int] = 2
 
 # Agent deployment configuration (HPA autoscaling)
+DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES: Final[int] = 0
 DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES: Final[int] = 4
 
 EXCLUDE_PATTERNS = [
@@ -293,6 +294,39 @@ def get_mcp_custom_model_runtime_parameters() -> list[
     return get_mcp_runtime_parameters_from_env()
 
 
+def _update_deployment_predictions_settings(
+    deployment_id: str,
+    min_computes: int,
+    max_computes: int,
+) -> str:
+    """Update deployment predictions settings for autoscaling configuration.
+
+    NOTE: predictions_settings is ignored during deployment creation
+    due to DataRobot server-side hardcoded default value.
+    """
+    dr_client = dr.Client()
+
+    # GET current settings to preserve server-side defaults (autoscalingPolicy, etc.)
+    response = dr_client.get(f"deployments/{deployment_id}/settings/")
+    current_settings = response.json()
+    current_predictions_settings = current_settings.get("predictionsSettings", {})
+
+    # Merge overrides into the existing predictions settings
+    current_predictions_settings["minComputes"] = min_computes
+    current_predictions_settings["maxComputes"] = max_computes
+
+    # PATCH with the merged settings
+    dr_client.patch(
+        f"deployments/{deployment_id}/settings/",
+        json={"predictionsSettings": current_predictions_settings},
+    )
+    pulumi.info(
+        f"Updated deployment {deployment_id} predictions settings: "
+        f"min_computes={min_computes}, max_computes={max_computes}"
+    )
+    return deployment_id
+
+
 synchronize_pyproject_dependencies()
 pulumi.info("NOTE: [unknown] values will be populated after performing an update.")  # fmt: skip
 
@@ -508,7 +542,8 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         ),
         predictions_settings=(
             pulumi_datarobot.DeploymentPredictionsSettingsArgs(
-                min_computes=0, max_computes=DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES
+                min_computes=DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES,
+                max_computes=DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES,
             )
         ),
     )
@@ -521,6 +556,16 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         registered_model_args={{agent_app_name}}_registered_model_args,
         deployment_args={{agent_app_name}}_deployment_args,
     )
+
+    # Update autoscaling predictions_settings for agent deployment
+    {{agent_app_name}}_agent_deployment.id.apply(
+        lambda dep_id: _update_deployment_predictions_settings(
+            deployment_id=dep_id,
+            min_computes=DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES,
+            max_computes=DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES,
+        )
+    )
+
     {{agent_app_name}}_agent_deployment_id = {{agent_app_name}}_agent_deployment.id.apply(lambda id: f"{id}")
     {{agent_app_name}}_deployment_endpoint = {{agent_app_name}}_agent_deployment.id.apply(
         lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}"

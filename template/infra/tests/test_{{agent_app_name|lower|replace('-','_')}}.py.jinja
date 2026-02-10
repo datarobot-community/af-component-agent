@@ -508,7 +508,7 @@ def test_agent_deployment_not_created_when_env_zero(monkeypatch):
 
 
 def test_agent_deployment_max_computes(monkeypatch):
-    """Test that agent deployment predictions_settings uses DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES."""
+    """Test that agent deployment predictions_settings uses DEFAULT_AGENT_DEPLOYMENT constants."""
     monkeypatch.setenv("AGENT_DEPLOY", "1")
     monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
 
@@ -517,10 +517,117 @@ def test_agent_deployment_max_computes(monkeypatch):
 
     importlib.reload(agent_infra)
 
-    # Verify DeploymentPredictionsSettingsArgs was called with max_computes=4
+    # Verify DeploymentPredictionsSettingsArgs was called with both constants
     agent_infra.pulumi_datarobot.DeploymentPredictionsSettingsArgs.assert_called_once_with(
-        min_computes=0, max_computes=4
+        min_computes=agent_infra.DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES,
+        max_computes=agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES,
     )
+
+
+class TestUpdateDeploymentPredictionsSettings:
+    """Tests for the _update_deployment_predictions_settings workaround."""
+
+    def test_gets_current_settings_then_patches(self, monkeypatch):
+        """Test that the function GETs current settings, merges overrides, and PATCHes."""
+        import importlib
+        import infra.{{agent_app_name}} as agent_infra
+
+        # Create a mock DR client
+        mock_client = MagicMock()
+        mock_client.get.return_value.json.return_value = {
+            "predictionsSettings": {
+                "realTime": True,
+                "minComputes": 1,
+                "maxComputes": 1,
+                "autoscalingPolicy": {
+                    "triggers": [{"type": "cpu", "targetValue": 40}],
+                    "cooldownPeriod": 5,
+                },
+            }
+        }
+        monkeypatch.setattr("datarobot.Client", MagicMock(return_value=mock_client))
+
+        result = agent_infra._update_deployment_predictions_settings(
+            deployment_id="test-deployment-id",
+            min_computes=0,
+            max_computes=4,
+        )
+
+        # Verify GET was called
+        mock_client.get.assert_called_once_with("deployments/test-deployment-id/settings/")
+
+        # Verify PATCH was called with merged settings (preserving autoscalingPolicy)
+        mock_client.patch.assert_called_once_with(
+            "deployments/test-deployment-id/settings/",
+            json={
+                "predictionsSettings": {
+                    "realTime": True,
+                    "minComputes": 0,
+                    "maxComputes": 4,
+                    "autoscalingPolicy": {
+                        "triggers": [{"type": "cpu", "targetValue": 40}],
+                        "cooldownPeriod": 5,
+                    },
+                }
+            },
+        )
+
+        # Verify it returns the deployment ID
+        assert result == "test-deployment-id"
+
+    def test_handles_empty_predictions_settings(self, monkeypatch):
+        """Test that the function handles missing predictionsSettings in GET response."""
+        import infra.{{agent_app_name}} as agent_infra
+
+        mock_client = MagicMock()
+        mock_client.get.return_value.json.return_value = {}
+        monkeypatch.setattr("datarobot.Client", MagicMock(return_value=mock_client))
+
+        agent_infra._update_deployment_predictions_settings(
+            deployment_id="test-deployment-id",
+            min_computes=0,
+            max_computes=2,
+        )
+
+        # Verify PATCH was called with just our overrides
+        mock_client.patch.assert_called_once_with(
+            "deployments/test-deployment-id/settings/",
+            json={
+                "predictionsSettings": {
+                    "minComputes": 0,
+                    "maxComputes": 2,
+                }
+            },
+        )
+
+    def test_uses_default_constants(self, monkeypatch):
+        """Test that the apply call uses the DEFAULT constants."""
+        monkeypatch.setenv("AGENT_DEPLOY", "1")
+        monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
+
+        # Mock dr.Client so the apply callback doesn't make real API calls
+        mock_client = MagicMock()
+        mock_client.get.return_value.json.return_value = {"predictionsSettings": {}}
+        monkeypatch.setattr("datarobot.Client", MagicMock(return_value=mock_client))
+
+        import importlib
+        import infra.{{agent_app_name}} as agent_infra
+
+        # Make CustomModelDeployment.id.apply actually call the function
+        mock_deployment = MagicMock()
+        mock_deployment.id.apply = MagicMock(
+            side_effect=lambda fn: fn("mock-deployment-id")
+        )
+        agent_infra.CustomModelDeployment.return_value = mock_deployment
+
+        importlib.reload(agent_infra)
+
+        # Verify the PATCH was called with the correct constant values
+        mock_client.patch.assert_called_once()
+        patch_kwargs = mock_client.patch.call_args
+        patched_settings = patch_kwargs[1]["json"]["predictionsSettings"]
+        assert patched_settings["minComputes"] == agent_infra.DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES
+        assert patched_settings["maxComputes"] == agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES
 
 
 class TestGetCustomModelFiles:
