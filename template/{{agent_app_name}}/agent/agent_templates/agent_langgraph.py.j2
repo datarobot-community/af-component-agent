@@ -18,10 +18,10 @@ from datarobot_genai.core.agents import (
     make_system_prompt,
 )
 from datarobot_genai.langgraph.agent import LangGraphAgent
+from langchain.agents import create_agent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_litellm.chat_models import ChatLiteLLM
 from langgraph.graph import END, START, MessagesState, StateGraph
-from langchain.agents import create_agent
 
 from agent.config import Config
 
