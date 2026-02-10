@@ -393,6 +393,27 @@ def test_custom_model_created_pinned_version_id(monkeypatch):
     assert kwargs["base_environment_version_id"] == "690cd2f698419673f938f7c4"
 
 
+def test_custom_model_resource_bundle_and_replicas(monkeypatch):
+    """Test that CustomModel is created with correct resource_bundle_id and replicas."""
+    monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
+
+    import importlib
+    import infra.{{agent_app_name}} as agent_infra
+
+    # Reset the mock to clear calls from the initial import
+    agent_infra.pulumi_datarobot.CustomModel.reset_mock()
+    importlib.reload(agent_infra)
+
+    agent_infra.pulumi_datarobot.CustomModel.assert_called_once()
+    args, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
+
+    # Verify resource_bundle_id is set to cpu.3xlarge
+    assert kwargs["resource_bundle_id"] == "cpu.3xlarge"
+
+    # Verify replicas is set to 2
+    assert kwargs["replicas"] == 2
+
+
 def test_agentic_playground_and_blueprint_created(monkeypatch):
     """Test that pulumi_datarobot.Playground and pulumi_datarobot.LlmBlueprint are created
     and the Playground URL is added to outputs."""
@@ -901,7 +922,7 @@ class TestDrumRuntimeParameters:
 
         # Check CUSTOM_MODEL_WORKERS
         assert drum_params["CUSTOM_MODEL_WORKERS"].type == "numeric"
-        assert drum_params["CUSTOM_MODEL_WORKERS"].value == "1"
+        assert drum_params["CUSTOM_MODEL_WORKERS"].value == "5"
 
         # Check DRUM_SERVER_TYPE
         assert drum_params["DRUM_SERVER_TYPE"].type == "string"
