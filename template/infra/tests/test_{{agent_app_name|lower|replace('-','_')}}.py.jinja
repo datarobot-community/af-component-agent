@@ -633,8 +633,8 @@ class TestUpdateDeploymentPredictionsSettings:
             == agent_infra.DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES
         )
         assert (
-            patched_settings["maxComputes"] ==
-            agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES
+            patched_settings["maxComputes"]
+            == agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES
         )
 
 
