@@ -554,7 +554,9 @@ class TestUpdateDeploymentPredictionsSettings:
         )
 
         # Verify GET was called
-        mock_client.get.assert_called_once_with("deployments/test-deployment-id/settings/")
+        mock_client.get.assert_called_once_with(
+            "deployments/test-deployment-id/settings/"
+        )
 
         # Verify PATCH was called with merged settings (preserving autoscalingPolicy)
         mock_client.patch.assert_called_once_with(
@@ -626,8 +628,14 @@ class TestUpdateDeploymentPredictionsSettings:
         mock_client.patch.assert_called_once()
         patch_kwargs = mock_client.patch.call_args
         patched_settings = patch_kwargs[1]["json"]["predictionsSettings"]
-        assert patched_settings["minComputes"] == agent_infra.DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES
-        assert patched_settings["maxComputes"] == agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES
+        assert (
+            patched_settings["minComputes"]
+            == agent_infra.DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES
+        )
+        assert (
+            patched_settings["maxComputes"] ==
+            agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES
+        )
 
 
 class TestGetCustomModelFiles:
