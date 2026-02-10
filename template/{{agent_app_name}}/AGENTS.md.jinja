@@ -171,16 +171,16 @@ def prompt_template(self) -> ChatPromptTemplate:
 
 ### 3. Agent Nodes
 
-Agent nodes are typically created using `create_react_agent`.
-**IMPORTANT**: Use `create_react_agent` call to create agent's node while passing the preferred LLM, system prompt and required tools into it.
+Agent nodes are typically created using `create_agent`.
+**IMPORTANT**: Use `create_agent` call to create agent's node while passing the preferred LLM, system prompt and required tools into it.
 
 ```python
 @property
 def agent_node(self) -> Any:
-    return create_react_agent(
+    return create_agent(
         self.llm(),
         tools=self.tools,  # or [] for no tools
-        prompt=make_system_prompt(
+        system_prompt=make_system_prompt(
             "Your agent's system prompt here."
         ),
     )

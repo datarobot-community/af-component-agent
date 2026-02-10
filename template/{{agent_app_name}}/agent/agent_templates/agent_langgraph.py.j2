@@ -21,7 +21,7 @@ from datarobot_genai.langgraph.agent import LangGraphAgent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_litellm.chat_models import ChatLiteLLM
 from langgraph.graph import END, START, MessagesState, StateGraph
-from langgraph.prebuilt import create_react_agent
+from langchain.agents import create_agent
 
 from agent.config import Config
 
@@ -139,10 +139,10 @@ class MyAgent(LangGraphAgent):
 
     @property
     def agent_planner(self) -> Any:
-        return create_react_agent(
+        return create_agent(
             self.llm(),
             tools=self.mcp_tools,
-            prompt=make_system_prompt(
+            system_prompt=make_system_prompt(
                 "You are a content planner. You create brief, structured outlines for blog articles. "
                 "You identify the most important points and cite relevant sources. Keep it simple and to the point - "
                 "this is just an outline for the writer.\n"
@@ -162,10 +162,10 @@ class MyAgent(LangGraphAgent):
 
     @property
     def agent_writer(self) -> Any:
-        return create_react_agent(
+        return create_agent(
             self.llm(),
             tools=self.mcp_tools,
-            prompt=make_system_prompt(
+            system_prompt=make_system_prompt(
                 "You are a content writer working with a planner colleague.\n"
                 "You write opinion pieces based on the planner's outline and context. You provide objective and "
                 "impartial insights backed by the planner's information. You acknowledge when your statements are "
