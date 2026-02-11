@@ -84,7 +84,26 @@ class MyAgent(LlamaIndexAgent):
         )
 
     def extract_response_text(self, result_state: Any, events: list[Any]) -> str:
-        return str(result_state["report_content"])
+        """Safely extract the final report text from the workflow state or events."""
+        # Preferred path: use the workflow state when available
+        if isinstance(result_state, dict) and "report_content" in result_state:
+            return str(result_state["report_content"])
+
+        # Fallback: best-effort extraction from the last event that carries text
+        for event in reversed(events or []):
+            try:
+                resp = getattr(event, "response", None)
+                if resp is not None and getattr(resp, "content", None):
+                    return str(resp.content)
+                if hasattr(event, "delta") and getattr(event, "delta", None):
+                    return str(event.delta)
+                if hasattr(event, "text") and getattr(event, "text", None):
+                    return str(event.text)
+            except Exception:
+                continue
+
+        # Last resort: empty string
+        return ""
 
     def llm(
         self,
