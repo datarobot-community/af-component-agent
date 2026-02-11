@@ -92,7 +92,9 @@ class MyAgent(LangGraphAgent):
             [
                 (
                     "system",
-                    "Previous conversation (if any):\n{chat_history}",
+                    "You are a helpful assistant that plans and writes content based on the "
+                    "user's topic. Use any prior messages you see in the conversation to stay "
+                    "consistent across turns.",
                 ),
                 (
                     "user",
