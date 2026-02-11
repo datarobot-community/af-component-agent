@@ -91,6 +91,10 @@ class MyAgent(LangGraphAgent):
         return ChatPromptTemplate.from_messages(
             [
                 (
+                    "system",
+                    "Previous conversation (if any):\n{chat_history}",
+                ),
+                (
                     "user",
                     f"The topic is {% raw %}{{topic}}{% endraw %}. Make sure you find any interesting and "
                     f"relevant information given the current year is {datetime.now().year}.",
