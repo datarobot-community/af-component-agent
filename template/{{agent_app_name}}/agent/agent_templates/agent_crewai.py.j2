@@ -108,8 +108,18 @@ class MyAgent(CrewAIAgent):
         return LLM(**config)  # type: ignore[arg-type]
 
     def make_kickoff_inputs(self, user_prompt_content: str) -> dict[str, Any]:
-        """Map the user prompt into Crew kickoff inputs expected by tasks/agents."""
-        return {"topic": str(user_prompt_content)}
+        """Map the user prompt into Crew kickoff inputs expected by tasks/agents.
+
+        The ``chat_history`` field is initialized to an empty string so that
+        templates using ``{chat_history}`` remain compatible even when the
+        underlying runtime does not yet provide multi-turn history. Newer
+        versions of ``datarobot-genai`` will overwrite this value with a
+        concrete history summary before calling ``Crew.kickoff``.
+        """
+        return {
+            "topic": str(user_prompt_content),
+            "chat_history": "",
+        }
 
     @property
     def agents(self) -> List[Agent]:
