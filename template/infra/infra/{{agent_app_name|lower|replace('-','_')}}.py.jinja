@@ -301,9 +301,20 @@ def _update_deployment_predictions_settings(
 ) -> str:
     """Update deployment predictions settings for autoscaling configuration.
 
-    NOTE: predictions_settings is ignored during deployment creation
-    due to DataRobot server-side hardcoded default value.
+    NOTES:
+    - predictions_settings is ignored during deployment creation
+    due to DataRobot server-side hardcoded default value
+    - min_computes must be either 0 or equal to max_computes
+    for custom model deployments
     """
+    if min_computes not in (0, max_computes):
+        error_msg = (
+            f"Invalid deployment configuration: DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES={min_computes}\n"
+            f"min_computes must be either 0 or equal to max_computes ({max_computes}).\n"
+            f"Update DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES to either 0 or {max_computes}."
+        )
+        pulumi.log.error(error_msg)
+        raise ValueError(error_msg)
     dr_client = dr.Client()
 
     # GET current settings to preserve server-side defaults (autoscalingPolicy, etc.)

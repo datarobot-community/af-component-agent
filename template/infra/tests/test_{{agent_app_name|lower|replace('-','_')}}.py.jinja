@@ -86,6 +86,7 @@ def pulumi_mocks(monkeypatch, tmp_path):
     # Mock pulumi functions
     monkeypatch.setattr("pulumi.export", MagicMock())
     monkeypatch.setattr("pulumi.info", MagicMock())
+    monkeypatch.setattr("pulumi.log.error", MagicMock())
 
     # Mock CustomModelDeployment
     monkeypatch.setattr(
@@ -529,7 +530,6 @@ class TestUpdateDeploymentPredictionsSettings:
 
     def test_gets_current_settings_then_patches(self, monkeypatch):
         """Test that the function GETs current settings, merges overrides, and PATCHes."""
-        import importlib
         import infra.{{agent_app_name}} as agent_infra
 
         # Create a mock DR client
@@ -636,6 +636,47 @@ class TestUpdateDeploymentPredictionsSettings:
             patched_settings["maxComputes"]
             == agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES
         )
+
+    def test_rejects_invalid_min_computes(self):
+        """Test that min_computes must be 0 or equal to max_computes."""
+        import infra.{{agent_app_name}} as agent_infra
+
+        with pytest.raises(ValueError, match="Invalid deployment configuration.*min_computes to be either 0 or equal to max_computes"):
+            agent_infra._update_deployment_predictions_settings(
+                deployment_id="test-deployment-id",
+                min_computes=1,
+                max_computes=4,
+            )
+
+    def test_accepts_min_computes_zero(self, monkeypatch):
+        """Test that min_computes=0 is accepted."""
+        import infra.{{agent_app_name}} as agent_infra
+
+        mock_client = MagicMock()
+        mock_client.get.return_value.json.return_value = {"predictionsSettings": {}}
+        monkeypatch.setattr("datarobot.Client", MagicMock(return_value=mock_client))
+
+        result = agent_infra._update_deployment_predictions_settings(
+            deployment_id="test-deployment-id",
+            min_computes=0,
+            max_computes=4,
+        )
+        assert result == "test-deployment-id"
+
+    def test_accepts_min_computes_equal_to_max(self, monkeypatch):
+        """Test that min_computes equal to max_computes is accepted."""
+        import infra.{{agent_app_name}} as agent_infra
+
+        mock_client = MagicMock()
+        mock_client.get.return_value.json.return_value = {"predictionsSettings": {}}
+        monkeypatch.setattr("datarobot.Client", MagicMock(return_value=mock_client))
+
+        result = agent_infra._update_deployment_predictions_settings(
+            deployment_id="test-deployment-id",
+            min_computes=4,
+            max_computes=4,
+        )
+        assert result == "test-deployment-id"
 
 
 class TestGetCustomModelFiles:
