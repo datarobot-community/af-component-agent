@@ -410,8 +410,8 @@ def test_custom_model_resource_bundle_and_replicas(monkeypatch):
     # Verify resource_bundle_id is set to cpu.3xlarge
     assert kwargs["resource_bundle_id"] == "cpu.3xlarge"
 
-    # Verify replicas is set to 2
-    assert kwargs["replicas"] == 2
+    # Verify replicas is set to 1
+    assert kwargs["replicas"] == 1
 
 
 def test_agentic_playground_and_blueprint_created(monkeypatch):
@@ -1053,7 +1053,7 @@ class TestDrumRuntimeParameters:
 
         # Check CUSTOM_MODEL_WORKERS
         assert drum_params["CUSTOM_MODEL_WORKERS"].type == "numeric"
-        assert drum_params["CUSTOM_MODEL_WORKERS"].value == "5"
+        assert drum_params["CUSTOM_MODEL_WORKERS"].value == "2"
 
         # Check DRUM_SERVER_TYPE
         assert drum_params["DRUM_SERVER_TYPE"].type == "string"
