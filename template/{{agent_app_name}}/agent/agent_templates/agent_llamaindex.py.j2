@@ -68,7 +68,7 @@ class MyAgent(LlamaIndexAgent):
             f"information given the current year is {datetime.now().year}. "
             "Keep the final report under 500 words and don't overthink - this is a simple example task."
         )
-        history = self.build_history_summary(completion_create_params)
+        history: str = self.build_history_summary(completion_create_params)
         if history:
             return base_text + "\n\nConversation so far:\n" + history
         return base_text
