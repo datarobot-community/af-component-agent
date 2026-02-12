@@ -476,7 +476,6 @@ def test_agent_deployment_created_when_env(monkeypatch):
     agent_infra.pulumi_datarobot.PredictionEnvironment.reset_mock()
     agent_infra.pulumi_datarobot.DeploymentAssociationIdSettingsArgs.reset_mock()
     agent_infra.pulumi_datarobot.DeploymentPredictionsDataCollectionSettingsArgs.reset_mock()
-    agent_infra.pulumi_datarobot.DeploymentPredictionsSettingsArgs.reset_mock()
     agent_infra.CustomModelDeployment.reset_mock()
     importlib.reload(agent_infra)
 
@@ -506,23 +505,6 @@ def test_agent_deployment_not_created_when_env_zero(monkeypatch):
     # Check that PredictionEnvironment and CustomModelDeployment were not called
     agent_infra.pulumi_datarobot.PredictionEnvironment.assert_not_called()
     agent_infra.CustomModelDeployment.assert_not_called()
-
-
-def test_agent_deployment_max_computes(monkeypatch):
-    """Test that agent deployment predictions_settings uses DEFAULT_AGENT_DEPLOYMENT constants."""
-    monkeypatch.setenv("AGENT_DEPLOY", "1")
-    monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
-
-    import importlib
-    import infra.{{agent_app_name}} as agent_infra
-
-    importlib.reload(agent_infra)
-
-    # Verify DeploymentPredictionsSettingsArgs was called with both constants
-    agent_infra.pulumi_datarobot.DeploymentPredictionsSettingsArgs.assert_called_once_with(
-        min_computes=agent_infra.DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES,
-        max_computes=agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES,
-    )
 
 
 class TestUpdateDeploymentPredictionsSettings:

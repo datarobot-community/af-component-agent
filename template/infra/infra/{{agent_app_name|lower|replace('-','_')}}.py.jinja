@@ -562,12 +562,6 @@ if os.environ.get("AGENT_DEPLOY") != "0":
                 enabled=True
             )
         ),
-        predictions_settings=(
-            pulumi_datarobot.DeploymentPredictionsSettingsArgs(
-                min_computes=DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES,
-                max_computes=DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES,
-            )
-        ),
     )
 
     {{agent_app_name}}_agent_deployment = CustomModelDeployment(
