@@ -19,7 +19,6 @@ from datarobot_genai.core.agents import (
     UsageMetrics,
     default_usage_metrics,
     extract_user_prompt_content,
-    is_streaming,
 )
 from openai.types.chat import CompletionCreateParams
 
@@ -93,43 +92,25 @@ class MyAgent(BaseAgent[None]):
 
         usage_metrics: UsageMetrics = default_usage_metrics()
 
-        # The following code demonstrate both a synchronous and streaming response.
-        # You can choose one or the other based on your use case, they function the same.
-        # The main difference is returning a generator for streaming or a final response for sync.
-        if is_streaming(completion_create_params):
-            # Streaming response: yield each message as it is generated
-            async def stream_generator() -> InvokeReturn:
-                # -----------------------------------------------------------
-                # Here you would implement the streaming logic of your agent using the inputs.
-                # -----------------------------------------------------------
-                yield "streaming success", None, usage_metrics
+        # The following code demonstrate only streaming response. DataRobot agents
+        # only support streaming responses, and non-streaming response is
+        # implemented as a fallback when the client does not request streaming.
+        # You may choose to implement non-streaming response here by
+        # yielding a single tuple with the final response and usage metrics.
 
-                # Create a list of events from the event listener
-                events: list[
-                    Any
-                ] = []  # This should be populated with the agent's events/messages
+        # -----------------------------------------------------------
+        # Here you would implement the streaming logic of your agent using the inputs.
+        # -----------------------------------------------------------
+        yield "streaming success", None, usage_metrics
 
-                pipeline_interactions = self.create_pipeline_interactions_from_events(
-                    events
-                )
+        # Create a list of events from the event listener
+        events: list[
+            Any
+        ] = []  # This should be populated with the agent's events/messages
 
-                # Final response after streaming is complete
-                yield "", pipeline_interactions, usage_metrics
+        pipeline_interactions = self.create_pipeline_interactions_from_events(
+            events
+        )
 
-            return stream_generator()
-        else:
-            # -----------------------------------------------------------
-            # Here you would implement the logic of your agent using the inputs.
-            # -----------------------------------------------------------
-            response_text = "success"
-
-            # Create a list of events from the event listener
-            events: list[
-                Any
-            ] = []  # This should be populated with the agent's events/messages
-
-            pipeline_interactions = self.create_pipeline_interactions_from_events(
-                events
-            )
-
-            return response_text, pipeline_interactions, usage_metrics
+        # Final response after streaming is complete
+        yield "", pipeline_interactions, usage_metrics
