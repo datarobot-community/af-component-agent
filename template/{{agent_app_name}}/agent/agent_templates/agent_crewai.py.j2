@@ -110,11 +110,10 @@ class MyAgent(CrewAIAgent):
     def make_kickoff_inputs(self, user_prompt_content: str) -> dict[str, Any]:
         """Map the user prompt into Crew kickoff inputs expected by tasks/agents.
 
-        The ``chat_history`` field is initialized to an empty string so that
-        templates using ``{chat_history}`` remain compatible even when the
-        underlying runtime does not yet provide multi-turn history. Newer
-        versions of ``datarobot-genai`` will overwrite this value with a
-        concrete history summary before calling ``Crew.kickoff``.
+        The ``chat_history`` field is included to opt into history injection.
+        History is only populated when the underlying runtime supports it; when
+        not available it remains an empty string. Prompts decide how (or if) to
+        use it via ``{chat_history}``.
         """
         return {
             "topic": str(user_prompt_content),

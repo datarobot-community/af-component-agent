@@ -33,6 +33,8 @@ class MyAgent(NatAgent):
         timeout: int | None = 90,
         **kwargs: Any,
     ) -> None:
+        # History is opt-in: include `{chat_history}` in the user's prompt content
+        # if you want a transcript injected into the message sent to the workflow.
         super().__init__(
             workflow_path=Path(__file__).parent / "workflow.yaml",
             api_key=api_key,
