@@ -131,10 +131,8 @@ class MyAgent(LangGraphAgent):
             "streaming": True,
             "max_retries": 3,
             "model_kwargs": {
-                "extra_body": {
-                    "mock_response": "this is a mock response"
-                }
-            }
+                "extra_body": {"mock_response": "this is a mock response"}
+            },
         }
 
         if not self.config.use_datarobot_llm_gateway and self._identity_header:
