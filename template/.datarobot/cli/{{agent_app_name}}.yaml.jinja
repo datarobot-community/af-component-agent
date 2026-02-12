@@ -13,3 +13,15 @@ root:
     default: "69417fa8b1ce07076dca7611"
     optional: true
     help: "Enter the default execution environment version ID for the agent's custom model."
+  - env: ENABLE_AGENT_HA_MODE
+    type: boolean
+    default: false
+    optional: true
+    help: >
+      Enable High Availability mode for agent deployment to handle high concurrent requests (100+ users).
+      
+      When enabled: workers=10, replicas=2, max_computes=10.
+      
+      When disabled (default): workers=2, replicas=1, max_computes=2.
+      
+      NOTE: HA mode will lead to longer initialization time for newly created infrastructure.

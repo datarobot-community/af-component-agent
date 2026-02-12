@@ -37,19 +37,22 @@ from .{{ _external_data.llm.llm_app_name }} import custom_model_runtime_paramete
 
 DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
 
+# Toggle for High Availability and Load Balancing configuration for agent deployment
+ENABLE_AGENT_HA_MODE = os.environ.get("ENABLE_AGENT_HA_MODE", "false") == "true"
+
 # Custom Model DRUM runtime parameters (concurrency configuration)
-DEFAULT_CUSTOM_MODEL_WORKERS: Final[str] = "2"
+DEFAULT_CUSTOM_MODEL_WORKERS: Final[str] = "10" if ENABLE_AGENT_HA_MODE else "2"
 DEFAULT_DRUM_SERVER_TYPE: Final[str] = "gunicorn"
 DEFAULT_DRUM_GUNICORN_WORKER_CLASS: Final[str] = "sync"
 DEFAULT_DRUM_WORKER_CONNECTIONS: Final[str] = "1"
 
 # Custom Model resource bundle configuration
 DEFAULT_AGENT_RESOURCE_BUNDLE_ID: Final[str] = "cpu.3xlarge"
-DEFAULT_AGENT_REPLICAS: Final[int] = 1
+DEFAULT_AGENT_REPLICAS: Final[int] = 2 if ENABLE_AGENT_HA_MODE else 1
 
 # Agent deployment configuration (HPA autoscaling)
 DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES: Final[int] = 0
-DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES: Final[int] = 2
+DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES: Final[int] = 10 if ENABLE_AGENT_HA_MODE else 2
 
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
@@ -340,6 +343,14 @@ def _update_deployment_predictions_settings(
 
 synchronize_pyproject_dependencies()
 pulumi.info("NOTE: [unknown] values will be populated after performing an update.")  # fmt: skip
+
+if ENABLE_AGENT_HA_MODE:
+    pulumi.info(
+        f"High Availability mode enabled, agent deployment will be configured with:\n"
+        f"- workers: {DEFAULT_CUSTOM_MODEL_WORKERS}\n"
+        f"- replicas: {DEFAULT_AGENT_REPLICAS}\n"
+        f"- max_computes: {DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES}"
+    )
 
 # Start of Pulumi settings and application infrastructure
 if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:

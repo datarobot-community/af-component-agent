@@ -54,6 +54,8 @@ authentication:
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
+    extra_body:
+      mock_response: "this is a mock response"
 workflow:
   _type: tool_calling_agent
   llm_name: datarobot_llm
