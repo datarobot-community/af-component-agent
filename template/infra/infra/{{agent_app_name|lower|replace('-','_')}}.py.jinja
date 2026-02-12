@@ -37,7 +37,7 @@ from .{{ _external_data.llm.llm_app_name }} import custom_model_runtime_paramete
 
 DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
 
-# Toggle for High Availability and Load Balancing configuration for agent deployment
+# Toggle for High Availability (HA) and Load Balancing configuration for agent deployment
 ENABLE_AGENT_HA_MODE = os.environ.get("ENABLE_AGENT_HA_MODE", "false") == "true"
 
 # Custom Model DRUM runtime parameters (concurrency configuration)
@@ -320,7 +320,7 @@ def _update_deployment_predictions_settings(
         raise ValueError(error_msg)
     dr_client = dr.Client()
 
-    # GET current settings to preserve server-side defaults (autoscalingPolicy, etc.)
+    # GET current settings to preserve server-side defaults
     response = dr_client.get(f"deployments/{deployment_id}/settings/")
     current_settings = response.json()
     current_predictions_settings = current_settings.get("predictionsSettings", {})
