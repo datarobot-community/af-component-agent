@@ -104,8 +104,8 @@ class MyAgent(BaseAgent[None]):
         yield "streaming success", None, usage_metrics
 
         # Create a list of events from the event listener
-        events: list[Any
-        ] = []  # This should be populated with the agent's events/messages
+        # This should be populated with the agent's AG-UI events or message deltas
+        events: list[Any] = []
 
         pipeline_interactions = self.create_pipeline_interactions_from_events(events)
 
