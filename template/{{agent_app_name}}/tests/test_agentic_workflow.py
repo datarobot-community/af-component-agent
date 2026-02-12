@@ -38,7 +38,7 @@ class TestCustomModel:
 
         # Setup mocks
         mock_agent_instance = MagicMock()
-        mock_agent_instance.invoke = AsyncMock(return_value=mock_agent_response)
+        mock_agent_instance.invoke = Mock(return_value=mock_agent_response)
         mock_agent.return_value = mock_agent_instance
 
         completion_create_params = {
