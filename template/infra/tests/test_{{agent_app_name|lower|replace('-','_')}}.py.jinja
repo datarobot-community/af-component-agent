@@ -703,7 +703,7 @@ class TestEnableAgentHAMode:
         importlib.reload(agent_infra)
 
         assert agent_infra.ENABLE_AGENT_HA_MODE is True
-        assert agent_infra.DEFAULT_CUSTOM_MODEL_WORKERS == "10"
+        assert agent_infra.DEFAULT_CUSTOM_MODEL_WORKERS == "5"
         assert agent_infra.DEFAULT_AGENT_REPLICAS == 2
         assert agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 4
 
@@ -726,7 +726,7 @@ class TestEnableAgentHAMode:
 
             assert agent_infra.ENABLE_AGENT_HA_MODE is expected
             if expected:
-                assert agent_infra.DEFAULT_CUSTOM_MODEL_WORKERS == "10"
+                assert agent_infra.DEFAULT_CUSTOM_MODEL_WORKERS == "5"
                 assert agent_infra.DEFAULT_AGENT_REPLICAS == 2
                 assert agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 4
             else:
