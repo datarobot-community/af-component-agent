@@ -612,15 +612,18 @@ class TestUpdateDeploymentPredictionsSettings:
         mock_client.get.return_value.json.return_value = {"predictionsSettings": {}}
         monkeypatch.setattr("datarobot.Client", MagicMock(return_value=mock_client))
 
-        import importlib
-        import infra.{{agent_app_name}} as agent_infra
-
         # Make CustomModelDeployment.id.apply actually call the function
         mock_deployment = MagicMock()
         mock_deployment.id.apply = MagicMock(
             side_effect=lambda fn: fn("mock-deployment-id")
         )
-        agent_infra.CustomModelDeployment.return_value = mock_deployment
+        monkeypatch.setattr(
+            "datarobot_pulumi_utils.pulumi.custom_model_deployment.CustomModelDeployment",
+            MagicMock(return_value=mock_deployment),
+        )
+
+        import importlib
+        import infra.{{agent_app_name}} as agent_infra
 
         importlib.reload(agent_infra)
 
@@ -643,7 +646,7 @@ class TestUpdateDeploymentPredictionsSettings:
 
         with pytest.raises(
             ValueError,
-            match="Invalid deployment configuration.*min_computes to be either 0 or equal to max_computes",
+            match=r"(?s)Invalid deployment configuration.*min_computes must be either 0 or equal to max_computes",
         ):
             agent_infra._update_deployment_predictions_settings(
                 deployment_id="test-deployment-id",
