@@ -685,6 +685,74 @@ class TestUpdateDeploymentPredictionsSettings:
         assert result == "test-deployment-id"
 
 
+class TestEnableAgentHAMode:
+    def test_ha_mode_disabled_by_default(self, monkeypatch):
+        """Test that HA mode is disabled by default."""
+        monkeypatch.delenv("ENABLE_AGENT_HA_MODE", raising=False)
+        import importlib
+        import infra.{{agent_app_name}} as agent_infra
+
+        importlib.reload(agent_infra)
+
+        assert agent_infra.ENABLE_AGENT_HA_MODE is False
+        assert agent_infra.DEFAULT_CUSTOM_MODEL_WORKERS == "2"
+        assert agent_infra.DEFAULT_AGENT_REPLICAS == 1
+        assert agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 2
+
+    def test_ha_mode_disabled_explicit_false(self, monkeypatch):
+        """Test that HA mode is disabled when explicitly set to 'false'."""
+        monkeypatch.setenv("ENABLE_AGENT_HA_MODE", "false")
+        import importlib
+        import infra.{{agent_app_name}} as agent_infra
+
+        importlib.reload(agent_infra)
+
+        assert agent_infra.ENABLE_AGENT_HA_MODE is False
+        assert agent_infra.DEFAULT_CUSTOM_MODEL_WORKERS == "2"
+        assert agent_infra.DEFAULT_AGENT_REPLICAS == 1
+        assert agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 2
+
+    def test_ha_mode_enabled(self, monkeypatch):
+        """Test that HA mode is enabled when set to 'true'."""
+        monkeypatch.setenv("ENABLE_AGENT_HA_MODE", "true")
+        import importlib
+        import infra.{{agent_app_name}} as agent_infra
+
+        importlib.reload(agent_infra)
+
+        assert agent_infra.ENABLE_AGENT_HA_MODE is True
+        assert agent_infra.DEFAULT_CUSTOM_MODEL_WORKERS == "10"
+        assert agent_infra.DEFAULT_AGENT_REPLICAS == 2
+        assert agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 4
+
+    def test_ha_mode_only_accepts_true_string(self, monkeypatch):
+        """Test that only the string 'true' enables HA mode."""
+        test_cases = [
+            ("True", False),
+            ("TRUE", False),
+            ("1", False),
+            ("yes", False),
+            ("on", False),
+        ]
+
+        for value, expected in test_cases:
+            monkeypatch.setenv("ENABLE_AGENT_HA_MODE", value)
+            import importlib
+            import infra.{{agent_app_name}} as agent_infra
+
+            importlib.reload(agent_infra)
+
+            assert agent_infra.ENABLE_AGENT_HA_MODE is expected
+            if expected:
+                assert agent_infra.DEFAULT_CUSTOM_MODEL_WORKERS == "10"
+                assert agent_infra.DEFAULT_AGENT_REPLICAS == 2
+                assert agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 4
+            else:
+                assert agent_infra.DEFAULT_CUSTOM_MODEL_WORKERS == "2"
+                assert agent_infra.DEFAULT_AGENT_REPLICAS == 1
+                assert agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 2
+
+
 class TestGetCustomModelFiles:
     def test_get_custom_model_files_basic(self, tmp_path):
         import infra.{{agent_app_name}} as agent_infra
