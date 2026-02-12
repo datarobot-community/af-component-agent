@@ -104,13 +104,10 @@ class MyAgent(BaseAgent[None]):
         yield "streaming success", None, usage_metrics
 
         # Create a list of events from the event listener
-        events: list[
-            Any
+        events: list[Any
         ] = []  # This should be populated with the agent's events/messages
 
-        pipeline_interactions = self.create_pipeline_interactions_from_events(
-            events
-        )
+        pipeline_interactions = self.create_pipeline_interactions_from_events(events)
 
         # Final response after streaming is complete
         yield "", pipeline_interactions, usage_metrics
