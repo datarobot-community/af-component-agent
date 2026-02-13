@@ -38,6 +38,9 @@ from .{{ _external_data.llm.llm_app_name }} import custom_model_runtime_paramete
 DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
 
 # Toggle for High Availability (HA) and Load Balancing configuration for agent deployment
+# To enable HA mode: Add ENABLE_AGENT_HA_MODE="true" to your .env file in the project root
+# When enabled: workers=5, replicas=2, max_computes=4
+# When disabled (default): workers=2, replicas=1, max_computes=2
 ENABLE_AGENT_HA_MODE = os.environ.get("ENABLE_AGENT_HA_MODE", "false") == "true"
 
 # Custom Model DRUM runtime parameters (concurrency configuration)
