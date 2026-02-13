@@ -239,6 +239,9 @@ def run_agent_e2e(
         capture=True,
     )
 
+    # Control whether we run the deployment phase (AGENT_DEPLOY=1) after custom-model tests.
+    run_deployment_tests = os.environ.get("RUN_AGENT_DEPLOYMENT_TESTS", "1") == "1"
+
     try:
         # Step 6: Install dependencies in the rendered project (agent + infra).
         run_cmd(task_cmd("install"), cwd=rendered_dir)
@@ -275,34 +278,35 @@ def run_agent_e2e(
             label="Custom model execution",
         )
 
-        # Step 10: Deploy phase (Pulumi up with AGENT_DEPLOY=1).
-        # Creates the Deployment for the Custom Model.
-        run_cmd(
-            task_cmd("deploy", "--", "--yes", "--skip-preview"),
-            cwd=rendered_dir,
-        )
+        if run_deployment_tests:
+            # Step 10: Deploy phase (Pulumi up with AGENT_DEPLOY=1).
+            # Creates the Deployment for the Custom Model.
+            run_cmd(
+                task_cmd("deploy", "--", "--yes", "--skip-preview"),
+                cwd=rendered_dir,
+            )
 
-        # Step 11: Fetch the Deployment endpoint from Pulumi stack outputs.
-        deployment_chat_endpoint = pulumi_stack_output_value(
-            infra_dir=infra_dir,
-            pulumi_stack=pulumi_stack,
-            pulumi_home=pulumi_home,
-            contains="Deployment Chat Endpoint",
-        )
-        deployment_id = extract_id_from_url(deployment_chat_endpoint, marker="deployments")
-        fprint(f"Deployment ID: {deployment_id}")
+            # Step 11: Fetch the Deployment endpoint from Pulumi stack outputs.
+            deployment_chat_endpoint = pulumi_stack_output_value(
+                infra_dir=infra_dir,
+                pulumi_stack=pulumi_stack,
+                pulumi_home=pulumi_home,
+                contains="Deployment Chat Endpoint",
+            )
+            deployment_id = extract_id_from_url(deployment_chat_endpoint, marker="deployments")
+            fprint(f"Deployment ID: {deployment_id}")
 
-        # Step 12: Execute the Deployment and validate OpenAI response shape.
-        retry(
-            lambda: _execute_deployment(
-                rendered_dir=rendered_dir,
-                user_prompt=user_prompt,
-                deployment_id=deployment_id,
-            ),
-            max_retries=3,
-            delay_seconds=30,
-            label="Deployment execution",
-        )
+            # Step 12: Execute the Deployment and validate OpenAI response shape.
+            retry(
+                lambda: _execute_deployment(
+                    rendered_dir=rendered_dir,
+                    user_prompt=user_prompt,
+                    deployment_id=deployment_id,
+                ),
+                max_retries=3,
+                delay_seconds=30,
+                label="Deployment execution",
+            )
 
         fprint("Agent execution completed successfully")
     finally:
@@ -324,5 +328,3 @@ __all__ = [
     "run_agent_e2e",
     "should_run_framework",
 ]
-
-
