@@ -20,7 +20,9 @@ from pathlib import Path
 from datarobot_drum.drum.adapters.model_adapters import (
     python_model_adapter as _python_model_adapter,
 )
+from datarobot_drum.drum.common import setup_otel
 from datarobot_drum.drum.root_predictors.prediction_server import PredictionServer
+from datarobot_drum.runtime_parameters.runtime_parameters import RuntimeParameters
 
 from agent import Config
 
@@ -69,6 +71,9 @@ parser.add_argument("--autoreload", action="store_true", help="Enable autoreload
 
 if __name__ == "__main__":
     args = parser.parse_args()
+    args.max_workers = 1
+
+    trace_provider, metric_provider, log_provider = setup_otel(RuntimeParameters, args)
 
     os.environ["TARGET_NAME"] = "response"
     if args.autoreload:
@@ -90,3 +95,10 @@ if __name__ == "__main__":
             "port": port,
         }
     ).materialize()
+
+    if trace_provider is not None:
+        trace_provider.shutdown()
+    if metric_provider is not None:
+        metric_provider.shutdown()
+    if log_provider is not None:
+        log_provider.shutdown()
