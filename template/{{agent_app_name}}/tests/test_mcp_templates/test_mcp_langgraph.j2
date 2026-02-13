@@ -2,13 +2,13 @@
 Tests for MCP LangGraph integration - verifying agents have MCP tools configured.
 """
 
-import asyncio
 import os
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
+from ag_ui.core import RunAgentInput, UserMessage
 from langchain_core.messages import AIMessage
 
 from agent import MyAgent
@@ -102,11 +102,24 @@ def langgraph_common_mocks():
         )
 
 
+@pytest.fixture
+def run_agent_input() -> RunAgentInput:
+    return RunAgentInput(
+        messages=[UserMessage(content="test prompt", id="message_id")],
+        tools=[],
+        forwarded_props=dict(model="m", authorization_context={}, forwarded_headers={}),
+        thread_id="thread_id",
+        run_id="run_id",
+        state={},
+        context=[],
+    )
+
+
 class TestMyAgentLangGraphMCPIntegration:
     """Test MCP tool integration for LangGraph agents."""
 
-    def test_agent_loads_mcp_tools_from_external_url_in_invoke(
-        self, langgraph_common_mocks
+    async def test_agent_loads_mcp_tools_from_external_url_in_invoke(
+        self, langgraph_common_mocks, run_agent_input
     ):
         mock_tools = langgraph_common_mocks.default_tools
         mock_context = langgraph_common_mocks.mcp_context
@@ -115,12 +128,9 @@ class TestMyAgentLangGraphMCPIntegration:
         with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}, clear=True):
             agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
 
-            completion_params = {
-                "messages": [{"role": "user", "content": "test prompt"}]
-            }
-
             try:
-                asyncio.run(agent.invoke(completion_params))
+                async for _ in agent.invoke(run_agent_input):
+                    pass
             except (StopIteration, AttributeError, TypeError, ValueError):
                 pass
 
@@ -128,8 +138,8 @@ class TestMyAgentLangGraphMCPIntegration:
             assert mock_context.call_args.kwargs.get("authorization_context") == {}
             assert agent.mcp_tools == mock_tools
 
-    def test_agent_loads_mcp_tools_from_datarobot_deployment_in_invoke(
-        self, langgraph_common_mocks
+    async def test_agent_loads_mcp_tools_from_datarobot_deployment_in_invoke(
+        self, langgraph_common_mocks, run_agent_input
     ):
         mock_tool = create_mock_mcp_tool("test_mcp_tool")
         mock_tools = [mock_tool]
@@ -151,12 +161,9 @@ class TestMyAgentLangGraphMCPIntegration:
         ):
             agent = MyAgent(api_key=api_key, api_base=api_base, verbose=True)
 
-            completion_params = {
-                "messages": [{"role": "user", "content": "test prompt"}]
-            }
-
             try:
-                asyncio.run(agent.invoke(completion_params))
+                async for _ in agent.invoke(run_agent_input):
+                    pass
             except (StopIteration, AttributeError, TypeError, ValueError):
                 pass
 
@@ -164,26 +171,27 @@ class TestMyAgentLangGraphMCPIntegration:
             assert mock_context.call_args.kwargs.get("authorization_context") == {}
             assert agent.mcp_tools == mock_tools
 
-    def test_agent_works_without_mcp_tools(self, langgraph_common_mocks):
+    async def test_agent_works_without_mcp_tools(
+        self, langgraph_common_mocks, run_agent_input
+    ):
         langgraph_common_mocks.set_mcp_tools([])
         mock_context = langgraph_common_mocks.mcp_context
 
         with patch.dict(os.environ, {}, clear=True):
             agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
 
-            completion_params = {
-                "messages": [{"role": "user", "content": "test prompt"}]
-            }
-
             try:
-                asyncio.run(agent.invoke(completion_params))
+                async for _ in agent.invoke(run_agent_input):
+                    pass
             except (StopIteration, AttributeError, TypeError, ValueError):
                 pass
 
             mock_context.assert_called_once()
             assert len(agent.mcp_tools) == 0
 
-    def test_mcp_tools_property_accessed_by_all_agents(self, langgraph_common_mocks):
+    async def test_mcp_tools_property_accessed_by_all_agents(
+        self, langgraph_common_mocks, run_agent_input
+    ):
         mock_tool1 = create_mock_mcp_tool("tool1")
         mock_tool2 = create_mock_mcp_tool("tool2")
         mock_tools = [mock_tool1, mock_tool2]
@@ -213,8 +221,8 @@ class TestMyAgentLangGraphMCPIntegration:
         )
 
     @patch("datarobot_genai.langgraph.mcp.load_mcp_tools", new_callable=AsyncMock)
-    def test_mcp_tool_execution_makes_request_to_server(
-        self, mock_load_mcp_tools, langgraph_common_mocks
+    async def test_mcp_tool_execution_makes_request_to_server(
+        self, mock_load_mcp_tools, langgraph_common_mocks, run_agent_input
     ):
         async def executable_tool(
             ctx: Any, query: str = "test query", **kwargs: Any
@@ -233,12 +241,9 @@ class TestMyAgentLangGraphMCPIntegration:
         with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}, clear=True):
             agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
 
-            completion_params = {
-                "messages": [{"role": "user", "content": "test prompt"}]
-            }
-
             try:
-                asyncio.run(agent.invoke(completion_params))
+                async for _ in agent.invoke(run_agent_input):
+                    pass
             except (StopIteration, AttributeError, TypeError, ValueError):
                 pass
 
@@ -246,6 +251,6 @@ class TestMyAgentLangGraphMCPIntegration:
             assert len(agent.mcp_tools) == 1
 
             tool = agent.mcp_tools[0]
-            result = asyncio.run(tool(ctx=MagicMock(), query="test query"))
+            result = await tool(ctx=MagicMock(), query="test query")
             assert result == "MCP server response for: test query"
             assert callable(tool)
