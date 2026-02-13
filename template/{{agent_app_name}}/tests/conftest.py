@@ -22,6 +22,7 @@ def mock_agent_response():
     """
     Fixture to return a mock agent response based on the agent template framework.
     """
+
     async def generate_response():
         yield (
             "agent result",
