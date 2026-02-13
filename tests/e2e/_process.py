@@ -38,17 +38,10 @@ def is_truthy(value: str | None) -> bool:
     return (value or "").strip().lower() in {"1", "true", "yes", "on"}
 
 
-def truncate(text: str, *, max_chars: int = 800) -> str:
-    s = (text or "").strip()
-    if len(s) <= max_chars:
-        return s
-    return s[:max_chars] + "…"
-
-
 def response_snippet(text: str, *, max_chars: int) -> str:
     """Return a compact one-line snippet for logs."""
     compact = " ".join((text or "").strip().split())
-    return truncate(compact, max_chars=max_chars)
+    return compact
 
 
 def task_cmd(*args: str) -> list[str]:
@@ -158,5 +151,3 @@ def retry(
             fprint(f"Waiting {delay_seconds}s before retry...")
             time.sleep(delay_seconds)
     raise last_exc or RuntimeError(f"{label} failed")
-
-

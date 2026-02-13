@@ -45,7 +45,6 @@ from ._process import (
     retry,
     run_cmd,
     task_cmd,
-    truncate,
 )
 
 RESPONSE_SNIPPET_CHARS = 50
@@ -78,8 +77,8 @@ def _execute_custom_model(
     response_text = extract_cli_response_after_wait(result)
     if not response_text.strip():
         pytest.fail(
-            "Custom model execution: could not extract response text from CLI output. "
-            f"Output (truncated): {truncate(result)}"
+            "Custom model execution: could not extract response text from CLI output.\n"
+            f"{result}"
         )
 
     assert_response_text_ok(
@@ -94,7 +93,7 @@ def _execute_custom_model(
         f"{response_snippet(response_text, max_chars=RESPONSE_SNIPPET_CHARS)!r}"
     )
     if is_truthy(os.environ.get("E2E_DEBUG")):
-        fprint(f"CLI output (truncated): {truncate(result)}")
+        fprint(f"CLI output:\n{result}")
 
 
 def _execute_deployment(
