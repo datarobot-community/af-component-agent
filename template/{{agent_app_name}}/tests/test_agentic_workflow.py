@@ -237,7 +237,7 @@ class TestCustomModel:
         # Collect all chunks
         chunks = list(response)
 
-        # Should have 3 chunks (2 with content  1 final)
+        # Should have 3 chunks (2 with content + 1 final)
         assert len(chunks) == 3
 
         # First chunk with content
