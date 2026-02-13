@@ -121,7 +121,7 @@ if cat ./agent/output.log | grep -q '"model": "datarobot-deployed-llm"' ; then
 fi
 
 # Check the chat completion returned
-if cat ./agent/output.log | grep -q '"content": "success"' ; then
+if cat ./agent/output.log | grep -q '"content": "streaming success"' ; then
     echo "Test passed: cli.py returned chat completion success"
     else
     echo "Test failed: cli.py did not return chat completion success"
@@ -149,7 +149,7 @@ if [ $(wc -l < ./agent/output.log) -ge 13 ] ; then
 fi
 
 # Check the chat completion returned
-if cat ./agent/output.log | grep -q '"content": "success"' ; then
+if cat ./agent/output.log | grep -q '"content": "streaming success"' ; then
     echo "Test passed: cli.py returned chat completion success"
     else
     echo "Test failed: cli.py did not return chat completion success"
