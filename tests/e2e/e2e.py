@@ -240,7 +240,7 @@ def run_agent_e2e(
     )
 
     # Control whether we run the deployment phase (AGENT_DEPLOY=1) after custom-model tests.
-    run_deployment_tests = os.environ.get("RUN_DEPLOYMENT_TESTS", "1") == "1"
+    run_deployment_tests = os.environ.get("RUN_AGENT_DEPLOYMENT_TESTS", "1") == "1"
 
     try:
         # Step 6: Install dependencies in the rendered project (agent + infra).
