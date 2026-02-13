@@ -24,7 +24,7 @@ from pathlib import Path
 
 import pytest
 
-from ._process import fprint, is_truthy, response_snippet, run_cmd, task_cmd, truncate
+from ._process import fprint, is_truthy, response_snippet, run_cmd, task_cmd
 
 ALL_FRAMEWORKS = ("base", "crewai", "langgraph", "llamaindex", "nat")
 RESPONSE_SNIPPET_CHARS = 50
@@ -83,17 +83,10 @@ def pulumi_stack_output_value(
     try:
         outputs = json.loads((raw or "").strip() or "{}")
     except json.JSONDecodeError as e:
-        pytest.fail(
-            f"Failed to parse `pulumi stack output --json`: {e}\n"
-            f"Output (truncated): {truncate(raw, max_chars=2000)}"
-        )
+        pytest.fail(f"Failed to parse `pulumi stack output --json`: {e}\n{raw}")
 
     if not isinstance(outputs, dict):
-        pytest.fail(
-            "Unexpected `pulumi stack output --json` shape.\n"
-            f"Type: {type(outputs)}\n"
-            f"Output (truncated): {truncate(raw, max_chars=2000)}"
-        )
+        pytest.fail(f"Unexpected `pulumi stack output --json` shape.\nType: {type(outputs)}\n{raw}")
 
     matches = [k for k in outputs.keys() if contains in k]
     if not matches:
@@ -146,7 +139,7 @@ def assert_response_text_ok(*, response_text: str, agent_framework: str, context
 
     lowered = text.lower()
     if lowered.startswith("error:") or "failed to obtain agent chat response" in lowered:
-        pytest.fail(f"{prefix}: agent execution returned an error:\n{truncate(text)}")
+        pytest.fail(f"{prefix}: agent execution returned an error:\n{text}")
 
 
 def verify_openai_response(cli_output: str) -> None:
@@ -154,8 +147,7 @@ def verify_openai_response(cli_output: str) -> None:
     marker = "Execution result:"
     if marker not in cli_output:
         pytest.fail(
-            f"Expected CLI output to contain {marker!r} but it was missing.\n"
-            f"Output (truncated): {truncate(cli_output)}"
+            f"Expected CLI output to contain {marker!r} but it was missing.\n{cli_output}"
         )
     json_result = cli_output.split(marker, 1)[1]
     if "CLI exited with" in json_result:
@@ -164,9 +156,7 @@ def verify_openai_response(cli_output: str) -> None:
     try:
         local_result = json.loads(json_result.strip())
     except json.JSONDecodeError as e:
-        pytest.fail(
-            f"Failed to parse CLI output as JSON: {e}\n" f"Output: {truncate(cli_output)}"
-        )
+        pytest.fail(f"Failed to parse CLI output as JSON: {e}\nOutput:\n{cli_output}")
 
     try:
         message_content = local_result["choices"][0]["message"]["content"]
@@ -186,7 +176,7 @@ def verify_openai_response(cli_output: str) -> None:
         f"{response_snippet(message_content, max_chars=RESPONSE_SNIPPET_CHARS)!r}"
     )
     if is_truthy(os.environ.get("E2E_DEBUG")):
-        fprint(f"Full response content (truncated): {truncate(message_content)}")
+        fprint(f"Full response content:\n{message_content}")
 
 
 def require_e2e_enabled() -> None:
@@ -256,5 +246,3 @@ def write_testing_env(
 
     env_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return env_path
-
-
