@@ -190,18 +190,6 @@ exclude-dependencies = ["gevent"]
 # name = "mirror"
 # url = "https://mirror_url/"
 
-# Temporary include test
-[tool.uv.sources]
-datarobot-genai = { index = "test-pypi" }
-
-[[tool.uv.index]]
-name = "pypi"
-url = "https://pypi.org/simple/"
-
-[[tool.uv.index]]
-name = "test-pypi"
-url = "https://test.pypi.org/simple/"
-
 [dependency-groups]
 extras = []
 
