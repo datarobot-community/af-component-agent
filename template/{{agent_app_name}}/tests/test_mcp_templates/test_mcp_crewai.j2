@@ -2,13 +2,13 @@
 Tests for MCP CrewAI integration - verifying agents have MCP tools configured.
 """
 
-import asyncio
 import os
 from types import SimpleNamespace
 from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
+from ag_ui.core import RunAgentInput, UserMessage
 
 from agent import MyAgent
 
@@ -79,11 +79,24 @@ def create_mock_mcp_tool(tool_name: str):
     return MockTool()
 
 
+@pytest.fixture
+def run_agent_input() -> RunAgentInput:
+    return RunAgentInput(
+        messages=[UserMessage(content="test prompt", id="message_id")],
+        tools=[],
+        forwarded_props=dict(model="m", authorization_context={}, forwarded_headers={}),
+        thread_id="thread_id",
+        run_id="run_id",
+        state={},
+        context=[],
+    )
+
+
 class TestMyAgentMCPIntegration:
     """Test MCP tool integration for CrewAI agents."""
 
-    def test_agent_loads_mcp_tools_from_external_url_in_invoke(
-        self, crewai_common_mocks
+    async def test_agent_loads_mcp_tools_from_external_url_in_invoke(
+        self, crewai_common_mocks, run_agent_input
     ):
         """Test that agent loads MCP tools from EXTERNAL_MCP_URL when invoke() is called."""
 
@@ -94,14 +107,10 @@ class TestMyAgentMCPIntegration:
         with patch.dict(os.environ, {"EXTERNAL_MCP_URL": test_url}, clear=True):
             agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
 
-            # Create completion params
-            completion_params = {
-                "messages": [{"role": "user", "content": "test prompt"}],
-            }
-
             # Call invoke - this should trigger MCP tool loading
             try:
-                asyncio.run(agent.invoke(completion_params))
+                async for _ in agent.invoke(run_agent_input):
+                    pass
             except (StopIteration, AttributeError, TypeError):
                 # Expected when crew is mocked
                 pass
@@ -128,8 +137,8 @@ class TestMyAgentMCPIntegration:
                     tool.name for tool in agent_with_tools.tools
                 ] == expected_tool_names
 
-    def test_agent_loads_mcp_tools_from_datarobot_deployment_in_invoke(
-        self, crewai_common_mocks
+    async def test_agent_loads_mcp_tools_from_datarobot_deployment_in_invoke(
+        self, crewai_common_mocks, run_agent_input
     ):
         """Test that agent loads MCP tools from MCP_DEPLOYMENT_ID when invoke() is called."""
         mock_tool = create_mock_mcp_tool("test_mcp_tool")
@@ -151,14 +160,10 @@ class TestMyAgentMCPIntegration:
         ):
             agent = MyAgent(api_key=api_key, api_base=api_base, verbose=True)
 
-            # Create completion params
-            completion_params = {
-                "messages": [{"role": "user", "content": "test prompt"}],
-            }
-
             # Call invoke - this should trigger MCP tool loading
             try:
-                asyncio.run(agent.invoke(completion_params))
+                async for _ in agent.invoke(run_agent_input):
+                    pass
             except (StopIteration, AttributeError, TypeError):
                 # Expected when crew is mocked
                 pass
@@ -174,8 +179,8 @@ class TestMyAgentMCPIntegration:
             assert len(writer.tools) == 1  # 1 MCP tool
 
     @patch("datarobot_genai.crewai.agent.mcp_tools_context", autospec=True)
-    def test_agent_works_without_mcp_tools(
-        self, mock_mcp_tools_context, crewai_common_mocks
+    async def test_agent_works_without_mcp_tools(
+        self, mock_mcp_tools_context, crewai_common_mocks, run_agent_input
     ):
         """Test that agent works correctly when no MCP tools are available."""
         crewai_common_mocks.set_adapter_tools([])
@@ -183,14 +188,10 @@ class TestMyAgentMCPIntegration:
         with patch.dict(os.environ, {}, clear=True):
             agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
 
-            # Create completion params
-            completion_params = {
-                "messages": [{"role": "user", "content": "test prompt"}],
-            }
-
             # Call invoke
             try:
-                asyncio.run(agent.invoke(completion_params))
+                async for _ in agent.invoke(run_agent_input):
+                    pass
             except (StopIteration, AttributeError, TypeError):
                 # Expected when crew is mocked
                 pass
@@ -228,8 +229,8 @@ class TestMyAgentMCPIntegration:
         assert access_count["count"] >= 2  # At least accessed by both agents
 
     @patch("datarobot_genai.crewai.agent.mcp_tools_context", autospec=True)
-    def test_mcp_tool_execution_makes_request_to_server(
-        self, mock_mcp_tools_context, crewai_common_mocks
+    async def test_mcp_tool_execution_makes_request_to_server(
+        self, mock_mcp_tools_context, crewai_common_mocks, run_agent_input
     ):
         """Test that executing an MCP tool makes a request to the MCP server and returns a response."""
         # Create a mock MCP tool that simulates making a request
@@ -255,15 +256,11 @@ class TestMyAgentMCPIntegration:
             # The context manager should return our mock tools
             agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
 
-            # Create completion params
-            completion_params = {
-                "messages": [{"role": "user", "content": "test prompt"}],
-            }
-
             # Call invoke - this should trigger MCP tool loading
             # The mock context manager should prevent actual connection
             try:
-                asyncio.run(agent.invoke(completion_params))
+                async for _ in agent.invoke(run_agent_input):
+                    pass
             except (StopIteration, AttributeError, TypeError, Exception):
                 # Expected when crew is mocked or connection fails
                 pass

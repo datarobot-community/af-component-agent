@@ -22,15 +22,19 @@ def mock_agent_response():
     """
     Fixture to return a mock agent response based on the agent template framework.
     """
-    return (
-        "agent result",
-        [],
-        {
-            "completion_tokens": 1,
-            "prompt_tokens": 2,
-            "total_tokens": 3,
-        },
-    )
+
+    async def generate_response():
+        yield (
+            "agent result",
+            [],
+            {
+                "completion_tokens": 1,
+                "prompt_tokens": 2,
+                "total_tokens": 3,
+            },
+        )
+
+    return generate_response()
 
 
 @pytest.fixture()

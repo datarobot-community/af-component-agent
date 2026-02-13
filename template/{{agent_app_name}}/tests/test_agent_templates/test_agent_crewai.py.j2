@@ -3,7 +3,6 @@ import os
 from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
-from ragas import MultiTurnSample
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 
 from agent import MyAgent
@@ -359,7 +358,7 @@ class TestMyAgentCrewAI:
             )
 
     @patch("agent.myagent.Crew")
-    @patch("agent.myagent.CrewAIEventListener")
+    @patch("datarobot_genai.crewai.agent.CrewAIRagasEventListener")
     @patch("agent.myagent.Agent")
     def test_chat(
         self, mock_agent, mock_event_listener, mock_crew, agent, load_model_result
@@ -404,10 +403,6 @@ class TestMyAgentCrewAI:
         with (
             patch.object(MyAgent, "task_plan"),
             patch.object(MyAgent, "task_write"),
-            patch(
-                "datarobot_genai.crewai.agent.create_pipeline_interactions_from_messages",
-                return_value=MultiTurnSample(user_input=events),
-            ),
         ):
             response = chat(
                 completion_create_params, load_model_result=load_model_result

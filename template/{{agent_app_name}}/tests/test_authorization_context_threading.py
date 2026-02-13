@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -22,14 +22,16 @@ from custom import chat, load_model
 @pytest.fixture
 def mock_agent():
     with patch("custom.MyAgent") as mock:
-        mock_instance = MagicMock()
-        mock_instance.invoke = AsyncMock(
-            return_value=(
+
+        async def gen():
+            yield (
                 "agent result",
                 [],
                 {"completion_tokens": 1, "prompt_tokens": 2, "total_tokens": 3},
             )
-        )
+
+        mock_instance = MagicMock()
+        mock_instance.invoke = Mock(return_value=gen())
         mock.return_value = mock_instance
         yield mock, mock_instance
 
