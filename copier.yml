@@ -9,6 +9,11 @@ agent_app_name:
     {% elif not agent_app_name.isidentifier() %}ERROR: Agent app name must be a valid Python identifier (letters, numbers, underscores only, cannot start with number)
     {% endif %}
 
+agent_app_name_file:
+  type: str
+  default: "{{agent_app_name|lower|replace('-','_')}}"
+  when: false
+
 use_low_code_interface:
   type: bool
   help: "Do you want to use low-code YAML-based configuration (i.e. NeMo Agent Toolkit) for your agent? (default: no)"
