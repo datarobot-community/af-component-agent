@@ -248,7 +248,7 @@ def run_agent_e2e(
         # Step 7: Build phase (Pulumi up with AGENT_DEPLOY=0).
         # Creates the Custom Model (and baseline infra) but not the Deployment.
         run_cmd(
-            task_cmd("build", "--", "--yes", "--skip-preview"),
+            task_cmd("deploy", "--", "--yes", "--skip-preview"),
             cwd=rendered_dir,
         )
 
