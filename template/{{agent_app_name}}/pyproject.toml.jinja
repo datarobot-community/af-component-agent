@@ -188,7 +188,7 @@ override-dependencies = [
     "opentelemetry-semantic-conventions-ai==0.4.13",
 ]
 package = true
-exclude-dependencies = ["gevent"]
+constraint-dependencies = ["gevent; sys_platform == 'never'"]
 
 # This can be set to allow for proxy indexes in air-gapped environments
 # [[tool.uv.index]]
