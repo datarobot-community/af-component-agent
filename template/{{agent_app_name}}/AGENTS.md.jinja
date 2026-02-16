@@ -362,15 +362,16 @@ Agent must implement the following components:
 ### 1. Class Definition
 
 ```python
+from ag_ui.core import RunAgentInput
 from datarobot_genai.core.agents import (
     BaseAgent,
     InvokeReturn,
     UsageMetrics,
     default_usage_metrics,
     extract_user_prompt_content,
-    is_streaming,
 )
-from openai.types.chat import CompletionCreateParams
+
+from agent.config import Config
 
 class MyAgent(BaseAgent[None]):
     """Your agent description here."""
@@ -380,7 +381,7 @@ class MyAgent(BaseAgent[None]):
 
 ### 2. Required Properties and Methods in Class Definition
 
-#### `invoke()` Method
+#### `invoke(run_agent_input: RunAgentInput)` Method
 
 Run the agent with the provided completion parameters.
 [THIS METHOD IS REQUIRED FOR THE AGENT TO WORK WITH DRUM SERVER]
