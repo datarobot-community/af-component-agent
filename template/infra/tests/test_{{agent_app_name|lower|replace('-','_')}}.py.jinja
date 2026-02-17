@@ -707,11 +707,11 @@ class TestEnableAgentHAMode:
         assert agent_infra.DEFAULT_AGENT_REPLICAS == 2
         assert agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 4
 
-    def test_ha_mode_only_accepts_true_string(self, monkeypatch):
-        """Test that only the string 'true' enables HA mode."""
+    def test_ha_mode_case_insensitive(self, monkeypatch):
+        """Test that HA mode accepts 'true' in any case, but not other truthy values."""
         test_cases = [
-            ("True", False),
-            ("TRUE", False),
+            ("True", True),
+            ("TRUE", True),
             ("1", False),
             ("yes", False),
             ("on", False),
@@ -1012,20 +1012,31 @@ class TestGetMcpCustomModelRuntimeParameters:
 
 class TestGenerateMetadataYaml:
     def test_mixed_parameters(self, tmp_path, monkeypatch):
-        """Test _generate_metadata_yaml with string and credential parameters, including special characters."""
+        """Test _generate_metadata_yaml with various parameter types to verify defaultValue behavior."""
         import infra.{{agent_app_name}} as agent_infra
         import yaml  # type: ignore[import-untyped]
 
         # Mock the application path to point to our tmp_path
         monkeypatch.setattr(agent_infra, "{{agent_app_name}}_application_path", tmp_path)
 
-        # Create mixed runtime parameters with special characters
+        # Create mixed runtime parameters with different types
         # Use simple objects instead of MagicMock to avoid YAML serialization issues
         RuntimeParam = namedtuple("RuntimeParam", ["key", "type", "value"])
         mock_params = [
-            RuntimeParam(key="LLM_DEPLOYMENT_ID", type="string", value=None),
+            # String parameter with value - should NOT have defaultValue
+            RuntimeParam(
+                key="LLM_DEPLOYMENT_ID", type="string", value="some-string-value"
+            ),
+            # Credential parameter - should NOT have defaultValue
             RuntimeParam(key="SESSION_SECRET_KEY", type="credential", value=None),
-            RuntimeParam(key="PARAM_WITH_UNDERSCORE_123", type="string", value=None),
+            # DRUM numeric parameter - should HAVE defaultValue (in allowlist)
+            RuntimeParam(key="CUSTOM_MODEL_WORKERS", type="numeric", value="5"),
+            # DRUM string parameter - should HAVE defaultValue (in allowlist)
+            RuntimeParam(key="DRUM_SERVER_TYPE", type="string", value="gunicorn"),
+            # String parameter with special characters - should NOT have defaultValue (not in allowlist)
+            RuntimeParam(
+                key="EXTERNAL_MCP_HEADERS", type="string", value='{"auth": "token"}'
+            ),
         ]
 
         # Call the function with tmp_path as the custom model folder
@@ -1045,23 +1056,43 @@ class TestGenerateMetadataYaml:
 
         # Verify parameters maintain order and correct types
         params = metadata["runtimeParameterDefinitions"]
-        assert len(params) == 3
+        assert len(params) == 5
 
-        # String parameter with defaultValue
+        # String parameter - should NOT have defaultValue (not in allowlist)
         assert params[0]["fieldName"] == "LLM_DEPLOYMENT_ID"
         assert params[0]["type"] == "string"
-        assert "defaultValue" not in params[0]
+        assert "defaultValue" not in params[0], (
+            "String parameters not in allowlist should not have defaultValue"
+        )
 
-        # Credential parameter without defaultValue
+        # Credential parameter - should NOT have defaultValue
         assert params[1]["fieldName"] == "SESSION_SECRET_KEY"
         assert params[1]["type"] == "credential"
         assert "defaultValue" not in params[1]
         assert "credentialType" not in params[1]
 
-        # String parameter with special characters
-        assert params[2]["fieldName"] == "PARAM_WITH_UNDERSCORE_123"
-        assert params[2]["type"] == "string"
-        assert "defaultValue" not in params[2]
+        # DRUM numeric parameter - should HAVE defaultValue (in allowlist)
+        assert params[2]["fieldName"] == "CUSTOM_MODEL_WORKERS"
+        assert params[2]["type"] == "numeric"
+        assert "defaultValue" in params[2], (
+            "DRUM parameters in allowlist should have defaultValue"
+        )
+        assert params[2]["defaultValue"] == "5"
+
+        # DRUM string parameter - should HAVE defaultValue (in allowlist)
+        assert params[3]["fieldName"] == "DRUM_SERVER_TYPE"
+        assert params[3]["type"] == "string"
+        assert "defaultValue" in params[3], (
+            "DRUM parameters in allowlist should have defaultValue"
+        )
+        assert params[3]["defaultValue"] == "gunicorn"
+
+        # String parameter with sensitive data - should NOT have defaultValue (not in allowlist)
+        assert params[4]["fieldName"] == "EXTERNAL_MCP_HEADERS"
+        assert params[4]["type"] == "string"
+        assert "defaultValue" not in params[4], (
+            "String parameters with sensitive data should not have defaultValue"
+        )
 
     def test_with_empty_parameters(self, tmp_path, monkeypatch):
         """Test _generate_metadata_yaml generates correct YAML with empty parameter list."""
