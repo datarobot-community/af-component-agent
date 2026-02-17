@@ -49,6 +49,14 @@ DEFAULT_DRUM_SERVER_TYPE: Final[str] = "gunicorn"
 DEFAULT_DRUM_GUNICORN_WORKER_CLASS: Final[str] = "sync"
 DEFAULT_DRUM_WORKER_CONNECTIONS: Final[str] = "1"
 
+# DRUM runtime parameters that are safe to include defaultValue in metadata
+DRUM_PARAMS_WITH_DEFAULTS: Final[set[str]] = {
+    "CUSTOM_MODEL_WORKERS",
+    "DRUM_SERVER_TYPE",
+    "DRUM_GUNICORN_WORKER_CLASS",
+    "DRUM_WORKER_CONNECTIONS",
+}
+
 # Custom Model resource bundle configuration
 DEFAULT_AGENT_RESOURCE_BUNDLE_ID: Final[str] = "cpu.3xlarge"
 DEFAULT_AGENT_REPLICAS: Final[int] = 2 if ENABLE_AGENT_HA_MODE else 1
@@ -116,11 +124,12 @@ def _generate_metadata_yaml(
             "fieldName": param.key,
             "type": param.type,
         }
-        # Only include defaultValue if it's a plain value (not a Pulumi Output)
+        # Only include defaultValue for safe parameters (allowlisted DRUM params)
         if (
             hasattr(param, "value")
             and param.value
             and not isinstance(param.value, pulumi.Output)
+            and param.key in DRUM_PARAMS_WITH_DEFAULTS
         ):
             param_def["defaultValue"] = param.value
         runtime_param_defs.append(param_def)
