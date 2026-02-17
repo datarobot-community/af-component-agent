@@ -707,11 +707,11 @@ class TestEnableAgentHAMode:
         assert agent_infra.DEFAULT_AGENT_REPLICAS == 2
         assert agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 4
 
-    def test_ha_mode_only_accepts_true_string(self, monkeypatch):
-        """Test that only the string 'true' enables HA mode."""
+    def test_ha_mode_case_insensitive(self, monkeypatch):
+        """Test that HA mode accepts 'true' in any case, but not other truthy values."""
         test_cases = [
-            ("True", False),
-            ("TRUE", False),
+            ("True", True),
+            ("TRUE", True),
             ("1", False),
             ("yes", False),
             ("on", False),

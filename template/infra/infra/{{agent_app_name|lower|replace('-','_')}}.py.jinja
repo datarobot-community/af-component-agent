@@ -41,7 +41,7 @@ DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
 # To enable HA mode: Add ENABLE_AGENT_HA_MODE="true" to your .env file in the project root
 # When enabled: workers=5, replicas=2, max_computes=4
 # When disabled (default): workers=2, replicas=1, max_computes=2
-ENABLE_AGENT_HA_MODE = os.environ.get("ENABLE_AGENT_HA_MODE", "false") == "true"
+ENABLE_AGENT_HA_MODE = os.environ.get("ENABLE_AGENT_HA_MODE", "false").lower() == "true"
 
 # Custom Model DRUM runtime parameters (concurrency configuration)
 DEFAULT_CUSTOM_MODEL_WORKERS: Final[str] = "5" if ENABLE_AGENT_HA_MODE else "2"
