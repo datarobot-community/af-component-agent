@@ -31,12 +31,6 @@ agent_template_framework:
     "NeMo Agent Toolkit (NAT)": nat
   when: "{{not use_low_code_interface}}"
 
-use_mcp_server_with_nat:
-  type: bool
-  help: "Do you want to use an MCP server with NeMo Agent Toolkit? (default: yes)"
-  default: yes
-  when: "{{agent_template_framework == 'nat'}}"
-
 base_answers_file:
   type: str
   default: ".datarobot/answers/base.yml"

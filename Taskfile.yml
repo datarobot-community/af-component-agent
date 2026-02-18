@@ -4,9 +4,6 @@ version: '3'
 env :
   RENDER_DIR: .rendered
 
-vars:
-  USE_MCP_WITH_NAT: '{{.USE_MCP_WITH_NAT | default "yes"}}'
-
 tasks:
   default:
     desc: "Show all available tasks"
@@ -50,7 +47,7 @@ tasks:
       - mkdir -p ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/
       - cp ./fixtures/.datarobot/answers/llm-llm.yml ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/llm-llm.yml
       - cp ./fixtures/.datarobot/answers/drmcp-mcp_server.yml ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/drmcp-mcp_server.yml
-      - uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_template_framework={{.AGENT}} --data use_mcp_server_with_nat={{.USE_MCP_WITH_NAT}} --vcs-ref=HEAD
+      - uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_template_framework={{.AGENT}} --vcs-ref=HEAD
       - cp ./fixtures/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/Taskfile.yml
       - mkdir -p ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra
       - cp ./fixtures/infra/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/infra/Taskfile.yml
@@ -63,7 +60,6 @@ tasks:
       - task: render-template
         vars:
           AGENT: "{{.AGENT}}"
-          USE_MCP_WITH_NAT: "no"
       # Add base component scaffolding used by our tests (Taskfiles + minimal infra entrypoint/files).
       - cp ./fixtures/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/Taskfile.yml
       - mkdir -p ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra
