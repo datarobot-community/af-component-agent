@@ -133,7 +133,7 @@ class MyAgent(LangGraphAgent):
         }
 
         if not self.config.use_datarobot_llm_gateway and self._identity_header:
-            config["default_headers"] = self._identity_header  # type: ignore[assignment]
+            config["model_kwargs"] = {"extra_headers": self._identity_header}  # type: ignore[assignment]
 
         return ChatLiteLLM(**config)
 
