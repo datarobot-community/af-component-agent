@@ -78,5 +78,6 @@ _subdirectory: template
 _answers_file: ".datarobot/answers/agent-{{ agent_app_name }}.yml"
 _skip_if_exists:
   - /Taskfile.yml
+  - "{{ agent_app_name }}/AGENTS.md"
 _exclude:
     - "*.j2"
