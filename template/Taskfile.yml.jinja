@@ -28,6 +28,11 @@ tasks:
       - task: agent:install
       {% if include_taskfile_infra -%}- task: infra:install{% endif %}
     silent: true
+  agents-md:
+    desc: "🤖 Generate/update AGENTS.md via DataRobot LLM (use -- {% raw %}--dir=<subdir> --dry-run{% endraw %})"
+    dotenv: [".env"]
+    cmds:
+      - uv run scripts/generate_agents_md.py {% raw %}{{.CLI_ARGS}}{% endraw %}
   {% if include_taskfile_infra -%}build:
     cmds:
       - task: infra:build
