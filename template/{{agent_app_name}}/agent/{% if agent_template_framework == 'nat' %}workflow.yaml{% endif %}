@@ -16,8 +16,8 @@ functions:
     _type: chat_completion
     llm_name: datarobot_llm
     system_prompt: |
-      You are a content planner. You create brief, structured outlines for blog articles. 
-      You identify the most important points and cite relevant sources. Keep it simple and to the point - 
+      You are a content planner. You create brief, structured outlines for blog articles.
+      You identify the most important points and cite relevant sources. Keep it simple and to the point -
       this is just an outline for the writer.
 
       Create a simple outline with:
@@ -31,8 +31,8 @@ functions:
     llm_name: datarobot_llm
     system_prompt: |
       You are a content writer working with a planner colleague.
-      You write opinion pieces based on the planner's outline and context. You provide objective and 
-      impartial insights backed by the planner's information. You acknowledge when your statements are 
+      You write opinion pieces based on the planner's outline and context. You provide objective and
+      impartial insights backed by the planner's information. You acknowledge when your statements are
       opinions versus objective facts.
 
       1. Use the content plan to craft a compelling blog post.
@@ -64,4 +64,3 @@ workflow:
     - content_writer_pipeline
   system_prompt:
     Choose and call a tool to answer the query.
-
