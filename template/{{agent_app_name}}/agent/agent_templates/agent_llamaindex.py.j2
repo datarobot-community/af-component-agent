@@ -60,12 +60,23 @@ class MyAgent(LlamaIndexAgent):
             self.model = self.default_model
 
     def make_input_message(self, completion_create_params: Any) -> str:
+        """Create an input string for the workflow.
+
+        Chat history is injected via the `{chat_history}` placeholder.
+        The base class (LlamaIndexAgent) will detect this placeholder and
+        replace it with the actual history summary when available.
+        """
         user_prompt_content = extract_user_prompt_content(completion_create_params)
+        # NOTE: The `{{ '{{chat_history}}' }}` syntax below is a Jinja2 template escape pattern.
+        # It outputs the literal string `{chat_history}` at render time, which the base class
+        # then replaces at runtime with a formatted "Prior conversation:\n..." section when
+        # history is available, or with an empty string on the first turn.
         return (
             f"Your task is to write a concise report on a topic. "
             f"The topic is '{user_prompt_content}'. Make sure you find any interesting and relevant "
-            f"information given the current year is {str(datetime.now().year)}. "
-            f"Keep the final report under 500 words and don't overthink - this is a simple example task."
+            f"information given the current year is {datetime.now().year}. "
+            f"Keep the final report under 500 words and don't overthink - this is a simple example task. "
+            f"{{ '{{chat_history}}' }}"
         )
 
     def build_workflow(self) -> AgentWorkflow:
@@ -79,7 +90,23 @@ class MyAgent(LlamaIndexAgent):
         )
 
     def extract_response_text(self, result_state: Any, events: list[Any]) -> str:
-        return str(result_state["report_content"])
+        """Safely extract the final report text from the workflow state or events."""
+        # Preferred path: use the workflow state when available
+        if isinstance(result_state, dict) and "report_content" in result_state:
+            return str(result_state["report_content"])
+
+        # Fallback: best-effort extraction from the last event that carries text.
+        for event in reversed(events or []):
+            resp = getattr(event, "response", None)
+            if resp is not None and getattr(resp, "content", None):
+                return str(resp.content)
+            if hasattr(event, "delta") and getattr(event, "delta", None):
+                return str(event.delta)
+            if hasattr(event, "text") and getattr(event, "text", None):
+                return str(event.text)
+
+        # Last resort: empty string
+        return ""
 
     def llm(
         self,
@@ -156,16 +183,14 @@ class MyAgent(LlamaIndexAgent):
 
     @staticmethod
     async def planner_notes_tool(ctx: Context, notes: str, notes_title: str) -> str:
-        current_state = await ctx.get("state")
-        if "planner_notes" not in current_state:
-            current_state["planner_notes"] = {}
-        current_state["planner_notes"][notes_title] = notes
-        await ctx.set("state", current_state)
+        async with ctx.store.edit_state() as current_state:
+            if "planner_notes" not in current_state:
+                current_state["planner_notes"] = {}
+            current_state["planner_notes"][notes_title] = notes
         return "Notes recorded."
 
     @staticmethod
     async def writer_report_tool(ctx: Context, report_content: str) -> str:
-        current_state = await ctx.get("state")
-        current_state["report_content"] = report_content
-        await ctx.set("state", current_state)
+        async with ctx.store.edit_state() as current_state:
+            current_state["report_content"] = report_content
         return "Report written."
