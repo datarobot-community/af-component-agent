@@ -106,8 +106,19 @@ class MyAgent(CrewAIAgent):
         return LLM(**config)  # type: ignore[arg-type]
 
     def make_kickoff_inputs(self, user_prompt_content: str) -> dict[str, Any]:
-        """Map the user prompt into Crew kickoff inputs expected by tasks/agents."""
-        return {"topic": str(user_prompt_content)}
+        """Map the user prompt into Crew kickoff inputs expected by tasks/agents.
+
+        The ``chat_history`` field opts into automatic history injection. When
+        prior turns are available the base class populates it with a formatted
+        "Prior conversation:\\n..." block; on the first turn it remains an empty
+        string. Place ``{chat_history}`` at the end of task descriptions to
+        include it as a self-contained section that disappears gracefully when
+        there is no history yet.
+        """
+        return {
+            "topic": str(user_prompt_content),
+            "chat_history": "",
+        }
 
     @property
     def agents(self) -> List[Agent]:
@@ -123,11 +134,14 @@ class MyAgent(CrewAIAgent):
         return Agent(
             role="Planner",
             goal="Create a simple, focused outline for {topic} with key points and sources.",
-            backstory="You create brief, structured outlines for blog articles. "
-            "You identify the most important points and cite relevant sources. "
-            "Keep it simple and to the point - this is just an outline for the writer. "
-            "You have access to tools that can help you research and gather information. Use these tools when "
-            "required to collect accurate and up-to-date information about the topic for your planning and research.",
+            backstory=(
+                "You create brief, structured outlines for blog articles. "
+                "You identify the most important points and cite relevant sources. "
+                "Keep it simple and to the point - this is just an outline for the writer. "
+                "You have access to tools that can help you research and gather information. "
+                "Use these tools when required to collect accurate and up-to-date information "
+                "about the topic for your planning and research."
+            ),
             allow_delegation=False,
             verbose=self.verbose,
             llm=self.llm(),
@@ -140,11 +154,14 @@ class MyAgent(CrewAIAgent):
         return Agent(
             role="Writer",
             goal="Write a concise, insightful opinion piece about {topic}. Maximum 500 words.",
-            backstory="You write opinion pieces based on the planner's outline and context. "
-            "You provide objective and impartial insights backed by the planner's information. "
-            "You acknowledge when your statements are opinions versus objective facts. "
-            "You have access to tools that can help you verify facts and gather additional supporting information. "
-            "Use these tools when required to ensure accuracy and find relevant details while writing.",
+            backstory=(
+                "You write opinion pieces based on the planner's outline and context. "
+                "You provide objective and impartial insights backed by the planner's information. "
+                "You acknowledge when your statements are opinions versus objective facts. "
+                "You have access to tools that can help you verify facts and gather additional "
+                "supporting information. Use these tools when required to ensure accuracy and "
+                "find relevant details while writing."
+            ),
             allow_delegation=False,
             verbose=self.verbose,
             llm=self.llm(),
@@ -159,7 +176,8 @@ class MyAgent(CrewAIAgent):
                 "1. 10-15 key points or facts (bullet points only, no paragraphs)\n"
                 "2. 2-3 relevant sources or references\n"
                 "3. A brief suggested structure (intro, 2-3 sections, conclusion)\n"
-                "Do NOT write paragraphs or detailed explanations. Just provide a focused list."
+                "Do NOT write paragraphs or detailed explanations. Just provide a focused list.\n"
+                "{chat_history}"
             ),
             expected_output="A simple outline with 10-15 bullet points, 2-3 sources, and a basic structure. "
             "No paragraphs or lengthy explanations.",
@@ -173,7 +191,8 @@ class MyAgent(CrewAIAgent):
                 "1. Use the content plan to craft a compelling blog post on {topic}.\n"
                 "2. Structure with an engaging introduction, insightful body, and summarizing conclusion.\n"
                 "3. Sections/Subtitles are properly named in an engaging manner.\n"
-                "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs."
+                "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
+                "{chat_history}"
             ),
             expected_output="A well-written blog post in markdown format, ready for publication. Maximum 500 words total.",
             agent=self.agent_writer,
