@@ -3,7 +3,6 @@
 version: '3'
 env :
   RENDER_DIR: .rendered
-
 tasks:
   default:
     desc: "Show all available tasks"
