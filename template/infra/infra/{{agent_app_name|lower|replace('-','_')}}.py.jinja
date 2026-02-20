@@ -365,9 +365,10 @@ if ENABLE_AGENT_HA_MODE:
     )
 
 # Start of Pulumi settings and application infrastructure
-if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
+_dr_exec_env = os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "").strip()
+if len(_dr_exec_env) > 0:
     # Get the default execution environment from environment variable
-    execution_environment_id = os.environ["DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT"]
+    execution_environment_id = _dr_exec_env
     if DEFAULT_EXECUTION_ENVIRONMENT in execution_environment_id:
         pulumi.info("Using default GenAI Agentic Execution Environment.")
         execution_environment_id = RuntimeEnvironments.PYTHON_311_GENAI_AGENTS.value.id
