@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 # Patch all Pulumi resources and functions used in the module
 @pytest.fixture(autouse=True)
 def pulumi_mocks(monkeypatch, tmp_path):
+    monkeypatch.setenv("PULUMI_STACK_CONTEXT", "unittest")
     # Mock infra.__init__ exported objects
     mock_use_case = MagicMock()
     mock_use_case.id = "mock-use-case-id"
@@ -86,12 +87,26 @@ def pulumi_mocks(monkeypatch, tmp_path):
     # Mock pulumi functions
     monkeypatch.setattr("pulumi.export", MagicMock())
     monkeypatch.setattr("pulumi.info", MagicMock())
+    monkeypatch.setattr("pulumi.warn", MagicMock())
     monkeypatch.setattr("pulumi.log.error", MagicMock())
 
     # Mock CustomModelDeployment
     monkeypatch.setattr(
         "datarobot_pulumi_utils.pulumi.custom_model_deployment.CustomModelDeployment",
         MagicMock(),
+    )
+
+    # Mock datarobot.ExecutionEnvironmentVersion.get to return a successful version by default
+    from datarobot.enums import EXECUTION_ENVIRONMENT_VERSION_BUILD_STATUS
+
+    _default_ee_version = MagicMock()
+    _default_ee_version.id = "690cd2f698419673f938f7c4"
+    _default_ee_version.build_status = (
+        EXECUTION_ENVIRONMENT_VERSION_BUILD_STATUS.SUCCESS
+    )
+    monkeypatch.setattr(
+        "datarobot.ExecutionEnvironmentVersion.get",
+        MagicMock(return_value=_default_ee_version),
     )
 
     # Mock Output to behave like a Pulumi Output with .apply(), support subscript notation, and from_input
@@ -299,6 +314,106 @@ def test_execution_environment_custom_set(monkeypatch):
 
     # ExecutionEnvironment constructor should not be called when using custom env
     agent_infra.pulumi_datarobot.ExecutionEnvironment.assert_not_called()
+
+
+def test_resolve_execution_environment_version_not_found_returns_none(monkeypatch):
+    """When pinned EE version is not found in DataRobot, warn and return None (use latest)."""
+    import infra.{{agent_app_name}} as agent_infra
+    from datarobot.errors import ClientError
+
+    monkeypatch.setenv(
+        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
+        "a1b2c3d4e5f6071829364455",
+    )
+    monkeypatch.setattr(
+        "datarobot.ExecutionEnvironmentVersion.get",
+        MagicMock(side_effect=ClientError("Version not found", 404)),
+    )
+
+    version_id = agent_infra.resolve_execution_environment_version(
+        "ee-base-id",
+        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
+    )
+
+    assert version_id is None
+    agent_infra.pulumi.warn.assert_called_once()
+    call_msg = agent_infra.pulumi.warn.call_args[0][0]
+    assert "a1b2c3d4e5f6071829364455" in call_msg
+    assert "using latest" in call_msg
+
+
+def test_resolve_execution_environment_version_found(monkeypatch):
+    """When pinned version exists and build_status is SUCCESS, return its id."""
+    import infra.{{agent_app_name}} as agent_infra
+    from datarobot.enums import EXECUTION_ENVIRONMENT_VERSION_BUILD_STATUS
+
+    monkeypatch.setenv(
+        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
+        "abcdef0123456789abcdef01",
+    )
+    mock_version = MagicMock()
+    mock_version.id = "abcdef0123456789abcdef01"
+    mock_version.build_status = EXECUTION_ENVIRONMENT_VERSION_BUILD_STATUS.SUCCESS
+    monkeypatch.setattr(
+        "datarobot.ExecutionEnvironmentVersion.get",
+        MagicMock(return_value=mock_version),
+    )
+
+    version_id = agent_infra.resolve_execution_environment_version(
+        "ee-base-id",
+        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
+    )
+
+    assert version_id == "abcdef0123456789abcdef01"
+    agent_infra.pulumi.warn.assert_not_called()
+
+
+def test_resolve_execution_environment_version_not_success_returns_none(monkeypatch):
+    """When get() succeeds but build_status is not SUCCESS, return None with a warning."""
+    import infra.{{agent_app_name}} as agent_infra
+
+    monkeypatch.setenv(
+        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
+        "abcdef0123456789abcdef01",
+    )
+    mock_version = MagicMock()
+    mock_version.id = "abcdef0123456789abcdef01"
+    mock_version.build_status = "processing"
+    monkeypatch.setattr(
+        "datarobot.ExecutionEnvironmentVersion.get",
+        MagicMock(return_value=mock_version),
+    )
+
+    version_id = agent_infra.resolve_execution_environment_version(
+        "ee-base-id",
+        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
+    )
+
+    assert version_id is None
+    agent_infra.pulumi.warn.assert_called_once()
+    call_msg = agent_infra.pulumi.warn.call_args[0][0]
+    assert "abcdef0123456789abcdef01" in call_msg
+    assert "using latest" in call_msg
+
+
+def test_resolve_execution_environment_version_unset_returns_none(monkeypatch):
+    """When env var is unset or invalid, return None without calling DR API."""
+    import infra.{{agent_app_name}} as agent_infra
+
+    monkeypatch.delenv(
+        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID", raising=False
+    )
+    mock_get = MagicMock()
+    monkeypatch.setattr("datarobot.ExecutionEnvironmentVersion.get", mock_get)
+
+    version_id = agent_infra.resolve_execution_environment_version(
+        "ee-base-id",
+        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
+    )
+
+    assert version_id is None
+    mock_get.assert_not_called()
+    agent_infra.pulumi.warn.assert_not_called()
 
 
 def test_reset_environment_between_tests():
