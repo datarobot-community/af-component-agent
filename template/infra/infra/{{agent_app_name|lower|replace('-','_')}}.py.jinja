@@ -458,6 +458,16 @@ agent_runtime_parameter_values.extend(
     ]
 )
 
+if memory_space_id := os.environ.get("MEMORY_SPACE_ID"):
+    agent_runtime_parameter_values.append(
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key="MEMORY_SPACE_ID",
+            type="string",
+            value=memory_space_id,
+        ),
+    )
+
+
 # Handle session secret key credential
 SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
 
