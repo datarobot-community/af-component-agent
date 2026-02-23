@@ -181,8 +181,7 @@ class MyAgent(LangGraphAgent):
                 "from all prior messages, not just the most recent one. Summarize the user's core question.\n"
                 "2. Determine whether the question is related to DataRobot's Agentic AI offerings.\n"
                 "3. If the question IS related to DataRobot Agentic AI, use the search_datarobot_agentic_docs "
-                "tool to find relevant documentation pages. Make 1 search unless otherwise explicitly specified. "
-                "Always use max_results=3 unless otherwise explicitly specified.\n"
+                "tool to find relevant documentation pages. Make 1 search always. Always use max_results = 3"
                 "\n"
                 "Your output should always follow this strict format:\n"
                 "**User question**: {put user question here}\n"
@@ -213,20 +212,13 @@ class MyAgent(LangGraphAgent):
                 "Your responsibilities:\n"
                 "1. If the question is not related to DataRobot's Agentic AI offerings, politely acknowledge "
                 "this and ask user to input a DataRobot Agentic AI related question.\n"
-                "2. Otherwise, use the fetch_datarobot_doc_page tool to retrieve the content of the pages that were provided to you.\n"
+                "2. Otherwise, use the fetch_datarobot_doc_page tool to retrieve ONLY THE THREE pages that were provided to you.\n"
                 "3. Answer the user's question accurately and directly, grounded in the provided documentation.\n"
                 "4. Cite specific documentation pages (with URLs) to support your answer.\n"
                 "\n"
                 "Your output should always follow this strict format:\n"
                 "**User question**: {put user question here}\n"
-                "**Answer**: {your answer to the user's question here. DO NOT EXCEED ONE PARAGRAPH IN YOUR ANSWER.}\n"
-                "**SOURCES**:\n"
-                "Title 1: {title of doc page 1}\n"
-                "URL 1: {url of doc page 1}\n"
-                "Title 2: {title of doc page 2}\n"
-                "URL 2: {url of doc page 2}\n"
-                "Title 3: {title of doc page 3}\n"
-                "URL 3: {url of doc page 3}\n",
+                "**Answer**: {your answer to the user's question here. DO NOT EXCEED ONE OR TWO PARAGRAPHS IN YOUR ANSWER.}\n"
             ),
             name="Writer Agent",
         )
