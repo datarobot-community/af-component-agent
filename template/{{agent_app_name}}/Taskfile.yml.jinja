@@ -56,7 +56,7 @@ tasks:
       - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff check . --fix"
       - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff format ."
       - "{% raw %}{{.UV_CMD}}{% endraw %} run mypy --pretty ."
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run yamlfix ."
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run yamlfix . -e '.venv/**/*.yaml' -e '.venv/**/*.yml' -e 'build/**/*.yaml' -e 'build/**/*.yml'"
     silent: true
   lint-check:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
