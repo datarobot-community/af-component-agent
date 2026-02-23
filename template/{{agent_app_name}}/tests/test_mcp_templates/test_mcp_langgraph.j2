@@ -20,8 +20,8 @@ def create_mock_mcp_tool(name: str):
     async def mock_tool_func(ctx: Any, **kwargs: Any) -> str:
         return f"Result from {name}"
 
-    mock_tool_func.__name__ = name
     mock_tool_func.__doc__ = f"Mock MCP tool {name}"
+    mock_tool_func.name = name
     return mock_tool_func
 
 
