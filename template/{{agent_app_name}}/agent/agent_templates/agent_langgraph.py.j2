@@ -181,7 +181,7 @@ class MyAgent(LangGraphAgent):
                 "from all prior messages, not just the most recent one. Summarize the user's core question.\n"
                 "2. Determine whether the question is related to DataRobot's Agentic AI offerings.\n"
                 "3. If the question IS related to DataRobot Agentic AI, use the search_datarobot_agentic_docs "
-                "tool to find relevant documentation pages. Make at most 2 searches total. "
+                "tool to find relevant documentation pages. Make 1 search unless otherwise explicitly specified. "
                 "Always use max_results=3 unless otherwise explicitly specified.\n"
                 "\n"
                 "Your output should always follow this strict format:\n"
@@ -192,7 +192,8 @@ class MyAgent(LangGraphAgent):
                 "URL 1: {url of doc page 1}\n"
                 "Title 2: {title of doc page 2}\n"
                 "URL 2: {url of doc page 2}\n"
-                "...\n"
+                "Title 3: {title of doc page 3}\n"
+                "URL 3: {url of doc page 3}\n"
             ),
             name="DataRobot Agentic AI Documentation Researcher Agent",
         )
@@ -224,7 +225,8 @@ class MyAgent(LangGraphAgent):
                 "URL 1: {url of doc page 1}\n"
                 "Title 2: {title of doc page 2}\n"
                 "URL 2: {url of doc page 2}\n"
-                "...\n",
+                "Title 3: {title of doc page 3}\n"
+                "URL 3: {url of doc page 3}\n",
             ),
             name="Writer Agent",
         )
