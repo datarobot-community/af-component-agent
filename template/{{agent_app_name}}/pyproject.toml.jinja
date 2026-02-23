@@ -176,6 +176,7 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module = "datarobot.*"
 implicit_reexport = true
+follow_imports = "skip"
 
 [tool.uv]
 required-version = ">=0.7.0"
