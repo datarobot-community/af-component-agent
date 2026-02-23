@@ -16,8 +16,9 @@ from typing import Any, Optional, Union
 from datarobot_genai.core.agents import (
     make_system_prompt,
 )
-from datarobot_genai.langgraph.agent import LangGraphAgent
 from datarobot_genai.drmcp.tools.dr_docs import search_datarobot_agentic_docs
+from datarobot_genai.langgraph.agent import LangGraphAgent
+from langchain.agents import create_agent
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import tool
 from langchain_litellm.chat_models import ChatLiteLLM
@@ -171,7 +172,6 @@ class MyAgent(LangGraphAgent):
                 "4. Compile and pass to the writer agent:\n"
                 "   - A clear restatement of the user's question\n"
                 "   - All retrieved documentation pages with their titles, URLs, and full content\n"
-                "   - A brief summary of the key information found\n"
                 "\n"
                 "If the question is NOT related to DataRobot's Agentic AI offerings, note this clearly "
                 "and still pass the user's question to the writer so they can respond appropriately.\n"
@@ -208,4 +208,3 @@ class MyAgent(LangGraphAgent):
             ),
             name="Writer Agent",
         )
-
