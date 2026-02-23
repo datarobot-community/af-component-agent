@@ -91,8 +91,7 @@ def cli(
     # Run the agent with a string user prompt
     > task cli -- execute --user_prompt "Artificial Intelligence"
 
-    # Run the agent with a JSON user prompt (keys map to agent prompt template variables, e.g. topic)
-    > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
+    # Run the agent with a JSON user prompt    > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
 
     # Run the agent with a JSON file containing the full chat completion json; include prior messages for chat history.
     {% if agent_template_framework == "langgraph" %}
@@ -142,8 +141,7 @@ def execute(
     # Run the agent with a string user prompt and show full output
     > task cli -- execute --user_prompt "Artificial Intelligence" --show_output
 
-    # Run the agent with a JSON user prompt (keys map to agent prompt template variables, e.g. topic)
-    > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
+    # Run the agent with a JSON user prompt    > task cli -- execute --user_prompt '{"topic": "Artificial Intelligence"}'
 
     # Run the agent with a JSON file containing the full chat completion json; include prior messages for chat history.
     {% if agent_template_framework == "langgraph" %}
@@ -235,8 +233,7 @@ def execute_deployment(
     # Run the agent with a string user prompt, streaming enabled
     > task cli -- execute-deployment --user_prompt "Artificial Intelligence" --stream --deployment_id 680a77a9a3
 
-    # Run the agent with a JSON user prompt (keys map to agent prompt template variables, e.g. topic)
-    > task cli -- execute-deployment --user_prompt '{"topic": "Artificial Intelligence"}' --deployment_id 680a77a9a3
+    # Run the agent with a JSON user prompt    > task cli -- execute-deployment --user_prompt '{"topic": "Artificial Intelligence"}' --deployment_id 680a77a9a3
 
     # Run the agent with a JSON file containing the full chat completion json; include prior messages for chat history.
     {% if agent_template_framework == "langgraph" %}
