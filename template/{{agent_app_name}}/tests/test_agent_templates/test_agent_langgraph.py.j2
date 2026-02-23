@@ -316,16 +316,16 @@ class TestMyAgentLangGraph:
                 )
 
     @patch("agent.myagent.create_agent")
-    def test_agent_planner_property(self, mock_create_agent, agent):
-        """Test that agent_planner creates a react agent."""
+    def test_agent_researcher_property(self, mock_create_agent, agent):
+        """Test that agent_researcher creates a react agent."""
         mock_llm = Mock()
         with patch.object(MyAgent, "llm", return_value=mock_llm):
-            _ = agent.agent_planner
+            _ = agent.agent_researcher
             mock_create_agent.assert_called_once_with(
                 mock_llm,
                 tools=ANY,
                 system_prompt=ANY,
-                name="Planner Agent",
+                name="DataRobot Agentic AI Documentation Researcher Agent",
             )
 
     @patch("agent.myagent.create_agent")
@@ -349,7 +349,7 @@ class TestMyAgentLangGraph:
                 workflow = agent.workflow
                 # Verify it's a StateGraph (basic check)
                 assert workflow is not None
-                assert "planner_node" in workflow.nodes
+                assert "researcher_node" in workflow.nodes
                 assert "writer_node" in workflow.nodes
 
     def test_prompt_template_property(self, agent):
