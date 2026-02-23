@@ -16,7 +16,10 @@ from typing import Any, Optional, Union
 from datarobot_genai.core.agents import (
     make_system_prompt,
 )
-from datarobot_genai.drmcp.tools.dr_docs import search_datarobot_agentic_docs
+from datarobot_genai.drmcp.tools.dr_docs import (
+    fetch_datarobot_doc_page,
+    search_datarobot_agentic_docs,
+)
 from datarobot_genai.langgraph.agent import LangGraphAgent
 from langchain.agents import create_agent
 from langchain_core.prompts import ChatPromptTemplate
@@ -155,6 +158,17 @@ class MyAgent(LangGraphAgent):
         return [tool(search_datarobot_agentic_docs), *self.mcp_tools]
 
     @property
+    def _writer_tools(self) -> list[Any]:
+        """Return tools for the writer agent.
+
+        Prefers the MCP-served version of fetch_datarobot_doc_page when available.
+        Falls back to calling the imported function directly as a LangChain tool.
+        """
+        if any(t.name == "fetch_datarobot_doc_page" for t in self.mcp_tools):
+            return self.mcp_tools
+        return [tool(fetch_datarobot_doc_page), *self.mcp_tools]
+
+    @property
     def agent_researcher(self) -> Any:
         return create_agent(
             self.llm(),
@@ -168,10 +182,10 @@ class MyAgent(LangGraphAgent):
                 "2. Determine whether the question is related to DataRobot's Agentic AI offerings.\n"
                 "3. If the question IS related to DataRobot Agentic AI, use the search_datarobot_agentic_docs "
                 "tool to find relevant documentation pages. Make at most 2 searches total. "
-                "Always use max_results=3.\n"
+                "Always use max_results=3 unless otherwise explicitly specified.\n"
                 "4. Compile and pass to the writer agent:\n"
                 "   - A clear restatement of the user's question\n"
-                "   - All retrieved documentation pages with their titles, URLs, and full content\n"
+                "   - The titles and URLs of retrieved documentation pages (do NOT fetch or include page content)\n"
                 "\n"
                 "If the question is NOT related to DataRobot's Agentic AI offerings, note this clearly "
                 "and still pass the user's question to the writer so they can respond appropriately.\n"
@@ -185,13 +199,16 @@ class MyAgent(LangGraphAgent):
     def agent_writer(self) -> Any:
         return create_agent(
             self.llm(),
-            tools=self.mcp_tools,
+            tools=self._writer_tools,
             system_prompt=make_system_prompt(
                 "You are a DataRobot Agentic AI expert who answers user questions using official documentation.\n"
                 "\n"
                 "You receive research from a documentation researcher that includes:\n"
                 "- The user's core question about DataRobot Agentic AI\n"
-                "- Relevant DataRobot documentation pages with their titles, URLs, and content\n"
+                "- Titles and URLs of relevant DataRobot documentation pages\n"
+                "\n"
+                "Use the fetch_datarobot_doc_page tool to retrieve the content of pages that are relevant "
+                "to answering the question. Fetch only the pages you need.\n"
                 "\n"
                 "Your responsibilities:\n"
                 "1. Answer the user's question accurately and directly, grounded in the provided documentation.\n"
@@ -204,7 +221,10 @@ class MyAgent(LangGraphAgent):
                 "Write your response in markdown with:\n"
                 "- A direct answer to the user's question\n"
                 "- Supporting details from the documentation\n"
-                "- References to relevant documentation pages with URLs",
+                "- References to relevant documentation pages with URLs\n"
+                "\n"
+                "DO NOT EXCEED ONE PARAGRAPH IN YOUR ANSWER. The user wants a concise, clear response that directly "
+                "addresses their question. When citing sources, please write SOURCES: and then list the documentation page titles with their URLs in markdown link format. ",
             ),
             name="Writer Agent",
         )
