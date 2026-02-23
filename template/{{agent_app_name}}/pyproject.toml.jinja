@@ -14,10 +14,11 @@ dependencies = [
     "langchain-litellm>=0.2.3",
     "opentelemetry-api>=1.33.0,<2.0.0",
     "opentelemetry-sdk>=1.33.0,<2.0.0",
-
+    # There is a incompatiblity between the opentelemetry-semantic-conventions-ai and crewai.
+    # See BUZZOK-29568 for more info.
+    "opentelemetry-semantic-conventions-ai<=0.4.13",
     "pdfminer.six>=20251230",  # CVE fix
     "langgraph-checkpoint>=3.0.0", # CVE fix
-
     "anyio>=4.11.0,<4.12.0", # Fix: ImportError: `set_current_async_library`
     "packaging>=25.0,<26.0",
 ]
