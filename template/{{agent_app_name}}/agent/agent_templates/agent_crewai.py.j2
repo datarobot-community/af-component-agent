@@ -14,16 +14,22 @@
 from typing import Any, List, Optional, Union
 
 from crewai import LLM, Agent, Crew, Process, Task
+from crewai.tools import tool
 from datarobot_genai.crewai.agent import CrewAIAgent
+from datarobot_genai.drmcp.tools.dr_docs import (
+    fetch_datarobot_doc_page,
+    search_datarobot_agentic_docs,
+)
 
 from agent.config import Config
 
 
 class MyAgent(CrewAIAgent):
-    """MyAgent is a custom agent that uses CrewAI to plan and write content.
+    """MyAgent is a DataRobot Agentic AI documentation assistant built on CrewAI.
     It utilizes DataRobot's LLM Gateway or a specific deployment for language model interactions.
-    This example illustrates 2 agents that handle content creation tasks, including planning and writing
-    blog posts.
+    This agent implements a two-stage pipeline: a researcher agent that searches DataRobot's
+    official agentic AI documentation based on the user's question, and a writer agent that
+    synthesizes the findings into a clear, cited response.
     """
 
     def __init__(
@@ -116,85 +122,118 @@ class MyAgent(CrewAIAgent):
         there is no history yet.
         """
         return {
-            "topic": str(user_prompt_content),
+            "user_prompt": str(user_prompt_content),
             "chat_history": "",
         }
 
     @property
+    def _researcher_tools(self) -> list[Any]:
+        """Return tools for the researcher agent.
+
+        Prefers the MCP-served version of search_datarobot_agentic_docs when available
+        (i.e. DR_DOCS tools are enabled on the connected MCP server). Falls back to
+        calling the imported function directly as a CrewAI tool so the researcher
+        always has access to documentation search regardless of MCP configuration.
+        """
+        if any(t.name == "search_datarobot_agentic_docs" for t in self.mcp_tools):
+            return self.mcp_tools
+        return [tool(search_datarobot_agentic_docs), *self.mcp_tools]
+
+    @property
+    def _writer_tools(self) -> list[Any]:
+        """Return tools for the writer agent.
+
+        Prefers the MCP-served version of fetch_datarobot_doc_page when available.
+        Falls back to calling the imported function directly as a CrewAI tool.
+        """
+        if any(t.name == "fetch_datarobot_doc_page" for t in self.mcp_tools):
+            return self.mcp_tools
+        return [tool(fetch_datarobot_doc_page), *self.mcp_tools]
+
+    @property
     def agents(self) -> List[Agent]:
-        return [self.agent_planner, self.agent_writer]
+        return [self.agent_researcher, self.agent_writer]
 
     @property
     def tasks(self) -> List[Task]:
-        return [self.task_plan, self.task_write]
+        return [self.task_search, self.task_write]
 
     @property
-    def agent_planner(self) -> Agent:
-        """Content Planner agent."""
+    def agent_researcher(self) -> Agent:
+        """DataRobot Agentic AI Documentation Researcher Agent."""
         return Agent(
-            role="Planner",
-            goal="Create a simple, focused outline for {topic} with key points and sources.",
-            backstory=(
-                "You create brief, structured outlines for blog articles. "
-                "You identify the most important points and cite relevant sources. "
-                "Keep it simple and to the point - this is just an outline for the writer. "
-                "You have access to tools that can help you research and gather information. "
-                "Use these tools when required to collect accurate and up-to-date information "
-                "about the topic for your planning and research."
-            ),
+            role="DataRobot Agentic AI Documentation Researcher Agent",
+            goal="Search DataRobot's Agentic AI documentation to find relevant pages for the user's question.",
+            backstory="You are a DataRobot Agentic AI Documentation Researcher with expertise in searching and identifying relevant documentation for user questions.",
             allow_delegation=False,
             verbose=self.verbose,
             llm=self.llm(),
-            tools=self.mcp_tools,
+            tools=self._researcher_tools,
         )
 
     @property
     def agent_writer(self) -> Agent:
-        """Content Writer agent."""
+        """DataRobot Agentic AI Documentation Expert Agent."""
         return Agent(
-            role="Writer",
-            goal="Write a concise, insightful opinion piece about {topic}. Maximum 500 words.",
-            backstory=(
-                "You write opinion pieces based on the planner's outline and context. "
-                "You provide objective and impartial insights backed by the planner's information. "
-                "You acknowledge when your statements are opinions versus objective facts. "
-                "You have access to tools that can help you verify facts and gather additional "
-                "supporting information. Use these tools when required to ensure accuracy and "
-                "find relevant details while writing."
+            role="DataRobot Agentic AI Documentation Expert",
+            goal=(
+                "Answer the user's question accurately and concisely, "
+                "grounded in official DataRobot Agentic AI documentation with citations."
             ),
+            backstory="You are a DataRobot Agentic AI expert who synthesizes research from a documentation researcher into accurate, concise, cited answers for users.",
             allow_delegation=False,
             verbose=self.verbose,
             llm=self.llm(),
-            tools=self.mcp_tools,
+            tools=self._writer_tools,
         )
 
     @property
-    def task_plan(self) -> Task:
+    def task_search(self) -> Task:
         return Task(
             description=(
-                "Create a simple outline for {topic} with:\n"
-                "1. 10-15 key points or facts (bullet points only, no paragraphs)\n"
-                "2. 2-3 relevant sources or references\n"
-                "3. A brief suggested structure (intro, 2-3 sections, conclusion)\n"
-                "Do NOT write paragraphs or detailed explanations. Just provide a focused list.\n"
+                "1. Analyze the FULL chat history to understand what the user is asking. Consider context "
+                "from all prior messages, not just the most recent one. Summarize the user's core question.\n"
+                "2. Determine whether the question is related to DataRobot's Agentic AI offerings.\n"
+                "3. If the question IS related to DataRobot Agentic AI, use the search_datarobot_agentic_docs "
+                "tool to find relevant documentation pages. Make 1 search always. Always use max_results = 3\n"
                 "{chat_history}"
             ),
-            expected_output="A simple outline with 10-15 bullet points, 2-3 sources, and a basic structure. "
-            "No paragraphs or lengthy explanations.",
-            agent=self.agent_planner,
+            expected_output=(
+                "Your output should always follow this strict format:\n"
+                "**User question**: {put user question here}\n"
+                "**Is the question related to DataRobot Agentic AI?**: {Yes or No}\n"
+                "**Relevant documentation**:\n"
+                "Title 1: {title of doc page 1}\n"
+                "URL 1: {url of doc page 1}\n"
+                "Title 2: {title of doc page 2}\n"
+                "URL 2: {url of doc page 2}\n"
+                "Title 3: {title of doc page 3}\n"
+                "URL 3: {url of doc page 3}\n"
+            ),
+            agent=self.agent_researcher,
         )
 
     @property
     def task_write(self) -> Task:
         return Task(
+            context=[self.task_search],
             description=(
-                "1. Use the content plan to craft a compelling blog post on {topic}.\n"
-                "2. Structure with an engaging introduction, insightful body, and summarizing conclusion.\n"
-                "3. Sections/Subtitles are properly named in an engaging manner.\n"
-                "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
-                "{chat_history}"
+                "You receive research from a documentation researcher that includes:\n"
+                "- The user's core question about DataRobot Agentic AI\n"
+                "- Titles and URLs of relevant DataRobot documentation pages\n"
+                "\n"
+                "Your responsibilities:\n"
+                "1. If the question is not related to DataRobot's Agentic AI offerings, politely acknowledge "
+                "this and ask user to input a DataRobot Agentic AI related question.\n"
+                "2. Otherwise, use the fetch_datarobot_doc_page tool to retrieve ONLY THE THREE pages that were provided to you.\n"
+                "3. Answer the user's question accurately and directly, grounded in the provided documentation.\n"
+                "4. Cite specific documentation pages (with URLs) to support your answer.\n"
             ),
-            expected_output="A well-written blog post in markdown format, ready for publication. Maximum 500 words total.",
+            expected_output=(
+                "Your output should always follow this strict format:\n"
+                "**User question**: {put user question here}\n"
+                "**Answer**: {your answer to the user's question here. DO NOT EXCEED ONE OR TWO PARAGRAPHS IN YOUR ANSWER.}\n"
+            ),
             agent=self.agent_writer,
         )
 

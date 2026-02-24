@@ -302,13 +302,13 @@ class TestMyAgentCrewAI:
                 )
 
     @patch("agent.myagent.Agent")
-    def test_agent_planner_property(self, mock_agent, agent):
+    def test_agent_researcher_property(self, mock_agent, agent):
         # Mock the llm property
         mock_llm = Mock()
         with patch.object(MyAgent, "llm", return_value=mock_llm):
-            agent.agent_planner
+            agent.agent_researcher
             mock_agent.assert_called_once_with(
-                role="Planner",
+                role="DataRobot Agentic AI Documentation Researcher Agent",
                 goal=ANY,
                 backstory=ANY,
                 allow_delegation=False,
@@ -324,7 +324,7 @@ class TestMyAgentCrewAI:
         with patch.object(MyAgent, "llm", return_value=mock_llm):
             agent.agent_writer
             mock_agent.assert_called_once_with(
-                role="Writer",
+                role="DataRobot Agentic AI Documentation Expert",
                 goal=ANY,
                 backstory=ANY,
                 allow_delegation=False,
@@ -334,11 +334,11 @@ class TestMyAgentCrewAI:
             )
 
     @patch("agent.myagent.Task")
-    def test_task_plan_property(self, mock_task, agent):
-        # Mock the agent_planner property
-        mock_planner = Mock()
-        with patch.object(MyAgent, "agent_planner", return_value=mock_planner):
-            agent.task_plan
+    def test_task_search_property(self, mock_task, agent):
+        # Mock the agent_researcher property
+        mock_researcher = Mock()
+        with patch.object(MyAgent, "agent_researcher", return_value=mock_researcher):
+            agent.task_search
             mock_task.assert_called_once_with(
                 description=ANY,
                 expected_output=ANY,
@@ -347,11 +347,14 @@ class TestMyAgentCrewAI:
 
     @patch("agent.myagent.Task")
     def test_task_write_property(self, mock_task, agent):
-        # Mock the agent_planner property
-        mock_planner = Mock()
-        with patch.object(MyAgent, "agent_writer", return_value=mock_planner):
+        mock_search_task = Mock()
+        with (
+            patch.object(MyAgent, "agent_writer", return_value=Mock()),
+            patch.object(MyAgent, "task_search", mock_search_task),
+        ):
             agent.task_write
             mock_task.assert_called_once_with(
+                context=[mock_search_task],
                 description=ANY,
                 expected_output=ANY,
                 agent=ANY,
@@ -401,7 +404,7 @@ class TestMyAgentCrewAI:
         }
 
         with (
-            patch.object(MyAgent, "task_plan"),
+            patch.object(MyAgent, "task_search"),
             patch.object(MyAgent, "task_write"),
         ):
             response = chat(
