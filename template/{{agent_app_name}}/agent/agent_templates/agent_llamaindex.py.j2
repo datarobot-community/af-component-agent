@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # mypy: disable-error-code=attr-defined
-from datetime import datetime
 from typing import Any, Optional, Union
 
 from datarobot_genai.core.agents import extract_user_prompt_content
+from datarobot_genai.drmcp.tools.dr_docs import (
+    fetch_datarobot_doc_page,
+    search_datarobot_agentic_docs,
+)
 from datarobot_genai.llama_index import (
     DataRobotLiteLLM,
 )
@@ -30,10 +33,11 @@ from agent.config import Config
 
 
 class MyAgent(LlamaIndexAgent):
-    """MyAgent is a custom agent that uses LlamaIndex to plan, write, and edit content.
+    """MyAgent is a DataRobot Agentic AI documentation assistant built on LlamaIndex.
     It utilizes DataRobot's LLM Gateway or a specific deployment for language model interactions.
-    This example illustrates 2 agents that handle content creation tasks, including planning and writing
-    blog posts.
+    This agent implements a two-stage pipeline: a researcher agent that searches DataRobot's
+    official agentic AI documentation based on the user's question, and a writer agent that
+    synthesizes the findings into a clear, cited response.
     """
 
     def __init__(
@@ -45,6 +49,25 @@ class MyAgent(LlamaIndexAgent):
         timeout: Optional[int] = 90,
         **kwargs: Any,
     ):
+        """Initializes the MyAgent class with API key, base URL, model, and verbosity settings.
+
+        Args:
+            api_key: Optional[str]: API key for authentication with DataRobot services.
+                Defaults to None, in which case it will use the DATAROBOT_API_TOKEN environment variable.
+            api_base: Optional[str]: Base URL for the DataRobot API.
+                Defaults to None, in which case it will use the DATAROBOT_ENDPOINT environment variable.
+            model: Optional[str]: The LLM model to use.
+                Defaults to None.
+            verbose: Optional[Union[bool, str]]: Whether to enable verbose logging.
+                Accepts boolean or string values ("true"/"false"). Defaults to True.
+            timeout: Optional[int]: How long to wait for the agent to respond.
+                Defaults to 90 seconds.
+            **kwargs: Any: Additional keyword arguments passed to the agent.
+                Contains any parameters received in the CompletionCreateParams.
+
+        Returns:
+            None
+        """
         super().__init__(
             api_key=api_key,
             api_base=api_base,
@@ -71,20 +94,14 @@ class MyAgent(LlamaIndexAgent):
         # It outputs the literal string `{chat_history}` at render time, which the base class
         # then replaces at runtime with a formatted "Prior conversation:\n..." section when
         # history is available, or with an empty string on the first turn.
-        return (
-            f"Your task is to write a concise report on a topic. "
-            f"The topic is '{user_prompt_content}'. Make sure you find any interesting and relevant "
-            f"information given the current year is {datetime.now().year}. "
-            f"Keep the final report under 500 words and don't overthink - this is a simple example task. "
-            f"{{ '{{chat_history}}' }}"
-        )
+        return f"{user_prompt_content}{{ '{{chat_history}}' }}"
 
     def build_workflow(self) -> AgentWorkflow:
         return AgentWorkflow(
-            agents=[self.agent_planner, self.agent_writer],
-            root_agent=self.agent_planner.name,
+            agents=[self.agent_researcher, self.agent_writer],
+            root_agent=self.agent_researcher.name,
             initial_state={
-                "planner_notes": {},
+                "researcher_notes": {},
                 "report_content": "Not written yet.",
             },
         )
@@ -112,6 +129,20 @@ class MyAgent(LlamaIndexAgent):
         self,
         auto_model_override: bool = True,
     ) -> DataRobotLiteLLM:
+        """Returns the DataRobotLiteLLM to use for a given model.
+
+        If a `self.model` is provided, it will be used. Otherwise, the default model will be used.
+        If auto_model_override is True, it will try and use the model specified in the request
+        but automatically back out to the default model if the LLM Gateway is not configured.
+
+        Args:
+            auto_model_override: Optional[bool]: If True, it will try and use the model
+                specified in the request but automatically back out if the LLM Gateway is
+                not available.
+
+        Returns:
+            DataRobotLiteLLM: The model to use.
+        """
         api_base = self.litellm_api_base(self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id)
         model = self.model or self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:
@@ -132,27 +163,63 @@ class MyAgent(LlamaIndexAgent):
         return DataRobotLiteLLM(**config)
 
     @property
-    def agent_planner(self) -> FunctionAgent:
+    def _researcher_tools(self) -> list[Any]:
+        """Return tools for the researcher agent.
+
+        Prefers the MCP-served version of search_datarobot_agentic_docs when available
+        (i.e. DR_DOCS tools are enabled on the connected MCP server). Falls back to
+        calling the imported function directly so the researcher always has access to
+        documentation search regardless of MCP configuration.
+        """
+        if any(t.name == "search_datarobot_agentic_docs" for t in self.mcp_tools):
+            return [self.researcher_notes_tool, *self.mcp_tools]
+        return [
+            search_datarobot_agentic_docs,
+            self.researcher_notes_tool,
+            *self.mcp_tools,
+        ]
+
+    @property
+    def _writer_tools(self) -> list[Any]:
+        """Return tools for the writer agent.
+
+        Prefers the MCP-served version of fetch_datarobot_doc_page when available.
+        Falls back to calling the imported function directly.
+        """
+        if any(t.name == "fetch_datarobot_doc_page" for t in self.mcp_tools):
+            return [self.writer_report_tool, *self.mcp_tools]
+        return [fetch_datarobot_doc_page, self.writer_report_tool, *self.mcp_tools]
+
+    @property
+    def agent_researcher(self) -> FunctionAgent:
         return FunctionAgent(
-            name="PlannerAgent",
-            description="Useful for planning content on a given topic and recording notes for the plan.",
+            name="ResearcherAgent",
+            description="Search DataRobot's Agentic AI documentation to find relevant pages for the user's question.",
             system_prompt=(
-                "You are the PlannerAgent that creates brief, structured outlines for blog articles. "
-                "You identify the most important points and cite relevant sources. Keep it simple and to the point.\n"
+                "You are a DataRobot Agentic AI Documentation Researcher.\n"
                 "\n"
-                "You have access to tools that can help you research and gather information. Use these tools when "
-                "required to collect accurate and up-to-date information about the topic for your planning and research.\n"
+                "Your responsibilities:\n"
+                "1. Analyze the chat history and user question to understand what is being asked. "
+                "Consider context from all prior messages. Summarize the user's core question.\n"
+                "2. Determine whether the question is related to DataRobot's Agentic AI offerings.\n"
+                "3. If the question IS related to DataRobot Agentic AI, use the search_datarobot_agentic_docs "
+                "tool to find relevant documentation pages. Make 1 search always. Always use max_results = 3\n"
                 "\n"
-                "Record notes that include:\n"
-                "1. 10-15 key points or facts (bullet points only, no paragraphs)\n"
-                "2. 2-3 relevant sources or references\n"
-                "3. A brief suggested structure (intro, 2-3 sections, conclusion)\n"
+                "Record notes that follow this strict format:\n"
+                "**User question**: {put user question here}\n"
+                "**Is the question related to DataRobot Agentic AI?**: {Yes or No}\n"
+                "**Relevant documentation**:\n"
+                "Title 1: {title of doc page 1}\n"
+                "URL 1: {url of doc page 1}\n"
+                "Title 2: {title of doc page 2}\n"
+                "URL 2: {url of doc page 2}\n"
+                "Title 3: {title of doc page 3}\n"
+                "URL 3: {url of doc page 3}\n"
                 "\n"
-                "Do NOT write paragraphs or detailed explanations. Just provide a focused list. "
                 "Once you've recorded your notes, hand off control to the WriterAgent."
             ),
             llm=self.llm(),
-            tools=[self.planner_notes_tool, *self.mcp_tools],
+            tools=self._researcher_tools,
             can_handoff_to=["WriterAgent"],
         )
 
@@ -160,33 +227,41 @@ class MyAgent(LlamaIndexAgent):
     def agent_writer(self) -> FunctionAgent:
         return FunctionAgent(
             name="WriterAgent",
-            description="Useful for writing a report on a given topic.",
+            description=(
+                "Answer the user's question accurately and concisely, "
+                "grounded in official DataRobot Agentic AI documentation with citations."
+            ),
             system_prompt=(
-                "You are the WriterAgent that writes opinion pieces based on the PlannerAgent's outline and notes. "
-                "You provide objective and impartial insights backed by the planner's information. You acknowledge when "
-                "your statements are opinions versus objective facts.\n"
+                "You are a DataRobot Agentic AI expert who answers user questions using official documentation.\n"
                 "\n"
-                "You have access to tools that can help you verify facts and gather additional supporting information. "
-                "Use these tools when required to ensure accuracy and find relevant details while writing.\n"
+                "You receive research from a documentation researcher that includes:\n"
+                "- The user's core question about DataRobot Agentic AI\n"
+                "- Titles and URLs of relevant DataRobot documentation pages\n"
                 "\n"
-                "1. Use the planner notes to craft a compelling blog post.\n"
-                "2. Structure with an engaging introduction, insightful body, and summarizing conclusion.\n"
-                "3. Sections/Subtitles should be properly named in an engaging manner.\n"
-                "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
+                "Your responsibilities:\n"
+                "1. If the question is not related to DataRobot's Agentic AI offerings, politely acknowledge "
+                "this and ask user to input a DataRobot Agentic AI related question.\n"
+                "2. Otherwise, use the fetch_datarobot_doc_page tool to retrieve ONLY THE THREE pages that were provided to you.\n"
+                "3. Answer the user's question accurately and directly, grounded in the provided documentation.\n"
+                "4. Cite specific documentation pages (with URLs) to support your answer.\n"
                 "\n"
-                "Write in markdown format. Once complete, use the writer_report_tool to record your report."
+                "Your output should always follow this strict format:\n"
+                "**User question**: {put user question here}\n"
+                "**Answer**: {your answer to the user's question here. DO NOT EXCEED ONE OR TWO PARAGRAPHS IN YOUR ANSWER.}\n"
+                "\n"
+                "Write in markdown format. Once complete, use the writer_report_tool to record your response."
             ),
             llm=self.llm(),
-            tools=[self.writer_report_tool, *self.mcp_tools],
-            # Writer is terminal in this simple flow; no handoff
+            tools=self._writer_tools,
+            # Writer is terminal in this flow; no handoff
         )
 
     @staticmethod
-    async def planner_notes_tool(ctx: Context, notes: str, notes_title: str) -> str:
+    async def researcher_notes_tool(ctx: Context, notes: str, notes_title: str) -> str:
         async with ctx.store.edit_state() as current_state:
-            if "planner_notes" not in current_state:
-                current_state["planner_notes"] = {}
-            current_state["planner_notes"][notes_title] = notes
+            if "researcher_notes" not in current_state:
+                current_state["researcher_notes"] = {}
+            current_state["researcher_notes"][notes_title] = notes
         return "Notes recorded."
 
     @staticmethod
