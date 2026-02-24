@@ -12,16 +12,77 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+from datarobot_genai.drmcp.tools.dr_docs import (
+    fetch_datarobot_doc_page,
+    search_datarobot_agentic_docs,
+)
 from datarobot_genai.nat.agent import NatAgent
+from datarobot_genai.nat.datarobot_mcp_client import DataRobotMCPClientConfig
+from nat.cli.register_workflow import register_function_group
+from nat.plugins.mcp.client.client_impl import MCPFunctionGroup
+
+if TYPE_CHECKING:
+    from nat.builder.builder import Builder
+
+
+class _DataRobotDrDocsConfig(DataRobotMCPClientConfig, name="datarobot_dr_docs"):  # type: ignore[call-arg]
+    """Configuration for the DataRobot documentation tools function group.
+
+    Inherits DataRobotMCPClientConfig solely for NAT config-type registration
+    compatibility. No MCP connection is opened; tools are backed by the Python
+    implementations in datarobot_genai.drmcp.tools.dr_docs.
+    """
+
+
+@register_function_group(config_type=_DataRobotDrDocsConfig)  # type: ignore[untyped-decorator]
+async def _datarobot_dr_docs_function_group(
+    config: _DataRobotDrDocsConfig, _builder: "Builder"
+) -> MCPFunctionGroup:
+    """Expose search_datarobot_agentic_docs and fetch_datarobot_doc_page as NAT tools.
+
+    Provides search_datarobot_agentic_docs and fetch_datarobot_doc_page as NAT-native
+    tools backed by the Python implementations in datarobot_genai.drmcp.tools.dr_docs.
+
+    This serves as a fallback when the DataRobot MCP server does not expose these tools
+    (i.e. when DR_DOCS tools are disabled on the connected MCP server).
+    Both this group and mcp_tools provide the tools; when MCP has them the agent can use either source.
+    """
+    group = MCPFunctionGroup(config=config)
+    group.mcp_client = None
+    group.mcp_client_server_name = "dr_docs"
+    group.mcp_client_transport = "none"
+
+    group.add_function(
+        name="search_datarobot_agentic_docs",
+        description=search_datarobot_agentic_docs.__doc__,
+        fn=search_datarobot_agentic_docs,
+        input_schema=None,
+        converters=None,
+    )
+    group.add_function(
+        name="fetch_datarobot_doc_page",
+        description=fetch_datarobot_doc_page.__doc__,
+        fn=fetch_datarobot_doc_page,
+        input_schema=None,
+        converters=None,
+    )
+
+    yield group
 
 
 class MyAgent(NatAgent):
-    """MyAgent is a custom agent that uses NVIDIA NeMo Agent Toolkit and can be used for creating
-    a custom agentic flow defined in workflow.yaml. It utilizes DataRobot's LLM Gateway or a
-    specific deployment for language model interactions. This example illustrates 2 agents that
-    handle content creation tasks, including planning and writing blog posts.
+    """MyAgent is a DataRobot Agentic AI documentation assistant built on NVIDIA NeMo Agent Toolkit.
+    It utilizes DataRobot's LLM Gateway or a specific deployment for language model interactions.
+    This agent implements a two-stage pipeline defined in workflow.yaml: a researcher agent that
+    searches DataRobot's official agentic AI documentation based on the user's question, and a
+    writer agent that synthesizes the findings into a clear, cited response.
+
+    Both agents have access to the DataRobot MCP server tools (mcp_tools) and the
+    datarobot_dr_docs function group (dr_docs_tools), which provides search_datarobot_agentic_docs
+    and fetch_datarobot_doc_page as Python-backed fallbacks when the MCP server does not expose
+    these tools.
     """
 
     def __init__(

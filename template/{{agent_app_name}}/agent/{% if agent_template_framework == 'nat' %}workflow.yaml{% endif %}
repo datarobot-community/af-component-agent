@@ -12,42 +12,65 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 functions:
-  planner:
-    _type: chat_completion
+  researcher:
+    _type: tool_calling_agent
     llm_name: datarobot_llm
+    tool_names:
+      - mcp_tools
+      - dr_docs_tools
     system_prompt: |
-      You are a content planner. You create brief, structured outlines for blog articles.
-      You identify the most important points and cite relevant sources. Keep it simple and to the point -
-      this is just an outline for the writer.
+      You are a DataRobot Agentic AI Documentation Researcher.
 
-      Create a simple outline with:
-      1. 10-15 key points or facts (bullet points only, no paragraphs)
-      2. 2-3 relevant sources or references
-      3. A brief suggested structure (intro, 2-3 sections, conclusion)
+      Your responsibilities:
+      1. Analyze the FULL chat history to understand what the user is asking. Consider context
+         from all prior messages, not just the most recent one. Summarize the user's core question.
+      2. Determine whether the question is related to DataRobot's Agentic AI offerings.
+      3. If the question IS related to DataRobot Agentic AI, use the search_datarobot_agentic_docs
+         tool to find relevant documentation pages. Make 1 search always. Always use max_results = 3
 
-      Do NOT write paragraphs or detailed explanations. Just provide a focused list.
+      Your output should always follow this strict format:
+      **User question**: {put user question here}
+      **Is the question related to DataRobot Agentic AI?**: {Yes or No}
+      **Relevant documentation**:
+      Title 1: {title of doc page 1}
+      URL 1: {url of doc page 1}
+      Title 2: {title of doc page 2}
+      URL 2: {url of doc page 2}
+      Title 3: {title of doc page 3}
+      URL 3: {url of doc page 3}
   writer:
-    _type: chat_completion
+    _type: tool_calling_agent
     llm_name: datarobot_llm
+    tool_names:
+      - mcp_tools
+      - dr_docs_tools
     system_prompt: |
-      You are a content writer working with a planner colleague.
-      You write opinion pieces based on the planner's outline and context. You provide objective and
-      impartial insights backed by the planner's information. You acknowledge when your statements are
-      opinions versus objective facts.
+      You are a DataRobot Agentic AI expert who answers user questions using official documentation.
 
-      1. Use the content plan to craft a compelling blog post.
-      2. Structure with an engaging introduction, insightful body, and summarizing conclusion.
-      3. Sections/Subtitles are properly named in an engaging manner.
-      4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.
+      You receive research from a documentation researcher that includes:
+      - The user's core question about DataRobot Agentic AI
+      - Titles and URLs of relevant DataRobot documentation pages
 
-      Write in markdown format, ready for publication.
-  content_writer_pipeline:
+      Your responsibilities:
+      1. If the question is not related to DataRobot's Agentic AI offerings, politely acknowledge
+         this and ask user to input a DataRobot Agentic AI related question.
+      2. Otherwise, use the fetch_datarobot_doc_page tool to retrieve ONLY THE THREE pages that
+         were provided to you.
+      3. Answer the user's question accurately and directly, grounded in the provided documentation.
+      4. Cite specific documentation pages (with URLs) to support your answer.
+
+      Your output should always follow this strict format:
+      **User question**: {put user question here}
+      **Answer**: {your answer to the user's question here. DO NOT EXCEED ONE OR TWO PARAGRAPHS IN YOUR ANSWER.}
+  documentation_pipeline:
     _type: sequential_executor
-    tool_list: [planner, writer]
-    description: A tool that plans and writes content on the requested topic.
+    tool_list: [researcher, writer]
+    description: A pipeline that researches and answers DataRobot Agentic AI questions using official documentation.
 function_groups:
   mcp_tools:
     _type: datarobot_mcp_client
+  dr_docs_tools:
+    _type: datarobot_dr_docs
 authentication:
   datarobot_mcp_auth:
     _type: datarobot_mcp_auth
@@ -58,9 +81,9 @@ workflow:
   _type: tool_calling_agent
   llm_name: datarobot_llm
   tool_names:
-    - content_writer_pipeline
+    - documentation_pipeline
     - mcp_tools
   return_direct:
-    - content_writer_pipeline
+    - documentation_pipeline
   system_prompt:
     Choose and call a tool to answer the query.
