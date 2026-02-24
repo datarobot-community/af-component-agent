@@ -21,7 +21,7 @@ import yaml  # type: ignore[import-untyped]
 import datarobot as dr
 import pulumi
 import pulumi_datarobot
-from datarobot_pulumi_utils.pulumi import export
+from datarobot_pulumi_utils.pulumi import export, resolve_execution_environment_version
 from datarobot_pulumi_utils.pulumi.custom_model_deployment import CustomModelDeployment
 from datarobot_pulumi_utils.pulumi.stack import PROJECT_NAME
 from datarobot_pulumi_utils.schema.custom_models import (
@@ -365,24 +365,18 @@ if ENABLE_AGENT_HA_MODE:
     )
 
 # Start of Pulumi settings and application infrastructure
-if len(os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "")) > 0:
+_dr_exec_env = os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "").strip()
+if len(_dr_exec_env) > 0:
     # Get the default execution environment from environment variable
-    execution_environment_id = os.environ["DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT"]
+    execution_environment_id = _dr_exec_env
     if DEFAULT_EXECUTION_ENVIRONMENT in execution_environment_id:
         pulumi.info("Using default GenAI Agentic Execution Environment.")
         execution_environment_id = RuntimeEnvironments.PYTHON_311_GENAI_AGENTS.value.id
 
-    # Get the pinned version ID if provided
-    execution_environment_version_id = os.environ.get(
-        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID", None
+    execution_environment_version_id = resolve_execution_environment_version(
+        execution_environment_id,
+        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
     )
-    if execution_environment_version_id:
-        execution_environment_version_id = execution_environment_version_id.strip("'\"")
-    if not re.match("^[a-f\d]{24}$", str(execution_environment_version_id)):
-        pulumi.info(
-            "No valid execution environment version ID provided, using latest version."
-        )
-        execution_environment_version_id = None
 
     pulumi.info(
         "Using existing execution environment: "
