@@ -199,8 +199,9 @@ def run_agent_e2e(
     default_user_prompt = "Write a single tweet (under 280 characters) about AI."
     user_prompt = os.environ.get("E2E_USER_PROMPT", default_user_prompt)
 
-    pulumi_stack = (
-        f"af-component-agent-e2e-{agent_framework}-{int(time.time())}-{uuid.uuid4().hex[:8]}"
+    pulumi_stack = os.environ.get(
+        "E2E_PULUMI_STACK",
+        f"af-component-agent-e2e-{agent_framework}-{int(time.time())}-{uuid.uuid4().hex[:8]}",
     )
 
     fprint("==================================================")
