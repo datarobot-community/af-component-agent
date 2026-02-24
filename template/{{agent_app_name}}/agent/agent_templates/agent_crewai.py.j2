@@ -201,15 +201,15 @@ class MyAgent(CrewAIAgent):
             ),
             expected_output=(
                 "Your output should always follow this strict format:\n"
-                "**User question**: {{put user question here}}\n"
-                "**Is the question related to DataRobot Agentic AI?**: {{Yes or No}}\n"
+                "**User question**: put user question here\n"
+                "**Is the question related to DataRobot Agentic AI?**: Yes or No\n"
                 "**Relevant documentation**:\n"
-                "Title 1: {{title of doc page 1}}\n"
-                "URL 1: {{url of doc page 1}}\n"
-                "Title 2: {{title of doc page 2}}\n"
-                "URL 2: {{url of doc page 2}}\n"
-                "Title 3: {{title of doc page 3}}\n"
-                "URL 3: {{url of doc page 3}}\n"
+                "Title 1: title of doc page 1\n"
+                "URL 1: url of doc page 1\n"
+                "Title 2: title of doc page 2\n"
+                "URL 2: url of doc page 2\n"
+                "Title 3: title of doc page 3\n"
+                "URL 3: url of doc page 3\n"
             ),
             agent=self.agent_researcher,
         )
@@ -231,8 +231,8 @@ class MyAgent(CrewAIAgent):
             ),
             expected_output=(
                 "Your output should always follow this strict format:\n"
-                "**User question**: {{put user question here}}\n"
-                "**Answer**: {{your answer to the user's question here. DO NOT EXCEED ONE OR TWO PARAGRAPHS IN YOUR ANSWER.}}\n"
+                "**User question**: put user question here\n"
+                "**Answer**: your answer to the user's question here. DO NOT EXCEED ONE OR TWO PARAGRAPHS IN YOUR ANSWER.\n"
             ),
             agent=self.agent_writer,
         )
