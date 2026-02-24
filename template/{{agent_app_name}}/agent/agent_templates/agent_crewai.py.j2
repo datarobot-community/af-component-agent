@@ -191,8 +191,9 @@ class MyAgent(CrewAIAgent):
     def task_search(self) -> Task:
         return Task(
             description=(
-                "1. Analyze the FULL chat history to understand what the user is asking. Consider context "
-                "from all prior messages, not just the most recent one. Summarize the user's core question.\n"
+                "Most recent user message: {user_prompt}\n"
+                "1. Analyze the most recent user message and the FULL chat history to understand what the user is asking. "
+                "Consider context from all prior messages, not just the most recent one. Summarize the user's core question.\n"
                 "2. Determine whether the question is related to DataRobot's Agentic AI offerings.\n"
                 "3. If the question IS related to DataRobot Agentic AI, use the search_datarobot_agentic_docs "
                 "tool to find relevant documentation pages. Make 1 search always. Always use max_results = 3\n"
@@ -216,7 +217,6 @@ class MyAgent(CrewAIAgent):
     @property
     def task_write(self) -> Task:
         return Task(
-            context=[self.task_search],
             description=(
                 "You receive research from a documentation researcher that includes:\n"
                 "- The user's core question about DataRobot Agentic AI\n"

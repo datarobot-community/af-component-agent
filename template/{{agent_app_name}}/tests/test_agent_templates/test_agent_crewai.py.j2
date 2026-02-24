@@ -347,14 +347,9 @@ class TestMyAgentCrewAI:
 
     @patch("agent.myagent.Task")
     def test_task_write_property(self, mock_task, agent):
-        mock_search_task = Mock()
-        with (
-            patch.object(MyAgent, "agent_writer", return_value=Mock()),
-            patch.object(MyAgent, "task_search", mock_search_task),
-        ):
+        with patch.object(MyAgent, "agent_writer", return_value=Mock()):
             agent.task_write
             mock_task.assert_called_once_with(
-                context=[mock_search_task],
                 description=ANY,
                 expected_output=ANY,
                 agent=ANY,
