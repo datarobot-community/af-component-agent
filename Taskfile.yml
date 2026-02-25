@@ -172,7 +172,7 @@ tasks:
           echo "Scanning for Windows-incompatible file names (<>:\"|?*)..."
           total=$(find ./template -type f | wc -l | tr -d ' ')
           failures=$(find ./template -type f | while IFS= read -r f; do
-            if basename -- "$f" | grep -q '[<>:"|?*]'; then
+            if echo "$f" | grep -q '[<>:"|?*]'; then
               echo "FAIL: $f" >&2
               echo "$f"
             else
