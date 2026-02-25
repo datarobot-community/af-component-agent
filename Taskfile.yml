@@ -165,9 +165,23 @@ tasks:
           AGENT: llamaindex
           SKIP_LINT: "{{.SKIP_LINT| default 0}}"
           SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
+  validate-windows-compatibility:
+    desc: "Validate that file paths don't contain characters illegal on Windows"
+    cmds:
+      - cmd: |
+          offending_files=$(find . -type f -exec basename {} \; | grep '[\<\>\:\"\/\|\?\*]' | sort -u)
+          if [ -n "$offending_files" ]; then
+            echo "Files with Windows-incompatible characters found:"
+            for file in $offending_files; do
+              find . -type f -name "$file"
+            done
+            exit 1
+          fi
+        platforms: [linux, darwin]
   test:
     desc: "Run tests for all agents"
     cmds:
+      - task: validate-windows-compatibility
       - task: test-base
       - task: test-crewai
       - task: test-langgraph
