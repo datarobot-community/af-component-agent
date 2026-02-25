@@ -165,9 +165,35 @@ tasks:
           AGENT: llamaindex
           SKIP_LINT: "{{.SKIP_LINT| default 0}}"
           SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
+  validate-windows-compatibility:
+    desc: "Validate that file paths don't contain characters illegal on Windows"
+    cmds:
+      - cmd: |
+          echo "Scanning for Windows-incompatible file names (<>:\"|?*)..."
+          total=$(find ./template -type f | wc -l | tr -d ' ')
+          failures=$(find ./template -type f | while IFS= read -r f; do
+            if echo "$f" | grep -q '[<>:"|?*]'; then
+              echo "FAIL: $f" >&2
+              echo "$f"
+            else
+              echo "  ok: $f" >&2
+            fi
+          done)
+          bad=0
+          if [ -n "$failures" ]; then
+            bad=$(echo "$failures" | wc -l | tr -d ' ')
+            echo ""
+            echo "Offending files:"
+            echo "$failures"
+          fi
+          echo ""
+          echo "Checked $total files, $bad incompatible."
+          [ "$bad" -gt 0 ] && exit 1 || true
+        platforms: [linux, darwin]
   test:
     desc: "Run tests for all agents"
     cmds:
+      - task: validate-windows-compatibility
       - task: test-base
       - task: test-crewai
       - task: test-langgraph
