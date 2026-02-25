@@ -22,8 +22,8 @@ def crewai_common_mocks():
     - patches Crew to avoid executing real workflows
     Tests can tweak the mocked adapter tools via `set_adapter_tools`.
     """
-    default_tool1 = create_mock_mcp_tool("fixture_mcp_tool_1")
-    default_tool2 = create_mock_mcp_tool("fixture_mcp_tool_2")
+    default_tool1 = create_mock_mcp_tool("search_datarobot_agentic_docs")
+    default_tool2 = create_mock_mcp_tool("fetch_datarobot_doc_page")
     default_tools = [default_tool1, default_tool2]
 
     mock_crew = MagicMock()
@@ -124,14 +124,14 @@ class TestMyAgentMCPIntegration:
             # Verify set_mcp_tools was called with the tools from MCP server
             assert agent.mcp_tools == mock_tools
 
-            # Verify mcp_tools property was accessed (by agent_planner, agent_writer)
+            # Verify mcp_tools property was accessed (by agent_researcher, agent_writer)
             # We can verify this by checking that the agents were created with the tools
-            planner = agent.agent_planner
+            researcher = agent.agent_researcher
             writer = agent.agent_writer
 
             # Verify all agents have the expected MCP tools
             expected_tool_names = [tool.name for tool in mock_tools]
-            for agent_with_tools in (planner, writer):
+            for agent_with_tools in (researcher, writer):
                 assert len(agent_with_tools.tools) == len(expected_tool_names)
                 assert [
                     tool.name for tool in agent_with_tools.tools
@@ -172,11 +172,15 @@ class TestMyAgentMCPIntegration:
             assert agent.mcp_tools == mock_tools
 
             # Verify agents have MCP tools
-            planner = agent.agent_planner
+            researcher = agent.agent_researcher
             writer = agent.agent_writer
 
-            assert len(planner.tools) == 1  # 1 MCP tool
-            assert len(writer.tools) == 1  # 1 MCP tool
+            assert (
+                len(researcher.tools) == 2
+            )  # 1 default tool (search_datarobot_agentic_docs) + 1 MCP tool
+            assert (
+                len(writer.tools) == 2
+            )  # 1 default tool (fetch_datarobot_doc_page) + 1 MCP tool
 
     @patch("datarobot_genai.crewai.agent.mcp_tools_context", autospec=True)
     async def test_agent_works_without_mcp_tools(
@@ -202,15 +206,19 @@ class TestMyAgentMCPIntegration:
             # Verify mcp_tools is empty
             assert len(agent.mcp_tools) == 0
 
-            # Verify agents only have their default tools (empty for CrewAI)
-            planner = agent.agent_planner
+            # Verify agents only have their default tools:
+            # Researcher has search_datarobot_agentic_docs, writer has fetch_datarobot_doc_page.
+            # These are set in the agent code and present even when no MCP tools are loaded.
+            researcher = agent.agent_researcher
             writer = agent.agent_writer
 
-            assert len(planner.tools) == 0
-            assert len(writer.tools) == 0
+            assert (
+                len(researcher.tools) == 1
+            )  # 1 default tool (search_datarobot_agentic_docs)
+            assert len(writer.tools) == 1  # 1 default tool (fetch_datarobot_doc_page)
 
     def test_mcp_tools_property_accessed_by_all_agents(self, crewai_common_mocks):
-        """Test that mcp_tools property is accessed by planner/writer."""
+        """Test that mcp_tools property is accessed by researcher/writer."""
         mock_tools = crewai_common_mocks.default_tools
 
         access_count = {"count": 0}
@@ -223,7 +231,7 @@ class TestMyAgentMCPIntegration:
             agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
             agent.set_mcp_tools(mock_tools)
 
-            _ = agent.agent_planner
+            _ = agent.agent_researcher
             _ = agent.agent_writer
 
         assert access_count["count"] >= 2  # At least accessed by both agents
