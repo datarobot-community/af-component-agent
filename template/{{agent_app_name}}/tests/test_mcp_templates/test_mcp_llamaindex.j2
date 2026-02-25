@@ -19,7 +19,7 @@ def create_mock_mcp_tool(name: str):
     async def mock_tool_func(ctx: Any, **kwargs: Any) -> str:
         return f"Result from {name}"
 
-    mock_tool_func.__name__ = name
+    mock_tool_func.name = name
     mock_tool_func.__doc__ = f"Mock MCP tool {name}"
     return mock_tool_func
 
@@ -131,14 +131,14 @@ class TestMyAgentMCPIntegration:
             # Verify set_mcp_tools was called with the tools from MCP server
             assert agent.mcp_tools == mock_tools
 
-            # Verify mcp_tools property was accessed (by agent_planner, agent_writer)
+            # Verify mcp_tools property was accessed (by agent_researcher, agent_writer)
             # We can verify this by checking that the agents were created with the tools
-            planner = agent.agent_planner
+            researcher = agent.agent_researcher
             writer = agent.agent_writer
 
             # Verify all agents have MCP tools
-            assert len(planner.tools) == 3  # record_notes + 2 MCP tools
-            assert len(writer.tools) == 3  # write_report + 2 MCP tools
+            assert len(researcher.tools) == 4  # search + researcher_notes + 2 MCP tools
+            assert len(writer.tools) == 4  # fetch + writer_report + 2 MCP tools
 
     async def test_agent_loads_mcp_tools_from_datarobot_deployment_in_invoke(
         self, llamaindex_common_mocks, run_agent_input
@@ -183,11 +183,11 @@ class TestMyAgentMCPIntegration:
             assert agent.mcp_tools == mock_tools
 
             # Verify agents have MCP tools
-            planner = agent.agent_planner
+            researcher = agent.agent_researcher
             writer = agent.agent_writer
 
-            assert len(planner.tools) == 2  # record_notes + 1 MCP tool
-            assert len(writer.tools) == 2  # write_report + 1 MCP tool
+            assert len(researcher.tools) == 3  # search + researcher_notes + 1 MCP tool
+            assert len(writer.tools) == 3  # fetch + writer_report + 1 MCP tool
 
     async def test_agent_works_without_mcp_tools(
         self, llamaindex_common_mocks, run_agent_input
@@ -214,11 +214,11 @@ class TestMyAgentMCPIntegration:
             assert len(agent.mcp_tools) == 0
 
             # Verify agents only have their default tools
-            planner = agent.agent_planner
+            researcher = agent.agent_researcher
             writer = agent.agent_writer
 
-            assert len(planner.tools) == 1  # only record_notes
-            assert len(writer.tools) == 1  # only write_report
+            assert len(researcher.tools) == 2  # search + researcher_notes
+            assert len(writer.tools) == 2  # fetch + writer_report
 
     def test_mcp_tools_property_accessed_by_all_agents(self, llamaindex_common_mocks):
         """Test that mcp_tools property is accessed by all three agents during workflow build."""
@@ -240,7 +240,7 @@ class TestMyAgentMCPIntegration:
             with patch.object(MyAgent, "mcp_tools", property(counting_prop)):
                 agent = MyAgent(api_key="test_key", api_base="test_base", verbose=True)
                 agent.set_mcp_tools(mock_tools)
-                _ = agent.agent_planner
+                _ = agent.agent_researcher
                 _ = agent.agent_writer
 
         # Verify set_mcp_tools was called with the tools from MCP server
@@ -268,7 +268,7 @@ class TestMyAgentMCPIntegration:
             # In reality, this would be handled by the MCP adapter
             return f"MCP server response for: {query}"
 
-        executable_tool_func.__name__ = "test_executable_tool"
+        executable_tool_func.name = "test_executable_tool"
         executable_tool_func.__doc__ = "Test executable MCP tool"
 
         mock_tool = executable_tool_func
