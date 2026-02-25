@@ -169,14 +169,26 @@ tasks:
     desc: "Validate that file paths don't contain characters illegal on Windows"
     cmds:
       - cmd: |
-          offending_files=$(find . -type f -exec basename {} \; | grep '[\<\>\:\"\/\|\?\*]' | sort -u)
-          if [ -n "$offending_files" ]; then
-            echo "Files with Windows-incompatible characters found:"
-            for file in $offending_files; do
-              find . -type f -name "$file"
-            done
-            exit 1
+          echo "Scanning for Windows-incompatible file names (<>:\"|?*)..."
+          total=$(find . -type f | wc -l | tr -d ' ')
+          failures=$(find . -type f | while IFS= read -r f; do
+            if basename -- "$f" | grep -q '[<>:"|?*]'; then
+              echo "FAIL: $f" >&2
+              echo "$f"
+            else
+              echo "  ok: $f" >&2
+            fi
+          done)
+          bad=0
+          if [ -n "$failures" ]; then
+            bad=$(echo "$failures" | wc -l | tr -d ' ')
+            echo ""
+            echo "Offending files:"
+            echo "$failures"
           fi
+          echo ""
+          echo "Checked $total files, $bad incompatible."
+          [ "$bad" -gt 0 ] && exit 1 || true
         platforms: [linux, darwin]
   test:
     desc: "Run tests for all agents"
