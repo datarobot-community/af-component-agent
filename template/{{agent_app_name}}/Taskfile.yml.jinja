@@ -2,6 +2,7 @@
 # https://taskfile.dev
 version: '3'
 vars:
+  NAT_LOG_LEVEL: '{% raw %}{{default "info" .NAT_LOG_LEVEL}}{% endraw %}'
   # Cross-platform environment cleaning - uses 'env -u' on Unix systems, falls back to empty string on Windows
   UV_CMD:
     sh: |
@@ -19,17 +20,9 @@ tasks:
     cmds:
       - echo "Updating local dependencies for {{ agent_app_name }}"
       - "{% raw %}{{.UV_CMD}}{% endraw %} sync --extra dev"
-      - if [ -f pyproject.toml ] && [ -d docker_context ]; then cp pyproject.toml docker_context/pyproject.toml; fi
-      - if [ -f uv.lock ] && [ -d docker_context ]; then cp uv.lock docker_context/uv.lock; fi
     aliases:
       - req
-  update:
-    # Hidden to avoid showing in task list, run `task --list-all` to see it
-    # desc: 🛠️ Update local dependencies (refresh uv locks)
-    cmds:
-      - echo "Updating local dependencies for {{ agent_app_name }}"
-      - "{% raw %}{{.UV_CMD}}{% endraw %} sync --extra dev -U"
-    silent: true
+      - update
   auth-check:
     silent: true
     desc: "🔐 Check authentication prerequisites"
@@ -41,12 +34,6 @@ tasks:
         else
           echo "ℹ️  Skipping auth check (not available)"
         fi
-  add-dependency:
-    desc: 🛠️ Add provided packages as a new dependency to an agent
-    cmds:
-      - echo "Adding new dependency for {{ agent_app_name }} into 'extras' dependency group"
-      - "{% raw %}{{.UV_CMD}}{% endraw %} add --no-upgrade --group extras {% raw %}{{.CLI_ARGS}}{% endraw %}"
-    silent: true
   lint:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
     # desc: 🧹 Lint the codebase
@@ -155,7 +142,13 @@ tasks:
     deps:
       - auth-check
     cmds:
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py --autoreload"
+      - |
+        if [ "$ENABLE_NAT_SERVER" -eq "1" ]; then
+          ROOT_PATH_ARG=""; [ -n "${URL_PREFIX:-}" ] && ROOT_PATH_ARG="--root_path ${URL_PREFIX}"; {% raw %}{{.UV_CMD}}{% endraw %} run nat --log-level {% raw %}{{.NAT_LOG_LEVEL}}{% endraw %} start dragent_fastapi --config_file agent/workflow.yaml --reload true --port $AGENT_PORT $ROOT_PATH_ARG
+        else
+          {% raw %}{{.UV_CMD}}{% endraw %} run python dev.py --autoreload
+        fi
+    silent: true
   dev-stop:
     desc: 🛑 Stop the development server
     cmds:

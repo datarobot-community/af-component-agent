@@ -589,8 +589,13 @@ if os.environ.get("AGENT_DEPLOY") != "0":
     )
 
     {{agent_app_name}}_agent_deployment_id = {{agent_app_name}}_agent_deployment.id.apply(lambda id: f"{id}")
+    _enable_nat_server = os.environ.get("ENABLE_NAT_SERVER", "false").lower() in ("1", "true")
     {{agent_app_name}}_deployment_endpoint = {{agent_app_name}}_agent_deployment.id.apply(
-        lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}"
+        lambda id: (
+            f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/directAccess"
+            if _enable_nat_server
+            else f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}"
+        )
     )
     {{agent_app_name}}_deployment_completions_endpoint = {{agent_app_name}}_agent_deployment.id.apply(
         lambda id: (
