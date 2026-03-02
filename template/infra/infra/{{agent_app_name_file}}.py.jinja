@@ -469,6 +469,15 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
         ),
     )
 
+if enable_nat_server := os.environ.get("ENABLE_NAT_SERVER"):
+    agent_runtime_parameter_values.append(
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key="ENABLE_NAT_SERVER",
+            type="string",
+            value=enable_nat_server,
+        ),
+    )
+
 {{agent_app_name}}_custom_model_files = get_custom_model_files(
     custom_model_folder=str({{agent_app_name}}_application_path),
     runtime_parameter_values=agent_runtime_parameter_values,
@@ -623,4 +632,14 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         type="string",
         value={{agent_app_name}}_deployment_endpoint,
     ),
-]
+] + (
+    [
+        pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
+            key="ENABLE_NAT_SERVER",
+            type="string",
+            value=enable_nat_server,
+        ),
+    ]
+    if (enable_nat_server := os.environ.get("ENABLE_NAT_SERVER"))
+    else []
+)
