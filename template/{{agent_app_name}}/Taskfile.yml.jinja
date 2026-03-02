@@ -2,6 +2,7 @@
 # https://taskfile.dev
 version: '3'
 vars:
+  NAT_LOG_LEVEL: '{% raw %}{{default "info" .NAT_LOG_LEVEL}}{% endraw %}'
   # Cross-platform environment cleaning - uses 'env -u' on Unix systems, falls back to empty string on Windows
   UV_CMD:
     sh: |
@@ -155,7 +156,13 @@ tasks:
     deps:
       - auth-check
     cmds:
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py --autoreload"
+      - |
+        if [ "$ENABLE_NAT_SERVER" -eq "1" ]; then
+          ROOT_PATH_ARG=""; [ -n "${URL_PREFIX:-}" ] && ROOT_PATH_ARG="--root_path ${URL_PREFIX}"; {% raw %}{{.UV_CMD}}{% endraw %} run nat --log-level {% raw %}{{.NAT_LOG_LEVEL}}{% endraw %} start dragent_fastapi --config_file agent/workflow.yaml --reload true --port $AGENT_PORT $ROOT_PATH_ARG
+        else
+          {% raw %}{{.UV_CMD}}{% endraw %} run python dev.py --autoreload
+        fi
+    silent: true
   dev-stop:
     desc: 🛑 Stop the development server
     cmds:
