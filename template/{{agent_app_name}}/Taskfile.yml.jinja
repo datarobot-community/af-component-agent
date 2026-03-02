@@ -20,17 +20,9 @@ tasks:
     cmds:
       - echo "Updating local dependencies for {{ agent_app_name }}"
       - "{% raw %}{{.UV_CMD}}{% endraw %} sync --extra dev"
-      - if [ -f pyproject.toml ] && [ -d docker_context ]; then cp pyproject.toml docker_context/pyproject.toml; fi
-      - if [ -f uv.lock ] && [ -d docker_context ]; then cp uv.lock docker_context/uv.lock; fi
     aliases:
       - req
-  update:
-    # Hidden to avoid showing in task list, run `task --list-all` to see it
-    # desc: 🛠️ Update local dependencies (refresh uv locks)
-    cmds:
-      - echo "Updating local dependencies for {{ agent_app_name }}"
-      - "{% raw %}{{.UV_CMD}}{% endraw %} sync --extra dev -U"
-    silent: true
+      - update
   auth-check:
     silent: true
     desc: "🔐 Check authentication prerequisites"
@@ -42,12 +34,6 @@ tasks:
         else
           echo "ℹ️  Skipping auth check (not available)"
         fi
-  add-dependency:
-    desc: 🛠️ Add provided packages as a new dependency to an agent
-    cmds:
-      - echo "Adding new dependency for {{ agent_app_name }} into 'extras' dependency group"
-      - "{% raw %}{{.UV_CMD}}{% endraw %} add --no-upgrade --group extras {% raw %}{{.CLI_ARGS}}{% endraw %}"
-    silent: true
   lint:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
     # desc: 🧹 Lint the codebase
