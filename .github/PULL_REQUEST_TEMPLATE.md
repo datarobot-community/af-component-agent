@@ -6,6 +6,9 @@
 ## Changes
 
 
+## Checklist
+- [ ] Reviewed [guideline](https://datarobot.atlassian.net/wiki/spaces/BUZOK/pages/7305920528/REVIEW+BEFORE+COMMIT+Working+with+agentic+starter+application+and+its+components)
+
 <!--
 !!! You can include the JIRA-12345 ticket ID in your branch name or
 PR title to automatically have it commented on your PR !!!
