@@ -476,7 +476,7 @@ if enable_nat_server_bool:
     enable_nat_server_runtime_param = pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
         key="ENABLE_NAT_SERVER",
         type="boolean",
-        value=enable_nat_server_bool,
+        value="true",
     )
     agent_runtime_parameter_values.append(enable_nat_server_runtime_param)
 
@@ -639,6 +639,6 @@ if enable_nat_server_bool:
         pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
             key="ENABLE_NAT_SERVER",
             type="boolean",
-            value=enable_nat_server_bool,
+            value="true",
         ),
     )
