@@ -15,7 +15,11 @@ import uuid
 from typing import Any, Optional, Union
 
 from ag_ui.core import EventType, RunAgentInput, RunFinishedEvent, RunStartedEvent
-from ag_ui.core import TextMessageContentEvent, TextMessageEndEvent, TextMessageStartEvent
+from ag_ui.core import (
+    TextMessageContentEvent,
+    TextMessageEndEvent,
+    TextMessageStartEvent,
+)
 from datarobot_genai.core.agents import (
     BaseAgent,
     InvokeReturn,
@@ -129,4 +133,8 @@ class MyAgent(BaseAgent[None]):
 
         pipeline_interactions = self.create_pipeline_interactions_from_events(events)
 
-        yield RunFinishedEvent(thread_id=thread_id, run_id=run_id), pipeline_interactions, usage_metrics
+        yield (
+            RunFinishedEvent(thread_id=thread_id, run_id=run_id),
+            pipeline_interactions,
+            usage_metrics,
+        )
