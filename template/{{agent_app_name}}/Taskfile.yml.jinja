@@ -15,6 +15,13 @@ vars:
       else
         echo "uv"
       fi
+  AGENT_PORT:
+    sh: |
+      if [ -n "${{ agent_app_name | upper }}_PORT" ]; then
+        echo "${{"{"}}{{ agent_app_name | upper }}_PORT}"
+      else
+        echo "8842"
+      fi
 tasks:
   install:
     desc: 🛠️ Install agent uv dependencies
@@ -92,11 +99,7 @@ tasks:
 
           # Wait for server to be ready
           echo "⏳ Waiting for dev server to be ready..."
-          _AGENT_PORT="8842"
-          if [ -n "${{ agent_app_name | upper }}_PORT" ]; then
-            _AGENT_PORT="${{ agent_app_name | upper }}_PORT"
-          fi
-          _AGENT_ENDPOINT="http://localhost:$_AGENT_PORT"
+          _AGENT_ENDPOINT="http://localhost:{% raw %}{{.AGENT_PORT}}{% endraw %}"
           i=0
           while [ $i -lt 30 ]; do
             if curl --silent --fail --max-time 2 "$_AGENT_ENDPOINT/" >/dev/null 2>&1; then
@@ -145,7 +148,7 @@ tasks:
     cmds:
       - |
         if [ "${ENABLE_NAT_SERVER:-false}" = "true" ]; then
-          {% raw %}{{.UV_CMD}}{% endraw %} run nat --log-level $LOCAL_NAT_LOG_LEVEL start dragent_fastapi --config_file agent/workflow.yaml --reload true --port $AGENT_PORT
+          {% raw %}{{.UV_CMD}}{% endraw %} run nat --log-level $LOCAL_NAT_LOG_LEVEL start dragent_fastapi --config_file {{ agent_app_name }}/workflow.yaml --reload true --port {% raw %}{{.AGENT_PORT}}{% endraw %}
         else
           {% raw %}{{.UV_CMD}}{% endraw %} run python dev.py --autoreload
         fi
