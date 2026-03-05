@@ -94,7 +94,13 @@ class MyAgent(BaseAgent[None]):
         run_id = run_agent_input.run_id
         message_id = str(uuid.uuid4())
 
-        yield RunStartedEvent(type=EventType.RUN_STARTED, thread_id=thread_id, run_id=run_id), None, usage_metrics
+        yield (
+            RunStartedEvent(
+                type=EventType.RUN_STARTED, thread_id=thread_id, run_id=run_id
+            ),
+            None,
+            usage_metrics,
+        )
 
         # -----------------------------------------------------------
         # Here you would implement the streaming logic of your agent using the inputs.
@@ -134,7 +140,9 @@ class MyAgent(BaseAgent[None]):
         pipeline_interactions = self.create_pipeline_interactions_from_events(events)
 
         yield (
-            RunFinishedEvent(type=EventType.RUN_FINISHED, thread_id=thread_id, run_id=run_id),
+            RunFinishedEvent(
+                type=EventType.RUN_FINISHED, thread_id=thread_id, run_id=run_id
+            ),
             pipeline_interactions,
             usage_metrics,
         )
