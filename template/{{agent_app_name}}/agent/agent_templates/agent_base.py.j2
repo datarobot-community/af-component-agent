@@ -11,9 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import uuid
 from typing import Any, Optional, Union
 
-from ag_ui.core import RunAgentInput
+from ag_ui.core import EventType, RunAgentInput, RunFinishedEvent, RunStartedEvent
+from ag_ui.core import TextMessageContentEvent, TextMessageEndEvent, TextMessageStartEvent
 from datarobot_genai.core.agents import (
     BaseAgent,
     InvokeReturn,
@@ -75,11 +77,7 @@ class MyAgent(BaseAgent[None]):
         Args:
             run_agent_input: User inputs and parameters for running the agent, encapsulated in a RunAgentInput object.
         Returns:
-            Union[
-                AsyncGenerator[tuple[str, Any | None, dict[str, int]], None],
-                tuple[str, Any | None, dict[str, int]],
-            ]: For streaming requests, returns a generator yielding tuples of (response_text, pipeline_interactions, usage_metrics).
-               For non-streaming requests, returns a single tuple of (response_text, pipeline_interactions, usage_metrics).
+            An async generator yielding tuples of (Event, pipeline_interactions, usage_metrics).
         """
         # Retrieve the starting user prompt from the RunAgentInput
         user_prompt_content = extract_user_prompt_content(run_agent_input)
@@ -88,17 +86,42 @@ class MyAgent(BaseAgent[None]):
         print("Running agent with user prompt:", user_prompt_content, flush=True)
 
         usage_metrics: UsageMetrics = default_usage_metrics()
+        thread_id = run_agent_input.thread_id
+        run_id = run_agent_input.run_id
+        message_id = str(uuid.uuid4())
 
-        # The following code demonstrate only streaming response. DataRobot agents
-        # only support streaming responses, and non-streaming response is
-        # implemented as a fallback when the client does not request streaming.
-        # You may choose to implement non-streaming response here by
-        # yielding a single tuple with the final response and usage metrics.
+        yield RunStartedEvent(thread_id=thread_id, run_id=run_id), None, usage_metrics
 
         # -----------------------------------------------------------
         # Here you would implement the streaming logic of your agent using the inputs.
+        # Yield TextMessageContentEvent chunks as your agent produces output.
         # -----------------------------------------------------------
-        yield "streaming success", None, usage_metrics
+        yield (
+            TextMessageStartEvent(
+                type=EventType.TEXT_MESSAGE_START,
+                message_id=message_id,
+                role="assistant",
+            ),
+            None,
+            usage_metrics,
+        )
+        yield (
+            TextMessageContentEvent(
+                type=EventType.TEXT_MESSAGE_CONTENT,
+                message_id=message_id,
+                delta="streaming success",
+            ),
+            None,
+            usage_metrics,
+        )
+        yield (
+            TextMessageEndEvent(
+                type=EventType.TEXT_MESSAGE_END,
+                message_id=message_id,
+            ),
+            None,
+            usage_metrics,
+        )
 
         # Create a list of events from the event listener
         # This should be populated with the agent's AG-UI events or message deltas
@@ -106,5 +129,4 @@ class MyAgent(BaseAgent[None]):
 
         pipeline_interactions = self.create_pipeline_interactions_from_events(events)
 
-        # Final response after streaming is complete
-        yield "", pipeline_interactions, usage_metrics
+        yield RunFinishedEvent(thread_id=thread_id, run_id=run_id), pipeline_interactions, usage_metrics
