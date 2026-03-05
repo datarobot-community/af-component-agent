@@ -23,6 +23,7 @@ tasks:
       - if [ -f uv.lock ] && [ -d docker_context ]; then cp uv.lock docker_context/uv.lock; fi
     aliases:
       - req
+
   update:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
     # desc: 🛠️ Update local dependencies (refresh uv locks)
@@ -30,6 +31,7 @@ tasks:
       - echo "Updating local dependencies for {{ agent_app_name }}"
       - "{% raw %}{{.UV_CMD}}{% endraw %} sync --extra dev -U"
     silent: true
+
   auth-check:
     silent: true
     desc: "🔐 Check authentication prerequisites"
@@ -41,15 +43,16 @@ tasks:
         else
           echo "ℹ️  Skipping auth check (not available)"
         fi
+
   add-dependency:
     desc: 🛠️ Add provided packages as a new dependency to an agent
     cmds:
       - echo "Adding new dependency for {{ agent_app_name }} into 'extras' dependency group"
       - "{% raw %}{{.UV_CMD}}{% endraw %} add --no-upgrade --group extras {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
+
   lint:
-    # Hidden to avoid showing in task list, run `task --list-all` to see it
-    # desc: 🧹 Lint the codebase
+    desc: "🧹 Run linters"
     cmds:
       - task: req
       - echo "Linting the codebase"
@@ -58,9 +61,10 @@ tasks:
       - "{% raw %}{{.UV_CMD}}{% endraw %} run mypy --pretty ."
       - "{% raw %}{{.UV_CMD}}{% endraw %} run yamlfix . -e '.venv/**/*.yaml' -e '.venv/**/*.yml' -e 'build/**/*.yaml' -e 'build/**/*.yml'"
     silent: true
+
   lint-check:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
-    # desc: 🧹 Check whether the codebase is linted
+    desc: "🧹 Check whether the codebase is linted"
     cmds:
       - task: req
       - echo "Checking linting"
@@ -69,13 +73,14 @@ tasks:
       - echo "Checking type hints"
       - "{% raw %}{{.UV_CMD}}{% endraw %} run mypy --pretty ."
     silent: true
+
   test:
-    # Hidden to avoid showing in task list, run `task --list-all` to see it
-    # desc: 🧪 Run tests
+    desc: "🧪 Run tests"
     cmds:
       - echo "Running pytest on tests"
       - "{% raw %}{{.UV_CMD}}{% endraw %} run pytest -vv ./tests/"
     silent: true
+
   test-coverage:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
     # desc: 🧪 Run tests with coverage
@@ -83,6 +88,7 @@ tasks:
       - echo "Running pytest on tests"
       - "{% raw %}{{.UV_CMD}}{% endraw %} run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/"
     silent: true
+
   cli:
     desc: 🖥️ Run the CLI with provided arguments
     vars:
@@ -150,17 +156,20 @@ tasks:
 
         exit $CLI_EXIT_CODE
     silent: true
+
   dev:
     desc: 🔨 Run the development server
     deps:
       - auth-check
     cmds:
       - "{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py --autoreload"
+
   dev-stop:
     desc: 🛑 Stop the development server
     cmds:
       - echo "Stopping development server"
       - pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || echo "No development server process found"
+
   create-docker-context:
     desc: 🐳 Create the template for a local docker_context image
     vars:
@@ -190,16 +199,19 @@ tasks:
       - mv ./docker_context/Dockerfile ./docker_context/Dockerfile.prod
       - mv ./docker_context/Dockerfile.local ./docker_context/Dockerfile
       - echo "Docker context created inside {{ agent_app_name }}/docker_context"
+
   build-docker-image:
     # desc: 🐳 Build the Docker image
     cmds:
       - echo "Building Docker image"
       - cp pyproject.toml docker_context/pyproject.toml
       - cd docker_context && docker build --platform linux/amd64 -f Dockerfile -t {{ agent_app_name }}:latest .
+
   build-docker-context:
     desc: 🐳 Build the Docker image
     cmds:
       - task: create-docker-context
+      - task: build-docker-image
       - echo "Saving Docker image"
       - docker save {{ agent_app_name }}:latest | gzip -1 > docker_context.tar.gz
     silent: true
