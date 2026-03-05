@@ -201,3 +201,6 @@ extras = []
 
 [tool.setuptools.packages.find]
 include = ["agent*"]
+
+[project.entry-points.'nat.front_ends']
+dragent = "datarobot_genai.dragent.register"
