@@ -65,6 +65,9 @@ DEFAULT_AGENT_REPLICAS: Final[int] = 2 if ENABLE_AGENT_HA_MODE else 1
 DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES: Final[int] = 0
 DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES: Final[int] = 4 if ENABLE_AGENT_HA_MODE else 2
 
+# NAT frontserver environment flag
+enable_nat_server_bool = os.environ.get("ENABLE_NAT_SERVER", "").strip().lower() == "1"
+
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
     for pattern in [
@@ -469,8 +472,7 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
         ),
     )
 
-if enable_nat_server := os.environ.get("ENABLE_NAT_SERVER"):
-    enable_nat_server_bool = enable_nat_server.strip().lower() in ("1", "true", "yes")
+if enable_nat_server_bool:
     enable_nat_server_runtime_param = pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
         key="ENABLE_NAT_SERVER",
         type="boolean",
@@ -598,11 +600,10 @@ if os.environ.get("AGENT_DEPLOY") != "0":
     )
 
     {{agent_app_name}}_agent_deployment_id = {{agent_app_name}}_agent_deployment.id.apply(lambda id: f"{id}")
-    _enable_nat_server = os.environ.get("ENABLE_NAT_SERVER", "false").lower() in ("1", "true")
     {{agent_app_name}}_deployment_endpoint = {{agent_app_name}}_agent_deployment.id.apply(
         lambda id: (
             f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/directAccess"
-            if _enable_nat_server
+            if enable_nat_server_bool
             else f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}"
         )
     )
@@ -633,7 +634,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         value={{agent_app_name}}_deployment_endpoint,
     ),
 ]
-if enable_nat_server:
+if enable_nat_server_bool:
     {{agent_app_name}}_app_runtime_parameters.append(
         pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
             key="ENABLE_NAT_SERVER",
