@@ -89,11 +89,19 @@ tasks:
       - |
         if [ "{% raw %}{{.START_DEV}}{% endraw %}" -eq "1" ]; then
           # Kill any existing dev server processes
-          pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || true
+          if [ "${ENABLE_NAT_SERVER:-false}" = "true" ]; then
+            pkill -f 'nat.*start dragent_fastapi' 2>/dev/null || true
+          else
+            pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || true
+          fi
 
           # Start dev server in background
           echo "🚀 Starting dev server in background..."
-          {% raw %}{{.UV_CMD}}{% endraw %} run python dev.py &
+          if [ "${ENABLE_NAT_SERVER:-false}" = "true" ]; then
+            {% raw %}{{.UV_CMD}}{% endraw %} run nat --log-level $LOCAL_NAT_LOG_LEVEL start dragent_fastapi --config_file agent/workflow.yaml --reload true --port {% raw %}{{.AGENT_PORT}}{% endraw %} &
+          else
+            {% raw %}{{.UV_CMD}}{% endraw %} run python dev.py &
+          fi
           DEV_SERVER_PID=$!
           echo "Dev server started with PID: $DEV_SERVER_PID"
 
@@ -110,7 +118,11 @@ tasks:
             i=$((i + 1))
             if [ $i -eq 30 ]; then
               echo "❌ Dev server failed to start within 30 seconds"
-              pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || true
+              if [ "${ENABLE_NAT_SERVER:-false}" = "true" ]; then
+                pkill -f 'nat.*start dragent_fastapi' 2>/dev/null || true
+              else
+                pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || true
+              fi
               exit 1
             fi
           done
@@ -135,7 +147,11 @@ tasks:
         # Clean up dev server processes if we started them
         if [ "{% raw %}{{.START_DEV}}{% endraw %}" -eq "1" ]; then
           echo "🛑 Stopping dev server..."
-          pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || true
+          if [ "${ENABLE_NAT_SERVER:-false}" = "true" ]; then
+            pkill -f 'nat.*start dragent_fastapi' 2>/dev/null || true
+          else
+            pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || true
+          fi
           echo "✅ Dev server stopped"
         fi
 
