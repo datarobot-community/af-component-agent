@@ -15,6 +15,12 @@ import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
+from ag_ui.core import (
+    EventType,
+    RunFinishedEvent,
+    RunStartedEvent,
+    TextMessageChunkEvent,
+)
 
 
 @pytest.fixture
@@ -22,16 +28,32 @@ def mock_agent_response():
     """
     Fixture to return a mock agent response based on the agent template framework.
     """
+    usage = {"completion_tokens": 1, "prompt_tokens": 2, "total_tokens": 3}
+    zero = {"completion_tokens": 0, "prompt_tokens": 0, "total_tokens": 0}
 
     async def generate_response():
         yield (
-            "agent result",
+            RunStartedEvent(
+                type=EventType.RUN_STARTED, thread_id="test-thread", run_id="test-run"
+            ),
+            None,
+            zero,
+        )
+        yield (
+            TextMessageChunkEvent(
+                type=EventType.TEXT_MESSAGE_CHUNK,
+                message_id="test-msg",
+                delta="agent result",
+            ),
+            None,
+            usage,
+        )
+        yield (
+            RunFinishedEvent(
+                type=EventType.RUN_FINISHED, thread_id="test-thread", run_id="test-run"
+            ),
             [],
-            {
-                "completion_tokens": 1,
-                "prompt_tokens": 2,
-                "total_tokens": 3,
-            },
+            usage,
         )
 
     return generate_response()
