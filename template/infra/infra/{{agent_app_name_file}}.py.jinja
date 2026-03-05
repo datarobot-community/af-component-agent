@@ -66,7 +66,7 @@ DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES: Final[int] = 0
 DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES: Final[int] = 4 if ENABLE_AGENT_HA_MODE else 2
 
 # NAT frontserver environment flag
-enable_nat_server_bool = os.environ.get("ENABLE_NAT_SERVER", "").strip().lower() == "1"
+enable_nat_server_bool = os.environ.get("ENABLE_NAT_SERVER", "").strip().lower() == "true"
 
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
