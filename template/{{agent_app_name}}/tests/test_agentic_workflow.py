@@ -20,7 +20,13 @@ from copy import copy
 from unittest.mock import ANY, MagicMock, Mock, patch
 
 import pytest
-from ag_ui.core import UserMessage
+from ag_ui.core import (
+    EventType,
+    RunFinishedEvent,
+    RunStartedEvent,
+    TextMessageChunkEvent,
+    UserMessage,
+)
 
 
 class TestCustomModel:
@@ -81,7 +87,7 @@ class TestCustomModel:
                         },
                     ],
                     "created": ANY,
-                    "event": None,
+                    "event": ANY,
                     "id": ANY,
                     "model": "test-model",
                     "object": "chat.completion.chunk",
@@ -116,7 +122,7 @@ class TestCustomModel:
                     "id": ANY,
                     "model": "test-model",
                     "object": "chat.completion.chunk",
-                    "pipeline_interactions": None,
+                    "pipeline_interactions": ANY,
                     "service_tier": None,
                     "system_fingerprint": None,
                     "usage": {
@@ -188,20 +194,41 @@ class TestCustomModel:
     def test_chat_streaming(self, mock_agent, load_model_result):
         from custom import chat
 
-        # Create a generator that yields streaming responses
+        # Create a generator that yields AG-UI event streaming responses
         async def mock_streaming_generator():
             yield (
-                "chunk1",
+                RunStartedEvent(
+                    type=EventType.RUN_STARTED,
+                    thread_id="t",
+                    run_id="r",
+                ),
+                None,
+                {"completion_tokens": 0, "prompt_tokens": 0, "total_tokens": 0},
+            )
+            yield (
+                TextMessageChunkEvent(
+                    type=EventType.TEXT_MESSAGE_CHUNK,
+                    message_id="m1",
+                    delta="chunk1",
+                ),
                 None,
                 {"completion_tokens": 1, "prompt_tokens": 2, "total_tokens": 3},
             )
             yield (
-                "chunk2",
+                TextMessageChunkEvent(
+                    type=EventType.TEXT_MESSAGE_CHUNK,
+                    message_id="m1",
+                    delta="chunk2",
+                ),
                 None,
                 {"completion_tokens": 2, "prompt_tokens": 2, "total_tokens": 4},
             )
             yield (
-                "",
+                RunFinishedEvent(
+                    type=EventType.RUN_FINISHED,
+                    thread_id="t",
+                    run_id="r",
+                ),
                 Mock(model_dump_json=MagicMock(return_value="interactions")),
                 {"completion_tokens": 3, "prompt_tokens": 2, "total_tokens": 5},
             )
