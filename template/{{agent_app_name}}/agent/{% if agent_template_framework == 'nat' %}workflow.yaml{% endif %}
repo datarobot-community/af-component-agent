@@ -26,6 +26,7 @@ functions:
       3. A brief suggested structure (intro, 2-3 sections, conclusion)
 
       Do NOT write paragraphs or detailed explanations. Just provide a focused list.
+    description: A tool that plans the content for the requested topic.
   writer:
     _type: chat_completion
     llm_name: datarobot_llm
@@ -41,6 +42,7 @@ functions:
       4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.
 
       Write in markdown format, ready for publication.
+    description: A tool that writes the content for the requested topic.
   content_writer_pipeline:
     _type: sequential_executor
     tool_list: [planner, writer]
