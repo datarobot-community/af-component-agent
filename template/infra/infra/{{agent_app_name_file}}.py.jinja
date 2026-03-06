@@ -484,6 +484,16 @@ if enable_nat_server_bool:
     )
     agent_runtime_parameter_values.append(enable_nat_server_runtime_param)
 
+if enable_nat_server_bool:
+    expose_a2a_server_endpoints_runtime_param = (
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key="EXPOSE_A2A_SERVER_ENDPOINTS",
+            type="boolean",
+            value=os.environ.get("EXPOSE_A2A_SERVER_ENDPOINTS", "true"),
+        )
+    )
+    agent_runtime_parameter_values.append(expose_a2a_server_endpoints_runtime_param)
+
 {{agent_app_name}}_custom_model_files = get_custom_model_files(
     custom_model_folder=str({{agent_app_name}}_application_path),
     runtime_parameter_values=agent_runtime_parameter_values,
