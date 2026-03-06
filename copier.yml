@@ -21,7 +21,7 @@ use_low_code_interface:
 
 use_agent_memory:
   type: bool
-  help: "Do you want to opt in to agent memory? (default: no)"
+  help: "Do you want to opt in to agent memory? (default: no) (WIP)"
   default: no
   when: false
 
