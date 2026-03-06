@@ -118,7 +118,9 @@ def chat(
     # The list of the headers to forward into the Agent and MCP Server.
     incoming_headers = kwargs.get("headers", {}) or {}
     forwarded_headers = {
-        k: v for k, v in incoming_headers.items() if k.lower().startswith("x-datarobot-")
+        k: v
+        for k, v in incoming_headers.items()
+        if k.lower().startswith("x-datarobot-")
     }
     completion_create_params["forwarded_headers"] = forwarded_headers
 
@@ -202,7 +204,9 @@ def chat(
     # The list of the headers to forward into the Agent and MCP Server.
     incoming_headers = kwargs.get("headers", {}) or {}
     forwarded_headers = {
-        k: v for k, v in incoming_headers.items() if k.lower().startswith("x-datarobot-")
+        k: v
+        for k, v in incoming_headers.items()
+        if k.lower().startswith("x-datarobot-")
     }
     completion_create_params["forwarded_headers"] = forwarded_headers
 
