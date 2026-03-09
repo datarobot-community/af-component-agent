@@ -40,19 +40,18 @@ class MyAgent(LangGraphAgent):
 
     def __init__(
         self,
-        llm: Optional[BaseChatModel] = None,
         api_key: Optional[str] = None,
         api_base: Optional[str] = None,
         model: Optional[str] = None,
         verbose: Optional[Union[bool, str]] = True,
         timeout: Optional[int] = 90,
+        *,
+        llm: Optional[BaseChatModel] = None,
         **kwargs: Any,
     ):
         """Initializes the MyAgent class.
 
         Args:
-            llm: Optional[BaseChatModel]: Pre-configured LLM instance (NAT mode).
-                When provided, api_key/api_base/model are ignored for LLM creation.
             api_key: Optional[str]: API key for authentication with DataRobot services.
                 Defaults to None, in which case it will use the DATAROBOT_API_TOKEN environment variable.
             api_base: Optional[str]: Base URL for the DataRobot API.
@@ -63,6 +62,8 @@ class MyAgent(LangGraphAgent):
                 Accepts boolean or string values ("true"/"false"). Defaults to True.
             timeout: Optional[int]: How long to wait for the agent to respond.
                 Defaults to 90 seconds.
+            llm: Optional[BaseChatModel]: Pre-configured LLM instance (NAT mode). Keyword-only.
+                When provided, api_key/api_base/model are ignored for LLM creation.
             **kwargs: Any: Additional keyword arguments passed to the agent.
                 Contains any parameters received in the CompletionCreateParams.
         """
@@ -171,7 +172,7 @@ class MyAgent(LangGraphAgent):
                 "\n"
                 "Do NOT write paragraphs or detailed explanations. Just provide a focused list.",
             ),
-            name="Planner Agent",
+            name="Planner_Agent",
         )
 
     @property
@@ -195,5 +196,5 @@ class MyAgent(LangGraphAgent):
                 "\n"
                 "Write in markdown format, ready for publication.",
             ),
-            name="Writer Agent",
+            name="Writer_Agent",
         )

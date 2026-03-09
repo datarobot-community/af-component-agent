@@ -1,7 +1,91 @@
+{% if agent_template_framework in ["langgraph", "crewai", "llamaindex"] -%}
+# Copyright 2026 DataRobot, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+from collections.abc import AsyncGenerator
+
+from nat.builder.builder import Builder
+from nat.builder.framework_enum import LLMFrameworkEnum
+from nat.cli.register_workflow import register_function
+from nat.data_models.agent import AgentBaseConfig
+
+{% if agent_template_framework == "crewai" -%}
+# Use getattr to avoid NAT's source-code regex auto-detection of CrewAI,
+# which would force-import nvidia-nat-crewai's profiler plugin.
+_CREWAI_WRAPPER = getattr(LLMFrameworkEnum, "CREWAI")
+{% endif -%}
+
 {% if agent_template_framework == "langgraph" -%}
-{% include 'template/{{agent_app_name}}/agent/register_templates/register_langgraph.py.j2' -%}
+{% set config_class = "LanggraphAgentConfig" -%}
+{% set config_name = "langgraph_agent" -%}
+{% set func_name = "langgraph_agent" -%}
+{% set framework_wrappers = "framework_wrappers=[LLMFrameworkEnum.LANGCHAIN]," -%}
+{% set wrapper_type = "LLMFrameworkEnum.LANGCHAIN" -%}
+{% set description = "LangGraph" -%}
 {% elif agent_template_framework == "crewai" -%}
-{% include 'template/{{agent_app_name}}/agent/register_templates/register_crewai.py.j2' -%}
+{% set config_class = "CrewaiAgentConfig" -%}
+{% set config_name = "crewai_agent" -%}
+{% set func_name = "crewai_agent" -%}
+{% set framework_wrappers = "" -%}
+{% set wrapper_type = "_CREWAI_WRAPPER" -%}
+{% set description = "CrewAI" -%}
 {% elif agent_template_framework == "llamaindex" -%}
-{% include 'template/{{agent_app_name}}/agent/register_templates/register_llamaindex.py.j2' -%}
+{% set config_class = "LlamaindexAgentConfig" -%}
+{% set config_name = "llamaindex_agent" -%}
+{% set func_name = "llamaindex_agent" -%}
+{% set framework_wrappers = "framework_wrappers=[LLMFrameworkEnum.LLAMA_INDEX]," -%}
+{% set wrapper_type = "LLMFrameworkEnum.LLAMA_INDEX" -%}
+{% set description = "LlamaIndex" -%}
+{% endif -%}
+
+
+class {{ config_class }}(AgentBaseConfig, name="{{ config_name }}"):
+    """NAT config for the {{ description }} agent.
+
+    Extends AgentBaseConfig which provides: llm_name, description, verbose.
+    The LLM is managed by NAT and accessed via builder.get_llm().
+    """
+
+
+@register_function(
+    config_type={{ config_class }},
+{%- if framework_wrappers %}
+    {{ framework_wrappers }}
+{%- endif %}
+)
+async def {{ func_name }}(config: {{ config_class }}, builder: Builder) -> AsyncGenerator:
+    from ag_ui.core import RunAgentInput  # noqa: PLC0415
+    from datarobot_genai.dragent.response import DRAgentEventResponse  # noqa: PLC0415
+    from nat.builder.function_info import FunctionInfo  # noqa: PLC0415
+
+    from agent.myagent import MyAgent  # noqa: PLC0415
+
+    llm = await builder.get_llm(config.llm_name, wrapper_type={{ wrapper_type }})
+
+    agent = MyAgent(llm=llm)
+
+    async def _response_fn(
+        input_message: RunAgentInput,
+    ) -> AsyncGenerator[DRAgentEventResponse, None]:
+        async for event, pipeline_interactions, usage_metrics in agent.invoke(input_message):
+            yield DRAgentEventResponse(
+                events=[event],
+                usage_metrics=usage_metrics,
+                pipeline_interactions=pipeline_interactions,
+            )
+
+    yield FunctionInfo.from_fn(
+        _response_fn,
+        description=config.description,
+    )
 {% endif -%}

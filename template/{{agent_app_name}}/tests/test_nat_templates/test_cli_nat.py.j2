@@ -1,0 +1,283 @@
+import json
+import os
+from unittest.mock import MagicMock, patch
+
+import click
+import httpx
+import pytest
+from click.testing import CliRunner
+
+from cli import execute_nat, execute_nat_stream, is_nat_mode
+
+
+class TestIsNatMode:
+    def test_default_is_false(self):
+        with patch.dict(os.environ, {}, clear=True):
+            assert is_nat_mode() is False
+
+    def test_explicit_false(self):
+        with patch.dict(os.environ, {"ENABLE_NAT_SERVER": "false"}):
+            assert is_nat_mode() is False
+
+    def test_true_lowercase(self):
+        with patch.dict(os.environ, {"ENABLE_NAT_SERVER": "true"}):
+            assert is_nat_mode() is True
+
+    def test_true_uppercase(self):
+        with patch.dict(os.environ, {"ENABLE_NAT_SERVER": "TRUE"}):
+            assert is_nat_mode() is True
+
+    def test_true_mixed_case(self):
+        with patch.dict(os.environ, {"ENABLE_NAT_SERVER": "True"}):
+            assert is_nat_mode() is True
+
+    def test_random_value_is_false(self):
+        with patch.dict(os.environ, {"ENABLE_NAT_SERVER": "yes"}):
+            assert is_nat_mode() is False
+
+
+class TestExecuteNatStream:
+    @staticmethod
+    def _make_sse_lines(events):
+        """Build SSE-formatted lines from a list of event dicts."""
+        payload = json.dumps({"events": events})
+        return [f"data: {payload}"]
+
+    @pytest.fixture()
+    def mock_httpx(self):
+        """Provide a pre-wired httpx mock stack.
+
+        Returns (mock_response, patcher) where mock_response.iter_lines can be
+        set per-test. The patcher is a context manager already entered.
+        """
+        mock_response = MagicMock()
+        mock_response.raise_for_status = MagicMock()
+        mock_response.iter_lines.return_value = iter([])
+
+        mock_stream_ctx = MagicMock()
+        mock_stream_ctx.__enter__ = MagicMock(return_value=mock_response)
+        mock_stream_ctx.__exit__ = MagicMock(return_value=False)
+
+        mock_client = MagicMock(spec=httpx.Client)
+        mock_client.stream.return_value = mock_stream_ctx
+
+        mock_client_ctx = MagicMock()
+        mock_client_ctx.__enter__ = MagicMock(return_value=mock_client)
+        mock_client_ctx.__exit__ = MagicMock(return_value=False)
+
+        with patch("httpx.Client", return_value=mock_client_ctx):
+            yield mock_response, mock_client
+
+    def test_text_message_content(self, capsys, mock_httpx):
+        mock_response, _ = mock_httpx
+        events = [{"type": "TEXT_MESSAGE_CONTENT", "delta": "Hello world"}]
+        mock_response.iter_lines.return_value = iter(self._make_sse_lines(events))
+
+        execute_nat_stream("test prompt", "http://localhost:8080/generate/stream")
+
+        output = capsys.readouterr().out
+        assert "Hello world" in output
+
+    def test_run_finished(self, capsys, mock_httpx):
+        mock_response, _ = mock_httpx
+        events = [{"type": "RUN_FINISHED"}]
+        mock_response.iter_lines.return_value = iter(self._make_sse_lines(events))
+
+        execute_nat_stream("test prompt", "http://localhost:8080/generate/stream")
+
+        output = capsys.readouterr().out
+        assert "Run finished." in output
+
+    def test_malformed_json_skipped(self, capsys, mock_httpx):
+        """Malformed JSON lines should be silently skipped."""
+        mock_response, _ = mock_httpx
+        mock_response.iter_lines.return_value = iter(["data: {not valid json}", "data: "])
+
+        execute_nat_stream("test prompt", "http://localhost:8080/generate/stream")
+
+    def test_non_sse_lines_skipped(self, capsys, mock_httpx):
+        """Lines without 'data: ' prefix should be skipped."""
+        mock_response, _ = mock_httpx
+        mock_response.iter_lines.return_value = iter(["event: ping", ": comment", "retry: 3000"])
+
+        execute_nat_stream("test prompt", "http://localhost:8080/generate/stream")
+
+    def test_http_error_raises_click_exception(self):
+        """HTTP errors should be wrapped in ClickException."""
+        mock_error_response = MagicMock()
+        mock_error_response.status_code = 500
+        mock_error_response.text = "Internal Server Error"
+
+        mock_stream_response = MagicMock()
+        mock_stream_response.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "Server Error",
+            request=MagicMock(),
+            response=mock_error_response,
+        )
+
+        mock_stream_ctx = MagicMock()
+        mock_stream_ctx.__enter__ = MagicMock(return_value=mock_stream_response)
+        mock_stream_ctx.__exit__ = MagicMock(return_value=False)
+
+        mock_client = MagicMock(spec=httpx.Client)
+        mock_client.stream.return_value = mock_stream_ctx
+
+        mock_client_ctx = MagicMock()
+        mock_client_ctx.__enter__ = MagicMock(return_value=mock_client)
+        mock_client_ctx.__exit__ = MagicMock(return_value=False)
+
+        with patch("httpx.Client", return_value=mock_client_ctx):
+            with pytest.raises(click.ClickException, match="500"):
+                execute_nat_stream(
+                    "test prompt", "http://localhost:8080/generate/stream"
+                )
+
+    def test_connect_error_raises_click_exception(self):
+        """Connection errors should be wrapped in ClickException."""
+        mock_client = MagicMock(spec=httpx.Client)
+        mock_client.stream.side_effect = httpx.ConnectError("Connection refused")
+
+        mock_client_ctx = MagicMock()
+        mock_client_ctx.__enter__ = MagicMock(return_value=mock_client)
+        mock_client_ctx.__exit__ = MagicMock(return_value=False)
+
+        with patch("httpx.Client", return_value=mock_client_ctx):
+            with pytest.raises(click.ClickException, match="Could not connect"):
+                execute_nat_stream(
+                    "test prompt", "http://localhost:8080/generate/stream"
+                )
+
+    def test_multiple_events_in_single_sse_line(self, capsys, mock_httpx):
+        """Multiple events in a single SSE data line should all be processed."""
+        mock_response, _ = mock_httpx
+        events = [
+            {"type": "TEXT_MESSAGE_CONTENT", "delta": "Hello "},
+            {"type": "TEXT_MESSAGE_CONTENT", "delta": "world"},
+            {"type": "TEXT_MESSAGE_END"},
+        ]
+        mock_response.iter_lines.return_value = iter(self._make_sse_lines(events))
+
+        execute_nat_stream("test prompt", "http://localhost:8080/generate/stream")
+
+        output = capsys.readouterr().out
+        assert "Hello " in output
+        assert "world" in output
+
+    def test_unknown_event_type_logged(self, caplog, mock_httpx):
+        """Unknown event types should be logged at debug level."""
+        mock_response, _ = mock_httpx
+        events = [{"type": "TOOL_CALL_START", "name": "search"}]
+        mock_response.iter_lines.return_value = iter(self._make_sse_lines(events))
+
+        import logging
+
+        with caplog.at_level(logging.DEBUG, logger="cli"):
+            execute_nat_stream("test prompt", "http://localhost:8080/generate/stream")
+
+        assert any("Unhandled SSE event type: TOOL_CALL_START" in r.message for r in caplog.records)
+
+
+class TestExecuteNat:
+    def test_empty_prompt_raises_error(self):
+        with pytest.raises(click.UsageError, match="NAT mode requires --user_prompt"):
+            execute_nat("", MagicMock())
+
+    @patch("cli.execute_nat_stream")
+    @patch("cli.Config")
+    def test_local_mode(self, mock_config_cls, mock_stream):
+        mock_config = MagicMock()
+        mock_config.local_dev_port = 9090
+        mock_config_cls.return_value = mock_config
+
+        execute_nat("hello", MagicMock())
+
+        mock_stream.assert_called_once()
+        url = mock_stream.call_args[0][1]
+        assert url == "http://localhost:9090/generate/stream"
+        assert mock_stream.call_args[1]["headers"] is None
+
+    @patch("cli.execute_nat_stream")
+    def test_deployment_mode(self, mock_stream):
+        env = MagicMock()
+        env.base_url = "https://app.datarobot.com/"
+        env.api_token = "test-token"
+
+        execute_nat("hello", env, deployment_id="deploy-123")
+
+        mock_stream.assert_called_once()
+        url = mock_stream.call_args[0][1]
+        assert url == "https://app.datarobot.com/api/v2/deployments/deploy-123/generate/stream"
+        headers = mock_stream.call_args[1]["headers"]
+        assert headers == {"Authorization": "Bearer test-token"}
+
+    @patch("cli.execute_nat_stream")
+    def test_deployment_mode_missing_base_url(self, mock_stream):
+        """Deployment mode with None base_url raises a clear error."""
+        env = MagicMock()
+        env.base_url = None
+        env.api_token = "test-token"
+
+        with pytest.raises(click.ClickException, match="base_url"):
+            execute_nat("hello", env, deployment_id="deploy-123")
+
+
+class TestCliNatIntegration:
+    """Integration tests for NAT mode in CLI commands."""
+
+    @patch("cli.execute_nat")
+    @patch("cli.is_nat_mode", return_value=True)
+    def test_execute_nat_mode(self, mock_is_nat, mock_exec_nat):
+        from cli import cli
+
+        runner = CliRunner()
+        result = runner.invoke(cli, ["execute", "--user_prompt", "hello"])
+        assert result.exit_code == 0
+        mock_exec_nat.assert_called_once()
+
+    @patch("cli.is_nat_mode", return_value=True)
+    def test_execute_custom_model_nat_mode_rejected(self, mock_is_nat):
+        from cli import cli
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            [
+                "execute-custom-model",
+                "--user_prompt",
+                "hello",
+                "--custom_model_id",
+                "cm-123",
+            ],
+        )
+        assert result.exit_code != 0
+        assert "not supported in NAT mode" in result.output
+
+    @patch("cli.execute_nat")
+    @patch("cli.is_nat_mode", return_value=True)
+    def test_execute_deployment_nat_mode(self, mock_is_nat, mock_exec_nat):
+        from cli import cli
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            [
+                "execute-deployment",
+                "--user_prompt",
+                "hello",
+                "--deployment_id",
+                "deploy-123",
+            ],
+        )
+        assert result.exit_code == 0
+        mock_exec_nat.assert_called_once()
+
+    @patch("cli.is_nat_mode", return_value=True)
+    def test_execute_deployment_nat_mode_requires_prompt(self, mock_is_nat):
+        from cli import cli
+
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            ["execute-deployment", "--deployment_id", "deploy-123"],
+        )
+        assert result.exit_code != 0

@@ -20,6 +20,8 @@ from datarobot_genai.llama_index import (
     DataRobotLiteLLM,
 )
 from datarobot_genai.llama_index.agent import LlamaIndexAgent
+from llama_index.core.llms import LLM as BaseLLM
+from llama_index.llms.litellm import LiteLLM
 from llama_index.core.agent.workflow import (
     AgentWorkflow,
     FunctionAgent,
@@ -42,12 +44,13 @@ class MyAgent(LlamaIndexAgent):
 
     def __init__(
         self,
-        llm: Any = None,
         api_key: Optional[str] = None,
         api_base: Optional[str] = None,
         model: Optional[str] = None,
         verbose: Optional[Union[bool, str]] = True,
         timeout: Optional[int] = 90,
+        *,
+        llm: Optional[BaseLLM] = None,
         **kwargs: Any,
     ):
         super().__init__(
@@ -117,7 +120,7 @@ class MyAgent(LlamaIndexAgent):
     def llm(
         self,
         auto_model_override: bool = True,
-    ) -> Any:
+    ) -> BaseLLM:
         """Returns the LLM to use.
 
         In NAT mode, returns the pre-configured LLM from NAT's Builder.

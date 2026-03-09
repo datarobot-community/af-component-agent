@@ -32,19 +32,18 @@ class MyAgent(CrewAIAgent):
 
     def __init__(
         self,
-        llm: Any = None,
         api_key: Optional[str] = None,
         api_base: Optional[str] = None,
         model: Optional[str] = None,
         verbose: Optional[Union[bool, str]] = True,
         timeout: Optional[int] = 90,
+        *,
+        llm: Optional[LLM] = None,
         **kwargs: Any,
     ):
         """Initializes the MyAgent class.
 
         Args:
-            llm: Pre-configured LLM instance (NAT mode).
-                When provided, api_key/api_base/model are ignored for LLM creation.
             api_key: Optional[str]: API key for authentication with DataRobot services.
                 Defaults to None, in which case it will use the DATAROBOT_API_TOKEN environment variable.
             api_base: Optional[str]: Base URL for the DataRobot API.
@@ -55,6 +54,8 @@ class MyAgent(CrewAIAgent):
                 Accepts boolean or string values ("true"/"false"). Defaults to True.
             timeout: Optional[int]: How long to wait for the agent to respond.
                 Defaults to 90 seconds.
+            llm: Optional[LLM]: Pre-configured LLM instance (NAT mode). Keyword-only.
+                When provided, api_key/api_base/model are ignored for LLM creation.
             **kwargs: Any: Additional keyword arguments passed to the agent.
                 Contains any parameters received in the CompletionCreateParams.
         """
@@ -76,7 +77,7 @@ class MyAgent(CrewAIAgent):
     def llm(
         self,
         auto_model_override: bool = True,
-    ) -> Any:
+    ) -> LLM:
         """Returns the LLM to use.
 
         In NAT mode, returns the pre-configured LLM from NAT's Builder.
@@ -88,7 +89,7 @@ class MyAgent(CrewAIAgent):
                 not available. Only applies in DRUM mode.
 
         Returns:
-            The LLM to use.
+            LLM: The model to use.
         """
         if self._nat_llm is not None:
             return self._nat_llm
