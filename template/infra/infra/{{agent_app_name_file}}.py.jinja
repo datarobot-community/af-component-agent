@@ -629,7 +629,9 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         )
     )
     {{agent_app_name}}_deployment_a2a_endpoint = {{agent_app_name}}_agent_deployment.id.apply(
-        lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/directAccess/a2a/"
+        lambda id: (
+            f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/directAccess/a2a/"
+        )
     )
 
     export(
