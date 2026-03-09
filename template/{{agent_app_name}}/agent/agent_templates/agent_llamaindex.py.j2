@@ -34,10 +34,15 @@ class MyAgent(LlamaIndexAgent):
     It utilizes DataRobot's LLM Gateway or a specific deployment for language model interactions.
     This example illustrates 2 agents that handle content creation tasks, including planning and writing
     blog posts.
+
+    Supports two execution modes:
+    - DRUM mode: Instantiated with api_key/api_base/model, creates its own LLM via DataRobotLiteLLM.
+    - NAT mode: Instantiated with a pre-configured `llm` from NAT's Builder.
     """
 
     def __init__(
         self,
+        llm: Any = None,
         api_key: Optional[str] = None,
         api_base: Optional[str] = None,
         model: Optional[str] = None,
@@ -53,6 +58,7 @@ class MyAgent(LlamaIndexAgent):
             timeout=timeout,
             **kwargs,
         )
+        self._nat_llm = llm
         self.config = Config()
         self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
 
@@ -111,7 +117,15 @@ class MyAgent(LlamaIndexAgent):
     def llm(
         self,
         auto_model_override: bool = True,
-    ) -> DataRobotLiteLLM:
+    ) -> Any:
+        """Returns the LLM to use.
+
+        In NAT mode, returns the pre-configured LLM from NAT's Builder.
+        In DRUM mode, creates a DataRobotLiteLLM instance.
+        """
+        if self._nat_llm is not None:
+            return self._nat_llm
+
         api_base = self.litellm_api_base(self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id)
         model = self.model or self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:

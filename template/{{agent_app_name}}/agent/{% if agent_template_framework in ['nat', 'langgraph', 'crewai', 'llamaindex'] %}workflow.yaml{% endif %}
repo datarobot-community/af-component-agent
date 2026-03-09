@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+{% if agent_template_framework == 'nat' -%}
 functions:
   planner:
     _type: chat_completion
@@ -66,3 +67,28 @@ workflow:
     - content_writer_pipeline
   system_prompt:
     Choose and call a tool to answer the query.
+{% elif agent_template_framework == 'langgraph' -%}
+llms:
+  datarobot_llm:
+    _type: datarobot-llm-component
+workflow:
+  _type: langgraph_agent
+  llm_name: datarobot_llm
+  description: LangGraph planner/writer agent
+{% elif agent_template_framework == 'crewai' -%}
+llms:
+  datarobot_llm:
+    _type: datarobot-llm-component
+workflow:
+  _type: crewai_agent
+  llm_name: datarobot_llm
+  description: CrewAI planner/writer agent
+{% elif agent_template_framework == 'llamaindex' -%}
+llms:
+  datarobot_llm:
+    _type: datarobot-llm-component
+workflow:
+  _type: llamaindex_agent
+  llm_name: datarobot_llm
+  description: LlamaIndex planner/writer agent
+{% endif -%}

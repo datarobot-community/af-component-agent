@@ -24,10 +24,15 @@ class MyAgent(CrewAIAgent):
     It utilizes DataRobot's LLM Gateway or a specific deployment for language model interactions.
     This example illustrates 2 agents that handle content creation tasks, including planning and writing
     blog posts.
+
+    Supports two execution modes:
+    - DRUM mode: Instantiated with api_key/api_base/model, creates its own LLM via CrewAI's LLM.
+    - NAT mode: Instantiated with a pre-configured `llm` from NAT's Builder.
     """
 
     def __init__(
         self,
+        llm: Any = None,
         api_key: Optional[str] = None,
         api_base: Optional[str] = None,
         model: Optional[str] = None,
@@ -35,9 +40,11 @@ class MyAgent(CrewAIAgent):
         timeout: Optional[int] = 90,
         **kwargs: Any,
     ):
-        """Initializes the MyAgent class with API key, base URL, model, and verbosity settings.
+        """Initializes the MyAgent class.
 
         Args:
+            llm: Pre-configured LLM instance (NAT mode).
+                When provided, api_key/api_base/model are ignored for LLM creation.
             api_key: Optional[str]: API key for authentication with DataRobot services.
                 Defaults to None, in which case it will use the DATAROBOT_API_TOKEN environment variable.
             api_base: Optional[str]: Base URL for the DataRobot API.
@@ -50,9 +57,6 @@ class MyAgent(CrewAIAgent):
                 Defaults to 90 seconds.
             **kwargs: Any: Additional keyword arguments passed to the agent.
                 Contains any parameters received in the CompletionCreateParams.
-
-        Returns:
-            None
         """
         super().__init__(
             api_key=api_key,
@@ -62,6 +66,7 @@ class MyAgent(CrewAIAgent):
             timeout=timeout,
             **kwargs,
         )
+        self._nat_llm = llm
         self.config = Config()
         self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
 
@@ -71,21 +76,23 @@ class MyAgent(CrewAIAgent):
     def llm(
         self,
         auto_model_override: bool = True,
-    ) -> LLM:
-        """Returns the LLM to use for a given model.
+    ) -> Any:
+        """Returns the LLM to use.
 
-        If a `self.model` is provided, it will be used. Otherwise, the default model will be used.
-        If auto_model_override is True, it will try and use the model specified in the request
-        but automatically back out to the default model if the LLM Gateway is not configured
+        In NAT mode, returns the pre-configured LLM from NAT's Builder.
+        In DRUM mode, creates a CrewAI LLM instance.
 
         Args:
             auto_model_override: Optional[bool]: If True, it will try and use the model
                 specified in the request but automatically back out if the LLM Gateway is
-                not available.
+                not available. Only applies in DRUM mode.
 
         Returns:
-            LLM: The model to use.
+            The LLM to use.
         """
+        if self._nat_llm is not None:
+            return self._nat_llm
+
         api_base = self.litellm_api_base(self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id)
         model = self.model or self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:
