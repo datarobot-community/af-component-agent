@@ -119,7 +119,7 @@ def execute_nat_stream(
                         continue
                     for event in data.get("events", []):
                         event_type = event.get("type", "")
-                        if event_type == "TEXT_MESSAGE_CONTENT":
+                        if event_type in ("TEXT_MESSAGE_CONTENT", "TEXT_MESSAGE_CHUNK"):
                             click.echo(event.get("delta", ""), nl=False)
                         elif event_type == "TEXT_MESSAGE_END":
                             click.echo("")
