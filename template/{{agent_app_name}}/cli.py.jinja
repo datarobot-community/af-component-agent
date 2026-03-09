@@ -13,9 +13,11 @@
 # limitations under the License.
 import json
 import os
+import uuid
 from typing import Any
 
 import click
+import requests
 from datarobot_genai.core.cli import AgentEnvironment
 from openai import Stream
 from openai.types.chat import (
@@ -69,6 +71,39 @@ def display_response_streaming(response: Stream[ChatCompletionChunk]) -> None:
         if "pipeline_interactions" in chunk_dict:
             chunk_dict["pipeline_interactions"] = "[Truncated for display]"
         click.echo(json.dumps(chunk_dict, indent=2))
+
+
+def execute_nat_local(user_prompt: str, config: Config) -> None:
+    """Execute against the NAT frontserver via the AG-UI /generate/stream endpoint."""
+    url = f"http://localhost:{config.local_dev_port}/generate/stream"
+    payload = {
+        "threadId": str(uuid.uuid4()),
+        "runId": str(uuid.uuid4()),
+        "state": {},
+        "messages": [{"role": "user", "content": user_prompt, "id": str(uuid.uuid4())}],
+        "tools": [],
+        "context": [],
+        "forwardedProps": {},
+    }
+    click.echo(f"Querying NAT server at {url}")
+    click.echo(f"Prompt: \"{user_prompt}\"")
+    click.echo("")
+
+    with requests.post(url, json=payload, stream=True, timeout=300) as resp:
+        resp.raise_for_status()
+        for line in resp.iter_lines(decode_unicode=True):
+            if not line or not line.startswith("data: "):
+                continue
+            data = json.loads(line[6:])
+            for event in data.get("events", []):
+                event_type = event.get("type", "")
+                if event_type == "TEXT_MESSAGE_CONTENT":
+                    click.echo(event.get("delta", ""), nl=False)
+                elif event_type == "TEXT_MESSAGE_END":
+                    click.echo("")
+                elif event_type == "RUN_FINISHED":
+                    click.echo("\n\nRun finished.")
+    click.echo("")
 
 
 @click.group()
@@ -159,12 +194,22 @@ def execute(
     if len(user_prompt) == 0 and len(completion_json) == 0:
         raise click.UsageError("User prompt message or completion json must provided.")
 
+    config = Config()
+
+    # NAT mode: use AG-UI /generate/stream endpoint
+    if os.environ.get("ENABLE_NAT_SERVER", "false").lower() == "true":
+        if len(user_prompt) == 0:
+            raise click.UsageError("NAT mode requires --user_prompt (completion_json not supported).")
+        click.echo("Running agent (NAT mode)...")
+        execute_nat_local(user_prompt, config)
+        return
+
     click.echo("Running agent...")
     response = environment.interface.local(
         user_prompt=user_prompt,
         completion_json=completion_json,
         stream=stream,
-        config=Config(),
+        config=config,
     )
     if stream:
         display_response_streaming(response)
