@@ -69,6 +69,9 @@ DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES: Final[int] = 4 if ENABLE_AGENT_HA_MODE el
 enable_nat_server_bool = (
     os.environ.get("ENABLE_NAT_SERVER", "").strip().lower() == "true"
 )
+expose_a2a_server_endpoint_bool = (
+    os.environ.get("EXPOSE_A2A_SERVER_ENDPOINTS", "true").strip().lower() == "true"
+)
 
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
@@ -565,6 +568,7 @@ pulumi.export("Agent Playground URL " + {{agent_app_name}}_asset_name, {{agent_a
 
 {{agent_app_name}}_agent_deployment_id: pulumi.Output[str] = cast(pulumi.Output[str], "None")
 {{agent_app_name}}_deployment_endpoint: pulumi.Output[str] = cast(pulumi.Output[str], "None")
+{{agent_app_name}}_deployment_a2a_endpoint: pulumi.Output[str] = cast(pulumi.Output[str], "None")
 if os.environ.get("AGENT_DEPLOY") != "0":
     {{agent_app_name}}_prediction_environment = pulumi_datarobot.PredictionEnvironment(
         resource_name={{agent_app_name}}_asset_name + " Prediction Environment",
@@ -624,6 +628,9 @@ if os.environ.get("AGENT_DEPLOY") != "0":
             f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/chat/completions"
         )
     )
+    {{agent_app_name}}_deployment_a2a_endpoint = {{agent_app_name}}_agent_deployment.id.apply(
+        lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/directAccess/a2a/"
+    )
 
     export(
         {{agent_app_name}}_application_name.upper() + "_DEPLOYMENT_ID",
@@ -654,3 +661,11 @@ if enable_nat_server_bool:
             value="true",
         ),
     )
+    if expose_a2a_server_endpoint_bool:
+        {{agent_app_name}}_app_runtime_parameters.append(
+            pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
+                key={{agent_app_name}}_application_name.upper() + "_A2A_ENDPOINT",
+                type="string",
+                value={{agent_app_name}}_deployment_a2a_endpoint,
+            ),
+        )
