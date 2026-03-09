@@ -80,15 +80,9 @@ def is_nat_mode() -> bool:
     return os.environ.get("ENABLE_NAT_SERVER", "false").lower() == "true"
 
 
-def execute_nat_stream(
-    user_prompt: str,
-    url: str,
-    headers: dict[str, str] | None = None,
-) -> None:
-    """Execute against a NAT server via the AG-UI /generate/stream endpoint."""
-    import httpx  # noqa: PLC0415 httpx is only needed in NAT mode
-
-    payload = {
+def _build_nat_payload(user_prompt: str) -> dict:
+    """Build the AG-UI RunAgentInput payload for a NAT /generate/stream request."""
+    return {
         "threadId": str(uuid.uuid4()),
         "runId": str(uuid.uuid4()),
         "state": {},
@@ -97,6 +91,17 @@ def execute_nat_stream(
         "context": [],
         "forwardedProps": {},
     }
+
+
+def execute_nat_stream(
+    user_prompt: str,
+    url: str,
+    headers: dict[str, str] | None = None,
+) -> None:
+    """Execute against a NAT server via the AG-UI /generate/stream endpoint."""
+    import httpx  # noqa: PLC0415 httpx is only needed in NAT mode
+
+    payload = _build_nat_payload(user_prompt)
     click.echo(f"Querying NAT server at {url}")
     click.echo(f"Prompt: \"{user_prompt}\"")
     click.echo("")
@@ -136,7 +141,7 @@ def execute_nat(user_prompt: str, environment: AgentEnvironment, deployment_id: 
 
     For local execution, hits localhost. For deployments, hits the DataRobot API.
     """
-    if not user_prompt:
+    if len(user_prompt) == 0:
         raise click.UsageError("NAT mode requires --user_prompt (completion_json not supported).")
 
     if deployment_id:
@@ -282,9 +287,9 @@ def execute_custom_model(
     # Run the agent with a JSON user prompt
     > task cli -- execute-custom-model --user_prompt '{"topic": "Artificial Intelligence"}' --custom_model_id 680a77a9a3
     """
-    if not user_prompt:
+    if len(user_prompt) == 0:
         raise click.UsageError("User prompt message must be provided.")
-    if not custom_model_id:
+    if len(custom_model_id) == 0:
         raise click.UsageError("Custom Model ID must be provided.")
 
     if is_nat_mode():
@@ -346,9 +351,9 @@ def execute_deployment(
     > task cli -- execute-deployment --completion_json "example-completion.json" --deployment_id 680a77a9a3
     > task cli -- execute-deployment --completion_json "example-chat-history-completion.json" --deployment_id 680a77a9a3
     """
-    if not user_prompt and not completion_json:
+    if len(user_prompt) == 0 and len(completion_json) == 0:
         raise click.UsageError("User prompt message or completion json must provided.")
-    if not deployment_id:
+    if len(deployment_id) == 0:
         raise click.UsageError("Deployment ID must be provided.")
 
     if is_nat_mode():
