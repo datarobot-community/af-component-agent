@@ -199,5 +199,16 @@ constraint-dependencies = ["gevent; sys_platform == 'never'"]
 [dependency-groups]
 extras = []
 
+{% if agent_template_framework == 'langgraph' -%}
+[project.entry-points.'nat.plugins']
+langgraph_agent = "agent.register"
+{% elif agent_template_framework == 'crewai' -%}
+[project.entry-points.'nat.plugins']
+crewai_agent = "agent.register"
+{% elif agent_template_framework == 'llamaindex' -%}
+[project.entry-points.'nat.plugins']
+llamaindex_agent = "agent.register"
+{% endif -%}
+
 [tool.setuptools.packages.find]
 include = ["agent*"]
