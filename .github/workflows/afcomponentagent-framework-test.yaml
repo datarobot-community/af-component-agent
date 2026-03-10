@@ -41,6 +41,10 @@ jobs:
             framework:
               name: nat
               agent_name: agent_nat
+          - python: python3.10
+            framework:
+              name: langgraph
+              agent_name: agent_langgraph
     steps:
       - name: Checkout
         uses: "actions/checkout@v6"
