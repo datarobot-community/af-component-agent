@@ -69,9 +69,20 @@ DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES: Final[int] = 4 if ENABLE_AGENT_HA_MODE el
 enable_nat_server_bool = (
     os.environ.get("ENABLE_NAT_SERVER", "").strip().lower() == "true"
 )
-expose_a2a_server_endpoint_bool = (
-    os.environ.get("EXPOSE_A2A_SERVER_ENDPOINTS", "true").strip().lower() == "true"
-)
+def _get_expose_a2a_server_endpoint() -> bool:
+    workflow_yaml_path = project_dir.parent / "{{agent_app_name}}" / "agent" / "workflow.yaml"
+    if not workflow_yaml_path.exists():
+        return False
+    with open(workflow_yaml_path) as f:
+        workflow_config = yaml.safe_load(f)
+    return bool(
+        workflow_config.get("general", {})
+        .get("front_end", {})
+        .get("expose_a2a_server_endpoints", False)
+    )
+
+
+expose_a2a_server_endpoint_bool = _get_expose_a2a_server_endpoint()
 
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
@@ -486,14 +497,6 @@ if enable_nat_server_bool:
         )
     )
     agent_runtime_parameter_values.append(enable_nat_server_runtime_param)
-    expose_a2a_server_endpoints_runtime_param = (
-        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-            key="EXPOSE_A2A_SERVER_ENDPOINTS",
-            type="boolean",
-            value=os.environ.get("EXPOSE_A2A_SERVER_ENDPOINTS", "true"),
-        )
-    )
-    agent_runtime_parameter_values.append(expose_a2a_server_endpoints_runtime_param)
 
 {{agent_app_name}}_custom_model_files = get_custom_model_files(
     custom_model_folder=str({{agent_app_name}}_application_path),
