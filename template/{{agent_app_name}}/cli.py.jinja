@@ -102,7 +102,6 @@ def execute_nat_stream(
     import httpx  # noqa: PLC0415 httpx is only needed in NAT mode
 
     payload = _build_nat_payload(user_prompt)
-    click.echo(f"Querying NAT server at {url}")
     click.echo(f"Prompt: \"{user_prompt}\"")
     click.echo("")
 
@@ -287,16 +286,16 @@ def execute_custom_model(
     # Run the agent with a JSON user prompt
     > task cli -- execute-custom-model --user_prompt '{"topic": "Artificial Intelligence"}' --custom_model_id 680a77a9a3
     """
-    if len(user_prompt) == 0:
-        raise click.UsageError("User prompt message must be provided.")
-    if len(custom_model_id) == 0:
-        raise click.UsageError("Custom Model ID must be provided.")
-
     if is_nat_mode():
         raise click.UsageError(
             "execute-custom-model is not supported in NAT mode. "
             "Use execute-deployment with a deployment ID instead."
         )
+
+    if len(user_prompt) == 0:
+        raise click.UsageError("User prompt message must be provided.")
+    if len(custom_model_id) == 0:
+        raise click.UsageError("Custom Model ID must be provided.")
 
     click.echo("Querying deployment...")
     response = environment.interface.custom_model(
