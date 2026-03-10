@@ -114,10 +114,12 @@ class TestExecuteNatStream:
 
     @patch("httpx.stream")
     def test_malformed_json_skipped(self, mock_stream, capsys):
-        lines = iter([
-            "data: not-json",
-            f"data: {json.dumps({'events': [{'type': 'RUN_FINISHED'}]})}",
-        ])
+        lines = iter(
+            [
+                "data: not-json",
+                f"data: {json.dumps({'events': [{'type': 'RUN_FINISHED'}]})}",
+            ]
+        )
         self._mock_stream(mock_stream, lines)
         execute_nat_stream("test", "http://localhost:8842/generate/stream")
         captured = capsys.readouterr()
@@ -125,12 +127,14 @@ class TestExecuteNatStream:
 
     @patch("httpx.stream")
     def test_non_data_lines_skipped(self, mock_stream, capsys):
-        lines = iter([
-            "event: message",
-            ": comment",
-            "",
-            f"data: {json.dumps({'events': [{'type': 'RUN_FINISHED'}]})}",
-        ])
+        lines = iter(
+            [
+                "event: message",
+                ": comment",
+                "",
+                f"data: {json.dumps({'events': [{'type': 'RUN_FINISHED'}]})}",
+            ]
+        )
         self._mock_stream(mock_stream, lines)
         execute_nat_stream("test", "http://localhost:8842/generate/stream")
         captured = capsys.readouterr()
