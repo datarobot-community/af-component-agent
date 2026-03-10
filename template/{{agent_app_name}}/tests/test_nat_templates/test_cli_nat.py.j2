@@ -194,7 +194,10 @@ class TestExecuteNatStream:
 
 @patch.dict(
     os.environ,
-    {"DATAROBOT_API_TOKEN": "env-api-key", "DATAROBOT_ENDPOINT": "https://env-api-base.com"},
+    {
+        "DATAROBOT_API_TOKEN": "env-api-key",
+        "DATAROBOT_ENDPOINT": "https://env-api-base.com",
+    },
 )
 class TestCliNatIntegration:
     """Integration tests for CLI commands in NAT mode."""
