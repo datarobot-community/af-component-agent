@@ -1,0 +1,266 @@
+# Copyright 2026 DataRobot, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+import json
+import os
+from unittest.mock import MagicMock, patch
+
+import pytest
+from click.testing import CliRunner
+
+from cli import build_nat_payload, cli, execute_nat_stream, is_nat_mode
+
+
+class TestIsNatMode:
+    def test_default_is_false(self):
+        with patch.dict(os.environ, {}, clear=True):
+            assert is_nat_mode() is False
+
+    def test_explicit_false(self):
+        with patch.dict(os.environ, {"ENABLE_NAT_SERVER": "false"}):
+            assert is_nat_mode() is False
+
+    def test_explicit_true(self):
+        with patch.dict(os.environ, {"ENABLE_NAT_SERVER": "true"}):
+            assert is_nat_mode() is True
+
+    def test_case_insensitive(self):
+        with patch.dict(os.environ, {"ENABLE_NAT_SERVER": "True"}):
+            assert is_nat_mode() is True
+        with patch.dict(os.environ, {"ENABLE_NAT_SERVER": "TRUE"}):
+            assert is_nat_mode() is True
+
+
+class TestBuildNatPayload:
+    def test_payload_structure(self):
+        payload = build_nat_payload("test prompt")
+        assert "threadId" in payload
+        assert "runId" in payload
+        assert "messages" in payload
+        assert len(payload["messages"]) == 1
+        assert payload["messages"][0]["role"] == "user"
+        assert payload["messages"][0]["content"] == "test prompt"
+        assert payload["state"] == []
+        assert payload["tools"] == []
+
+    def test_unique_ids(self):
+        p1 = build_nat_payload("a")
+        p2 = build_nat_payload("b")
+        assert p1["threadId"] != p2["threadId"]
+        assert p1["runId"] != p2["runId"]
+
+
+class TestExecuteNatStream:
+    @staticmethod
+    def _make_sse_event(payload):
+        """Create a mock sseclient.Event from a dict payload."""
+        evt = MagicMock()
+        evt.data = json.dumps(payload)
+        return evt
+
+    @staticmethod
+    def _mock_stream_and_sse(mock_stream, mock_sse_cls, sse_payloads):
+        """Wire up mock httpx.stream and sseclient.SSEClient for a list of payloads."""
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status = MagicMock()
+        mock_resp.iter_bytes.return_value = iter([])
+        mock_stream.return_value.__enter__ = MagicMock(return_value=mock_resp)
+        mock_stream.return_value.__exit__ = MagicMock(return_value=False)
+
+        events = [TestExecuteNatStream._make_sse_event(p) for p in sse_payloads]
+        mock_client = MagicMock()
+        mock_client.events.return_value = iter(events)
+        mock_sse_cls.return_value = mock_client
+
+    @patch("sseclient.SSEClient")
+    @patch("httpx.stream")
+    def test_text_message_content(self, mock_stream, mock_sse_cls, capsys):
+        payloads = [
+            {"events": [{"type": "TEXT_MESSAGE_CONTENT", "delta": "Hello "}]},
+            {"events": [{"type": "TEXT_MESSAGE_CONTENT", "delta": "world"}]},
+            {"events": [{"type": "TEXT_MESSAGE_END"}]},
+        ]
+        self._mock_stream_and_sse(mock_stream, mock_sse_cls, payloads)
+        execute_nat_stream("test", "http://localhost:8842/generate/stream")
+        captured = capsys.readouterr()
+        assert "Hello " in captured.out
+        assert "world" in captured.out
+
+    @patch("sseclient.SSEClient")
+    @patch("httpx.stream")
+    def test_text_message_chunk(self, mock_stream, mock_sse_cls, capsys):
+        payloads = [
+            {"events": [{"type": "TEXT_MESSAGE_CHUNK", "delta": "chunk1"}]},
+            {"events": [{"type": "TEXT_MESSAGE_CHUNK", "delta": "chunk2"}]},
+            {"events": [{"type": "TEXT_MESSAGE_END"}]},
+        ]
+        self._mock_stream_and_sse(mock_stream, mock_sse_cls, payloads)
+        execute_nat_stream("test", "http://localhost:8842/generate/stream")
+        captured = capsys.readouterr()
+        assert "chunk1" in captured.out
+        assert "chunk2" in captured.out
+
+    @patch("sseclient.SSEClient")
+    @patch("httpx.stream")
+    def test_run_finished(self, mock_stream, mock_sse_cls, capsys):
+        payloads = [{"events": [{"type": "RUN_FINISHED"}]}]
+        self._mock_stream_and_sse(mock_stream, mock_sse_cls, payloads)
+        execute_nat_stream("test", "http://localhost:8842/generate/stream")
+        captured = capsys.readouterr()
+        assert "Run finished." in captured.out
+
+    @patch("sseclient.SSEClient")
+    @patch("httpx.stream")
+    def test_malformed_json_skipped(self, mock_stream, mock_sse_cls, capsys):
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status = MagicMock()
+        mock_resp.iter_bytes.return_value = iter([])
+        mock_stream.return_value.__enter__ = MagicMock(return_value=mock_resp)
+        mock_stream.return_value.__exit__ = MagicMock(return_value=False)
+
+        bad_evt = MagicMock()
+        bad_evt.data = "not-json"
+        good_evt = MagicMock()
+        good_evt.data = json.dumps({"events": [{"type": "RUN_FINISHED"}]})
+
+        mock_client = MagicMock()
+        mock_client.events.return_value = iter([bad_evt, good_evt])
+        mock_sse_cls.return_value = mock_client
+
+        execute_nat_stream("test", "http://localhost:8842/generate/stream")
+        captured = capsys.readouterr()
+        assert "Run finished." in captured.out
+
+    @patch("httpx.stream")
+    def test_connection_error(self, mock_stream):
+        import httpx
+
+        mock_stream.return_value.__enter__ = MagicMock(
+            side_effect=httpx.ConnectError("refused")
+        )
+        mock_stream.return_value.__exit__ = MagicMock(return_value=False)
+        with pytest.raises(Exception, match="Could not connect"):
+            execute_nat_stream("test", "http://localhost:8842/generate/stream")
+
+    @patch("httpx.stream")
+    def test_http_error(self, mock_stream):
+        import httpx
+
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status.side_effect = httpx.HTTPStatusError(
+            "500 Server Error",
+            request=MagicMock(),
+            response=MagicMock(),
+        )
+        mock_stream.return_value.__enter__ = MagicMock(return_value=mock_resp)
+        mock_stream.return_value.__exit__ = MagicMock(return_value=False)
+        with pytest.raises(Exception, match="HTTP error from NAT server"):
+            execute_nat_stream("test", "http://localhost:8842/generate/stream")
+
+    @patch("sseclient.SSEClient")
+    @patch("httpx.stream")
+    def test_sends_correct_payload(self, mock_stream, mock_sse_cls):
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status = MagicMock()
+        mock_resp.iter_bytes.return_value = iter([])
+        mock_stream.return_value.__enter__ = MagicMock(return_value=mock_resp)
+        mock_stream.return_value.__exit__ = MagicMock(return_value=False)
+
+        mock_client = MagicMock()
+        mock_client.events.return_value = iter([])
+        mock_sse_cls.return_value = mock_client
+
+        execute_nat_stream(
+            "my prompt",
+            "http://localhost:8842/generate/stream",
+            headers={"Authorization": "Bearer tok"},
+        )
+
+        mock_stream.assert_called_once()
+        call_kwargs = mock_stream.call_args
+        assert call_kwargs.kwargs["json"]["messages"][0]["content"] == "my prompt"
+        assert "Authorization" in call_kwargs.kwargs["headers"]
+
+
+class TestCliNatIntegration:
+    @patch("cli.execute_nat_stream")
+    @patch("cli.is_nat_mode", return_value=True)
+    def test_execute_nat_mode(self, _mock_nat, mock_stream):
+        runner = CliRunner()
+        result = runner.invoke(cli, ["execute", "--user_prompt", "test"])
+        assert result.exit_code == 0
+        mock_stream.assert_called_once()
+
+    @patch("cli.is_nat_mode", return_value=True)
+    def test_execute_custom_model_blocked_in_nat(self, _mock_nat):
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            [
+                "execute-custom-model",
+                "--user_prompt",
+                "test",
+                "--custom_model_id",
+                "abc",
+            ],
+        )
+        assert result.exit_code != 0
+        assert "not supported in NAT mode" in result.output
+
+    @patch("cli.execute_nat_stream")
+    @patch("cli.is_nat_mode", return_value=True)
+    def test_execute_deployment_nat_mode(self, _mock_nat, mock_stream):
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            [
+                "--api_token",
+                "tok123",
+                "--base_url",
+                "https://app.datarobot.com",
+                "execute-deployment",
+                "--user_prompt",
+                "test",
+                "--deployment_id",
+                "abc123",
+            ],
+        )
+        assert result.exit_code == 0
+        mock_stream.assert_called_once()
+
+    @patch("cli.is_nat_mode", return_value=True)
+    def test_execute_deployment_nat_missing_api_token(self, _mock_nat):
+        runner = CliRunner()
+        result = runner.invoke(
+            cli,
+            [
+                "--base_url",
+                "https://app.datarobot.com",
+                "execute-deployment",
+                "--user_prompt",
+                "test",
+                "--deployment_id",
+                "abc123",
+            ],
+        )
+        assert result.exit_code != 0
+        assert "requires --api_token" in result.output
+
+    @patch("cli.is_nat_mode", return_value=True)
+    def test_execute_nat_requires_prompt(self, _mock_nat):
+        runner = CliRunner()
+        result = runner.invoke(
+            cli, ["execute", "--completion_json", "some.json"]
+        )
+        assert result.exit_code != 0
+        assert "requires --user_prompt" in result.output
