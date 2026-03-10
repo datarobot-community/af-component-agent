@@ -26,4 +26,6 @@ class TestRegisterModule:
         assert callable(langgraph_agent)
 
     def test_registered_function_is_async(self):
-        assert inspect.iscoroutinefunction(langgraph_agent) or inspect.isasyncgenfunction(langgraph_agent)
+        assert inspect.iscoroutinefunction(
+            langgraph_agent
+        ) or inspect.isasyncgenfunction(langgraph_agent)

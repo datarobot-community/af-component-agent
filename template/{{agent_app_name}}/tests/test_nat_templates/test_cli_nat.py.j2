@@ -259,8 +259,6 @@ class TestCliNatIntegration:
     @patch("cli.is_nat_mode", return_value=True)
     def test_execute_nat_requires_prompt(self, _mock_nat):
         runner = CliRunner()
-        result = runner.invoke(
-            cli, ["execute", "--completion_json", "some.json"]
-        )
+        result = runner.invoke(cli, ["execute", "--completion_json", "some.json"])
         assert result.exit_code != 0
         assert "requires --user_prompt" in result.output
