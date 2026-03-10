@@ -43,6 +43,7 @@ class MyAgent(LangGraphAgent):
         timeout: Optional[int] = 90,
         *,
         llm: Optional[BaseChatModel] = None,
+        extra_tools: Optional[list] = None,
         **kwargs: Any,
     ):
         """Initializes the MyAgent class with API key, base URL, model, and verbosity settings.
@@ -60,6 +61,7 @@ class MyAgent(LangGraphAgent):
                 Defaults to 90 seconds.
             llm: Optional[BaseChatModel]: Pre-configured LLM instance provided by NAT.
                 When set, llm() returns this directly instead of creating a ChatLiteLLM.
+            extra_tools: Optional[list]: Additional tools to inject into the agent (e.g. A2A tools). Keyword-only.
             **kwargs: Any: Additional keyword arguments passed to the agent.
                 Contains any parameters received in the CompletionCreateParams.
 
@@ -75,6 +77,7 @@ class MyAgent(LangGraphAgent):
             **kwargs,
         )
         self._nat_llm = llm
+        self._extra_tools = extra_tools or []
         self.config = Config()
         self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
         if model in ("unknown", "datarobot-deployed-llm"):
@@ -155,7 +158,7 @@ class MyAgent(LangGraphAgent):
     def agent_planner(self) -> Any:
         return create_agent(
             self.llm(),
-            tools=self.mcp_tools,
+            tools=self.mcp_tools + self._extra_tools,
             system_prompt=make_system_prompt(
                 "You are a content planner. You create brief, structured outlines for blog articles. "
                 "You identify the most important points and cite relevant sources. Keep it simple and to the point - "
@@ -178,7 +181,7 @@ class MyAgent(LangGraphAgent):
     def agent_writer(self) -> Any:
         return create_agent(
             self.llm(),
-            tools=self.mcp_tools,
+            tools=self.mcp_tools + self._extra_tools,
             system_prompt=make_system_prompt(
                 "You are a content writer working with a planner colleague.\n"
                 "You write opinion pieces based on the planner's outline and context. You provide objective and "
