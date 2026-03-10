@@ -11,6 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+general:
+  front_end:
+    _type: dragent_fastapi
+    a2a:
+      name: "Blog Content Writer"
+      description: "An AI content writing agent that researches and writes well-structured blog posts. Provide a topic and it will generate a concise, publication-ready article in markdown format."
 {% if agent_template_framework == 'nat' -%}
 functions:
   planner:
