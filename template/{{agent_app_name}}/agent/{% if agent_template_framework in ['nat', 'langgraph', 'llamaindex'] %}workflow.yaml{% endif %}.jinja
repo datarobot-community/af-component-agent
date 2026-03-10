@@ -54,6 +54,11 @@ functions:
 function_groups:
   mcp_tools:
     _type: datarobot_mcp_client
+  # To connect this agent to a remote A2A agent, uncomment the block below and add the
+  # function group name to the workflow's tool_names list.
+  # remote_agent:
+  #   _type: a2a_client
+  #   url: "https://my-remote-agent.example.com"
 authentication:
   datarobot_mcp_auth:
     _type: datarobot_mcp_auth
@@ -71,12 +76,20 @@ workflow:
     - planner
     - writer
     - mcp_tools
+    # Uncomment to inject A2A remote agent tools (must also uncomment function_groups.remote_agent above):
+    # - remote_agent
   system_prompt: |
     You are a blog content orchestrator. For every user request, you MUST follow these steps in order:
     1. Call planner to get a content plan.
     2. Call writer with the content plan as input to produce the final blog post.
     Return only the final blog post output from the writer.
 {% elif agent_template_framework == 'langgraph' -%}
+# To connect this agent to a remote A2A agent, uncomment the block below and add the
+# function group name to the workflow's function_groups list.
+# function_groups:
+#   remote_agent:
+#     _type: a2a_client
+#     url: "https://my-remote-agent.example.com"
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
@@ -85,7 +98,15 @@ workflow:
   _type: langgraph_agent
   llm_name: datarobot_llm
   description: LangGraph planner/writer agent
+  # function_groups:
+  #   - remote_agent
 {% elif agent_template_framework == 'llamaindex' -%}
+# To connect this agent to a remote A2A agent, uncomment the block below and add the
+# function group name to the workflow's function_groups list.
+# function_groups:
+#   remote_agent:
+#     _type: a2a_client
+#     url: "https://my-remote-agent.example.com"
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
@@ -94,4 +115,6 @@ workflow:
   _type: llamaindex_agent
   llm_name: datarobot_llm
   description: LlamaIndex planner/writer agent
+  # function_groups:
+  #   - remote_agent
 {% endif -%}

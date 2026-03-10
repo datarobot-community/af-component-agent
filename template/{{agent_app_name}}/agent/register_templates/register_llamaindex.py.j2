@@ -27,6 +27,8 @@ class LlamaindexAgentConfig(AgentBaseConfig, name="llamaindex_agent"):  # type: 
     The LLM is managed by NAT and accessed via builder.get_llm().
     """
 
+    function_groups: list[str] = []
+
 
 @register_function(  # type: ignore[untyped-decorator]
     config_type=LlamaindexAgentConfig,
@@ -45,7 +47,10 @@ async def llamaindex_agent(
         config.llm_name, wrapper_type=LLMFrameworkEnum.LLAMA_INDEX
     )
 
-    agent = MyAgent(llm=llm, verbose=config.verbose)
+    # Fetch a2a_client functions as LlamaIndex-compatible tools
+    a2a_tools = await builder.get_tools(config.function_groups, wrapper_type=LLMFrameworkEnum.LLAMA_INDEX)
+
+    agent = MyAgent(llm=llm, extra_tools=a2a_tools, verbose=config.verbose)
 
     async def _response_fn(
         input_message: RunAgentInput,

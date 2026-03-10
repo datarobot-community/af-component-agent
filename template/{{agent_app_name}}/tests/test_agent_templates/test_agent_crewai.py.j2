@@ -318,6 +318,22 @@ class TestMyAgentCrewAI:
             )
 
     @patch("agent.myagent.Agent")
+    def test_agent_planner_includes_extra_tools(self, mock_agent):
+        """Test that agent_planner includes extra_tools alongside mcp_tools."""
+        extra_tool = Mock()
+        agent = MyAgent(
+            api_key="test_key",
+            api_base="test_base",
+            extra_tools=[extra_tool],
+        )
+        mock_llm = Mock()
+        with patch.object(MyAgent, "llm", return_value=mock_llm):
+            with patch.object(type(agent), "mcp_tools", new_callable=lambda: property(lambda self: [])):
+                agent.agent_planner
+                _, kwargs = mock_agent.call_args
+                assert extra_tool in kwargs["tools"]
+
+    @patch("agent.myagent.Agent")
     def test_agent_writer_property(self, mock_agent, agent):
         # Mock the llm property
         mock_llm = Mock()
@@ -332,6 +348,22 @@ class TestMyAgentCrewAI:
                 llm=ANY,
                 tools=ANY,
             )
+
+    @patch("agent.myagent.Agent")
+    def test_agent_writer_includes_extra_tools(self, mock_agent):
+        """Test that agent_writer includes extra_tools alongside mcp_tools."""
+        extra_tool = Mock()
+        agent = MyAgent(
+            api_key="test_key",
+            api_base="test_base",
+            extra_tools=[extra_tool],
+        )
+        mock_llm = Mock()
+        with patch.object(MyAgent, "llm", return_value=mock_llm):
+            with patch.object(type(agent), "mcp_tools", new_callable=lambda: property(lambda self: [])):
+                agent.agent_writer
+                _, kwargs = mock_agent.call_args
+                assert extra_tool in kwargs["tools"]
 
     @patch("agent.myagent.Task")
     def test_task_plan_property(self, mock_task, agent):
