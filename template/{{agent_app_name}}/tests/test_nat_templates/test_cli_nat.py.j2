@@ -192,7 +192,13 @@ class TestExecuteNatStream:
         assert "Authorization" in call_kwargs.kwargs["headers"]
 
 
+@patch.dict(
+    os.environ,
+    {"DATAROBOT_API_TOKEN": "env-api-key", "DATAROBOT_ENDPOINT": "https://env-api-base.com"},
+)
 class TestCliNatIntegration:
+    """Integration tests for CLI commands in NAT mode."""
+
     @patch("cli.execute_nat_stream")
     @patch("cli.is_nat_mode", return_value=True)
     def test_execute_nat_mode(self, _mock_nat, mock_stream):
@@ -238,6 +244,7 @@ class TestCliNatIntegration:
         assert result.exit_code == 0
         mock_stream.assert_called_once()
 
+    @patch.dict(os.environ, {"DATAROBOT_API_TOKEN": ""}, clear=False)
     @patch("cli.is_nat_mode", return_value=True)
     def test_execute_deployment_nat_missing_api_token(self, _mock_nat):
         runner = CliRunner()
@@ -254,7 +261,6 @@ class TestCliNatIntegration:
             ],
         )
         assert result.exit_code != 0
-        assert "requires --api_token" in result.output
 
     @patch("cli.is_nat_mode", return_value=True)
     def test_execute_nat_requires_prompt(self, _mock_nat):

@@ -25,7 +25,9 @@ class TestRegisterModule:
     def test_registered_function_exists(self):
         assert callable(langgraph_agent)
 
-    def test_registered_function_is_async(self):
-        assert inspect.iscoroutinefunction(
-            langgraph_agent
-        ) or inspect.isasyncgenfunction(langgraph_agent)
+    def test_registered_function_wraps_async_generator(self):
+        # @register_function wraps with asynccontextmanager, so the original
+        # async generator is accessible via __wrapped__.
+        wrapped = getattr(langgraph_agent, "__wrapped__", None)
+        assert wrapped is not None
+        assert inspect.isasyncgenfunction(wrapped)
