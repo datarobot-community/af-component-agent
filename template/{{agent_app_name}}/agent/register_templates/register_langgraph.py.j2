@@ -14,10 +14,13 @@
 from collections.abc import AsyncGenerator
 from typing import Any
 
+from ag_ui.core import RunAgentInput
+from datarobot_genai.dragent.response import DRAgentEventResponse
 from nat.builder.builder import Builder
 from nat.builder.framework_enum import LLMFrameworkEnum
-from nat.cli.register_workflow import register_function
+from nat.cli.register_workflow import register_per_user_function
 from nat.data_models.agent import AgentBaseConfig
+from nat.data_models.component_ref import FunctionGroupRef
 
 
 class LanggraphAgentConfig(AgentBaseConfig, name="langgraph_agent"):  # type: ignore[call-arg, misc]
@@ -27,16 +30,19 @@ class LanggraphAgentConfig(AgentBaseConfig, name="langgraph_agent"):  # type: ig
     The LLM is managed by NAT and accessed via builder.get_llm().
     """
 
-    function_groups: list[str] = []
+    function_groups: list[FunctionGroupRef] = []
 
 
-@register_function(  # type: ignore[untyped-decorator]
+@register_per_user_function(  # type: ignore[untyped-decorator]
     config_type=LanggraphAgentConfig,
+    input_type=RunAgentInput,
+    streaming_output_type=DRAgentEventResponse,
     framework_wrappers=[LLMFrameworkEnum.LANGCHAIN],
 )
 async def langgraph_agent(
     config: LanggraphAgentConfig, builder: Builder
 ) -> AsyncGenerator[Any, None]:
+    from nat.builder.function_info import FunctionInfo  # noqa: PLC0415
     from ag_ui.core import RunAgentInput  # noqa: PLC0415
     from datarobot_genai.dragent.response import DRAgentEventResponse  # noqa: PLC0415
     from nat.builder.function_info import FunctionInfo  # noqa: PLC0415
