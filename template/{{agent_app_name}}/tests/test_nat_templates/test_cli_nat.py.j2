@@ -62,88 +62,83 @@ class TestBuildNatPayload:
 
 class TestExecuteNatStream:
     @staticmethod
-    def _make_sse_event(payload):
-        """Create a mock sseclient.Event from a dict payload."""
-        evt = MagicMock()
-        evt.data = json.dumps(payload)
-        return evt
+    def _sse_lines(payloads):
+        """Convert a list of dicts into SSE-formatted lines for iter_lines()."""
+        lines = []
+        for p in payloads:
+            lines.append(f"data: {json.dumps(p)}")
+        return iter(lines)
 
     @staticmethod
-    def _mock_stream_and_sse(mock_stream, mock_sse_cls, sse_payloads):
-        """Wire up mock httpx.stream and sseclient.SSEClient for a list of payloads."""
+    def _mock_stream(mock_stream, sse_lines):
+        """Wire up mock httpx.stream with iter_lines returning SSE data."""
         mock_resp = MagicMock()
         mock_resp.raise_for_status = MagicMock()
-        mock_resp.iter_bytes.return_value = iter([])
+        mock_resp.iter_lines.return_value = sse_lines
         mock_stream.return_value.__enter__ = MagicMock(return_value=mock_resp)
         mock_stream.return_value.__exit__ = MagicMock(return_value=False)
 
-        events = [TestExecuteNatStream._make_sse_event(p) for p in sse_payloads]
-        mock_client = MagicMock()
-        mock_client.events.return_value = iter(events)
-        mock_sse_cls.return_value = mock_client
-
-    @patch("sseclient.SSEClient")
     @patch("httpx.stream")
-    def test_text_message_content(self, mock_stream, mock_sse_cls, capsys):
+    def test_text_message_content(self, mock_stream, capsys):
         payloads = [
             {"events": [{"type": "TEXT_MESSAGE_CONTENT", "delta": "Hello "}]},
             {"events": [{"type": "TEXT_MESSAGE_CONTENT", "delta": "world"}]},
             {"events": [{"type": "TEXT_MESSAGE_END"}]},
         ]
-        self._mock_stream_and_sse(mock_stream, mock_sse_cls, payloads)
+        self._mock_stream(mock_stream, self._sse_lines(payloads))
         execute_nat_stream("test", "http://localhost:8842/generate/stream")
         captured = capsys.readouterr()
         assert "Hello " in captured.out
         assert "world" in captured.out
 
-    @patch("sseclient.SSEClient")
     @patch("httpx.stream")
-    def test_text_message_chunk(self, mock_stream, mock_sse_cls, capsys):
+    def test_text_message_chunk(self, mock_stream, capsys):
         payloads = [
             {"events": [{"type": "TEXT_MESSAGE_CHUNK", "delta": "chunk1"}]},
             {"events": [{"type": "TEXT_MESSAGE_CHUNK", "delta": "chunk2"}]},
             {"events": [{"type": "TEXT_MESSAGE_END"}]},
         ]
-        self._mock_stream_and_sse(mock_stream, mock_sse_cls, payloads)
+        self._mock_stream(mock_stream, self._sse_lines(payloads))
         execute_nat_stream("test", "http://localhost:8842/generate/stream")
         captured = capsys.readouterr()
         assert "chunk1" in captured.out
         assert "chunk2" in captured.out
 
-    @patch("sseclient.SSEClient")
     @patch("httpx.stream")
-    def test_run_finished(self, mock_stream, mock_sse_cls, capsys):
+    def test_run_finished(self, mock_stream, capsys):
         payloads = [{"events": [{"type": "RUN_FINISHED"}]}]
-        self._mock_stream_and_sse(mock_stream, mock_sse_cls, payloads)
+        self._mock_stream(mock_stream, self._sse_lines(payloads))
         execute_nat_stream("test", "http://localhost:8842/generate/stream")
         captured = capsys.readouterr()
         assert "Run finished." in captured.out
 
-    @patch("sseclient.SSEClient")
     @patch("httpx.stream")
-    def test_malformed_json_skipped(self, mock_stream, mock_sse_cls, capsys):
-        mock_resp = MagicMock()
-        mock_resp.raise_for_status = MagicMock()
-        mock_resp.iter_bytes.return_value = iter([])
-        mock_stream.return_value.__enter__ = MagicMock(return_value=mock_resp)
-        mock_stream.return_value.__exit__ = MagicMock(return_value=False)
+    def test_malformed_json_skipped(self, mock_stream, capsys):
+        lines = iter([
+            "data: not-json",
+            f"data: {json.dumps({'events': [{'type': 'RUN_FINISHED'}]})}",
+        ])
+        self._mock_stream(mock_stream, lines)
+        execute_nat_stream("test", "http://localhost:8842/generate/stream")
+        captured = capsys.readouterr()
+        assert "Run finished." in captured.out
 
-        bad_evt = MagicMock()
-        bad_evt.data = "not-json"
-        good_evt = MagicMock()
-        good_evt.data = json.dumps({"events": [{"type": "RUN_FINISHED"}]})
-
-        mock_client = MagicMock()
-        mock_client.events.return_value = iter([bad_evt, good_evt])
-        mock_sse_cls.return_value = mock_client
-
+    @patch("httpx.stream")
+    def test_non_data_lines_skipped(self, mock_stream, capsys):
+        lines = iter([
+            "event: message",
+            ": comment",
+            "",
+            f"data: {json.dumps({'events': [{'type': 'RUN_FINISHED'}]})}",
+        ])
+        self._mock_stream(mock_stream, lines)
         execute_nat_stream("test", "http://localhost:8842/generate/stream")
         captured = capsys.readouterr()
         assert "Run finished." in captured.out
 
     @patch("httpx.stream")
     def test_connection_error(self, mock_stream):
-        import httpx
+        import httpx  # noqa: PLC0415
 
         mock_stream.return_value.__enter__ = MagicMock(
             side_effect=httpx.ConnectError("refused")
@@ -154,7 +149,7 @@ class TestExecuteNatStream:
 
     @patch("httpx.stream")
     def test_http_error(self, mock_stream):
-        import httpx
+        import httpx  # noqa: PLC0415
 
         mock_resp = MagicMock()
         mock_resp.raise_for_status.side_effect = httpx.HTTPStatusError(
@@ -167,18 +162,9 @@ class TestExecuteNatStream:
         with pytest.raises(Exception, match="HTTP error from NAT server"):
             execute_nat_stream("test", "http://localhost:8842/generate/stream")
 
-    @patch("sseclient.SSEClient")
     @patch("httpx.stream")
-    def test_sends_correct_payload(self, mock_stream, mock_sse_cls):
-        mock_resp = MagicMock()
-        mock_resp.raise_for_status = MagicMock()
-        mock_resp.iter_bytes.return_value = iter([])
-        mock_stream.return_value.__enter__ = MagicMock(return_value=mock_resp)
-        mock_stream.return_value.__exit__ = MagicMock(return_value=False)
-
-        mock_client = MagicMock()
-        mock_client.events.return_value = iter([])
-        mock_sse_cls.return_value = mock_client
+    def test_sends_correct_payload(self, mock_stream):
+        self._mock_stream(mock_stream, iter([]))
 
         execute_nat_stream(
             "my prompt",
