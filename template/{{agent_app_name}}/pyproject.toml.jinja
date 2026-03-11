@@ -3,9 +3,9 @@ name = "{{ agent_app_name }}"
 version = "0.1.0"
 description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
-{% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% elif agent_template_framework == "nat" %}requires-python = ">=3.11, <3.14"{% else %}requires-python = ">=3.10, <3.14"{% endif %}
+{% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% else %}requires-python = ">=3.11, <3.14"{% endif %}
 dependencies = [
-    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, drmcp, langgraph, llamaindex, nat, pydanticai]{% elif agent_template_framework == 'crewai' %}[crewai]{% elif agent_template_framework == 'langgraph' %}[langgraph]{% elif agent_template_framework == 'llamaindex' %}[llamaindex]{% elif agent_template_framework == 'nat' %}[nat]{% else %}[core]{% endif %}==0.6.11",
+    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, drmcp, langgraph, llamaindex, nat, pydanticai]{% elif agent_template_framework == 'crewai' %}[crewai]{% elif agent_template_framework == 'langgraph' %}[langgraph, nat]{% elif agent_template_framework == 'llamaindex' %}[llamaindex, nat]{% elif agent_template_framework == 'nat' %}[nat]{% else %}[core]{% endif %}==0.6.11",
     "datarobot-moderations==11.2.20",
     "datarobot-drum==1.17.11.post1",  # Lift upper limit after asyncio migration finished
     "datarobot-mlops==11.1.0",
@@ -182,7 +182,6 @@ override-dependencies = [
     "fastapi>=0.118.2,<0.122.0",
     "ragas>=0.3.8",
     "starlette>=0.49.1",
-    "onnxruntime==1.23.1; python_version == '3.10'",
     "pyarrow==21.0.0",
     # There is an incompatiblity between the opentelemetry-semantic-conventions-ai==0.4.14
     # and crewai==1.9.3. See BUZZOK-29568 for more info.
@@ -198,6 +197,11 @@ constraint-dependencies = ["gevent; sys_platform == 'never'"]
 
 [dependency-groups]
 extras = []
+{% if agent_template_framework in ['langgraph', 'llamaindex'] %}
+
+[project.entry-points.'nat.plugins']
+{{ agent_template_framework }}_agent = "agent.register"
+{% endif %}
 
 [tool.setuptools.packages.find]
 include = ["agent*"]
