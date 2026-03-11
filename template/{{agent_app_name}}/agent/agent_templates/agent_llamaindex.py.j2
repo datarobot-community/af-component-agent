@@ -36,9 +36,7 @@ class MyAgent(LlamaIndexAgent):
     This example illustrates 2 agents that handle content creation tasks, including planning and writing
     blog posts.
 
-    Supports two execution modes:
-    - DRUM mode: Instantiated with api_key/api_base/model, creates its own LLM via DataRobotLiteLLM.
-    - NAT mode: Instantiated with a pre-configured `llm` from NAT's Builder.
+    Supports to be exposed via the DataRobot DRUM or the Nvidia Nemo Agent Toolkit.
     """
 
     def __init__(
