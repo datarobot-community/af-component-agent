@@ -151,7 +151,7 @@ class MyAgent(LlamaIndexAgent):
             name="planner_agent",
             description="Useful for planning content on a given topic and recording notes for the plan.",
             system_prompt=(
-                "You are the PlannerAgent that creates brief, structured outlines for blog articles. "
+                "You are the planner_agent that creates brief, structured outlines for blog articles. "
                 "You identify the most important points and cite relevant sources. Keep it simple and to the point.\n"
                 "\n"
                 "You have access to tools that can help you research and gather information. Use these tools when "
@@ -176,7 +176,7 @@ class MyAgent(LlamaIndexAgent):
             name="writer_agent",
             description="Useful for writing a report on a given topic.",
             system_prompt=(
-                "You are the WriterAgent that writes opinion pieces based on the PlannerAgent's outline and notes. "
+                "You are the writer_agent that writes opinion pieces based on the planner_agent's outline and notes. "
                 "You provide objective and impartial insights backed by the planner's information. You acknowledge when "
                 "your statements are opinions versus objective facts.\n"
                 "\n"
