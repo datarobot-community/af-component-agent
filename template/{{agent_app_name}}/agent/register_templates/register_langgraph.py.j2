@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from collections.abc import AsyncGenerator
+from typing import Any
 
 from nat.builder.builder import Builder
 from nat.builder.framework_enum import LLMFrameworkEnum
@@ -33,7 +34,7 @@ class LanggraphAgentConfig(AgentBaseConfig, name="langgraph_agent"):  # type: ig
 )
 async def langgraph_agent(
     config: LanggraphAgentConfig, builder: Builder
-) -> AsyncGenerator:
+) -> AsyncGenerator[Any, None]:
     from ag_ui.core import RunAgentInput  # noqa: PLC0415
     from datarobot_genai.dragent.response import DRAgentEventResponse  # noqa: PLC0415
     from nat.builder.function_info import FunctionInfo  # noqa: PLC0415
@@ -44,7 +45,7 @@ async def langgraph_agent(
         config.llm_name, wrapper_type=LLMFrameworkEnum.LANGCHAIN
     )
 
-    agent = MyAgent(llm=llm)
+    agent = MyAgent(llm=llm, verbose=config.verbose)
 
     async def _response_fn(
         input_message: RunAgentInput,
