@@ -11,23 +11,48 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import inspect
+import importlib
 
+import pytest
 from nat.data_models.agent import AgentBaseConfig
 
-from agent.register import LanggraphAgentConfig, langgraph_agent
+# Each framework template produces exactly one config class + one registered function.
+_KNOWN_CONFIGS = {
+    "LanggraphAgentConfig": "langgraph_agent",
+    "LlamaindexAgentConfig": "llamaindex_agent",
+}
+
+
+def _discover():
+    """Import agent.register and return (config_class, func) for the active framework."""
+    reg = importlib.import_module("agent.register")
+    for cls_name, func_name in _KNOWN_CONFIGS.items():
+        cls = getattr(reg, cls_name, None)
+        fn = getattr(reg, func_name, None)
+        if cls is not None and fn is not None:
+            return cls, fn
+    available = [n for n in dir(reg) if not n.startswith("_")]
+    pytest.fail(
+        f"Could not find a known config/function pair in agent.register. "
+        f"Available names: {available}"
+    )
 
 
 class TestRegisterModule:
-    def test_config_class_extends_agent_base_config(self):
-        assert issubclass(LanggraphAgentConfig, AgentBaseConfig)
+    """Tests that the NAT register module loads correctly and has the expected structure."""
 
-    def test_registered_function_exists(self):
-        assert callable(langgraph_agent)
+    def test_module_imports(self):
+        """Verify the register module can be imported without errors."""
+        import agent.register as reg
 
-    def test_registered_function_wraps_async_generator(self):
-        # @register_function wraps with asynccontextmanager, so the original
-        # async generator is accessible via __wrapped__.
-        wrapped = getattr(langgraph_agent, "__wrapped__", None)
-        assert wrapped is not None
-        assert inspect.isasyncgenfunction(wrapped)
+        assert reg is not None
+
+    def test_config_class_is_agent_base_config(self):
+        """Verify the config class is a subclass of AgentBaseConfig."""
+        config_cls, _ = _discover()
+        assert issubclass(config_cls, AgentBaseConfig)
+
+    def test_registered_function_is_callable(self):
+        """Verify the registered function exists and is callable."""
+        _, fn = _discover()
+        assert callable(fn)

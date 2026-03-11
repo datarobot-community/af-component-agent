@@ -1,2 +1,2 @@
-{% if agent_template_framework in ['langgraph'] %}{% include 'template/{{agent_app_name}}/tests/test_nat_templates/test_cli_nat.py.j2' -%}
+{% if agent_template_framework in ['langgraph', 'llamaindex'] %}{% include 'template/{{agent_app_name}}/tests/test_nat_templates/test_cli_nat.py.j2' -%}
 {% endif -%}

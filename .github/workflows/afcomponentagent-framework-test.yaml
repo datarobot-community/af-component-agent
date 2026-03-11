@@ -45,6 +45,10 @@ jobs:
             framework:
               name: langgraph
               agent_name: agent_langgraph
+          - python: python3.10
+            framework:
+              name: llamaindex
+              agent_name: agent_llamaindex
     steps:
       - name: Checkout
         uses: "actions/checkout@v6"
