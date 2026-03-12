@@ -76,7 +76,7 @@ def _are_a2a_endpoints_enabled() -> bool:
     if not workflow_yaml_path.exists():
         return False
     with open(workflow_yaml_path) as f:
-        workflow_config = yaml.safe_load(f)
+        workflow_config = yaml.safe_load(f) or {}
     a2a = workflow_config.get("general", {}).get("front_end", {}).get("a2a")
     return a2a is not None
 
