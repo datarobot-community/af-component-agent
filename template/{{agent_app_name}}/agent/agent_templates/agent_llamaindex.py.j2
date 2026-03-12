@@ -25,6 +25,7 @@ from llama_index.core.agent.workflow import (
     FunctionAgent,
 )
 from llama_index.core.llms import LLM as BaseLLM
+from llama_index.core.tools import BaseTool
 from llama_index.core.workflow import Context
 
 from agent.config import Config
@@ -48,7 +49,7 @@ class MyAgent(LlamaIndexAgent):
         timeout: Optional[int] = 90,
         *,
         llm: Optional[BaseLLM] = None,
-        extra_tools: Optional[list] = None,
+        extra_tools: Optional[list[BaseTool]] = None,
         **kwargs: Any,
     ):
         super().__init__(
