@@ -75,11 +75,12 @@ def _get_expose_a2a_server_endpoint() -> bool:
         return False
     with open(workflow_yaml_path) as f:
         workflow_config = yaml.safe_load(f)
-    return bool(
+    a2a = (
         workflow_config.get("general", {})
         .get("front_end", {})
-        .get("expose_a2a_server_endpoints", False)
+        .get("a2a")
     )
+    return a2a is not None
 
 
 expose_a2a_server_endpoint_bool = _get_expose_a2a_server_endpoint()
