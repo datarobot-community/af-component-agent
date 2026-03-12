@@ -65,6 +65,11 @@ DEFAULT_AGENT_REPLICAS: Final[int] = 2 if ENABLE_AGENT_HA_MODE else 1
 DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES: Final[int] = 0
 DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES: Final[int] = 4 if ENABLE_AGENT_HA_MODE else 2
 
+# NAT frontserver environment flag
+enable_nat_server_bool = (
+    os.environ.get("ENABLE_NAT_SERVER", "").strip().lower() == "true"
+)
+
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
     for pattern in [
@@ -469,6 +474,16 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
         ),
     )
 
+if enable_nat_server_bool:
+    enable_nat_server_runtime_param = (
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key="ENABLE_NAT_SERVER",
+            type="boolean",
+            value="true",
+        )
+    )
+    agent_runtime_parameter_values.append(enable_nat_server_runtime_param)
+
 {{agent_app_name}}_custom_model_files = get_custom_model_files(
     custom_model_folder=str({{agent_app_name}}_application_path),
     runtime_parameter_values=agent_runtime_parameter_values,
@@ -590,7 +605,11 @@ if os.environ.get("AGENT_DEPLOY") != "0":
 
     {{agent_app_name}}_agent_deployment_id = {{agent_app_name}}_agent_deployment.id.apply(lambda id: f"{id}")
     {{agent_app_name}}_deployment_endpoint = {{agent_app_name}}_agent_deployment.id.apply(
-        lambda id: f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}"
+        lambda id: (
+            f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/directAccess"
+            if enable_nat_server_bool
+            else f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}"
+        )
     )
     {{agent_app_name}}_deployment_completions_endpoint = {{agent_app_name}}_agent_deployment.id.apply(
         lambda id: (
@@ -619,3 +638,11 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         value={{agent_app_name}}_deployment_endpoint,
     ),
 ]
+if enable_nat_server_bool:
+    {{agent_app_name}}_app_runtime_parameters.append(
+        pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
+            key="ENABLE_NAT_SERVER",
+            type="boolean",
+            value="true",
+        ),
+    )

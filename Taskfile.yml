@@ -37,6 +37,7 @@ tasks:
     cmds:
       - task: install-e2e
       - task: e2e
+
   render-template:
     desc: "Render template"
     cmds:
@@ -71,6 +72,7 @@ tasks:
       - cp ./fixtures/infra/__init__.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/__init__.py
       - cp ./fixtures/infra/llm.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/llm.py
       - cp ./fixtures/infra/mcp_server.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/mcp_server.py
+
   install-rendered:
     desc: "Install dev"
     cmds:
@@ -80,6 +82,7 @@ tasks:
           AGENT: "{{.AGENT}}"
       - task agent:install --dir $RENDER_DIR/agent_{{.AGENT}}
       - task infra:install --dir $RENDER_DIR/agent_{{.AGENT}}
+
   docker_update_reqs:
     desc: "Update Docker requirements pyproject.toml from jinja template"
     vars:
@@ -98,10 +101,12 @@ tasks:
       # Need to extend support for larger requirements.txt files to enable this.
       # - cd {{.AGENT_PATH}} && uv pip freeze > {{.AGENT_PATH}}/requirements.txt
       # - cat {{.AGENT_PATH}}/requirements.txt
+
   docker_build_local:
     desc: "Build docker image locally (Check container builds)"
     cmds:
       - cd template/\{\{agent_app_name\}\}/docker_context && docker build -f Dockerfile . -t test --platform linux/amd64
+
   test-agent:
     desc: "Run tests"
     cmds:
@@ -125,6 +130,7 @@ tasks:
           else
             echo "Skipping lint check for agent: {{.AGENT}} because SKIP_INFRA=1"
           fi
+
   test-base:
     desc: "Run tests for base agent"
     cmds:
@@ -133,6 +139,7 @@ tasks:
           AGENT: base
           SKIP_LINT: "{{.SKIP_LINT| default 0}}"
           SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
+
   test-nat:
     desc: "Run tests for base agent"
     cmds:
@@ -141,6 +148,7 @@ tasks:
           AGENT: nat
           SKIP_LINT: "{{.SKIP_LINT| default 0}}"
           SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
+
   test-crewai:
     desc: "Run tests for crewai agent"
     cmds:
@@ -149,6 +157,7 @@ tasks:
           AGENT: crewai
           SKIP_LINT: "{{.SKIP_LINT| default 0}}"
           SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
+
   test-langgraph:
     desc: "Run tests for langgraph agent"
     cmds:
@@ -157,6 +166,7 @@ tasks:
           AGENT: langgraph
           SKIP_LINT: "{{.SKIP_LINT| default 0}}"
           SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
+
   test-llamaindex:
     desc: "Run tests for llamaindex agent"
     cmds:
@@ -165,6 +175,7 @@ tasks:
           AGENT: llamaindex
           SKIP_LINT: "{{.SKIP_LINT| default 0}}"
           SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
+
   validate-windows-compatibility:
     desc: "Validate that file paths don't contain characters illegal on Windows"
     cmds:
@@ -190,6 +201,7 @@ tasks:
           echo "Checked $total files, $bad incompatible."
           [ "$bad" -gt 0 ] && exit 1 || true
         platforms: [linux, darwin]
+
   test:
     desc: "Run tests for all agents"
     cmds:
@@ -201,6 +213,7 @@ tasks:
       - task: test-cli
       - task: test-cli-json
       - task: test-cli-streaming
+
   run-cli:
     desc: "Run CLI"
     cmds:
@@ -210,6 +223,7 @@ tasks:
       - echo "Running tests for {{.AGENT}}"
       - cd $RENDER_DIR/agent_base && echo "DATAROBOT_API_TOKEN=secret" > .env && echo "DATAROBOT_ENDPOINT=https://test.com/api/v2" >> .env
       - task agent:cli --dir $RENDER_DIR/agent_base -- execute --show_output --user_prompt "Artificial Intelligence" > $RENDER_DIR/agent_base/agent/output.log 2>&1
+
   test-cli:
     desc: "Test CLI"
     cmds:
@@ -217,6 +231,7 @@ tasks:
       - task: check-output
         vars:
           ASSERTION: "success"
+
   check-output:
       - if [ $(wc -l < $RENDER_DIR/agent_base/agent/output.log) -lt 13 ]; then exit 1; fi
       - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "Running CLI execute"; then exit 1; fi
@@ -224,6 +239,7 @@ tasks:
       - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "INFO - Starting DRUM runner"; then exit 1; fi
       - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "Running agent with user prompt"; then exit 1; fi
       - 'if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "\"content\": \"{{.ASSERTION}}\""; then exit 1; fi'
+
   run-cli-json:
     desc: "Run CLI with JSON"
     cmds:
@@ -233,6 +249,7 @@ tasks:
       - echo "Running tests for {{.AGENT}}"
       - cd $RENDER_DIR/agent_base && echo "DATAROBOT_API_TOKEN=secret" > .env && echo "DATAROBOT_ENDPOINT=https://test.com/api/v2" >> .env
       - task agent:cli --dir $RENDER_DIR/agent_base -- execute --show_output --completion_json example-completion.json > $RENDER_DIR/agent_base/agent/output.log 2>&1
+
   test-cli-json:
     desc: "Test CLI with JSON"
     cmds:
@@ -240,6 +257,7 @@ tasks:
       - task: check-output
         vars:
           ASSERTION: "success"
+
   run-cli-streaming:
     desc: "Run CLI with Streaming"
     cmds:
@@ -249,6 +267,7 @@ tasks:
       - echo "Running tests for {{.AGENT}}"
       - cd $RENDER_DIR/agent_base && echo "DATAROBOT_API_TOKEN=secret" > .env && echo "DATAROBOT_ENDPOINT=https://test.com/api/v2" >> .env
       - task agent:cli --dir $RENDER_DIR/agent_base -- execute --show_output --user_prompt "Artificial Intelligence" --stream > $RENDER_DIR/agent_base/agent/output.log 2>&1
+
   test-cli-streaming:
     desc: "Test CLI with Streaming"
     cmds:
@@ -256,6 +275,7 @@ tasks:
       - task: check-output
         vars:
           ASSERTION: "streaming success"
+
   build-docker:
     desc: "Build docker image"
     cmds:
@@ -264,30 +284,35 @@ tasks:
           AGENT: "{{.AGENT}}"
       - echo "Building docker image for {{.AGENT}}"
       - task agent:build-docker --dir $RENDER_DIR/agent_{{.AGENT}}
+
   build-docker-base:
     desc: "Build docker for base agent"
     cmds:
       - task: build-docker
         vars:
           AGENT: base
+
   build-docker-crewai:
     desc: "Build docker for crewai agent"
     cmds:
       - task: build-docker
         vars:
           AGENT: crewai
+
   build-docker-langgraph:
     desc: "Build docker for langgraph agent"
     cmds:
       - task: build-docker
         vars:
           AGENT: langgraph
+
   build-docker-llamaindex:
     desc: "Build docker for llamaindex agent"
     cmds:
       - task: build-docker
         vars:
           AGENT: llamaindex
+
   build-docker-nat:
     desc: "Build docker image for NAT"
     cmds:

@@ -19,6 +19,7 @@ from datarobot_genai.core.agents import (
 )
 from datarobot_genai.langgraph.agent import LangGraphAgent
 from langchain.agents import create_agent
+from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_litellm.chat_models import ChatLiteLLM
 from langgraph.graph import END, START, MessagesState, StateGraph
@@ -41,6 +42,8 @@ class MyAgent(LangGraphAgent):
         model: Optional[str] = None,
         verbose: Optional[Union[bool, str]] = True,
         timeout: Optional[int] = 90,
+        *,
+        llm: Optional[BaseChatModel] = None,
         **kwargs: Any,
     ):
         """Initializes the MyAgent class with API key, base URL, model, and verbosity settings.
@@ -56,6 +59,8 @@ class MyAgent(LangGraphAgent):
                 Accepts boolean or string values ("true"/"false"). Defaults to True.
             timeout: Optional[int]: How long to wait for the agent to respond.
                 Defaults to 90 seconds.
+            llm: Optional[BaseChatModel]: Pre-configured LLM instance provided by NAT.
+                When set, llm() returns this directly instead of creating a ChatLiteLLM.
             **kwargs: Any: Additional keyword arguments passed to the agent.
                 Contains any parameters received in the CompletionCreateParams.
 
@@ -70,6 +75,7 @@ class MyAgent(LangGraphAgent):
             timeout=timeout,
             **kwargs,
         )
+        self._nat_llm = llm
         self.config = Config()
         self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
         if model in ("unknown", "datarobot-deployed-llm"):
@@ -108,12 +114,11 @@ class MyAgent(LangGraphAgent):
     def llm(
         self,
         auto_model_override: bool = True,
-    ) -> ChatLiteLLM:
-        """Returns the ChatLiteLLM to use for a given model.
+    ) -> BaseChatModel:
+        """Returns the LLM to use for agent nodes.
 
-        If a `self.model` is provided, it will be used. Otherwise, the default model will be used.
-        If auto_model_override is True, it will try and use the model specified in the request
-        but automatically back out to the default model if the LLM Gateway is not configured
+        In NAT mode, returns the pre-configured LLM provided at construction.
+        In DRUM mode, creates a ChatLiteLLM using the configured API credentials.
 
         Args:
             auto_model_override: Optional[bool]: If True, it will try and use the model
@@ -121,8 +126,11 @@ class MyAgent(LangGraphAgent):
                 not available.
 
         Returns:
-            ChatLiteLLM: The model to use.
+            BaseChatModel: The model to use.
         """
+        if self._nat_llm is not None:
+            return self._nat_llm
+
         api_base = self.litellm_api_base(self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id)
         model = self.model or self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:
@@ -164,7 +172,7 @@ class MyAgent(LangGraphAgent):
                 "\n"
                 "Do NOT write paragraphs or detailed explanations. Just provide a focused list.",
             ),
-            name="Planner Agent",
+            name="planner_agent",
         )
 
     @property
@@ -191,5 +199,5 @@ class MyAgent(LangGraphAgent):
                 "IMPORTANT: At the very end of your response, always include a line:\n"
                 f"[Library versions: {LIB_VERSIONS}]",
             ),
-            name="Writer Agent",
+            name="writer_agent",
         )

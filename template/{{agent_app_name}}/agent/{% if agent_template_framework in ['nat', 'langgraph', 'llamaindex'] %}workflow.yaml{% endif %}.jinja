@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+{% if agent_template_framework == 'nat' -%}
 functions:
   planner:
     _type: chat_completion
@@ -26,6 +27,7 @@ functions:
       3. A brief suggested structure (intro, 2-3 sections, conclusion)
 
       Do NOT write paragraphs or detailed explanations. Just provide a focused list.
+    description: A tool that plans the content for the requested topic.
   writer:
     _type: chat_completion
     llm_name: datarobot_llm
@@ -41,6 +43,7 @@ functions:
       4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.
 
       Write in markdown format, ready for publication.
+    description: A tool that writes the content for the requested topic.
   content_writer_pipeline:
     _type: sequential_executor
     tool_list: [planner, writer]
@@ -64,3 +67,22 @@ workflow:
     - content_writer_pipeline
   system_prompt:
     Choose and call a tool to answer the query.
+{% elif agent_template_framework == 'langgraph' -%}
+llms:
+  datarobot_llm:
+    _type: datarobot-llm-component
+
+workflow:
+  _type: langgraph_agent
+  llm_name: datarobot_llm
+  description: LangGraph planner/writer agent
+{% elif agent_template_framework == 'llamaindex' -%}
+llms:
+  datarobot_llm:
+    _type: datarobot-llm-component
+
+workflow:
+  _type: llamaindex_agent
+  llm_name: datarobot_llm
+  description: LlamaIndex planner/writer agent
+{% endif -%}
