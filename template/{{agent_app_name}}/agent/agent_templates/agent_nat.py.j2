@@ -16,6 +16,8 @@ from typing import Any
 
 from datarobot_genai.nat.agent import NatAgent
 
+from agent.version_info import LIB_VERSIONS
+
 
 class MyAgent(NatAgent):
     """MyAgent is a custom agent that uses NVIDIA NeMo Agent Toolkit and can be used for creating
@@ -42,3 +44,4 @@ class MyAgent(NatAgent):
             timeout=timeout,
             **kwargs,
         )
+        print(f"[Library versions: {LIB_VERSIONS}]", flush=True)

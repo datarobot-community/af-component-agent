@@ -32,6 +32,7 @@ from datarobot_genai.core.agents import (
 )
 
 from agent.config import Config
+from agent.version_info import LIB_VERSIONS
 
 
 class MyAgent(BaseAgent[None]):
@@ -122,7 +123,7 @@ class MyAgent(BaseAgent[None]):
             TextMessageContentEvent(
                 type=EventType.TEXT_MESSAGE_CONTENT,
                 message_id=message_id,
-                delta="streaming success",
+                delta=f"streaming success\n\n[Library versions: {LIB_VERSIONS}]",
             ),
             None,
             usage_metrics,
