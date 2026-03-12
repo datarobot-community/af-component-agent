@@ -71,7 +71,7 @@ enable_nat_server_bool = (
 )
 
 
-def _get_expose_a2a_server_endpoint() -> bool:
+def _are_a2a_endpoints_enabled() -> bool:
     workflow_yaml_path = project_dir.parent / "{{agent_app_name}}" / "agent" / "workflow.yaml"
     if not workflow_yaml_path.exists():
         return False
@@ -81,7 +81,7 @@ def _get_expose_a2a_server_endpoint() -> bool:
     return a2a is not None
 
 
-expose_a2a_server_endpoint_bool = _get_expose_a2a_server_endpoint()
+are_a2a_endpoints_enabled = _are_a2a_endpoints_enabled()
 
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
@@ -665,7 +665,7 @@ if enable_nat_server_bool:
             value="true",
         ),
     )
-    if expose_a2a_server_endpoint_bool:
+    if are_a2a_endpoints_enabled:
         {{agent_app_name}}_app_runtime_parameters.append(
             pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
                 key={{agent_app_name}}_application_name.upper() + "_A2A_ENDPOINT",
