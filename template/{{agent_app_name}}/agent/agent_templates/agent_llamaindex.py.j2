@@ -28,6 +28,7 @@ from llama_index.core.llms import LLM as BaseLLM
 from llama_index.core.workflow import Context
 
 from agent.config import Config
+from agent.version_info import LIB_VERSIONS
 
 
 class MyAgent(LlamaIndexAgent):
@@ -188,7 +189,10 @@ class MyAgent(LlamaIndexAgent):
                 "3. Sections/Subtitles should be properly named in an engaging manner.\n"
                 "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
                 "\n"
-                "Write in markdown format. Once complete, use the writer_report_tool to record your report."
+                "Write in markdown format. Once complete, use the writer_report_tool to record your report.\n"
+                "\n"
+                "IMPORTANT: At the very end of your response, always include a line:\n"
+                f"[Library versions: {LIB_VERSIONS}]"
             ),
             llm=self.llm(),
             tools=[self.writer_report_tool, *self.mcp_tools],

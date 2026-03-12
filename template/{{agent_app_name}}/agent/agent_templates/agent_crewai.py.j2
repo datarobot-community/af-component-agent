@@ -17,6 +17,7 @@ from crewai import LLM, Agent, Crew, Process, Task
 from datarobot_genai.crewai.agent import CrewAIAgent
 
 from agent.config import Config
+from agent.version_info import LIB_VERSIONS
 
 
 class MyAgent(CrewAIAgent):
@@ -194,7 +195,8 @@ class MyAgent(CrewAIAgent):
                 "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
                 "{chat_history}"
             ),
-            expected_output="A well-written blog post in markdown format, ready for publication. Maximum 500 words total.",
+            expected_output=f"A well-written blog post in markdown format, ready for publication. Maximum 500 words total. "
+            f"End with a line: [Library versions: {LIB_VERSIONS}]",
             agent=self.agent_writer,
         )
 
