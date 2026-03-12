@@ -42,7 +42,6 @@ class LanggraphAgentConfig(AgentBaseConfig, name="langgraph_agent"):  # type: ig
 async def langgraph_agent(
     config: LanggraphAgentConfig, builder: Builder
 ) -> AsyncGenerator[Any, None]:
-    from nat.builder.function_info import FunctionInfo  # noqa: PLC0415
     from ag_ui.core import RunAgentInput  # noqa: PLC0415
     from datarobot_genai.dragent.response import DRAgentEventResponse  # noqa: PLC0415
     from nat.builder.function_info import FunctionInfo  # noqa: PLC0415
@@ -54,7 +53,9 @@ async def langgraph_agent(
     )
 
     # Fetch a2a_client functions as LangChain-compatible tools
-    a2a_tools = await builder.get_tools(config.function_groups, wrapper_type=LLMFrameworkEnum.LANGCHAIN)
+    a2a_tools = await builder.get_tools(
+        config.function_groups, wrapper_type=LLMFrameworkEnum.LANGCHAIN
+    )
 
     agent = MyAgent(llm=llm, extra_tools=a2a_tools, verbose=config.verbose)
 
