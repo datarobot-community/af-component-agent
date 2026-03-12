@@ -51,7 +51,9 @@ async def llamaindex_agent(
     )
 
     # Fetch a2a_client functions as LlamaIndex-compatible tools
-    a2a_tools = await builder.get_tools(config.function_groups, wrapper_type=LLMFrameworkEnum.LLAMA_INDEX)
+    a2a_tools = await builder.get_tools(
+        config.function_groups, wrapper_type=LLMFrameworkEnum.LLAMA_INDEX
+    )
 
     agent = MyAgent(llm=llm, extra_tools=a2a_tools, verbose=config.verbose)
 

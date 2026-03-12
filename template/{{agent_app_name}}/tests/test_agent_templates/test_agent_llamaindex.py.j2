@@ -263,7 +263,9 @@ class TestMyAgentLlamaIndex:
             extra_tools=[extra_tool],
         )
         with patch.object(MyAgent, "llm", return_value=Mock()):
-            with patch.object(type(agent), "mcp_tools", new_callable=lambda: property(lambda self: [])):
+            with patch.object(
+                type(agent), "mcp_tools", new_callable=lambda: property(lambda self: [])
+            ):
                 planner = agent.agent_planner
                 assert extra_tool in planner.tools
 
@@ -276,7 +278,9 @@ class TestMyAgentLlamaIndex:
             extra_tools=[extra_tool],
         )
         with patch.object(MyAgent, "llm", return_value=Mock()):
-            with patch.object(type(agent), "mcp_tools", new_callable=lambda: property(lambda self: [])):
+            with patch.object(
+                type(agent), "mcp_tools", new_callable=lambda: property(lambda self: [])
+            ):
                 writer = agent.agent_writer
                 assert extra_tool in writer.tools
 

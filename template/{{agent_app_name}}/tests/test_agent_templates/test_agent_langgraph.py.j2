@@ -339,7 +339,9 @@ class TestMyAgentLangGraph:
         )
         mock_llm = Mock()
         with patch.object(MyAgent, "llm", return_value=mock_llm):
-            with patch.object(type(agent), "mcp_tools", new_callable=lambda: property(lambda self: [])):
+            with patch.object(
+                type(agent), "mcp_tools", new_callable=lambda: property(lambda self: [])
+            ):
                 _ = agent.agent_planner
                 _, kwargs = mock_create_agent.call_args
                 assert extra_tool in kwargs["tools"]
@@ -368,7 +370,9 @@ class TestMyAgentLangGraph:
         )
         mock_llm = Mock()
         with patch.object(MyAgent, "llm", return_value=mock_llm):
-            with patch.object(type(agent), "mcp_tools", new_callable=lambda: property(lambda self: [])):
+            with patch.object(
+                type(agent), "mcp_tools", new_callable=lambda: property(lambda self: [])
+            ):
                 _ = agent.agent_writer
                 _, kwargs = mock_create_agent.call_args
                 assert extra_tool in kwargs["tools"]
