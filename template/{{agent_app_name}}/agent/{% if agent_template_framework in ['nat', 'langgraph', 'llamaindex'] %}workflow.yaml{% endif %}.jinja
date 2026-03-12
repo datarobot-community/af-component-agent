@@ -14,10 +14,12 @@
 general:
   front_end:
     _type: dragent_fastapi
-    expose_a2a_server_endpoints: false
-    a2a:
-      name: "Blog Content Writer"
-      description: "An AI content writing agent that researches and writes well-structured blog posts. Provide a topic and it will generate a concise, publication-ready article in markdown format."
+    # Uncomment the following a2a block if you want your agent to expose A2A routes. Note that in
+    # this case the workflow must not be of a `per-user` type i.e. use
+    # @register_function vs. @register_per_user_function or per_user_tool_calling_agent vs. tool_calling_agent
+    # a2a:
+    #   name: "Blog Content Writer"
+    #   description: "An AI content writing agent that researches and writes well-structured blog posts. Provide a topic and it will generate a concise, publication-ready article in markdown format."
 {% if agent_template_framework == 'nat' -%}
 functions:
   planner:
@@ -66,11 +68,7 @@ llms:
   datarobot_llm:
     _type: datarobot-llm-component
 workflow:
-  # To connect this agent to a remote A2A agent, use the alternative type below. Note: exposing
-  # this workflow via A2A will no longer be possible in that case. Use the
-  # expose_a2a_server_endpoints setting to control A2A exposure.
-  # _type: per_user_tool_calling_agent
-  _type: tool_calling_agent
+  _type: per_user_tool_calling_agent
   llm_name: datarobot_llm
   tool_names:
     - planner
@@ -85,7 +83,7 @@ workflow:
     Return only the final blog post output from the writer.
 {% elif agent_template_framework == 'langgraph' -%}
 # To connect this agent to a remote A2A agent, uncomment the block below and add the
-# function group name to the workflow's function_groups list.
+# function group name to the workflow's tool_names list.
 # function_groups:
 #   remote_agent:
 #     _type: a2a_client
@@ -98,11 +96,11 @@ workflow:
   _type: langgraph_agent
   llm_name: datarobot_llm
   description: LangGraph planner/writer agent
-  # function_groups:
+  # tool_names:
   #   - remote_agent
 {% elif agent_template_framework == 'llamaindex' -%}
 # To connect this agent to a remote A2A agent, uncomment the block below and add the
-# function group name to the workflow's function_groups list.
+# function group name to the workflow's tool_names list.
 # function_groups:
 #   remote_agent:
 #     _type: a2a_client
@@ -115,6 +113,6 @@ workflow:
   _type: llamaindex_agent
   llm_name: datarobot_llm
   description: LlamaIndex planner/writer agent
-  # function_groups:
+  # tool_names:
   #   - remote_agent
 {% endif -%}

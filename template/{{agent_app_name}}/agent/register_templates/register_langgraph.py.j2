@@ -30,7 +30,7 @@ class LanggraphAgentConfig(AgentBaseConfig, name="langgraph_agent"):  # type: ig
     The LLM is managed by NAT and accessed via builder.get_llm().
     """
 
-    function_groups: list[FunctionGroupRef] = []
+    tool_names: list[FunctionGroupRef] = []
 
 
 @register_per_user_function(  # type: ignore[untyped-decorator]
@@ -54,7 +54,7 @@ async def langgraph_agent(
 
     # Fetch a2a_client functions as LangChain-compatible tools
     a2a_tools = await builder.get_tools(
-        config.function_groups, wrapper_type=LLMFrameworkEnum.LANGCHAIN
+        config.tool_names, wrapper_type=LLMFrameworkEnum.LANGCHAIN
     )
 
     agent = MyAgent(llm=llm, extra_tools=a2a_tools, verbose=config.verbose)
