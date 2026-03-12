@@ -65,23 +65,6 @@ DEFAULT_AGENT_REPLICAS: Final[int] = 2 if ENABLE_AGENT_HA_MODE else 1
 DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES: Final[int] = 0
 DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES: Final[int] = 4 if ENABLE_AGENT_HA_MODE else 2
 
-# NAT frontserver environment flag
-enable_nat_server_bool = (
-    os.environ.get("ENABLE_NAT_SERVER", "").strip().lower() == "true"
-)
-
-
-def _are_a2a_endpoints_enabled() -> bool:
-    workflow_yaml_path = project_dir.parent / "{{agent_app_name}}" / "agent" / "workflow.yaml"
-    if not workflow_yaml_path.exists():
-        return False
-    with open(workflow_yaml_path) as f:
-        workflow_config = yaml.safe_load(f) or {}
-    a2a = workflow_config.get("general", {}).get("front_end", {}).get("a2a")
-    return a2a is not None
-
-
-are_a2a_endpoints_enabled = _are_a2a_endpoints_enabled()
 
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
@@ -116,6 +99,21 @@ __all__ = [
 {{agent_app_name}}_application_name: str = "{{agent_app_name}}"
 {{agent_app_name}}_asset_name: str = f"[{PROJECT_NAME}] [{{agent_app_name}}]"
 {{agent_app_name}}_application_path = project_dir.parent / "{{agent_app_name}}"
+
+# NAT frontserver environment flag
+_is_nat_server_enabled = (
+    os.environ.get("ENABLE_NAT_SERVER", "").strip().lower() == "true"
+)
+
+
+def _is_a2a_server_enabled() -> bool:
+    workflow_yaml_path = project_dir.parent / "{{agent_app_name}}" / "agent" / "workflow.yaml"
+    if not workflow_yaml_path.exists():
+        return False
+    with open(workflow_yaml_path) as f:
+        workflow_config = yaml.safe_load(f) or {}
+    a2a = workflow_config.get("general", {}).get("front_end", {}).get("a2a")
+    return a2a is not None
 
 
 def _generate_metadata_yaml(
@@ -487,7 +485,7 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
         ),
     )
 
-if enable_nat_server_bool:
+if _is_nat_server_enabled:
     enable_nat_server_runtime_param = (
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
             key="ENABLE_NAT_SERVER",
@@ -621,7 +619,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
     {{agent_app_name}}_deployment_endpoint = {{agent_app_name}}_agent_deployment.id.apply(
         lambda id: (
             f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/directAccess"
-            if enable_nat_server_bool
+            if _is_nat_server_enabled
             else f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}"
         )
     )
@@ -657,7 +655,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         value={{agent_app_name}}_deployment_endpoint,
     ),
 ]
-if enable_nat_server_bool:
+if _is_nat_server_enabled:
     {{agent_app_name}}_app_runtime_parameters.append(
         pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
             key="ENABLE_NAT_SERVER",
@@ -665,7 +663,7 @@ if enable_nat_server_bool:
             value="true",
         ),
     )
-    if are_a2a_endpoints_enabled:
+    if _is_a2a_server_enabled():
         {{agent_app_name}}_app_runtime_parameters.append(
             pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
                 key={{agent_app_name}}_application_name.upper() + "_A2A_ENDPOINT",
