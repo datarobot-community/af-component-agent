@@ -69,17 +69,15 @@ DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES: Final[int] = 4 if ENABLE_AGENT_HA_MODE el
 enable_nat_server_bool = (
     os.environ.get("ENABLE_NAT_SERVER", "").strip().lower() == "true"
 )
+
+
 def _get_expose_a2a_server_endpoint() -> bool:
     workflow_yaml_path = project_dir.parent / "{{agent_app_name}}" / "agent" / "workflow.yaml"
     if not workflow_yaml_path.exists():
         return False
     with open(workflow_yaml_path) as f:
         workflow_config = yaml.safe_load(f)
-    a2a = (
-        workflow_config.get("general", {})
-        .get("front_end", {})
-        .get("a2a")
-    )
+    a2a = workflow_config.get("general", {}).get("front_end", {}).get("a2a")
     return a2a is not None
 
 
