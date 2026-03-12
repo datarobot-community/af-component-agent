@@ -21,6 +21,7 @@ from datarobot_genai.langgraph.agent import LangGraphAgent
 from langchain.agents import create_agent
 from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.tools import BaseTool
 from langchain_litellm.chat_models import ChatLiteLLM
 from langgraph.graph import END, START, MessagesState, StateGraph
 
@@ -43,7 +44,7 @@ class MyAgent(LangGraphAgent):
         timeout: Optional[int] = 90,
         *,
         llm: Optional[BaseChatModel] = None,
-        extra_tools: Optional[list] = None,
+        extra_tools: Optional[list[BaseTool]] = None,
         **kwargs: Any,
     ):
         """Initializes the MyAgent class with API key, base URL, model, and verbosity settings.
@@ -61,7 +62,7 @@ class MyAgent(LangGraphAgent):
                 Defaults to 90 seconds.
             llm: Optional[BaseChatModel]: Pre-configured LLM instance provided by NAT.
                 When set, llm() returns this directly instead of creating a ChatLiteLLM.
-            extra_tools: Optional[list]: Additional tools to inject into the agent (e.g. A2A tools). Keyword-only.
+            extra_tools: Optional[list[BaseTool]]: Additional tools to inject into the agent (e.g. A2A tools). Keyword-only.
             **kwargs: Any: Additional keyword arguments passed to the agent.
                 Contains any parameters received in the CompletionCreateParams.
 
