@@ -5,7 +5,7 @@ description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
 {% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% elif agent_template_framework == "nat" %}requires-python = ">=3.11, <3.14"{% else %}requires-python = ">=3.10, <3.14"{% endif %}
 dependencies = [
-    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, drmcp, langgraph, llamaindex, nat, pydanticai]{% elif agent_template_framework == 'crewai' %}[crewai]{% elif agent_template_framework == 'langgraph' %}[langgraph]{% elif agent_template_framework == 'llamaindex' %}[llamaindex]{% elif agent_template_framework == 'nat' %}[nat]{% else %}[core]{% endif %}==0.6.11",
+    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, drmcp, langgraph, llamaindex, nat, pydanticai]{% elif agent_template_framework == 'crewai' %}[crewai]{% elif agent_template_framework == 'langgraph' %}[langgraph]{% elif agent_template_framework == 'llamaindex' %}[llamaindex]{% elif agent_template_framework == 'nat' %}[nat]{% else %}[core]{% endif %}==0.6.17.dev1212",
     "datarobot-moderations==11.2.20",
     "datarobot-drum==1.17.11.post1",  # Lift upper limit after asyncio migration finished
     "datarobot-mlops==11.1.0",
@@ -187,9 +187,20 @@ override-dependencies = [
     # There is an incompatiblity between the opentelemetry-semantic-conventions-ai==0.4.14
     # and crewai==1.9.3. See BUZZOK-29568 for more info.
     "opentelemetry-semantic-conventions-ai==0.4.13",
+    "appdirs==1.4.4",  # yanked from PyPI but required by crewai
 ]
 package = true
+prerelease = "allow"
 constraint-dependencies = ["gevent; sys_platform == 'never'"]
+
+# TestPyPI index for dev builds of datarobot-genai
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+explicit = true
+
+[tool.uv.sources]
+datarobot-genai = { index = "testpypi" }
 
 # This can be set to allow for proxy indexes in air-gapped environments
 # [[tool.uv.index]]
