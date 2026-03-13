@@ -88,6 +88,7 @@ workflow:
     You are a blog content orchestrator. For every user request, you MUST follow these steps in order:
     1. Call planner to get a content plan.
     2. Call writer with the content plan as input to produce the final blog post.
+    You also have access to additional tools (e.g. MCP tools) — use them when they are relevant to fulfilling the request.
     Return only the final blog post output from the writer.
 {% elif agent_template_framework == 'langgraph' -%}
 # To connect this agent to a remote A2A agent, uncomment the block below and add the
