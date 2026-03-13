@@ -52,12 +52,12 @@ async def llamaindex_agent(
         config.llm_name, wrapper_type=LLMFrameworkEnum.LLAMA_INDEX
     )
 
-    # Fetch a2a_client functions as LlamaIndex-compatible tools
-    a2a_tools = await builder.get_tools(
+    # Fetch workflow tools (from tool_names in workflow config) as LlamaIndex-compatible tools
+    workflow_tools = await builder.get_tools(
         config.tool_names, wrapper_type=LLMFrameworkEnum.LLAMA_INDEX
     )
 
-    agent = MyAgent(llm=llm, extra_tools=a2a_tools, verbose=config.verbose)
+    agent = MyAgent(llm=llm, workflow_tools=workflow_tools, verbose=config.verbose)
 
     async def _response_fn(
         input_message: RunAgentInput,

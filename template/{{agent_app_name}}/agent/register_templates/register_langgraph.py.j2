@@ -52,12 +52,12 @@ async def langgraph_agent(
         config.llm_name, wrapper_type=LLMFrameworkEnum.LANGCHAIN
     )
 
-    # Fetch a2a_client functions as LangChain-compatible tools
-    a2a_tools = await builder.get_tools(
+    # Fetch workflow tools (from tool_names in workflow config) as LangChain-compatible tools
+    workflow_tools = await builder.get_tools(
         config.tool_names, wrapper_type=LLMFrameworkEnum.LANGCHAIN
     )
 
-    agent = MyAgent(llm=llm, extra_tools=a2a_tools, verbose=config.verbose)
+    agent = MyAgent(llm=llm, workflow_tools=workflow_tools, verbose=config.verbose)
 
     async def _response_fn(
         input_message: RunAgentInput,
