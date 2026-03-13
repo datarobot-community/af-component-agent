@@ -100,9 +100,8 @@ __all__ = [
 {{agent_app_name}}_asset_name: str = f"[{PROJECT_NAME}] [{{agent_app_name}}]"
 {{agent_app_name}}_application_path = project_dir.parent / "{{agent_app_name}}"
 
-# NAT frontserver environment flag
-_is_nat_server_enabled = (
-    os.environ.get("ENABLE_NAT_SERVER", "").strip().lower() == "true"
+_is_dragent_server_enabled = (
+    os.environ.get("ENABLE_DRAGENT_SERVER", "").strip().lower() == "true"
 )
 
 
@@ -485,15 +484,15 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
         ),
     )
 
-if _is_nat_server_enabled:
-    enable_nat_server_runtime_param = (
+if _is_dragent_server_enabled:
+    enable_dragent_server_runtime_param = (
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-            key="ENABLE_NAT_SERVER",
+            key="ENABLE_DRAGENT_SERVER",
             type="boolean",
             value="true",
         )
     )
-    agent_runtime_parameter_values.append(enable_nat_server_runtime_param)
+    agent_runtime_parameter_values.append(enable_dragent_server_runtime_param)
 
 {{agent_app_name}}_custom_model_files = get_custom_model_files(
     custom_model_folder=str({{agent_app_name}}_application_path),
@@ -619,7 +618,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
     {{agent_app_name}}_deployment_endpoint = {{agent_app_name}}_agent_deployment.id.apply(
         lambda id: (
             f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}/directAccess"
-            if _is_nat_server_enabled
+            if _is_dragent_server_enabled
             else f"{os.getenv('DATAROBOT_ENDPOINT')}/deployments/{id}"
         )
     )
@@ -655,10 +654,10 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         value={{agent_app_name}}_deployment_endpoint,
     ),
 ]
-if _is_nat_server_enabled:
+if _is_dragent_server_enabled:
     {{agent_app_name}}_app_runtime_parameters.append(
         pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
-            key="ENABLE_NAT_SERVER",
+            key="ENABLE_DRAGENT_SERVER",
             type="boolean",
             value="true",
         ),
