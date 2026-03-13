@@ -14,12 +14,19 @@
 general:
   front_end:
     _type: dragent_fastapi
-    # Uncomment the following a2a block if you want your agent to expose A2A routes. Note that in
-    # this case the workflow must not be of a `per-user` type i.e. use
-    # @register_function vs. @register_per_user_function or per_user_tool_calling_agent vs. tool_calling_agent
-    # a2a:
-    #   name: "Blog Content Writer"
-    #   description: "An AI content writing agent that researches and writes well-structured blog posts. Provide a topic and it will generate a concise, publication-ready article in markdown format."
+    # If you don't want your agent to expose A2A endpoints, remove the following block.
+    a2a:
+      server:
+        name: "Blog Content Writer"
+        description: "An AI content writing agent that researches and writes well-structured blog posts. Provide a topic and it will generate a concise, publication-ready article in markdown format."
+      skills:  # Optional: advertise specific skills in the agent card
+        - id: write_blog
+          name: "Write Blog Post"
+          description: "Researches and writes a blog post on the given topic."
+          tags: []
+          examples:
+            - "Write a blog post about the future of AI in healthcare"
+            - "Create an article about sustainable energy trends"
 {% if agent_template_framework == 'nat' -%}
 functions:
   planner:
@@ -57,7 +64,8 @@ function_groups:
   mcp_tools:
     _type: datarobot_mcp_client
   # To connect this agent to a remote A2A agent, uncomment the block below and add the
-  # function group name to the workflow's tool_names list.
+  # function group name to the workflow's tool_names list. You are also free to use environment
+  # variables like url: ${AGENT_URL:-http://localhost:8842}
   # remote_agent:
   #   _type: a2a_client
   #   url: "https://my-remote-agent.example.com"
@@ -83,7 +91,8 @@ workflow:
     Return only the final blog post output from the writer.
 {% elif agent_template_framework == 'langgraph' -%}
 # To connect this agent to a remote A2A agent, uncomment the block below and add the
-# function group name to the workflow's tool_names list.
+# function group name to the workflow's tool_names list. You are also free to use environment
+# variables like url: ${AGENT_URL:-http://localhost:8842}
 # function_groups:
 #   remote_agent:
 #     _type: a2a_client
@@ -100,7 +109,8 @@ workflow:
   #   - remote_agent
 {% elif agent_template_framework == 'llamaindex' -%}
 # To connect this agent to a remote A2A agent, uncomment the block below and add the
-# function group name to the workflow's tool_names list.
+# function group name to the workflow's tool_names list. You are also free to use environment
+# variables like url: ${AGENT_URL:-http://localhost:8842}
 # function_groups:
 #   remote_agent:
 #     _type: a2a_client
