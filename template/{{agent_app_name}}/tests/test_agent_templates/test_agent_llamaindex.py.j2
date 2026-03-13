@@ -203,13 +203,13 @@ class TestMyAgentLlamaIndex:
                     },
                 )
 
-    def test_agent_planner_includes_extra_tools(self):
-        """Test that agent_planner includes extra_tools alongside mcp_tools."""
+    def test_agent_planner_includes_workflow_tools(self):
+        """Test that agent_planner includes workflow_tools alongside mcp_tools."""
         extra_tool = MagicMock(spec=BaseTool)
         agent = MyAgent(
             api_key="test_key",
             api_base="test_base",
-            extra_tools=[extra_tool],
+            workflow_tools=[extra_tool],
         )
         with patch.object(MyAgent, "llm", return_value=MockLLM()):
             with patch.object(
@@ -218,13 +218,13 @@ class TestMyAgentLlamaIndex:
                 planner = agent.agent_planner
                 assert extra_tool in planner.tools
 
-    def test_agent_writer_includes_extra_tools(self):
-        """Test that agent_writer includes extra_tools alongside mcp_tools."""
+    def test_agent_writer_includes_workflow_tools(self):
+        """Test that agent_writer includes workflow_tools alongside mcp_tools."""
         extra_tool = MagicMock(spec=BaseTool)
         agent = MyAgent(
             api_key="test_key",
             api_base="test_base",
-            extra_tools=[extra_tool],
+            workflow_tools=[extra_tool],
         )
         with patch.object(MyAgent, "llm", return_value=MockLLM()):
             with patch.object(

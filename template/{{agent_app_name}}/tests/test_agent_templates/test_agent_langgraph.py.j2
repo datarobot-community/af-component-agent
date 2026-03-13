@@ -329,13 +329,13 @@ class TestMyAgentLangGraph:
             )
 
     @patch("agent.myagent.create_agent")
-    def test_agent_planner_includes_extra_tools(self, mock_create_agent):
-        """Test that agent_planner includes extra_tools alongside mcp_tools."""
+    def test_agent_planner_includes_workflow_tools(self, mock_create_agent):
+        """Test that agent_planner includes workflow_tools alongside mcp_tools."""
         extra_tool = Mock()
         agent = MyAgent(
             api_key="test_key",
             api_base="test_base",
-            extra_tools=[extra_tool],
+            workflow_tools=[extra_tool],
         )
         mock_llm = Mock()
         with patch.object(MyAgent, "llm", return_value=mock_llm):
@@ -360,13 +360,13 @@ class TestMyAgentLangGraph:
             )
 
     @patch("agent.myagent.create_agent")
-    def test_agent_writer_includes_extra_tools(self, mock_create_agent):
-        """Test that agent_writer includes extra_tools alongside mcp_tools."""
+    def test_agent_writer_includes_workflow_tools(self, mock_create_agent):
+        """Test that agent_writer includes workflow_tools alongside mcp_tools."""
         extra_tool = Mock()
         agent = MyAgent(
             api_key="test_key",
             api_base="test_base",
-            extra_tools=[extra_tool],
+            workflow_tools=[extra_tool],
         )
         mock_llm = Mock()
         with patch.object(MyAgent, "llm", return_value=mock_llm):
