@@ -12,15 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from collections.abc import AsyncGenerator
-from typing import Any
+from typing import Annotated, Any
 
 from ag_ui.core import RunAgentInput
+from datarobot_genai.dragent.converters import aggregate_dragent_event_responses
 from datarobot_genai.dragent.response import DRAgentEventResponse
 from nat.builder.builder import Builder
 from nat.builder.framework_enum import LLMFrameworkEnum
 from nat.cli.register_workflow import register_per_user_function
 from nat.data_models.agent import AgentBaseConfig
 from nat.data_models.component_ref import FunctionGroupRef
+from nat.data_models.streaming import Streaming
 
 
 class LanggraphAgentConfig(AgentBaseConfig, name="langgraph_agent"):  # type: ignore[call-arg, misc]
@@ -59,7 +61,12 @@ async def langgraph_agent(
 
     async def _response_fn(
         input_message: RunAgentInput,
-    ) -> AsyncGenerator[DRAgentEventResponse, None]:
+    ) -> Annotated[
+        AsyncGenerator[DRAgentEventResponse, None],
+        # Streaming tells NAT how to go from a list of streaming events to a single response
+        # object for non-streaming routes.
+        Streaming(convert=aggregate_dragent_event_responses),
+    ]:
         async for event, pipeline_interactions, usage_metrics in agent.invoke(
             input_message
         ):
