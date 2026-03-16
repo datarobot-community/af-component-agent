@@ -105,7 +105,7 @@ _is_dragent_server_enabled = (
 )
 
 
-def _is_a2a_server_enabled() -> bool:
+def _check_a2a_server_enabled() -> bool:
     workflow_yaml_path = project_dir.parent / "{{agent_app_name}}" / "agent" / "workflow.yaml"
     if not workflow_yaml_path.exists():
         return False
@@ -113,6 +113,9 @@ def _is_a2a_server_enabled() -> bool:
         workflow_config = yaml.safe_load(f) or {}
     a2a = workflow_config.get("general", {}).get("front_end", {}).get("a2a")
     return a2a is not None
+
+
+_is_a2a_server_enabled = _check_a2a_server_enabled()
 
 
 def _generate_metadata_yaml(
@@ -662,11 +665,24 @@ if _is_dragent_server_enabled:
             value="true",
         ),
     )
-    if _is_a2a_server_enabled():
-        {{agent_app_name}}_app_runtime_parameters.append(
-            pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
-                key={{agent_app_name}}_application_name.upper() + "_A2A_ENDPOINT",
-                type="string",
-                value={{agent_app_name}}_deployment_a2a_endpoint,
-            ),
-        )
+
+{{agent_app_name}}_agent_runtime_parameters = [
+    pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
+        key={{agent_app_name}}_application_name.upper() + "_DEPLOYMENT_ID",
+        type="string",
+        value={{agent_app_name}}_agent_deployment_id,
+    ),
+    pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
+        key={{agent_app_name}}_application_name.upper() + "_ENDPOINT",
+        type="string",
+        value={{agent_app_name}}_deployment_endpoint,
+    ),
+]
+if _is_dragent_server_enabled  and _is_a2a_server_enabled:
+    {{agent_app_name}}_agent_runtime_parameters.append(
+        pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
+            key={{agent_app_name}}_application_name.upper() + "_A2A_ENDPOINT",
+            type="string",
+            value={{agent_app_name}}_deployment_a2a_endpoint,
+        ),
+    )
