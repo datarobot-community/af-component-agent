@@ -5,7 +5,7 @@ description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
 {% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% else %}requires-python = ">=3.11, <3.14"{% endif %}
 dependencies = [
-    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, drmcp, langgraph, llamaindex, nat]{% elif agent_template_framework == 'crewai' %}[crewai]{% elif agent_template_framework == 'langgraph' %}[langgraph, nat]{% elif agent_template_framework == 'llamaindex' %}[llamaindex, nat]{% elif agent_template_framework == 'nat' %}[nat]{% else %}[core]{% endif %}==0.6.19",
+    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, drmcp, langgraph, llamaindex, nat]{% elif agent_template_framework == 'crewai' %}[crewai]{% elif agent_template_framework == 'langgraph' %}[langgraph, nat]{% elif agent_template_framework == 'llamaindex' %}[llamaindex, nat]{% elif agent_template_framework == 'nat' %}[nat]{% else %}[core]{% endif %}==0.6.19.dev1215",
     "datarobot-moderations==11.2.20",
     "datarobot-drum==1.17.11.post1",  # Lift upper limit after asyncio migration finished
     "datarobot-mlops==11.1.0",
@@ -194,6 +194,14 @@ constraint-dependencies = ["gevent; sys_platform == 'never'"]
 # [[tool.uv.index]]
 # name = "mirror"
 # url = "https://mirror_url/"
+
+[[tool.uv.index]]
+name = "test-pypi"
+url = "https://test.pypi.org/simple/"
+explicit = true
+
+[tool.uv.sources]
+datarobot-genai = { index = "test-pypi" }
 
 [dependency-groups]
 extras = []
