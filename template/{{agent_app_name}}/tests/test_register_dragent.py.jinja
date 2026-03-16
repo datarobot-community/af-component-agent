@@ -1,0 +1,2 @@
+{% if agent_template_framework in ['langgraph', 'llamaindex'] %}{% include 'template/{{agent_app_name}}/tests/test_dragent_templates/test_register_dragent.py.j2' -%}
+{% endif -%}

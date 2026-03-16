@@ -21,7 +21,7 @@ from click.testing import CliRunner
 from cli import build_dragent_payload, cli, execute_dragent_stream, is_dragent_mode
 
 
-class TestIsDrAgentMode:
+class TestIsDRAgentMode:
     def test_default_is_false(self):
         with patch.dict(os.environ, {}, clear=True):
             assert is_dragent_mode() is False
@@ -41,7 +41,7 @@ class TestIsDrAgentMode:
             assert is_dragent_mode() is True
 
 
-class TestBuildNatPayload:
+class TestBuildDRAgentPayload:
     def test_payload_structure(self):
         payload = build_dragent_payload("test prompt")
         assert "threadId" in payload
@@ -60,7 +60,7 @@ class TestBuildNatPayload:
         assert p1["runId"] != p2["runId"]
 
 
-class TestExecuteDrAgentStream:
+class TestExecuteDRAgentStream:
     @staticmethod
     def _sse_lines(payloads):
         """Convert a list of dicts into SSE-formatted lines for iter_lines()."""
@@ -189,7 +189,7 @@ class TestExecuteDrAgentStream:
         "DATAROBOT_ENDPOINT": "https://env-api-base.com",
     },
 )
-class TestCliDrAgentIntegration:
+class TestCliDRAgentIntegration:
     """Integration tests for CLI commands in dragent mode."""
 
     @patch("cli.execute_dragent_stream")
