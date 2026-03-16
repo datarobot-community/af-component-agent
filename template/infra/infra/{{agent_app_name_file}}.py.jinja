@@ -679,7 +679,7 @@ if _is_dragent_server_enabled:
         value={{agent_app_name}}_deployment_endpoint,
     ),
 ]
-if _is_dragent_server_enabled  and _is_a2a_server_enabled:
+if _is_dragent_server_enabled and _is_a2a_server_enabled:
     {{agent_app_name}}_agent_runtime_parameters.append(
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
             key={{agent_app_name}}_application_name.upper() + "_A2A_ENDPOINT",
