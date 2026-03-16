@@ -69,9 +69,13 @@ function_groups:
   # remote_agent:
   #   _type: a2a_client
   #   url: "https://my-remote-agent.example.com"
+  #   auth_provider: datarobot_token
 authentication:
   datarobot_mcp_auth:
     _type: datarobot_mcp_auth
+  datarobot_token:
+    _type: datarobot_api_key
+    raw_key: "${DATAROBOT_API_TOKEN}"
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
@@ -98,6 +102,12 @@ workflow:
 #   remote_agent:
 #     _type: a2a_client
 #     url: "https://my-remote-agent.example.com"
+#     auth_provider: datarobot_token
+authentication:
+  datarobot_token:
+    _type: datarobot_api_key
+    raw_key: "${DATAROBOT_API_TOKEN}"
+
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
@@ -116,6 +126,12 @@ workflow:
 #   remote_agent:
 #     _type: a2a_client
 #     url: "https://my-remote-agent.example.com"
+#     auth_provider: datarobot_token
+authentication:
+  datarobot_token:
+    _type: datarobot_api_key
+    raw_key: "${DATAROBOT_API_TOKEN}"
+
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
