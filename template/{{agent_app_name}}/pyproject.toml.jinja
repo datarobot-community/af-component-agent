@@ -5,7 +5,7 @@ description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
 {% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% else %}requires-python = ">=3.11, <3.14"{% endif %}
 dependencies = [
-    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, nat]{% elif agent_template_framework == 'crewai' %}[crewai, dragent]{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent]{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent]{% elif agent_template_framework == 'nat' %}[nat, dragent]{% else %}[core]{% endif %}==0.7.0",
+    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, nat]{% elif agent_template_framework == 'crewai' %}[crewai, dragent]{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent]{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent]{% elif agent_template_framework == 'nat' %}[nat, dragent]{% else %}[core]{% endif %}==0.7.2",
     "datarobot-moderations==11.2.20",
     "datarobot-drum==1.17.11.post1",  # Lift upper limit after asyncio migration finished
     "datarobot-mlops==11.1.0",
@@ -186,6 +186,10 @@ override-dependencies = [
     # There is an incompatiblity between the opentelemetry-semantic-conventions-ai==0.4.14
     # and crewai==1.9.3. See BUZZOK-29568 for more info.
     "opentelemetry-semantic-conventions-ai==0.4.13",
+    # nvidia-nat-crewai==1.4.1 pins crewai<1.0.0 but datarobot-genai requires crewai>=1.1.0.
+    # Override until nvidia-nat-crewai ships a fix upstream (BUZZOK-29844).
+    # Upstream issue: https://github.com/NVIDIA/NeMo-Agent-Toolkit/issues/1802
+    "crewai[litellm]>=1.1.0,<2.0.0",
 ]
 package = true
 constraint-dependencies = ["gevent; sys_platform == 'never'"]
@@ -197,7 +201,7 @@ constraint-dependencies = ["gevent; sys_platform == 'never'"]
 
 [dependency-groups]
 extras = []
-{% if agent_template_framework in ['langgraph', 'llamaindex'] %}
+{% if agent_template_framework in ['crewai', 'langgraph', 'llamaindex'] %}
 
 [project.entry-points.'nat.plugins']
 {{ agent_template_framework }}_agent = "agent.register"
