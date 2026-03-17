@@ -11,6 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+general:
+  front_end:
+    _type: dragent_fastapi
+    # If you don't want your agent to expose A2A endpoints, remove the following block.
+    a2a:
+      server:
+        name: "Base Agent"
+        description: "A custom base agent."
+      skills:
+        - id: base_agent
+          name: "Base Agent"
+          description: "Runs the base agent."
+          tags: []
+          examples: []
+
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
@@ -19,3 +34,7 @@ workflow:
   _type: base_agent
   llm_name: datarobot_llm
   description: Base agent example
+
+authentication:
+  datarobot_auth:
+    _type: datarobot_api_key
