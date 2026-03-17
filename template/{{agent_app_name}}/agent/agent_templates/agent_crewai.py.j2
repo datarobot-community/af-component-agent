@@ -14,6 +14,7 @@
 from typing import Any, List, Optional, Union
 
 from crewai import LLM, Agent, Crew, Process, Task
+from crewai.tools import BaseTool as CrewAIBaseTool
 from datarobot_genai.crewai.agent import CrewAIAgent
 
 from agent.config import Config
@@ -33,6 +34,9 @@ class MyAgent(CrewAIAgent):
         model: Optional[str] = None,
         verbose: Optional[Union[bool, str]] = True,
         timeout: Optional[int] = 90,
+        *,
+        llm: Optional[LLM] = None,
+        workflow_tools: Optional[list[CrewAIBaseTool]] = None,
         **kwargs: Any,
     ):
         """Initializes the MyAgent class with API key, base URL, model, and verbosity settings.
@@ -48,6 +52,9 @@ class MyAgent(CrewAIAgent):
                 Accepts boolean or string values ("true"/"false"). Defaults to True.
             timeout: Optional[int]: How long to wait for the agent to respond.
                 Defaults to 90 seconds.
+            llm: Optional[LLM]: Pre-configured LLM instance provided by NAT.
+                When set, llm() returns this directly instead of creating a new LLM.
+            workflow_tools: Optional[list[CrewAIBaseTool]]: Additional tools from the workflow config (e.g. A2A client tools). Keyword-only.
             **kwargs: Any: Additional keyword arguments passed to the agent.
                 Contains any parameters received in the CompletionCreateParams.
 
@@ -62,6 +69,8 @@ class MyAgent(CrewAIAgent):
             timeout=timeout,
             **kwargs,
         )
+        self._nat_llm = llm
+        self._workflow_tools = workflow_tools or []
         self.config = Config()
         self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
 
@@ -72,20 +81,22 @@ class MyAgent(CrewAIAgent):
         self,
         auto_model_override: bool = True,
     ) -> LLM:
-        """Returns the LLM to use for a given model.
+        """Returns the LLM to use for agent nodes.
 
-        If a `self.model` is provided, it will be used. Otherwise, the default model will be used.
-        If auto_model_override is True, it will try and use the model specified in the request
-        but automatically back out to the default model if the LLM Gateway is not configured
+        In NAT mode, returns the pre-configured LLM provided at construction.
+        In DRUM mode, creates a CrewAI LLM instance using the configured API credentials.
 
         Args:
             auto_model_override: Optional[bool]: If True, it will try and use the model
                 specified in the request but automatically back out if the LLM Gateway is
-                not available.
+                not available. Only applies in DRUM mode.
 
         Returns:
             LLM: The model to use.
         """
+        if self._nat_llm is not None:
+            return self._nat_llm
+
         api_base = self.litellm_api_base(self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id)
         model = self.model or self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:
@@ -145,7 +156,7 @@ class MyAgent(CrewAIAgent):
             allow_delegation=False,
             verbose=self.verbose,
             llm=self.llm(),
-            tools=self.mcp_tools,
+            tools=self.mcp_tools + self._workflow_tools,
         )
 
     @property
@@ -165,7 +176,7 @@ class MyAgent(CrewAIAgent):
             allow_delegation=False,
             verbose=self.verbose,
             llm=self.llm(),
-            tools=self.mcp_tools,
+            tools=self.mcp_tools + self._workflow_tools,
         )
 
     @property
