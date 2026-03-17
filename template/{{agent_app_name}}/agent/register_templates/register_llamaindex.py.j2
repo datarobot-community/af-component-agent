@@ -17,6 +17,10 @@ from typing import Annotated, Any
 from ag_ui.core import RunAgentInput
 from datarobot_genai.dragent.converters import aggregate_dragent_event_responses
 from datarobot_genai.dragent.response import DRAgentEventResponse
+from datarobot_genai.nat.helpers import (
+    extract_authorization_from_context,
+    extract_datarobot_headers_from_context,
+)
 from nat.builder.builder import Builder
 from nat.builder.framework_enum import LLMFrameworkEnum
 from nat.cli.register_workflow import register_per_user_function
@@ -57,8 +61,6 @@ async def llamaindex_agent(
         config.tool_names, wrapper_type=LLMFrameworkEnum.LLAMA_INDEX
     )
 
-    agent = MyAgent(llm=llm, workflow_tools=workflow_tools, verbose=config.verbose)
-
     async def _response_fn(
         input_message: RunAgentInput,
     ) -> Annotated[
@@ -67,6 +69,16 @@ async def llamaindex_agent(
         # object for non-streaming routes.
         Streaming(convert=aggregate_dragent_event_responses),
     ]:
+        forwarded_headers = extract_datarobot_headers_from_context()
+        authorization_context = extract_authorization_from_context()
+        agent = MyAgent(
+            llm=llm,
+            workflow_tools=workflow_tools,
+            verbose=config.verbose,
+            forwarded_headers=forwarded_headers,
+            authorization_context=authorization_context,
+        )
+
         async for event, pipeline_interactions, usage_metrics in agent.invoke(
             input_message
         ):

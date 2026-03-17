@@ -27,7 +27,6 @@ general:
           examples:
             - "Write a blog post about the future of AI in healthcare"
             - "Create an article about sustainable energy trends"
-{% if agent_template_framework == 'nat' -%}
 functions:
   planner:
     _type: chat_completion
@@ -90,40 +89,3 @@ workflow:
     2. Call writer with the content plan as input to produce the final blog post.
     You also have access to additional tools (e.g. MCP tools) — use them when they are relevant to fulfilling the request.
     Return only the final blog post output from the writer.
-{% elif agent_template_framework == 'langgraph' -%}
-# To connect this agent to a remote A2A agent, uncomment the block below and add the
-# function group name to the workflow's tool_names list. You are also free to use environment
-# variables like `url: "${AGENT_URL:-http://localhost:8842}"`
-# function_groups:
-#   remote_agent:
-#     _type: a2a_client
-#     url: "https://my-remote-agent.example.com"
-llms:
-  datarobot_llm:
-    _type: datarobot-llm-component
-
-workflow:
-  _type: langgraph_agent
-  llm_name: datarobot_llm
-  description: LangGraph planner/writer agent
-  # tool_names:
-  #   - remote_agent
-{% elif agent_template_framework == 'llamaindex' -%}
-# To connect this agent to a remote A2A agent, uncomment the block below and add the
-# function group name to the workflow's tool_names list. You are also free to use environment
-# variables like `url: "${AGENT_URL:-http://localhost:8842}"`
-# function_groups:
-#   remote_agent:
-#     _type: a2a_client
-#     url: "https://my-remote-agent.example.com"
-llms:
-  datarobot_llm:
-    _type: datarobot-llm-component
-
-workflow:
-  _type: llamaindex_agent
-  llm_name: datarobot_llm
-  description: LlamaIndex planner/writer agent
-  # tool_names:
-  #   - remote_agent
-{% endif -%}
