@@ -65,12 +65,15 @@ function_groups:
   # To connect this agent to a remote A2A agent, uncomment the block below and add the
   # function group name to the workflow's tool_names list. You are also free to use environment
   # variables like `url: "${AGENT_URL:-http://localhost:8842}"`
-  # remote_agent:
-  #   _type: a2a_client
-  #   url: "https://my-remote-agent.example.com"
+  #remote_agent:
+  #  _type: authenticated_a2a_client
+  #  url: "https://app.datarobot.com/api/v2/deployments/<deployment-id>/directAccess/a2a/
+  #  auth_provider: datarobot_auth
 authentication:
   datarobot_mcp_auth:
     _type: datarobot_mcp_auth
+  datarobot_auth:
+    _type: datarobot_api_key
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
