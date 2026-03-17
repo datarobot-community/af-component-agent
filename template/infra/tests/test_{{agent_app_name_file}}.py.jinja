@@ -100,7 +100,7 @@ def pulumi_mocks(monkeypatch, tmp_path):
     from datarobot.enums import EXECUTION_ENVIRONMENT_VERSION_BUILD_STATUS
 
     _default_ee_version = MagicMock()
-    _default_ee_version.id = "690cd2f698419673f938f7c4"
+    _default_ee_version.id = "69b92f2cb83bd6076dfbfbb4"
     _default_ee_version.build_status = (
         EXECUTION_ENVIRONMENT_VERSION_BUILD_STATUS.SUCCESS
     )
@@ -257,7 +257,7 @@ def test_execution_environment_pinned_set(monkeypatch):
     )
     monkeypatch.setenv(
         "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
-        "690cd2f698419673f938f7c4",
+        "69b92f2cb83bd6076dfbfbb4",
     )
 
     import importlib
@@ -270,7 +270,7 @@ def test_execution_environment_pinned_set(monkeypatch):
         "Using default GenAI Agentic Execution Environment."
     )
     agent_infra.pulumi.info.assert_any_call(
-        "Using existing execution environment: python-311-genai-agents-id Version ID: 690cd2f698419673f938f7c4"
+        "Using existing execution environment: python-311-genai-agents-id Version ID: 69b92f2cb83bd6076dfbfbb4"
     )
 
     # Check that ExecutionEnvironment.get was called with the correct parameters
@@ -278,7 +278,7 @@ def test_execution_environment_pinned_set(monkeypatch):
     args, kwargs = agent_infra.pulumi_datarobot.ExecutionEnvironment.get.call_args
 
     assert kwargs["id"] == "python-311-genai-agents-id"
-    assert kwargs["version_id"] == "690cd2f698419673f938f7c4"
+    assert kwargs["version_id"] == "69b92f2cb83bd6076dfbfbb4"
     assert kwargs["resource_name"] == "[unittest] [{{agent_app_name}}] Execution Environment"
 
     # ExecutionEnvironment constructor should not be called when using default env
@@ -480,13 +480,13 @@ def test_custom_model_created_pinned_version_id(monkeypatch):
     """Test that pulumi_datarobot.CustomModel is created with correct arguments."""
     monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
     monkeypatch.setenv(
-        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID", "690cd2f698419673f938f7c4"
+        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID", "69b92f2cb83bd6076dfbfbb4"
     )
     monkeypatch.setattr(
         "pulumi_datarobot.ExecutionEnvironment",
         MagicMock(
             return_value=MagicMock(
-                id="default-id", version_id="690cd2f698419673f938f7c4"
+                id="default-id", version_id="69b92f2cb83bd6076dfbfbb4"
             )
         ),
     )
@@ -506,7 +506,7 @@ def test_custom_model_created_pinned_version_id(monkeypatch):
     agent_infra.pulumi_datarobot.CustomModel.assert_called_once()
     args, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
     assert kwargs["base_environment_id"] == "default-id"
-    assert kwargs["base_environment_version_id"] == "690cd2f698419673f938f7c4"
+    assert kwargs["base_environment_version_id"] == "69b92f2cb83bd6076dfbfbb4"
 
 
 def test_custom_model_resource_bundle_and_replicas(monkeypatch):
