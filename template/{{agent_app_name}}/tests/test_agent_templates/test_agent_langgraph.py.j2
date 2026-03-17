@@ -329,6 +329,24 @@ class TestMyAgentLangGraph:
             )
 
     @patch("agent.myagent.create_agent")
+    def test_agent_planner_includes_workflow_tools(self, mock_create_agent):
+        """Test that agent_planner includes workflow_tools alongside mcp_tools."""
+        extra_tool = Mock()
+        agent = MyAgent(
+            api_key="test_key",
+            api_base="test_base",
+            workflow_tools=[extra_tool],
+        )
+        mock_llm = Mock()
+        with patch.object(MyAgent, "llm", return_value=mock_llm):
+            with patch.object(
+                type(agent), "mcp_tools", new_callable=lambda: property(lambda self: [])
+            ):
+                _ = agent.agent_planner
+                _, kwargs = mock_create_agent.call_args
+                assert extra_tool in kwargs["tools"]
+
+    @patch("agent.myagent.create_agent")
     def test_agent_writer_property(self, mock_create_agent, agent):
         """Test that agent_writer creates a react agent."""
         mock_llm = Mock()
@@ -340,6 +358,24 @@ class TestMyAgentLangGraph:
                 system_prompt=ANY,
                 name="writer_agent",
             )
+
+    @patch("agent.myagent.create_agent")
+    def test_agent_writer_includes_workflow_tools(self, mock_create_agent):
+        """Test that agent_writer includes workflow_tools alongside mcp_tools."""
+        extra_tool = Mock()
+        agent = MyAgent(
+            api_key="test_key",
+            api_base="test_base",
+            workflow_tools=[extra_tool],
+        )
+        mock_llm = Mock()
+        with patch.object(MyAgent, "llm", return_value=mock_llm):
+            with patch.object(
+                type(agent), "mcp_tools", new_callable=lambda: property(lambda self: [])
+            ):
+                _ = agent.agent_writer
+                _, kwargs = mock_create_agent.call_args
+                assert extra_tool in kwargs["tools"]
 
     def test_workflow_property(self, agent):
         """Test that workflow returns a StateGraph with correct structure."""

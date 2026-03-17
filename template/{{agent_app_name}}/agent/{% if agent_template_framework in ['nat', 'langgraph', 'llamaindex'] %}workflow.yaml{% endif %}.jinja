@@ -11,6 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+general:
+  front_end:
+    _type: dragent_fastapi
+    # If you don't want your agent to expose A2A endpoints, remove the following block.
+    a2a:
+      server:
+        name: "Blog Content Writer"
+        description: "An AI content writing agent that researches and writes well-structured blog posts. Provide a topic and it will generate a concise, publication-ready article in markdown format."
+      skills:  # Optional: advertise specific skills in the agent card
+        - id: write_blog
+          name: "Write Blog Post"
+          description: "Researches and writes a blog post on the given topic."
+          tags: []
+          examples:
+            - "Write a blog post about the future of AI in healthcare"
+            - "Create an article about sustainable energy trends"
 {% if agent_template_framework == 'nat' -%}
 functions:
   planner:
@@ -44,13 +60,15 @@ functions:
 
       Write in markdown format, ready for publication.
     description: A tool that writes the content for the requested topic.
-  content_writer_pipeline:
-    _type: sequential_executor
-    tool_list: [planner, writer]
-    description: A tool that plans and writes content on the requested topic.
 function_groups:
   mcp_tools:
     _type: datarobot_mcp_client
+  # To connect this agent to a remote A2A agent, uncomment the block below and add the
+  # function group name to the workflow's tool_names list. You are also free to use environment
+  # variables like `url: "${AGENT_URL:-http://localhost:8842}"`
+  # remote_agent:
+  #   _type: a2a_client
+  #   url: "https://my-remote-agent.example.com"
 authentication:
   datarobot_mcp_auth:
     _type: datarobot_mcp_auth
@@ -58,16 +76,28 @@ llms:
   datarobot_llm:
     _type: datarobot-llm-component
 workflow:
-  _type: tool_calling_agent
+  _type: per_user_tool_calling_agent
   llm_name: datarobot_llm
   tool_names:
-    - content_writer_pipeline
+    - planner
+    - writer
     - mcp_tools
-  return_direct:
-    - content_writer_pipeline
-  system_prompt:
-    Choose and call a tool to answer the query.
+    # Uncomment to inject A2A remote agent tools (must also uncomment function_groups.remote_agent above):
+    # - remote_agent
+  system_prompt: |
+    You are a blog content orchestrator. For every user request, you MUST follow these steps in order:
+    1. Call planner to get a content plan.
+    2. Call writer with the content plan as input to produce the final blog post.
+    You also have access to additional tools (e.g. MCP tools) — use them when they are relevant to fulfilling the request.
+    Return only the final blog post output from the writer.
 {% elif agent_template_framework == 'langgraph' -%}
+# To connect this agent to a remote A2A agent, uncomment the block below and add the
+# function group name to the workflow's tool_names list. You are also free to use environment
+# variables like `url: "${AGENT_URL:-http://localhost:8842}"`
+# function_groups:
+#   remote_agent:
+#     _type: a2a_client
+#     url: "https://my-remote-agent.example.com"
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
@@ -76,7 +106,16 @@ workflow:
   _type: langgraph_agent
   llm_name: datarobot_llm
   description: LangGraph planner/writer agent
+  # tool_names:
+  #   - remote_agent
 {% elif agent_template_framework == 'llamaindex' -%}
+# To connect this agent to a remote A2A agent, uncomment the block below and add the
+# function group name to the workflow's tool_names list. You are also free to use environment
+# variables like `url: "${AGENT_URL:-http://localhost:8842}"`
+# function_groups:
+#   remote_agent:
+#     _type: a2a_client
+#     url: "https://my-remote-agent.example.com"
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
@@ -85,4 +124,6 @@ workflow:
   _type: llamaindex_agent
   llm_name: datarobot_llm
   description: LlamaIndex planner/writer agent
+  # tool_names:
+  #   - remote_agent
 {% endif -%}

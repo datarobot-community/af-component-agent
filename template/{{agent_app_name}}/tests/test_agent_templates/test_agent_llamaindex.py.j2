@@ -1,7 +1,9 @@
 import os
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
+from llama_index.core.llms import MockLLM
+from llama_index.core.tools import BaseTool
 
 from agent import MyAgent
 
@@ -200,6 +202,36 @@ class TestMyAgentLlamaIndex:
                         "extra_headers": {"X-DataRobot-Identity-Token": "xyz"},
                     },
                 )
+
+    def test_agent_planner_includes_workflow_tools(self):
+        """Test that agent_planner includes workflow_tools alongside mcp_tools."""
+        extra_tool = MagicMock(spec=BaseTool)
+        agent = MyAgent(
+            api_key="test_key",
+            api_base="test_base",
+            workflow_tools=[extra_tool],
+        )
+        with patch.object(MyAgent, "llm", return_value=MockLLM()):
+            with patch.object(
+                type(agent), "mcp_tools", new_callable=lambda: property(lambda self: [])
+            ):
+                planner = agent.agent_planner
+                assert extra_tool in planner.tools
+
+    def test_agent_writer_includes_workflow_tools(self):
+        """Test that agent_writer includes workflow_tools alongside mcp_tools."""
+        extra_tool = MagicMock(spec=BaseTool)
+        agent = MyAgent(
+            api_key="test_key",
+            api_base="test_base",
+            workflow_tools=[extra_tool],
+        )
+        with patch.object(MyAgent, "llm", return_value=MockLLM()):
+            with patch.object(
+                type(agent), "mcp_tools", new_callable=lambda: property(lambda self: [])
+            ):
+                writer = agent.agent_writer
+                assert extra_tool in writer.tools
 
     @pytest.mark.parametrize(
         "api_base,expected_result",
