@@ -28,10 +28,6 @@ from nat.data_models.agent import AgentBaseConfig
 from nat.data_models.component_ref import FunctionGroupRef
 from nat.data_models.streaming import Streaming
 
-# Use getattr to avoid NAT's source-code regex auto-detection of CrewAI,
-# which would force-import nvidia-nat-crewai's profiler plugin.
-_CREWAI_WRAPPER = getattr(LLMFrameworkEnum, "CREWAI")
-
 
 class CrewaiAgentConfig(AgentBaseConfig, name="crewai_agent"):  # type: ignore[call-arg, misc]
     """NAT config for the CrewAI agent.
@@ -47,7 +43,7 @@ class CrewaiAgentConfig(AgentBaseConfig, name="crewai_agent"):  # type: ignore[c
     config_type=CrewaiAgentConfig,
     input_type=RunAgentInput,
     streaming_output_type=DRAgentEventResponse,
-    framework_wrappers=[_CREWAI_WRAPPER],
+    framework_wrappers=[LLMFrameworkEnum.CREWAI],
 )
 async def crewai_agent(
     config: CrewaiAgentConfig, builder: Builder
@@ -56,11 +52,11 @@ async def crewai_agent(
 
     from agent.myagent import MyAgent  # noqa: PLC0415
 
-    llm = await builder.get_llm(config.llm_name, wrapper_type=_CREWAI_WRAPPER)
+    llm = await builder.get_llm(config.llm_name, wrapper_type=LLMFrameworkEnum.CREWAI)
 
     # Fetch workflow tools (from tool_names in workflow config) as CrewAI-compatible tools
     workflow_tools = await builder.get_tools(
-        config.tool_names, wrapper_type=_CREWAI_WRAPPER
+        config.tool_names, wrapper_type=LLMFrameworkEnum.CREWAI
     )
 
     async def _response_fn(
