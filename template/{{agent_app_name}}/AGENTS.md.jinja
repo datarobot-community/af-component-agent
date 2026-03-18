@@ -1,6 +1,6 @@
 # Agent Development Instructions
 
-## Dependecies Installation
+## Dependencies Installation
 
 The following command should be run after agent code modification:
 
