@@ -50,8 +50,11 @@ async def base_agent(
         input_message: RunAgentInput,
     ) -> Annotated[
         AsyncGenerator[DRAgentEventResponse, None],
+        # Streaming tells NAT how to go from a list of streaming events to a single response
+        # object for non-streaming routes.
         Streaming(convert=aggregate_dragent_event_responses),
     ]:
+        # Agent should have access to request-specific headers and authorization context
         forwarded_headers = extract_datarobot_headers_from_context()
         authorization_context = extract_authorization_from_context()
         agent = MyAgent(

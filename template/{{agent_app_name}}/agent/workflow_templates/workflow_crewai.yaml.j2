@@ -32,8 +32,14 @@ general:
 # variables like `url: "${AGENT_URL:-http://localhost:8842}"`
 # function_groups:
 #   remote_agent:
-#     _type: a2a_client
-#     url: "https://my-remote-agent.example.com"
+#     _type: authenticated_a2a_client
+#     url: "https://app.datarobot.com/api/v2/deployments/<deployment-id>/directAccess/a2a/"
+#     auth_provider: datarobot_auth
+
+authentication:
+  datarobot_auth:
+    _type: datarobot_api_key
+
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
