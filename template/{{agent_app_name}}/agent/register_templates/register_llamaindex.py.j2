@@ -15,7 +15,9 @@ from collections.abc import AsyncGenerator
 from typing import Annotated, Any
 
 from ag_ui.core import RunAgentInput
-from datarobot_genai.dragent.frontends.converters import aggregate_dragent_event_responses
+from datarobot_genai.dragent.frontends.converters import (
+    aggregate_dragent_event_responses,
+)
 from datarobot_genai.dragent.frontends.response import DRAgentEventResponse
 from datarobot_genai.nat.helpers import (
     extract_authorization_from_context,
