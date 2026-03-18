@@ -17,16 +17,14 @@ general:
     # If you don't want your agent to expose A2A endpoints, remove the following block.
     a2a:
       server:
-        name: "Blog Content Writer"
-        description: "An AI content writing agent that researches and writes well-structured blog posts. Provide a topic and it will generate a concise, publication-ready article in markdown format."
+        name: "Base Agent"
+        description: "A custom base agent."
       skills:  # Optional: advertise specific skills in the agent card
-        - id: write_blog
-          name: "Write Blog Post"
-          description: "Researches and writes a blog post on the given topic."
+        - id: base_agent
+          name: "Base Agent"
+          description: "Runs the base agent."
           tags: []
-          examples:
-            - "Write a blog post about the future of AI in healthcare"
-            - "Create an article about sustainable energy trends"
+          examples: []
 # To connect this agent to a remote A2A agent, uncomment the block below and add the
 # function group name to the workflow's tool_names list. You are also free to use environment
 # variables like `url: "${AGENT_URL:-http://localhost:8842}"`
@@ -36,17 +34,15 @@ general:
 #     url: "https://app.datarobot.com/api/v2/deployments/<deployment-id>/directAccess/a2a/"
 #     auth_provider: datarobot_auth
 
-authentication:
-  datarobot_auth:
-    _type: datarobot_api_key
-
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
 
 workflow:
-  _type: crewai_agent
+  _type: base_agent
   llm_name: datarobot_llm
-  description: CrewAI planner/writer agent
-  # tool_names:
-  #   - remote_agent
+  description: Base agent example
+
+authentication:
+  datarobot_auth:
+    _type: datarobot_api_key

@@ -1,5 +1,6 @@
 {% if agent_template_framework == "langgraph" %}{% include 'template/{{agent_app_name}}/agent/workflow_templates/workflow_langgraph.yaml.j2' -%}
 {% elif agent_template_framework == "llamaindex" %}{% include 'template/{{agent_app_name}}/agent/workflow_templates/workflow_llamaindex.yaml.j2' -%}
 {% elif agent_template_framework == "crewai" %}{% include 'template/{{agent_app_name}}/agent/workflow_templates/workflow_crewai.yaml.j2' -%}
+{% elif agent_template_framework == "base" %}{% include 'template/{{agent_app_name}}/agent/workflow_templates/workflow_base.yaml.j2' -%}
 {% elif agent_template_framework == "nat" %}{% include 'template/{{agent_app_name}}/agent/workflow_templates/workflow_nat.yaml.j2' -%}
 {% endif -%}
