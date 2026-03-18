@@ -14,6 +14,9 @@
 general:
   front_end:
     _type: dragent_fastapi
+    # Step adaptor is not necessary for custom agents
+    step_adaptor:
+      mode: "off"
     # If you don't want your agent to expose A2A endpoints, remove the following block.
     a2a:
       server:
