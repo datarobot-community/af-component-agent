@@ -46,6 +46,9 @@ class MyAgent(BaseAgent[None]):
         model: Optional[str] = None,
         verbose: Optional[Union[bool, str]] = True,
         timeout: Optional[int] = 90,
+        *,
+        llm: Optional[Any] = None,
+        workflow_tools: Optional[list[Any]] = None,
         **kwargs: Any,
     ):
         """Initializes the MyAgent class with API key, base URL, model, and verbosity settings.
@@ -61,6 +64,9 @@ class MyAgent(BaseAgent[None]):
                 Accepts boolean or string values ("true"/"false"). Defaults to True.
             timeout: Optional[int]: How long to wait for the agent to respond.
                 Defaults to 90 seconds.
+            llm: Optional[Any]: Pre-configured LLM instance provided by NAT.
+                When set, can be used directly instead of creating a new LLM instance.
+            workflow_tools: Optional[list[Any]]: Additional tools from the workflow config (e.g. A2A client tools). Keyword-only.
             **kwargs: Any: Additional keyword arguments passed to the agent.
 
         Returns:
@@ -74,6 +80,8 @@ class MyAgent(BaseAgent[None]):
             timeout=timeout,
             **kwargs,
         )
+        self._nat_llm = llm
+        self._workflow_tools = workflow_tools or []
         self.config = Config()
 
     async def invoke(self, run_agent_input: RunAgentInput) -> InvokeReturn:

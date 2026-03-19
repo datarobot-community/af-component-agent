@@ -22,7 +22,7 @@ general:
       server:
         name: "Blog Content Writer"
         description: "An AI content writing agent that researches and writes well-structured blog posts. Provide a topic and it will generate a concise, publication-ready article in markdown format."
-      skills:  # Optional: advertise specific skills in the agent card
+      skills: # Optional: advertise specific skills in the agent card
         - id: write_blog
           name: "Write Blog Post"
           description: "Researches and writes a blog post on the given topic."
@@ -31,18 +31,12 @@ general:
             - "Write a blog post about the future of AI in healthcare"
             - "Create an article about sustainable energy trends"
 # To connect this agent to a remote A2A agent, uncomment the block below and add the
-# function group name to the workflow's tool_names list. You are also free to use environment
-# variables like `url: "${AGENT_URL:-http://localhost:8842}"`
+# function group name to the workflow's tool_names list.
 # function_groups:
 #   remote_agent:
 #     _type: authenticated_a2a_client
 #     url: "https://app.datarobot.com/api/v2/deployments/<deployment-id>/directAccess/a2a/"
 #     auth_provider: datarobot_auth
-
-authentication:
-  datarobot_auth:
-    _type: datarobot_api_key
-
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
@@ -53,3 +47,7 @@ workflow:
   description: CrewAI planner/writer agent
   # tool_names:
   #   - remote_agent
+
+authentication:
+  datarobot_auth:
+    _type: datarobot_api_key
