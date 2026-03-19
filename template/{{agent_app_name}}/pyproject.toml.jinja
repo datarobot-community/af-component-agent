@@ -190,13 +190,11 @@ override-dependencies = [
     # Override until nvidia-nat-crewai ships a fix upstream (BUZZOK-29844).
     # Upstream issue: https://github.com/NVIDIA/NeMo-Agent-Toolkit/issues/1802
     "crewai[litellm]>=1.1.0,<2.0.0",
+    "gevent; sys_platform == 'never'",  # not used; therefore removed
+    "onnxruntime; sys_platform == 'never'",  # not used; therefore removed
+    "fastembed; sys_platform == 'never'",  # not used; therefore removed
 ]
 package = true
-constraint-dependencies = [
-    "gevent; sys_platform == 'never'",
-    "onnxruntime; sys_platform == 'never'",  # not used; not available on Intel Mac
-    "fastembed; sys_platform == 'never'",  # not used; not available on Intel Mac
-]
 
 # This can be set to allow for proxy indexes in air-gapped environments
 # [[tool.uv.index]]
