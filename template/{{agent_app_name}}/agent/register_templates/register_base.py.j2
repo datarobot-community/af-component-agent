@@ -55,16 +55,14 @@ async def base_agent(
 
     from agent.myagent import MyAgent  # noqa: PLC0415
 
-    # To get an LLM instance from NAT, uncomment the lines below and add llm_name to
-    # BaseAgentConfig (already provided by AgentBaseConfig). Switch LLMFrameworkEnum.LANGCHAIN
-    # to the framework your MyAgent implementation uses (e.g. CREWAI, LLAMA_INDEX):
+    # To get an LLM instance from NAT, uncomment the lines. Switch LLMFrameworkEnum.LANGCHAIN
+    # to the framework your MyAgent implementation uses:
     #
     #   from nat.builder.framework_enum import LLMFrameworkEnum  # noqa: PLC0415
     #   llm = await builder.get_llm(config.llm_name, wrapper_type=LLMFrameworkEnum.LANGCHAIN)
 
-    # To inject tools from the workflow config, uncomment the lines below and add
-    # tool_names: list[FunctionGroupRef] = [] to BaseAgentConfig. Switch wrapper_type to match:
-    #
+    # To inject tools from the workflow config, uncomment the lines below. witch
+    # LLMFrameworkEnum.LANGCHAIN to the framework your MyAgent implementation uses
     #   workflow_tools = await builder.get_tools(
     #       config.tool_names, wrapper_type=LLMFrameworkEnum.LANGCHAIN
     #   )
