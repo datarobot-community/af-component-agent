@@ -192,7 +192,11 @@ override-dependencies = [
     "crewai[litellm]>=1.1.0,<2.0.0",
 ]
 package = true
-constraint-dependencies = ["gevent; sys_platform == 'never'"]
+# Not used directly; onnxruntime (required by fastembed) and gevent are not available on Intel Mac
+constraint-dependencies = [
+    "gevent; sys_platform == 'never'",
+    "onnxruntime; sys_platform == 'never'",
+]
 
 # This can be set to allow for proxy indexes in air-gapped environments
 # [[tool.uv.index]]
