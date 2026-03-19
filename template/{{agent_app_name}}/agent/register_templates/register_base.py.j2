@@ -24,8 +24,10 @@ from datarobot_genai.nat.helpers import (
     extract_datarobot_headers_from_context,
 )
 from nat.builder.builder import Builder
+from nat.builder.framework_enum import LLMFrameworkEnum
 from nat.cli.register_workflow import register_per_user_function
 from nat.data_models.agent import AgentBaseConfig
+from nat.data_models.component_ref import FunctionGroupRef
 from nat.data_models.streaming import Streaming
 
 
@@ -33,7 +35,10 @@ class BaseAgentConfig(AgentBaseConfig, name="base_agent"):  # type: ignore[call-
     """NAT config for the base agent.
 
     Extends AgentBaseConfig which provides: llm_name, description, verbose.
+    The LLM is managed by NAT and accessed via builder.get_llm().
     """
+
+    tool_names: list[FunctionGroupRef] = []
 
 
 @register_per_user_function(  # type: ignore[untyped-decorator]
@@ -48,6 +53,16 @@ async def base_agent(
 
     from agent.myagent import MyAgent  # noqa: PLC0415
 
+    # The base agent accepts any LLM framework. Switch LLMFrameworkEnum.LANGCHAIN to the
+    # framework your MyAgent implementation uses (e.g. CREWAI, LLAMA_INDEX).
+    llm = await builder.get_llm(config.llm_name, wrapper_type=LLMFrameworkEnum.LANGCHAIN)
+
+    # Fetch workflow tools (from tool_names in workflow config).
+    # Switch the wrapper_type to match the framework used above.
+    workflow_tools = await builder.get_tools(
+        config.tool_names, wrapper_type=LLMFrameworkEnum.LANGCHAIN
+    )
+
     async def _response_fn(
         input_message: RunAgentInput,
     ) -> Annotated[
@@ -60,6 +75,8 @@ async def base_agent(
         forwarded_headers = extract_datarobot_headers_from_context()
         authorization_context = extract_authorization_from_context()
         agent = MyAgent(
+            llm=llm,
+            workflow_tools=workflow_tools,
             verbose=config.verbose,
             forwarded_headers=forwarded_headers,
             authorization_context=authorization_context,
