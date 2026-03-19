@@ -6,7 +6,7 @@ readme = "README.md"
 {% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% else %}requires-python = ">=3.11, <3.14"{% endif %}
 dependencies = [
     "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, nat]{% elif agent_template_framework == 'crewai' %}[crewai, dragent]{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent]{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent]{% elif agent_template_framework == 'base' %}[dragent]{% elif agent_template_framework == 'nat' %}[nat, dragent]{% else %}[core]{% endif %}==0.8.1",
-    "datarobot-moderations==11.2.20",
+    "datarobot-moderations==11.2.21",
     "datarobot-drum==1.17.11.post1",  # Lift upper limit after asyncio migration finished
     "datarobot-mlops==11.1.0",
     "openai>=1.81.0,<2.0.0",
@@ -15,7 +15,7 @@ dependencies = [
     "opentelemetry-api>=1.33.0,<2.0.0",
     "opentelemetry-sdk>=1.33.0,<2.0.0",
     "pdfminer.six>=20251230",  # CVE fix
-    "langgraph-checkpoint>=3.0.0", # CVE fix
+    "langgraph-checkpoint>=4.0.1", # CVE fix
     "nltk>=3.9.3", # CVE fix
     "anyio>=4.11.0,<4.12.0", # Fix: ImportError: `set_current_async_library`
     "packaging>=25.0,<26.0",
