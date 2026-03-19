@@ -55,7 +55,9 @@ async def base_agent(
 
     # The base agent accepts any LLM framework. Switch LLMFrameworkEnum.LANGCHAIN to the
     # framework your MyAgent implementation uses (e.g. CREWAI, LLAMA_INDEX).
-    llm = await builder.get_llm(config.llm_name, wrapper_type=LLMFrameworkEnum.LANGCHAIN)
+    llm = await builder.get_llm(
+        config.llm_name, wrapper_type=LLMFrameworkEnum.LANGCHAIN
+    )
 
     # Fetch workflow tools (from tool_names in workflow config).
     # Switch the wrapper_type to match the framework used above.
