@@ -43,6 +43,9 @@ class BaseAgentConfig(AgentBaseConfig, name="base_agent"):  # type: ignore[call-
     config_type=BaseAgentConfig,
     input_type=RunAgentInput,
     streaming_output_type=DRAgentEventResponse,
+    # If you uncomment builder.get_llm / builder.get_tools below, also add framework_wrappers
+    # here to match the wrapper_type you use, e.g.:
+    #   framework_wrappers=[LLMFrameworkEnum.LANGCHAIN],
 )
 async def base_agent(
     config: BaseAgentConfig, builder: Builder
