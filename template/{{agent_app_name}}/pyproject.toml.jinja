@@ -192,7 +192,7 @@ override-dependencies = [
     "crewai[litellm]>=1.1.0,<2.0.0",
 ]
 package = true
-# Not used directly; onnxruntime (required by fastembed) and gevent are not available on Intel Mac
+# onnxruntime and fastembed are not used; they are not available on Intel Mac
 constraint-dependencies = [
     "gevent; sys_platform == 'never'",
     "onnxruntime; sys_platform == 'never'",
