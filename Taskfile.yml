@@ -81,6 +81,8 @@ tasks:
       - task: render-template
         vars:
           AGENT: "{{.AGENT}}"
+      - echo "Checking lock file for {{.AGENT}}"
+      - uv lock --check --directory $RENDER_DIR/agent_{{.AGENT}}
       - task agent:install --dir $RENDER_DIR/agent_{{.AGENT}}
       - task infra:install --dir $RENDER_DIR/agent_{{.AGENT}}
 
