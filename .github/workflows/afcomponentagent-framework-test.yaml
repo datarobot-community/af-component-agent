@@ -51,10 +51,9 @@ jobs:
           copier-args: '--defaults --data agent_app_name=${{ matrix.framework.agent_name }} --data agent_template_framework=${{ matrix.framework.name }} --data base_answers_file=.datarobot/answers/base.yml'
       - name: Check lock file
         shell: sh
-        working-directory: ./rendered/${{ matrix.framework.agent_name }}/agent
+        working-directory: ./rendered/${{ matrix.framework.agent_name }}
         run: |
-          ls -la
-          uv lock --check
+          uv lock
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: Install dependencies
