@@ -53,6 +53,7 @@ jobs:
         shell: sh
         working-directory: ./rendered/${{ matrix.framework.agent_name }}/agent
         run: |
+          ls -la
           uv lock --check
         env:
           UV_CACHE_DIR: /.uv_cache
