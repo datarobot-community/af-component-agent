@@ -77,12 +77,9 @@ tasks:
   install-rendered:
     desc: "Install dev"
     cmds:
-      - echo "Installing dev for {{.AGENT}}"
-      - task: render-template
-        vars:
-          AGENT: "{{.AGENT}}"
       - echo "Checking lock file for {{.AGENT}}"
-      - uv lock --check --directory $RENDER_DIR/agent_{{.AGENT}}
+      - uv lock --check --directory $RENDER_DIR/agent_{{.AGENT}}/agent
+      - echo "Installing dependencies for {{.AGENT}}"
       - task agent:install --dir $RENDER_DIR/agent_{{.AGENT}}
       - task infra:install --dir $RENDER_DIR/agent_{{.AGENT}}
 
@@ -113,11 +110,12 @@ tasks:
   test-agent:
     desc: "Run tests"
     cmds:
+      - task: render-template
+        vars:
+          AGENT: "{{.AGENT}}"
       - task: install-rendered
         vars:
           AGENT: "{{.AGENT}}"
-          SKIP_LINT: "{{.SKIP_LINT| default 0}}"
-          SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
       - echo "Running tests for {{.AGENT}}"
       - |
           if [ "{{.SKIP_LINT}}" != "1" ]; then
@@ -216,6 +214,41 @@ tasks:
       - task: test-cli
       - task: test-cli-json
       - task: test-cli-streaming
+
+  update-lock-file:
+    desc: "Update lock file for {{.AGENT}}"
+    cmds:
+      - echo "Updating lock file for {{.AGENT}}"
+      - task: render-template
+        vars:
+          AGENT: "{{.AGENT}}"
+      - |
+          if [ "$UPGRADE_LOCK" = "1" ]; then
+            uv lock -U --directory $RENDER_DIR/agent_{{.AGENT}}/agent
+          else
+            uv lock --directory $RENDER_DIR/agent_{{.AGENT}}/agent
+          fi
+      - cp $RENDER_DIR/agent_{{.AGENT}}/agent/uv.lock template/{{`{{agent_app_name}}`}}/uvlock_templates/uvlock_{{.AGENT}}.j2
+
+  update-lock-file-all:
+    desc: "Update lock file for all agents"
+    cmds:
+      - task: update-lock-file
+        vars:
+          AGENT: "base"
+
+      - task: update-lock-file
+        vars:
+          AGENT: "crewai"
+      - task: update-lock-file
+        vars:
+          AGENT: "langgraph"
+      - task: update-lock-file
+        vars:
+          AGENT: "llamaindex"
+      - task: update-lock-file
+        vars:
+          AGENT: "nat"
 
   run-cli:
     desc: "Run CLI"
