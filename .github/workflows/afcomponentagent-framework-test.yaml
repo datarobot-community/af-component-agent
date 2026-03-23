@@ -51,7 +51,7 @@ jobs:
           copier-args: '--defaults --data agent_app_name=${{ matrix.framework.agent_name }} --data agent_template_framework=${{ matrix.framework.name }} --data base_answers_file=.datarobot/answers/base.yml'
       - name: Check lock file
         shell: sh
-        working-directory: ./rendered/${{ matrix.framework.agent_name }}
+        working-directory: ./rendered/${{ matrix.framework.agent_name }}/agent
         run: |
           uv lock --check
         env:
