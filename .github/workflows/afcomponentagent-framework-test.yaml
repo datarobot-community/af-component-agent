@@ -46,7 +46,6 @@ jobs:
           python-version: ${{ matrix.python }}
           cache-key-suffix: ${{ matrix.framework.name }}
       - name: Render copier instance
-        if: steps.setup-cache.outputs.cache-hit != 'true'
         uses: ./.github/actions/render-copier-instance
         with:
           copier-args: '--defaults --data agent_app_name=${{ matrix.framework.agent_name }} --data agent_template_framework=${{ matrix.framework.name }} --data base_answers_file=.datarobot/answers/base.yml'
