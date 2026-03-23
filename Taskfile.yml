@@ -83,6 +83,16 @@ tasks:
       - task agent:install --dir $RENDER_DIR/agent_{{.AGENT}}
       - task infra:install --dir $RENDER_DIR/agent_{{.AGENT}}
 
+  render-install:
+    desc: "Render template + install dependencies"
+    cmds:
+      - task: render-template
+        vars:
+          AGENT: "{{.AGENT}}"
+      - task: install-rendered
+        vars:
+          AGENT: "{{.AGENT}}"
+
   docker_update_reqs:
     desc: "Update Docker requirements pyproject.toml from jinja template"
     vars:
@@ -110,10 +120,7 @@ tasks:
   test-agent:
     desc: "Run tests"
     cmds:
-      - task: render-template
-        vars:
-          AGENT: "{{.AGENT}}"
-      - task: install-rendered
+      - task: render-install
         vars:
           AGENT: "{{.AGENT}}"
       - echo "Running tests for {{.AGENT}}"
@@ -253,9 +260,7 @@ tasks:
   run-cli:
     desc: "Run CLI"
     cmds:
-      - task: install-rendered
-        vars:
-          AGENT: "base"
+
       - echo "Running tests for {{.AGENT}}"
       - cd $RENDER_DIR/agent_base && echo "DATAROBOT_API_TOKEN=secret" > .env && echo "DATAROBOT_ENDPOINT=https://test.com/api/v2" >> .env
       - task agent:cli --dir $RENDER_DIR/agent_base -- execute --show_output --user_prompt "Artificial Intelligence" > $RENDER_DIR/agent_base/agent/output.log 2>&1
@@ -279,7 +284,7 @@ tasks:
   run-cli-json:
     desc: "Run CLI with JSON"
     cmds:
-      - task: install-rendered
+      - task: render-install
         vars:
           AGENT: "base"
       - echo "Running tests for {{.AGENT}}"
@@ -297,7 +302,7 @@ tasks:
   run-cli-streaming:
     desc: "Run CLI with Streaming"
     cmds:
-      - task: install-rendered
+      - task: render-install
         vars:
           AGENT: "base"
       - echo "Running tests for {{.AGENT}}"
@@ -315,7 +320,7 @@ tasks:
   build-docker:
     desc: "Build docker image"
     cmds:
-      - task: install-rendered
+      - task: render-install
         vars:
           AGENT: "{{.AGENT}}"
       - echo "Building docker image for {{.AGENT}}"
