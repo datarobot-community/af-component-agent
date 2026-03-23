@@ -1,0 +1,33 @@
+diff --git a/datarobot_drum/drum/adapters/model_adapters/python_model_adapter.py b/datarobot_drum/drum/adapters/model_adapters/python_model_adapter.py
+index a0c491d..cfc6e53 100644
+--- a/datarobot_drum/drum/adapters/model_adapters/python_model_adapter.py
++++ b/datarobot_drum/drum/adapters/model_adapters/python_model_adapter.py
+@@ -238,16 +238,26 @@ class PythonModelAdapter(AbstractModelAdapter):
+ 
+     def load_custom_hooks(self):
+         custom_file_paths = list(Path(self._model_dir).rglob("{}.py".format(CUSTOM_FILE_NAME)))
+-        if len(custom_file_paths) > 1:
+-            raise RuntimeError("Found too many custom hook files: {}".format(custom_file_paths))
+ 
++        # If there are zero or one files, use the original behavior.
+         if len(custom_file_paths) == 0:
+             self._logger.info(
+                 "No {}.py file detected in {}".format(CUSTOM_FILE_NAME, self._model_dir)
+             )
+             return
+ 
+-        custom_file_path = custom_file_paths[0]
++        if len(custom_file_paths) == 1:
++            custom_file_path = custom_file_paths[0]
++        else:
++            # Prefer a custom.py located directly in the model directory, if present.
++            # See BUZZOK-29079 / https://github.com/datarobot/datarobot-user-models/issues/743
++            root_custom = Path(self._model_dir) / "{}.py".format(CUSTOM_FILE_NAME)
++            if root_custom in custom_file_paths:
++                custom_file_path = root_custom
++            else:
++                # Fallback to original behavior (fail fast) when there's no clear root-level custom.py.
++                raise RuntimeError("Found too many custom hook files: {}".format(custom_file_paths))
++
+         self._logger.info("Detected {} .. trying to load hooks".format(custom_file_path))
+         sys.path.insert(0, os.path.dirname(custom_file_path))

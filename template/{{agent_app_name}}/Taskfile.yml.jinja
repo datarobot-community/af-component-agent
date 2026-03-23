@@ -28,6 +28,7 @@ tasks:
     cmds:
       - echo "Updating local dependencies for {{ agent_app_name }}"
       - "{% raw %}{{.UV_CMD}}{% endraw %} sync --extra dev"
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run p12y apply"
       - if [ -f pyproject.toml ] && [ -d docker_context ]; then cp pyproject.toml docker_context/pyproject.toml; fi
       - if [ -f uv.lock ] && [ -d docker_context ]; then cp uv.lock docker_context/uv.lock; fi
     aliases:
