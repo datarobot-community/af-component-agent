@@ -88,7 +88,7 @@ class MyAgent(LlamaIndexAgent):
             f"{{ '{{chat_history}}' }}"
         )
 
-    def build_workflow(self) -> AgentWorkflow:
+    async def build_workflow(self) -> AgentWorkflow:
         return AgentWorkflow(
             agents=[self.agent_planner, self.agent_writer],
             root_agent=self.agent_planner.name,
