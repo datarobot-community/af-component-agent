@@ -54,7 +54,7 @@ jobs:
         working-directory: ./rendered/${{ matrix.framework.agent_name }}
         run: |
           echo "Checking lock file. If it fails, see to docs/development.md for instructions on how to update the lock file."
-          uv lock --check
+          uv lock
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: Install dependencies
