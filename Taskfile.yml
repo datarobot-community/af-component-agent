@@ -235,7 +235,7 @@ tasks:
           else
             uv lock --directory $RENDER_DIR/agent_{{.AGENT}}/agent
           fi
-      - cp $RENDER_DIR/agent_{{.AGENT}}/agent/uv.lock template/{{`{{agent_app_name}}`}}/uvlock_templates/uvlock_{{.AGENT}}.j2
+      - cat $RENDER_DIR/agent_{{.AGENT}}/agent/uv.lock | sed 's/^name = "agent"$/name = "{{`{{agent_app_name}}`}}"/' > template/{{`{{agent_app_name}}`}}/uvlock_templates/uvlock_{{.AGENT}}.j2
 
   update-lock-file-all:
     desc: "Update lock file for all agents"
