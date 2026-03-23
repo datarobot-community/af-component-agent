@@ -97,6 +97,60 @@ def build_dragent_payload(user_prompt: str) -> dict[str, Any]:
     }
 
 
+def _fetch_dr_user(api_token: str, endpoint: str) -> dict[str, str]:
+    """Fetch the current user's profile from DataRobot API."""
+    import httpx  # noqa: PLC0415
+
+    try:
+        resp = httpx.get(
+            f"{endpoint}/api/v2/account/info/",
+            headers={"Authorization": f"Bearer {api_token}"},
+            follow_redirects=True,
+            timeout=10,
+        )
+    except httpx.ConnectError:
+        raise click.ClickException(
+            f"Could not connect to DataRobot at {endpoint}. Check DATAROBOT_ENDPOINT."
+        )
+
+    if resp.status_code == 401:
+        raise click.ClickException(
+            "Invalid DataRobot API key. Check DATAROBOT_API_TOKEN."
+        )
+
+    if not resp.is_success:
+        raise click.ClickException(
+            f"Failed to validate DataRobot API key (HTTP {resp.status_code})."
+        )
+
+    raw = resp.json()
+    return {
+        "id": raw["uid"],
+        "email": raw["email"],
+    }
+
+
+def get_cli_auth_headers(api_token: str, endpoint: str) -> dict[str, str]:
+    """Build X-DataRobot-Authorization-Context header for CLI requests.
+
+    Fetches the real user identity from DataRobot, then encodes it as a JWT
+    in the same header that the frontend's fastapi_server uses. NAT's
+    DRAgentAGUISessionManager decodes this to extract user_id for per-user
+    workflows.
+    """
+    from datarobot_genai.core.utils.auth import (
+        AuthContextHeaderHandler,  # noqa: PLC0415
+    )
+
+    user = _fetch_dr_user(api_token, endpoint)
+    auth_ctx = {
+        "user": user,
+        "identities": [],
+    }
+    handler = AuthContextHeaderHandler()
+    return handler.get_header(auth_ctx)
+
+
 def execute_dragent_stream(
     user_prompt: str,
     url: str,
@@ -244,6 +298,7 @@ def execute(
         execute_dragent_stream(
             user_prompt,
             url=f"http://localhost:{config.local_dev_port}/generate/stream",
+            headers=get_cli_auth_headers(environment.api_token, environment.base_url),
         )
         return
 
@@ -356,8 +411,11 @@ def execute_deployment(
         click.echo("Querying deployment (dragent mode)...")
         execute_dragent_stream(
             user_prompt,
-            url=f"{environment.base_url}/api/v2/deployments/{deployment_id}/generate/stream",
-            headers={"Authorization": f"Bearer {environment.api_token}"},
+            url=f"{environment.base_url}/api/v2/deployments/{deployment_id}/directAccess/generate/stream",
+            headers={
+                "Authorization": f"Bearer {environment.api_token}",
+                **get_cli_auth_headers(environment.api_token, environment.base_url),
+            },
         )
         return
 

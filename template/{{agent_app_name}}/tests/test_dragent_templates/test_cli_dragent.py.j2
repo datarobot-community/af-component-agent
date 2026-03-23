@@ -193,8 +193,12 @@ class TestCliDRAgentIntegration:
     """Integration tests for CLI commands in dragent mode."""
 
     @patch("cli.execute_dragent_stream")
+    @patch(
+        "cli.get_cli_auth_headers",
+        return_value={"X-DataRobot-Authorization-Context": "test"},
+    )
     @patch("cli.is_dragent_mode", return_value=True)
-    def test_execute_dragent_mode(self, _mock_dragent, mock_stream):
+    def test_execute_dragent_mode(self, _mock_dragent, _mock_auth, mock_stream):
         runner = CliRunner()
         result = runner.invoke(cli, ["execute", "--user_prompt", "test"])
         assert result.exit_code == 0
@@ -217,8 +221,14 @@ class TestCliDRAgentIntegration:
         assert "not supported in dragent mode" in result.output
 
     @patch("cli.execute_dragent_stream")
+    @patch(
+        "cli.get_cli_auth_headers",
+        return_value={"X-DataRobot-Authorization-Context": "test"},
+    )
     @patch("cli.is_dragent_mode", return_value=True)
-    def test_execute_deployment_dragent_mode(self, _mock_dragent, mock_stream):
+    def test_execute_deployment_dragent_mode(
+        self, _mock_dragent, _mock_auth, mock_stream
+    ):
         runner = CliRunner()
         result = runner.invoke(
             cli,
