@@ -3,7 +3,7 @@
 version: '3'
 vars:
   LOCAL_NAT_LOG_LEVEL:
-  sh: echo "${LOCAL_NAT_LOG_LEVEL:-info}"
+    sh: echo "${LOCAL_NAT_LOG_LEVEL:-info}"
   # Cross-platform environment cleaning - uses 'env -u' on Unix systems, falls back to empty string on Windows
   UV_CMD:
     sh: |
