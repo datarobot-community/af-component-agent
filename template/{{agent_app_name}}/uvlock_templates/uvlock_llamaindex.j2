@@ -117,7 +117,7 @@ dev = [
 requires-dist = [
     { name = "anyio", specifier = ">=4.11.0,<4.12.0" },
     { name = "datarobot-drum", specifier = "==1.17.11.post1" },
-    { name = "datarobot-genai", extras = ["llamaindex", "dragent"], specifier = "==0.8.6" },
+    { name = "datarobot-genai", extras = ["llamaindex", "dragent"], specifier = "==0.8.8" },
     { name = "datarobot-mlops", specifier = "==11.1.0" },
     { name = "datarobot-moderations", specifier = "==11.2.20" },
     { name = "debugpy", marker = "extra == 'dev'", specifier = ">=1.8.20" },
@@ -129,7 +129,7 @@ requires-dist = [
     { name = "jupyter-kernel-gateway", marker = "extra == 'agentic-playground'", specifier = ">=3.0.1" },
     { name = "langchain-litellm", specifier = ">=0.2.3" },
     { name = "langgraph-checkpoint", specifier = ">=3.0.0" },
-    { name = "litellm", specifier = ">=1.72.1,<2.0.0" },
+    { name = "litellm", specifier = ">=1.72.1,!=1.82.7,!=1.82.8,<2.0.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.15.0" },
     { name = "nltk", specifier = ">=3.9.3" },
     { name = "openai", specifier = ">=1.81.0,<2.0.0" },
@@ -1041,11 +1041,11 @@ wheels = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.8.7"
+version = "0.8.8"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/8f/03/0339b83c268a9fc7e208c37292d86bbcfadfc34600a26b83847fd6b501c8/datarobot_genai-0.8.7.tar.gz", hash = "sha256:1605faf2247db16b180f8ce9f597181755702a3b05edbc85e2eac3a7ba74fa03", size = 219975, upload-time = "2026-03-24T13:33:33.695147Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/47/69/065ce078c1f46bf567a0fe3f5f7563da5c272bfed55bad5c37f0991f7210/datarobot_genai-0.8.8.tar.gz", hash = "sha256:b17a60022639e8e4302908c1a6e4312a2bd0cac62dcfaa44508559383bf5bfe9", size = 220128, upload-time = "2026-03-24T15:44:59.85Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ee/14/301fec29109c2c125ce09ce85f58151c9e3d04d15fef2724dd8bbf9aeb2b/datarobot_genai-0.8.7-py3-none-any.whl", hash = "sha256:ccb20220dbc897d9136ba5407df99708b7f02a6d163686e7fda25219f9739bfe", size = 326166, upload-time = "2026-03-24T13:33:31.952147Z" },
+    { url = "https://files.pythonhosted.org/packages/0a/6d/de7266063c2b343c0db4b0748a34147aa55cc3e3f9e1d8ded5694fd62210/datarobot_genai-0.8.8-py3-none-any.whl", hash = "sha256:db3e5a23a29b98e0b00bfebdcdc3273ef54aeef829248676824aab3e1f028058", size = 326472, upload-time = "2026-03-24T15:44:58.045Z" },
 ]
 
 [package.optional-dependencies]
@@ -1861,6 +1861,7 @@ dependencies = [
     { name = "griffecli", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "griffelib", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
+sdist = { url = "https://files.pythonhosted.org/packages/04/56/28a0accac339c164b52a92c6cfc45a903acc0c174caa5c1713803467b533/griffe-2.0.0.tar.gz", hash = "sha256:c68979cd8395422083a51ea7cf02f9c119d889646d99b7b656ee43725de1b80f", size = 293906, upload-time = "2026-03-23T21:06:53.402Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8b/94/ee21d41e7eb4f823b94603b9d40f86d3c7fde80eacc2c3c71845476dddaa/griffe-2.0.0-py3-none-any.whl", hash = "sha256:5418081135a391c3e6e757a7f3f156f1a1a746cc7b4023868ff7d5e2f9a980aa", size = 5214, upload-time = "2026-02-09T19:09:44.105Z" },
 ]
@@ -1873,6 +1874,7 @@ dependencies = [
     { name = "colorama", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "griffelib", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
+sdist = { url = "https://files.pythonhosted.org/packages/a4/f8/2e129fd4a86e52e58eefe664de05e7d502decf766e7316cc9e70fdec3e18/griffecli-2.0.0.tar.gz", hash = "sha256:312fa5ebb4ce6afc786356e2d0ce85b06c1c20d45abc42d74f0cda65e159f6ef", size = 56213, upload-time = "2026-03-23T21:06:54.8Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/e6/ed/d93f7a447bbf7a935d8868e9617cbe1cadf9ee9ee6bd275d3040fbf93d60/griffecli-2.0.0-py3-none-any.whl", hash = "sha256:9f7cd9ee9b21d55e91689358978d2385ae65c22f307a63fb3269acf3f21e643d", size = 9345, upload-time = "2026-02-09T19:09:42.554Z" },
 ]
@@ -1881,6 +1883,7 @@ wheels = [
 name = "griffelib"
 version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/ad/06/eccbd311c9e2b3ca45dbc063b93134c57a1ccc7607c5e545264ad092c4a9/griffelib-2.0.0.tar.gz", hash = "sha256:e504d637a089f5cab9b5daf18f7645970509bf4f53eda8d79ed71cce8bd97934", size = 166312, upload-time = "2026-03-23T21:06:55.954Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/4d/51/c936033e16d12b627ea334aaaaf42229c37620d0f15593456ab69ab48161/griffelib-2.0.0-py3-none-any.whl", hash = "sha256:01284878c966508b6d6f1dbff9b6fa607bc062d8261c5c7253cb285b06422a7f", size = 142004, upload-time = "2026-02-09T19:09:40.561Z" },
 ]
