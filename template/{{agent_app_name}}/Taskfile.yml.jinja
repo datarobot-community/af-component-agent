@@ -1,9 +1,9 @@
 ---
 # https://taskfile.dev
 version: '3'
-env:
-  LOCAL_NAT_LOG_LEVEL: info
 vars:
+  LOCAL_NAT_LOG_LEVEL:
+    sh: echo "${LOCAL_NAT_LOG_LEVEL:-info}"
   # Cross-platform environment cleaning - uses 'env -u' on Unix systems, falls back to empty string on Windows
   UV_CMD:
     sh: |
@@ -117,7 +117,7 @@ tasks:
           # Start dev server in background
           echo "🚀 Starting dev server in background..."
           if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-            {% raw %}{{.UV_CMD}}{% endraw %} run nat --log-level $LOCAL_NAT_LOG_LEVEL start dragent_fastapi --config_file agent/workflow.yaml --reload true --port {% raw %}{{.AGENT_PORT}}{% endraw %} &
+            {% raw %}{{.UV_CMD}}{% endraw %} run nat --log-level {% raw %}{{.LOCAL_NAT_LOG_LEVEL}}{% endraw %} start dragent_fastapi --config_file agent/workflow.yaml --reload true --port {% raw %}{{.AGENT_PORT}}{% endraw %} &
           else
             {% raw %}{{.UV_CMD}}{% endraw %} run python dev.py &
           fi
@@ -184,7 +184,7 @@ tasks:
     cmds:
       - |
         if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-          {% raw %}{{.UV_CMD}}{% endraw %} run nat --log-level $LOCAL_NAT_LOG_LEVEL start dragent_fastapi --config_file agent/workflow.yaml --reload true --port {% raw %}{{.AGENT_PORT}}{% endraw %}
+          {% raw %}{{.UV_CMD}}{% endraw %} run nat --log-level {% raw %}{{.LOCAL_NAT_LOG_LEVEL}}{% endraw %} start dragent_fastapi --config_file agent/workflow.yaml --reload true --port {% raw %}{{.AGENT_PORT}}{% endraw %}
         else
           {% raw %}{{.UV_CMD}}{% endraw %} run python dev.py --autoreload
         fi
