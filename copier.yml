@@ -82,6 +82,7 @@ _subdirectory: template
 _answers_file: ".datarobot/answers/agent-{{ agent_app_name }}.yml"
 _exclude:
     - "*.j2"
+    - "*_templates"
 
 _migrations:
   # Migrate legacy agent implementation into the new package layout.

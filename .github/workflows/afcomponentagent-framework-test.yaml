@@ -46,10 +46,18 @@ jobs:
           python-version: ${{ matrix.python }}
           cache-key-suffix: ${{ matrix.framework.name }}
       - name: Render copier instance
-        if: steps.setup-cache.outputs.cache-hit != 'true'
         uses: ./.github/actions/render-copier-instance
         with:
           copier-args: '--defaults --data agent_app_name=${{ matrix.framework.agent_name }} --data agent_template_framework=${{ matrix.framework.name }} --data base_answers_file=.datarobot/answers/base.yml'
+      - name: Check lock file
+        shell: sh
+        working-directory: ./rendered/${{ matrix.framework.agent_name }}
+        run: |
+          echo "Checking lock file. If it fails, see to docs/development.md for instructions on how to update the lock file."
+          echo "And if it still fails for some reason, do uv lock here to see what is causing the issue."
+          uv lock --check
+        env:
+          UV_CACHE_DIR: /.uv_cache
       - name: Install dependencies
         shell: sh
         working-directory: ./rendered/${{ matrix.framework.agent_name }}

@@ -195,6 +195,11 @@ override-dependencies = [
     "fastembed; sys_platform == 'never'",  # not used; therefore removed
 ]
 package = true
+environments = [
+  "sys_platform == 'darwin'",
+  "sys_platform == 'linux'",
+  "sys_platform == 'win32'"
+]
 
 # This can be set to allow for proxy indexes in air-gapped environments
 # [[tool.uv.index]]

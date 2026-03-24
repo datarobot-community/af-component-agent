@@ -1,0 +1,15 @@
+{#-
+This template chooses the correct uv.lock (uvlock) jinja partial based on the agent_template_framework variable.
+Template partials are expected to be in template/{{agent_app_name}}/uvlock_templates/uvlock_<framework>.j2
+-#}
+{% if agent_template_framework == "crewai" -%}
+    {% include 'template/{{agent_app_name}}/uvlock_templates/uvlock_crewai.j2' %}
+{% elif agent_template_framework == "langgraph" -%}
+    {% include 'template/{{agent_app_name}}/uvlock_templates/uvlock_langgraph.j2' %}
+{% elif agent_template_framework == "llamaindex" -%}
+    {% include 'template/{{agent_app_name}}/uvlock_templates/uvlock_llamaindex.j2' %}
+{% elif agent_template_framework == "nat" -%}
+    {% include 'template/{{agent_app_name}}/uvlock_templates/uvlock_nat.j2' %}
+{% else -%}
+    {% include 'template/{{agent_app_name}}/uvlock_templates/uvlock_base.j2' %}
+{%- endif -%}
