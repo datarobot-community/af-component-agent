@@ -18,10 +18,11 @@ Core and first Pulumi set of resources.
 import os
 from pathlib import Path
 
+import datarobot as dr
 import pulumi
 import pulumi_datarobot as datarobot
 
-__all__ = ["use_case", "project_dir"]
+__all__ = ["use_case", "prediction_environment", "project_dir"]
 
 project_dir = Path(__file__).parent.parent
 
@@ -36,4 +37,19 @@ else:
     use_case = datarobot.UseCase(
         resource_name=f"DataRobot Agent Templates [{project_dir.name}]",
         description="""This is a template for DataRobot Agents.""",
+    )
+
+if prediction_environment_id := os.environ.get("DATAROBOT_PREDICTION_ENVIRONMENT_ID"):
+    pulumi.info(f"Using existing prediction environment '{prediction_environment_id}'")
+
+    prediction_environment = datarobot.PredictionEnvironment.get(
+        id=prediction_environment_id,
+        resource_name="DataRobot Agent Templates Prediction Environment [PRE-EXISTING]",
+    )
+else:
+    prediction_environment = datarobot.PredictionEnvironment(
+        resource_name=f"DataRobot Agent Templates [{project_dir.name}] Prediction Environment",
+        name=f"DataRobot Agent Templates [{project_dir.name}] Prediction Environment",
+        platform=dr.enums.PredictionEnvironmentPlatform.DATAROBOT_SERVERLESS,
+        opts=pulumi.ResourceOptions(retain_on_delete=False),
     )
