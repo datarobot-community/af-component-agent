@@ -189,16 +189,15 @@ class TestExecuteDRAgentStream:
         "DATAROBOT_ENDPOINT": "https://env-api-base.com",
     },
 )
-class TestCliDRAgentIntegration:
-    """Integration tests for CLI commands in dragent mode."""
+class TestCliDRAgentBlocked:
+    """All CLI commands are blocked when dragent mode is enabled."""
 
-    @patch("cli.execute_dragent_stream")
     @patch("cli.is_dragent_mode", return_value=True)
-    def test_execute_dragent_mode(self, _mock_dragent, mock_stream):
+    def test_execute_blocked_in_dragent(self, _mock_dragent):
         runner = CliRunner()
         result = runner.invoke(cli, ["execute", "--user_prompt", "test"])
-        assert result.exit_code == 0
-        mock_stream.assert_called_once()
+        assert result.exit_code != 0
+        assert "not supported in dragent mode" in result.output
 
     @patch("cli.is_dragent_mode", return_value=True)
     def test_execute_custom_model_blocked_in_dragent(self, _mock_dragent):
@@ -216,9 +215,8 @@ class TestCliDRAgentIntegration:
         assert result.exit_code != 0
         assert "not supported in dragent mode" in result.output
 
-    @patch("cli.execute_dragent_stream")
     @patch("cli.is_dragent_mode", return_value=True)
-    def test_execute_deployment_dragent_mode(self, _mock_dragent, mock_stream):
+    def test_execute_deployment_blocked_in_dragent(self, _mock_dragent):
         runner = CliRunner()
         result = runner.invoke(
             cli,
@@ -234,30 +232,5 @@ class TestCliDRAgentIntegration:
                 "abc123",
             ],
         )
-        assert result.exit_code == 0
-        mock_stream.assert_called_once()
-
-    @patch.dict(os.environ, {"DATAROBOT_API_TOKEN": ""}, clear=False)
-    @patch("cli.is_dragent_mode", return_value=True)
-    def test_execute_deployment_dragent_missing_api_token(self, _mock_dragent):
-        runner = CliRunner()
-        result = runner.invoke(
-            cli,
-            [
-                "--base_url",
-                "https://app.datarobot.com",
-                "execute-deployment",
-                "--user_prompt",
-                "test",
-                "--deployment_id",
-                "abc123",
-            ],
-        )
         assert result.exit_code != 0
-
-    @patch("cli.is_dragent_mode", return_value=True)
-    def test_execute_dragent_requires_prompt(self, _mock_dragent):
-        runner = CliRunner()
-        result = runner.invoke(cli, ["execute", "--completion_json", "some.json"])
-        assert result.exit_code != 0
-        assert "requires --user_prompt" in result.output
+        assert "not supported in dragent mode" in result.output

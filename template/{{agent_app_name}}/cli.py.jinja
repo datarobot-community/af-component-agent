@@ -237,15 +237,10 @@ def execute(
         raise click.UsageError("User prompt message or completion json must provided.")
 
     if is_dragent_mode():
-        if not user_prompt:
-            raise click.UsageError("dragent mode requires --user_prompt.")
-        click.echo("Running agent (dragent mode)...")
-        config = Config()
-        execute_dragent_stream(
-            user_prompt,
-            url=f"http://localhost:{config.local_dev_port}/generate/stream",
+        raise click.UsageError(
+            "CLI is not supported in dragent mode. "
+            "Use the DataRobot UI or API to interact with your agent."
         )
-        return
 
     click.echo("Running agent...")
     response = environment.interface.local(
@@ -280,8 +275,8 @@ def execute_custom_model(
     """
     if is_dragent_mode():
         raise click.UsageError(
-            "execute-custom-model is not supported in dragent mode. "
-            "Use execute-deployment instead."
+            "CLI is not supported in dragent mode. "
+            "Use the DataRobot UI or API to interact with your agent."
         )
     if len(user_prompt) == 0:
         raise click.UsageError("User prompt message must be provided.")
@@ -347,19 +342,10 @@ def execute_deployment(
         raise click.UsageError("Deployment ID must be provided.")
 
     if is_dragent_mode():
-        if not user_prompt:
-            raise click.UsageError("dragent mode requires --user_prompt.")
-        if not environment.base_url:
-            raise click.UsageError("dragent deployment mode requires --base_url.")
-        if not environment.api_token:
-            raise click.UsageError("dragent deployment mode requires --api_token.")
-        click.echo("Querying deployment (dragent mode)...")
-        execute_dragent_stream(
-            user_prompt,
-            url=f"{environment.base_url}/api/v2/deployments/{deployment_id}/generate/stream",
-            headers={"Authorization": f"Bearer {environment.api_token}"},
+        raise click.UsageError(
+            "CLI is not supported in dragent mode. "
+            "Use the DataRobot UI or API to interact with your agent."
         )
-        return
 
     click.echo("Querying deployment...")
     response = environment.interface.deployment(
