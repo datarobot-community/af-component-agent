@@ -76,6 +76,78 @@ def is_dragent_mode() -> bool:
     return os.environ.get("ENABLE_DRAGENT_SERVER", "false").lower() == "true"
 
 
+def build_dragent_payload(user_prompt: str) -> dict[str, Any]:
+    """Build an AG-UI RunAgentInput payload for the dragent /generate/stream endpoint."""
+    from uuid import uuid4  # noqa: PLC0415
+
+    return {
+        "threadId": str(uuid4()),
+        "runId": str(uuid4()),
+        "state": [],
+        "tools": [],
+        "context": [],
+        "forwardedProps": {},
+        "messages": [
+            {
+                "id": str(uuid4()),
+                "role": "user",
+                "content": user_prompt,
+            }
+        ],
+    }
+
+
+def execute_dragent_stream(
+    user_prompt: str,
+    url: str,
+    headers: dict[str, str] | None = None,
+) -> None:
+    """POST to a dragent /generate/stream endpoint and print SSE text events."""
+    import logging  # noqa: PLC0415
+
+    import httpx  # noqa: PLC0415
+
+    logger = logging.getLogger(__name__)
+    payload = build_dragent_payload(user_prompt)
+    request_headers = {"Content-Type": "application/json"}
+    if headers:
+        request_headers.update(headers)
+
+    try:
+        with httpx.stream(
+            "POST", url, json=payload, headers=request_headers, timeout=300
+        ) as resp:
+            resp.raise_for_status()
+            click.echo("\nStreaming response:")
+            for line in resp.iter_lines():
+                if not line.startswith("data: "):
+                    continue
+                try:
+                    data = json.loads(line[6:])
+                except json.JSONDecodeError:
+                    logger.debug("Skipping malformed SSE data: %s", line)
+                    continue
+
+                # DRAgentEventResponse wraps events in an "events" list
+                events = data.get("events", [data])
+                for ev in events:
+                    event_type = ev.get("type", "")
+                    if event_type in ("TEXT_MESSAGE_CONTENT", "TEXT_MESSAGE_CHUNK"):
+                        click.echo(ev.get("delta", ""), nl=False)
+                    elif event_type == "TEXT_MESSAGE_END":
+                        click.echo("")
+                    elif event_type == "RUN_FINISHED":
+                        click.echo("\nRun finished.")
+                    else:
+                        logger.debug("Unhandled SSE event type: %s", event_type)
+    except httpx.ConnectError:
+        raise click.ClickException(
+            f"Could not connect to {url}. Is the dragent server running?"
+        )
+    except httpx.HTTPStatusError as e:
+        raise click.ClickException(f"HTTP error from dragent server: {e}")
+
+
 @click.group()
 @click.option("--api_token", default=None, help="API token for authentication.")
 @click.option("--base_url", default=None, help="Base URL for the API.")
