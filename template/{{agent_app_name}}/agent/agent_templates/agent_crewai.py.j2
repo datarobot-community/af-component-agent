@@ -20,6 +20,31 @@ from datarobot_genai.crewai.agent import CrewAIAgent
 from agent.config import Config
 
 
+class StopWordLLM(LLM):
+    """LLM subclass that enforces stop-word truncation client-side.
+
+    CrewAI sets ``stop=["\\nObservation:"]`` on the LLM so the model stops
+    generating before it can hallucinate a tool observation.  That works only
+    when the upstream API honours the ``stop`` parameter.  When the request is
+    proxied through a gateway that silently drops ``stop`` (or when CrewAI
+    itself retries without it after an "Unsupported parameter" error), the
+    model produces the entire ``Action -> Observation -> Final Answer`` chain
+    in one completion.  CrewAI's parser then sees ``Final Answer:`` first,
+    returns ``AgentFinish``, and the tool call is silently discarded.
+
+    ``BaseLLM._apply_stop_words()`` exists to truncate responses at the first
+    stop word, but it is never called by the litellm-based ``LLM.call()``.
+    This subclass wires it in so truncation always happens regardless of
+    whether the API respected the parameter.
+    """
+
+    def call(self, *args: Any, **kwargs: Any) -> Any:
+        result = super().call(*args, **kwargs)
+        if isinstance(result, str):
+            return self._apply_stop_words(result)
+        return result
+
+
 class MyAgent(CrewAIAgent):
     """MyAgent is a custom agent that uses CrewAI to plan and write content.
     It utilizes DataRobot's LLM Gateway or a specific deployment for language model interactions.
@@ -114,7 +139,7 @@ class MyAgent(CrewAIAgent):
         if not self.config.use_datarobot_llm_gateway and self._identity_header:
             config["extra_headers"] = self._identity_header  # type: ignore[assignment]
 
-        return LLM(**config)  # type: ignore[arg-type]
+        return StopWordLLM(**config)  # type: ignore[arg-type]
 
     def make_kickoff_inputs(self, user_prompt_content: str) -> dict[str, Any]:
         """Map the user prompt into Crew kickoff inputs expected by tasks/agents.
