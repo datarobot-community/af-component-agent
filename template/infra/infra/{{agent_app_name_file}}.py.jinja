@@ -573,8 +573,12 @@ pulumi.export("Agent Playground URL " + {{agent_app_name}}_asset_name, {{agent_a
 {{agent_app_name}}_deployment_endpoint: pulumi.Output[str] = cast(pulumi.Output[str], "None")
 {{agent_app_name}}_deployment_a2a_endpoint: pulumi.Output[str] = cast(pulumi.Output[str], "None")
 if os.environ.get("AGENT_DEPLOY") != "0":
-    if prediction_environment_id := os.environ.get("DATAROBOT_DEFAULT_PREDICTION_ENVIRONMENT"):
-        pulumi.info(f"Using existing prediction environment '{prediction_environment_id}'")
+    if prediction_environment_id := os.environ.get(
+        "DATAROBOT_DEFAULT_PREDICTION_ENVIRONMENT"
+    ):
+        pulumi.info(
+            f"Using existing prediction environment '{prediction_environment_id}'"
+        )
 
         {{agent_app_name}}_prediction_environment = pulumi_datarobot.PredictionEnvironment.get(
             id=prediction_environment_id,
