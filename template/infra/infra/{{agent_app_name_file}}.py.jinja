@@ -31,7 +31,7 @@ from datarobot_pulumi_utils.schema.custom_models import (
 from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 
 
-from . import prediction_environment, project_dir, use_case
+from . import project_dir, use_case
 
 from .{{ _external_data.llm.llm_app_name }} import custom_model_runtime_parameters as llm_custom_model_runtime_parameters
 
@@ -100,7 +100,6 @@ __all__ = [
 {{agent_app_name}}_application_name: str = "{{agent_app_name}}"
 {{agent_app_name}}_asset_name: str = f"[{PROJECT_NAME}] [{{agent_app_name}}]"
 {{agent_app_name}}_application_path = project_dir.parent / "{{agent_app_name}}"
-{{agent_app_name}}_prediction_environment = prediction_environment
 
 _is_dragent_server_enabled = (
     os.environ.get("ENABLE_DRAGENT_SERVER", "").strip().lower() == "true"
@@ -574,6 +573,25 @@ pulumi.export("Agent Playground URL " + {{agent_app_name}}_asset_name, {{agent_a
 {{agent_app_name}}_deployment_endpoint: pulumi.Output[str] = cast(pulumi.Output[str], "None")
 {{agent_app_name}}_deployment_a2a_endpoint: pulumi.Output[str] = cast(pulumi.Output[str], "None")
 if os.environ.get("AGENT_DEPLOY") != "0":
+    if prediction_environment_id := os.environ.get(
+        "DATAROBOT_DEFAULT_PREDICTION_ENVIRONMENT"
+    ):
+        pulumi.info(
+            f"Using existing prediction environment '{prediction_environment_id}'"
+        )
+
+        {{agent_app_name}}_prediction_environment = pulumi_datarobot.PredictionEnvironment.get(
+            id=prediction_environment_id,
+            resource_name={{agent_app_name}}_asset_name + " Prediction Environment [PRE-EXISTING]",
+        )
+    else:
+        {{agent_app_name}}_prediction_environment = pulumi_datarobot.PredictionEnvironment(
+            resource_name={{agent_app_name}}_asset_name + " Prediction Environment",
+            name={{agent_app_name}}_asset_name + " Prediction Environment",
+            platform=dr.enums.PredictionEnvironmentPlatform.DATAROBOT_SERVERLESS,
+            opts=pulumi.ResourceOptions(retain_on_delete=False),
+        )
+
     {{agent_app_name}}_registered_model_args = RegisteredModelArgs(
         resource_name={{agent_app_name}}_asset_name + " Registered Model",
         name={{agent_app_name}}_asset_name + " Registered Model",
