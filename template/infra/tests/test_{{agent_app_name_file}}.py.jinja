@@ -604,6 +604,30 @@ def test_agent_deployment_created_when_env(monkeypatch):
     )
 
 
+def test_agent_deployment_uses_existing_prediction_environment(monkeypatch):
+    """Test that an existing prediction environment is used when DATAROBOT_DEFAULT_PREDICTION_ENVIRONMENT is set."""
+    monkeypatch.setenv("AGENT_DEPLOY", "1")
+    monkeypatch.setenv("DATAROBOT_DEFAULT_PREDICTION_ENVIRONMENT", "existing-pe-id")
+    monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
+
+    import importlib
+    import infra.{{agent_app_name}} as agent_infra
+
+    # Reset mocks to clear calls from the initial import
+    agent_infra.pulumi_datarobot.PredictionEnvironment.reset_mock()
+    agent_infra.CustomModelDeployment.reset_mock()
+    importlib.reload(agent_infra)
+
+    # Check that PredictionEnvironment.get() was called with the existing ID
+    agent_infra.pulumi_datarobot.PredictionEnvironment.get.assert_called_once()
+    _, call_kwargs = agent_infra.pulumi_datarobot.PredictionEnvironment.get.call_args
+    assert call_kwargs.get("id") == "existing-pe-id"
+    # Check that PredictionEnvironment constructor was not called
+    agent_infra.pulumi_datarobot.PredictionEnvironment.assert_not_called()
+    # Check that CustomModelDeployment was still created
+    agent_infra.CustomModelDeployment.assert_called_once()
+
+
 def test_agent_deployment_not_created_when_env_zero(monkeypatch):
     """Test that agent deployment resources are not created when AGENT_DEPLOY is '0'."""
     monkeypatch.setenv("AGENT_DEPLOY", "0")
