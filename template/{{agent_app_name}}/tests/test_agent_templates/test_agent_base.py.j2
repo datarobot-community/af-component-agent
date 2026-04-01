@@ -1,16 +1,30 @@
+# Copyright 2025 DataRobot, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 from unittest.mock import patch
 
 import pytest
 from ag_ui.core import (
     EventType,
-    UserMessage,
     RunAgentInput,
     RunFinishedEvent,
     RunStartedEvent,
     TextMessageContentEvent,
     TextMessageEndEvent,
     TextMessageStartEvent,
+    UserMessage,
 )
 
 from agent import MyAgent
@@ -77,59 +91,6 @@ class TestMyAgentBase:
         # Assert
         assert agent.api_key == "explicit-api-key"
         assert agent.api_base == "https://explicit-api-base.com"
-
-    def test_init_with_string_verbose_true(self):
-        """Test initialization with string 'true' for verbose parameter."""
-        # Setup
-        verbose_values = ["true", "TRUE", "True"]
-
-        for verbose in verbose_values:
-            # Execute
-            agent = MyAgent(verbose=verbose)
-
-            # Assert
-            assert agent.verbose is True
-
-    def test_init_with_string_verbose_false(self):
-        """Test initialization with string 'false' for verbose parameter."""
-        # Setup
-        verbose_values = ["false", "FALSE", "False"]
-
-        for verbose in verbose_values:
-            # Execute
-            agent = MyAgent(verbose=verbose)
-
-            # Assert
-            assert agent.verbose is False
-
-    def test_init_with_boolean_verbose(self):
-        """Test initialization with boolean values for verbose parameter."""
-        # Test with True
-        agent = MyAgent(verbose=True)
-        assert agent.verbose is True
-
-        # Test with False
-        agent = MyAgent(verbose=False)
-        assert agent.verbose is False
-
-    @patch.dict(os.environ, {}, clear=True)
-    def test_init_with_additional_kwargs(self):
-        """Test initialization with additional keyword arguments."""
-        # Setup
-        additional_kwargs = {"extra_param1": "value1", "extra_param2": 42}
-
-        # Execute
-        agent = MyAgent(**additional_kwargs)
-
-        # Assert - Additional kwargs should be accepted but not stored as attributes
-        assert agent.api_key is None  # Should fallback to env var or None
-        assert agent.api_base == "https://app.datarobot.com"  # Default value
-        assert agent.model is None
-        assert agent.verbose is True
-
-        # Verify that the extra parameters don't create attributes
-        with pytest.raises(AttributeError):
-            _ = agent.extra_param1
 
     @patch("builtins.print")
     async def test_run_method_with_json_input(self, mock_print, agent):

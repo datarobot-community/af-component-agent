@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import uuid
-from typing import Any, Optional, Union
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
+from typing import TYPE_CHECKING, Any, Optional
 
 from ag_ui.core import (
     EventType,
@@ -30,8 +32,23 @@ from datarobot_genai.core.agents import (
     default_usage_metrics,
     extract_user_prompt_content,
 )
+from datarobot_genai.core.agents.base import UsageMetrics
+from datarobot_genai.core.chat import agent_chat_completion_wrapper
+from datarobot_genai.core.mcp import MCPConfig
+from openai.types.chat import CompletionCreateParams
 
 from agent.config import Config
+
+if TYPE_CHECKING:
+    from ragas import MultiTurnSample
+
+
+@asynccontextmanager
+async def mcp_tools_context(
+    mcp_config: MCPConfig,
+) -> AsyncGenerator[list[Any], None]:
+    """No-op MCP tools context for the base agent (no framework-specific MCP adapter)."""
+    yield []
 
 
 class MyAgent(BaseAgent[None]):
@@ -44,12 +61,11 @@ class MyAgent(BaseAgent[None]):
         api_key: Optional[str] = None,
         api_base: Optional[str] = None,
         model: Optional[str] = None,
-        verbose: Optional[Union[bool, str]] = True,
+        verbose: bool = True,
         timeout: Optional[int] = 90,
-        *,
         llm: Optional[Any] = None,
-        workflow_tools: Optional[list[Any]] = None,
-        **kwargs: Any,
+        tools: Optional[list[Any]] = None,
+        forwarded_headers: Optional[dict[str, str]] = None,
     ):
         """Initializes the MyAgent class with API key, base URL, model, and verbosity settings.
 
@@ -60,15 +76,15 @@ class MyAgent(BaseAgent[None]):
                 Defaults to None, in which case it will use the DATAROBOT_ENDPOINT environment variable.
             model: Optional[str]: The LLM model to use.
                 Defaults to None.
-            verbose: Optional[Union[bool, str]]: Whether to enable verbose logging.
-                Accepts boolean or string values ("true"/"false"). Defaults to True.
+            verbose: bool: Whether to enable verbose logging. Defaults to True.
             timeout: Optional[int]: How long to wait for the agent to respond.
                 Defaults to 90 seconds.
             llm: Optional[Any]: Pre-configured LLM instance provided by NAT.
                 When set, can be used directly instead of creating a new LLM instance.
-            workflow_tools: Optional[list[Any]]: Additional tools from the workflow config (e.g. A2A client tools). Keyword-only.
-            **kwargs: Any: Additional keyword arguments passed to the agent.
-
+            tools: Optional[list[Any]]: Tools to use for the agent.
+                Defaults to None.
+            forwarded_headers: Optional[dict[str, str]]: Headers of the original request agent can use
+                to access external services. Defaults to None.
         Returns:
             None
         """
@@ -78,10 +94,10 @@ class MyAgent(BaseAgent[None]):
             model=model,
             verbose=verbose,
             timeout=timeout,
-            **kwargs,
+            tools=tools,
+            forwarded_headers=forwarded_headers,
         )
-        self._nat_llm = llm
-        self._workflow_tools = workflow_tools or []
+        self._llm = llm
         self.config = Config()
 
     async def invoke(self, run_agent_input: RunAgentInput) -> InvokeReturn:
@@ -157,3 +173,23 @@ class MyAgent(BaseAgent[None]):
             pipeline_interactions,
             usage_metrics,
         )
+
+
+async def custompy_adaptor(
+    completion_create_params: CompletionCreateParams,
+) -> InvokeReturn | tuple[str, Optional["MultiTurnSample"], UsageMetrics]:
+    forwarded_headers = completion_create_params.get("forwarded_headers", {})
+    authorization_context = completion_create_params.get("authorization_context", {})
+    mcp_config = MCPConfig(
+        forwarded_headers=forwarded_headers,
+        authorization_context=authorization_context,
+    )
+    async with mcp_tools_context(mcp_config) as mcp_tools:
+        agent = MyAgent(
+            model=completion_create_params.get("model"),
+            verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
+            timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
+            tools=mcp_tools,
+            forwarded_headers=forwarded_headers,  # type: ignore[arg-type]
+        )
+        return await agent_chat_completion_wrapper(agent, completion_create_params)

@@ -15,19 +15,11 @@ from collections.abc import AsyncGenerator
 from typing import Annotated, Any
 
 from ag_ui.core import RunAgentInput
-from datarobot_genai.dragent.frontends.converters import (
-    aggregate_dragent_event_responses,
-)
 from datarobot_genai.dragent.frontends.response import DRAgentEventResponse
-from datarobot_genai.nat.helpers import (
-    extract_authorization_from_context,
-    extract_datarobot_headers_from_context,
-)
 from nat.builder.builder import Builder
 from nat.cli.register_workflow import register_per_user_function
 from nat.data_models.agent import AgentBaseConfig
 from nat.data_models.component_ref import FunctionGroupRef
-from nat.data_models.streaming import Streaming
 
 
 class BaseAgentConfig(AgentBaseConfig, name="base_agent"):  # type: ignore[call-arg, misc]
@@ -51,17 +43,24 @@ class BaseAgentConfig(AgentBaseConfig, name="base_agent"):  # type: ignore[call-
 async def base_agent(
     config: BaseAgentConfig, builder: Builder
 ) -> AsyncGenerator[Any, None]:
-    from nat.builder.function_info import FunctionInfo  # noqa: PLC0415
+    from datarobot_genai.dragent.frontends.converters import (
+        aggregate_dragent_event_responses,
+    )
+    from datarobot_genai.nat.helpers import (
+        extract_authorization_from_context,
+        extract_datarobot_headers_from_context,
+    )
+    from nat.builder.function_info import FunctionInfo, Streaming
 
-    from agent.myagent import MyAgent  # noqa: PLC0415
+    from agent.myagent import MyAgent
 
     # To get an LLM instance from NAT, uncomment the lines. Switch LLMFrameworkEnum.LANGCHAIN
     # to the framework your MyAgent implementation uses:
     #
-    #   from nat.builder.framework_enum import LLMFrameworkEnum  # noqa: PLC0415
+    #   from nat.builder.framework_enum import LLMFrameworkEnum
     #   llm = await builder.get_llm(config.llm_name, wrapper_type=LLMFrameworkEnum.LANGCHAIN)
 
-    # To inject tools from the workflow config, uncomment the lines below. witch
+    # To inject tools from the workflow config, uncomment the lines below. Switch
     # LLMFrameworkEnum.LANGCHAIN to the framework your MyAgent implementation uses
     #   workflow_tools = await builder.get_tools(
     #       config.tool_names, wrapper_type=LLMFrameworkEnum.LANGCHAIN
@@ -80,10 +79,8 @@ async def base_agent(
         authorization_context = extract_authorization_from_context()
         agent = MyAgent(
             # llm=llm,
-            # workflow_tools=workflow_tools,
             verbose=config.verbose,
             forwarded_headers=forwarded_headers,
-            authorization_context=authorization_context,
         )
 
         async for event, pipeline_interactions, usage_metrics in agent.invoke(
