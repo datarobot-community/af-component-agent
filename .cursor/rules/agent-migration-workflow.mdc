@@ -1,0 +1,15 @@
+---
+description: Workflow for migrating agent templates and verifying changes
+alwaysApply: false
+---
+
+# Agent Migration Workflow
+
+When migrating or modifying agent templates, follow this loop for each agent type:
+
+1. **Make changes** to the relevant files under `template/{{agent_app_name}}/`
+2. **Run tests** with `task test-<agenttype>` (e.g. `task test-crewai`, `task test-langgraph`). Use `SKIP_INFRA=1` to skip infra tests when only agent code changed. This command needs `["all"]` sandbox permissions because `uvx copier` writes outside the workspace.
+3. **Fix failures** — lint, type errors, test assertions — and re-run until green.
+4. **Commit** the passing agent type before moving to the next one.
+
+Available agent types: `base`, `crewai`, `langgraph`, `llamaindex`, `nat`.
