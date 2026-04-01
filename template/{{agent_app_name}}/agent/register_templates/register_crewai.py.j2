@@ -86,14 +86,14 @@ async def crewai_agent(
                 tools=tools,
             )
 
-        async for event, pipeline_interactions, usage_metrics in agent.invoke(
-            input_message
-        ):
-            yield DRAgentEventResponse(
-                events=[event],
-                usage_metrics=usage_metrics,
-                pipeline_interactions=pipeline_interactions,
-            )
+            async for event, pipeline_interactions, usage_metrics in agent.invoke(
+                input_message
+            ):
+                yield DRAgentEventResponse(
+                    events=[event],
+                    usage_metrics=usage_metrics,
+                    pipeline_interactions=pipeline_interactions,
+                )
 
     yield FunctionInfo.from_fn(
         _response_fn,

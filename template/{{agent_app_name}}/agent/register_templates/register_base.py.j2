@@ -52,7 +52,7 @@ async def base_agent(
     )
     from nat.builder.function_info import FunctionInfo, Streaming
 
-    from agent.myagent import MyAgent
+    from agent.myagent import MyAgent, mcp_tools_context
 
     # To get an LLM instance from NAT, uncomment the lines. Switch LLMFrameworkEnum.LANGCHAIN
     # to the framework your MyAgent implementation uses:
@@ -77,20 +77,26 @@ async def base_agent(
         # Agent should have access to request-specific headers and authorization context
         forwarded_headers = extract_datarobot_headers_from_context()
         authorization_context = extract_authorization_from_context()
-        agent = MyAgent(
-            # llm=llm,
-            verbose=config.verbose,
+        mcp_config = MCPConfig(
             forwarded_headers=forwarded_headers,
+            authorization_context=authorization_context,
         )
-
-        async for event, pipeline_interactions, usage_metrics in agent.invoke(
-            input_message
-        ):
-            yield DRAgentEventResponse(
-                events=[event],
-                usage_metrics=usage_metrics,
-                pipeline_interactions=pipeline_interactions,
+        async with mcp_tools_context(mcp_config) as mcp_tools:
+            agent = MyAgent(
+                # llm=llm,
+                verbose=config.verbose,
+                forwarded_headers=forwarded_headers,
+                tools=mcp_tools,
             )
+
+            async for event, pipeline_interactions, usage_metrics in agent.invoke(
+                input_message
+            ):
+                yield DRAgentEventResponse(
+                    events=[event],
+                    usage_metrics=usage_metrics,
+                    pipeline_interactions=pipeline_interactions,
+                )
 
     yield FunctionInfo.from_fn(
         _response_fn,
