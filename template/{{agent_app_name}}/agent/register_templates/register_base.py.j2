@@ -43,6 +43,7 @@ class BaseAgentConfig(AgentBaseConfig, name="base_agent"):  # type: ignore[call-
 async def base_agent(
     config: BaseAgentConfig, builder: Builder
 ) -> AsyncGenerator[Any, None]:
+    from datarobot_genai.core.mcp import MCPConfig
     from datarobot_genai.dragent.frontends.converters import (
         aggregate_dragent_event_responses,
     )
