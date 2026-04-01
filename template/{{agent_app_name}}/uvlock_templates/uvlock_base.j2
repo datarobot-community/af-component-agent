@@ -118,7 +118,7 @@ dev = [
 requires-dist = [
     { name = "anyio", specifier = ">=4.11.0,<4.12.0" },
     { name = "datarobot-drum", specifier = "==1.17.11.post1" },
-    { name = "datarobot-genai", extras = ["dragent"], specifier = "==0.8.8" },
+    { name = "datarobot-genai", extras = ["dragent"], specifier = "==0.10.0" },
     { name = "datarobot-mlops", specifier = "==11.1.0" },
     { name = "datarobot-moderations", specifier = "==11.2.20" },
     { name = "debugpy", marker = "extra == 'dev'", specifier = ">=1.8.20" },
@@ -1014,11 +1014,11 @@ wheels = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.8.8"
+version = "0.10.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/47/69/065ce078c1f46bf567a0fe3f5f7563da5c272bfed55bad5c37f0991f7210/datarobot_genai-0.8.8.tar.gz", hash = "sha256:b17a60022639e8e4302908c1a6e4312a2bd0cac62dcfaa44508559383bf5bfe9", size = 220128, upload-time = "2026-03-24T15:44:59.85Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2d/6c/b9ab35e301cd4a2bc4a8cb5ec06faff3dfa60c72645bd4e9898253d172f4/datarobot_genai-0.10.0.tar.gz", hash = "sha256:dd069aa01c5b950f28a41a1752faf67fb65e7f812c111fd5e9a8fce639bdab7c", size = 224561, upload-time = "2026-04-01T13:12:56.697Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0a/6d/de7266063c2b343c0db4b0748a34147aa55cc3e3f9e1d8ded5694fd62210/datarobot_genai-0.8.8-py3-none-any.whl", hash = "sha256:db3e5a23a29b98e0b00bfebdcdc3273ef54aeef829248676824aab3e1f028058", size = 326472, upload-time = "2026-03-24T15:44:58.045Z" },
+    { url = "https://files.pythonhosted.org/packages/f6/a1/de297c053e973a2b4f3c6e750f6927a602bd4806dd5d5a539d6d6b470244/datarobot_genai-0.10.0-py3-none-any.whl", hash = "sha256:59f61388b9f6df06b29a60f94f19c98bc825f0cbf8628537a342445a1fb7a396", size = 332826, upload-time = "2026-04-01T13:12:54.946Z" },
 ]
 
 [package.optional-dependencies]
@@ -1029,6 +1029,7 @@ dragent = [
     { name = "datarobot-early-access", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-predict", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "fastapi", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "litellm", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "nvidia-nat", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "nvidia-nat-a2a", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "nvidia-nat-langchain", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },

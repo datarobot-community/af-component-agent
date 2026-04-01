@@ -13,6 +13,6 @@
 # limitations under the License.
 
 from agent.config import Config
-from agent.myagent import MyAgent
+from agent.myagent import MyAgent, custompy_adaptor
 
-__all__ = ["MyAgent", "Config"]
+__all__ = ["MyAgent", "Config", "custompy_adaptor"]

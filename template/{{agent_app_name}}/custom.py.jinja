@@ -30,7 +30,7 @@ instrument()
 {% endif -%}
 
 # ruff: noqa: E402
-from agent import Config, MyAgent
+from agent import Config, custompy_adaptor
 
 # isort: on
 # ------------------------------------------------------------------------------
@@ -42,7 +42,6 @@ from typing import Any, AsyncGenerator, Iterator, Union
 from datarobot_genai.core.chat import (
     CustomModelChatResponse,
     CustomModelStreamingResponse,
-    agent_chat_completion_wrapper,
     resolve_authorization_context,
     to_custom_model_chat_response,
     to_custom_model_streaming_response,
@@ -124,14 +123,10 @@ def chat(
     }
     completion_create_params["forwarded_headers"] = forwarded_headers
 
-    # Instantiate the agent, all fields from the completion_create_params are passed to the agent
-    # allowing environment variables to be passed during execution
-    agent = MyAgent(**completion_create_params)
-
-    # Invoke the agent
+    # Instantiate and invoke the agent
     result = thread_pool_executor.submit(
         event_loop.run_until_complete,
-        agent_chat_completion_wrapper(agent, completion_create_params),
+        custompy_adaptor(agent, completion_create_params),
     ).result()
 
     # Check if the result is a generator (streaming response)
@@ -210,14 +205,10 @@ def chat(
     }
     completion_create_params["forwarded_headers"] = forwarded_headers
 
-    # Instantiate the agent, all fields from the completion_create_params are passed to the agent
-    # allowing environment variables to be passed during execution
-    agent = MyAgent(**completion_create_params)
-
-    # Invoke the agent
+    # Instantiate and invoke the agent
     result = thread_pool_executor.submit(
         event_loop.run_until_complete,
-        agent_chat_completion_wrapper(agent, completion_create_params),
+        custompy_adaptor(completion_create_params),
     ).result()
 
     # Check if the result is a generator (streaming response)
