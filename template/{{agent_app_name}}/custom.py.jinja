@@ -1,3 +1,2 @@
 {% if agent_template_framework == "nat" %}{% include 'template/{{agent_app_name}}/custom_templates/custom_nat.py.j2' -%}
-{% else %}{% include 'template/{{agent_app_name}}/custom_templates/custom_default.py.j2' -%}
-{% endif %}
+{% else %}{% include 'template/{{agent_app_name}}/custom_templates/custom_default.py.j2' -%}{% endif -%}
