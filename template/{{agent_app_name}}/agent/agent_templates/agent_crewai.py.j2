@@ -76,6 +76,7 @@ class MyAgent(CrewAIAgent):
             verbose=verbose,
             timeout=timeout,
             forwarded_headers=forwarded_headers,
+            tools=tools,
         )
         self._llm = llm
         self.config = Config()
