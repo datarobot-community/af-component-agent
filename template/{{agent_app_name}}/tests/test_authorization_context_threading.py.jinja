@@ -1,0 +1,3 @@
+{% if agent_template_framework == "nat" %}{% include 'template/{{agent_app_name}}/tests/test_authorization_context_templates/test_authorization_context_nat.py.j2' -%}
+{% else %}{% include 'template/{{agent_app_name}}/tests/test_authorization_context_templates/test_authorization_context_default.py.j2' -%}
+{% endif %}
