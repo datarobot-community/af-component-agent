@@ -55,7 +55,9 @@ class MyAgent(NatAgent):
 async def custompy_adaptor(
     completion_create_params: CompletionCreateParams,
 ) -> InvokeReturn | tuple[str, Optional["MultiTurnSample"], UsageMetrics]:
-    forwarded_headers = completion_create_params.get("forwarded_headers", {})
+    forwarded_headers: dict[str, str] = completion_create_params.get(  # type: ignore[assignment]
+        "forwarded_headers", {}
+    )
     authorization_context = completion_create_params.get("authorization_context", {})
     mcp_config = MCPConfig(
         forwarded_headers=forwarded_headers,
