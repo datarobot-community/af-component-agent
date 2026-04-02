@@ -1,4 +1,4 @@
-# Copyright 2025 DataRobot, Inc.
+# Copyright 2026 DataRobot, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,5 +23,3 @@ agent template, so our tests need a minimal entrypoint to make `pulumi up` work.
 # Importing the module is enough for Pulumi: resources are created at import time.
 # noqa is used because this import is intentionally "unused" by the code.
 import infra.agent  # noqa: F401
-
-

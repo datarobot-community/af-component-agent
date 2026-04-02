@@ -1,4 +1,4 @@
-# Copyright 2025 DataRobot, Inc.
+# Copyright 2026 DataRobot, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,5 +17,3 @@ End-to-end test package for af-component-agent.
 
 Keeping this as a proper Python package allows sibling modules to use relative imports.
 """
-
-
