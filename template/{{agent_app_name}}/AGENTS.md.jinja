@@ -32,13 +32,32 @@ class MyAgent(CrewAIAgent):
 
 #### `llm()` Method
 
-**CRITICAL**: Do NOT modify, delete, or change this method. It MUST be kept exactly as shown below in the agent implementation:
+**CRITICAL**: Keep NAT short-circuit, OpenAI-compatible branch when `config.openai_api_base` is set, then DataRobot deployment / gateway path. Do not remove the OpenAI-compatible branch or change how the `openai/` LiteLLM prefix is applied.
 
 ```python
 def llm(
         self,
         auto_model_override: bool = True,
     ) -> LLM:
+        if self._llm is not None:
+            return self._llm
+
+        if self.config.openai_api_base:
+            api_base = self.config.openai_api_base
+            api_key = self.config.openai_api_token or self.api_key
+            _raw_model = self.default_model
+            model = (
+                _raw_model if _raw_model.startswith("openai/") else f"openai/{_raw_model}"
+            )
+            if self.verbose:
+                print(f"Using OpenAI-compatible endpoint: {api_base}, model: {model}")
+            return LLM(
+                model=model,
+                api_base=api_base,
+                api_key=api_key,
+                timeout=self.timeout,
+            )
+
         api_base = self.litellm_api_base(self.config.llm_deployment_id)
         model = self.model or self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:
@@ -54,7 +73,7 @@ def llm(
         )
 ```
 
-**Why this is required**: This method handles model configuration, API authentication, and DataRobot LLM Gateway integration. Changing it will break deployment.
+**Why this is required**: This method handles model configuration, API authentication, OpenAI-compatible endpoints, and DataRobot LLM Gateway / deployment integration. Changing it will break deployment.
 
 #### `agents` Property
 Defines the list of sub-agents
@@ -110,13 +129,32 @@ class MyAgent(LangGraphAgent):
 
 #### `llm()` Method
 
-**CRITICAL**: Do NOT modify, delete, or change this method. It MUST be kept exactly as shown below in the agent implementation:
+**CRITICAL**: Keep NAT short-circuit, OpenAI-compatible branch when `config.openai_api_base` is set, then DataRobot deployment / gateway path. Do not remove the OpenAI-compatible branch or change how the `openai/` LiteLLM prefix is applied.
 
 ```python
 def llm(
     self,
     auto_model_override: bool = True,
 ) -> ChatLiteLLM:
+    if self._llm is not None:
+        return self._llm
+
+    if self.config.openai_api_base:
+        api_base = self.config.openai_api_base
+        api_key = self.config.openai_api_token or self.api_key
+        _raw_model = self.default_model
+        model = _raw_model if _raw_model.startswith("openai/") else f"openai/{_raw_model}"
+        if self.verbose:
+            print(f"Using OpenAI-compatible endpoint: {api_base}, model: {model}")
+        return ChatLiteLLM(
+            model=model,
+            api_base=api_base,
+            api_key=api_key,
+            timeout=self.timeout,
+            streaming=True,
+            max_retries=3,
+        )
+
     api_base = self.litellm_api_base(self.config.llm_deployment_id)
     model = self.model or self.default_model
     if auto_model_override and not self.config.use_datarobot_llm_gateway:
@@ -133,7 +171,7 @@ def llm(
     )
 ```
 
-**Why this is required**: This method handles model configuration, API authentication, and DataRobot LLM Gateway integration. Changing it will break deployment.
+**Why this is required**: This method handles model configuration, API authentication, OpenAI-compatible endpoints, and DataRobot LLM Gateway / deployment integration. Changing it will break deployment.
 
 #### `workflow` Property
 Defines the agent's execution flow using LangGraph's StateGraph.
@@ -230,13 +268,32 @@ class MyAgent(LlamaIndexAgent):
 
 #### `llm()` Method
 
-**CRITICAL**: Do NOT modify, delete, or change this method. It MUST be kept exactly as shown below in the agent implementation:
+**CRITICAL**: Keep NAT short-circuit, OpenAI-compatible branch when `config.openai_api_base` is set, then DataRobot deployment / gateway path. Do not remove the OpenAI-compatible branch or change how the `openai/` LiteLLM prefix is applied.
 
 ```python
 def llm(
         self,
         auto_model_override: bool = True,
     ) -> DataRobotLiteLLM:
+        if self._llm is not None:
+            return self._llm
+
+        if self.config.openai_api_base:
+            api_base = self.config.openai_api_base
+            api_key = self.config.openai_api_token or self.api_key
+            _raw_model = self.default_model
+            model = (
+                _raw_model if _raw_model.startswith("openai/") else f"openai/{_raw_model}"
+            )
+            if self.verbose:
+                print(f"Using OpenAI-compatible endpoint: {api_base}, model: {model}")
+            return DataRobotLiteLLM(
+                model=model,
+                api_base=api_base,
+                api_key=api_key,
+                timeout=self.timeout,
+            )
+
         api_base = self.litellm_api_base(self.config.llm_deployment_id)
         model = self.model or self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:
@@ -251,7 +308,7 @@ def llm(
         )
 ```
 
-**Why this is required**: This method handles model configuration, API authentication, and DataRobot LLM Gateway integration. Changing it will break deployment.
+**Why this is required**: This method handles model configuration, API authentication, OpenAI-compatible endpoints, and DataRobot LLM Gateway / deployment integration. Changing it will break deployment.
 
 #### `make_input_message` Method
 Makes input message for the LLM

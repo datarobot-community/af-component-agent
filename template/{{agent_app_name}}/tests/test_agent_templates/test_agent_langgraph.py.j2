@@ -21,6 +21,18 @@ from langchain_core.prompts import ChatPromptTemplate
 from agent import MyAgent
 
 
+def _reset_llm_config_for_tests(
+    agent: MyAgent,
+    *,
+    llm_default_model: str = "datarobot/azure/gpt-5-mini-2025-08-07",
+) -> None:
+    """Isolate LLM-related settings from the repo .env during tests."""
+    agent.config.openai_api_base = None
+    agent.config.openai_api_token = None
+    agent.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model = llm_default_model
+    agent.default_model = llm_default_model
+
+
 class TestMyAgentLangGraph:
     @pytest.fixture
     def agent(self) -> MyAgent:
@@ -126,6 +138,7 @@ class TestMyAgentLangGraph:
             agent = MyAgent(
                 api_base=api_base, model="datarobot/azure/gpt-5-mini-2025-08-07"
             )
+            _reset_llm_config_for_tests(agent)
             agent.config.use_datarobot_llm_gateway = True
             _ = agent.llm()
             mock_llm.assert_called_once_with(
@@ -195,7 +208,7 @@ class TestMyAgentLangGraph:
         """Test api_base_litellm property with various URL formats."""
         with patch.dict(os.environ, {"LLM_DEPLOYMENT_ID": "test-id"}, clear=True):
             agent = MyAgent(api_base=api_base)
-            agent.config.llm_default_model = "datarobot/azure/gpt-5-mini-2025-08-07"
+            _reset_llm_config_for_tests(agent)
             _ = agent.llm()
             mock_llm.assert_called_once_with(
                 model="datarobot/azure/gpt-5-mini-2025-08-07",
@@ -209,6 +222,7 @@ class TestMyAgentLangGraph:
     @patch("agent.myagent.ChatLiteLLM")
     def test_llm(self, mock_llm, agent):
         # Test that ChatLiteLLM is created with correct parameters
+        _reset_llm_config_for_tests(agent)
         agent.llm()
         mock_llm.assert_called_once_with(
             model="datarobot/azure/gpt-5-mini-2025-08-07",
@@ -228,11 +242,48 @@ class TestMyAgentLangGraph:
                 verbose=True,
                 model="datarobot/azure/gpt-5-mini-2025-08-07",
             )
+            _reset_llm_config_for_tests(agent)
             agent.llm()
             mock_llm.assert_called_once_with(
                 model="datarobot/azure/gpt-5-mini-2025-08-07",
                 api_base="https://app.datarobot.com/",
                 api_key="test_key",
+                timeout=90,
+                streaming=True,
+                max_retries=3,
+            )
+
+    @patch("agent.myagent.ChatLiteLLM")
+    def test_llm_openai_compatible_endpoint(self, mock_llm):
+        """When openai_api_base is set, use ChatLiteLLM with openai/ model prefix."""
+        with patch.dict(os.environ, {}, clear=True):
+            agent = MyAgent(api_key="dr-key")
+            _reset_llm_config_for_tests(agent)
+            agent.config.openai_api_base = "http://localhost:11434/v1"
+            agent.config.openai_api_token = "compat-token"
+            agent.default_model = "llama3"
+            agent.llm()
+            mock_llm.assert_called_once_with(
+                model="openai/llama3",
+                api_base="http://localhost:11434/v1",
+                api_key="compat-token",
+                timeout=90,
+                streaming=True,
+                max_retries=3,
+            )
+
+    @patch("agent.myagent.ChatLiteLLM")
+    def test_llm_openai_compatible_preserves_openai_prefix(self, mock_llm):
+        with patch.dict(os.environ, {}, clear=True):
+            agent = MyAgent(api_key="dr-key")
+            _reset_llm_config_for_tests(agent)
+            agent.config.openai_api_base = "http://localhost:11434/v1"
+            agent.default_model = "openai/llama3"
+            agent.llm()
+            mock_llm.assert_called_once_with(
+                model="openai/llama3",
+                api_base="http://localhost:11434/v1",
+                api_key="dr-key",
                 timeout=90,
                 streaming=True,
                 max_retries=3,
@@ -251,6 +302,7 @@ class TestMyAgentLangGraph:
                     "x-datarobot-identity-token": "xyz",
                 },
             )
+            _reset_llm_config_for_tests(agent)
             agent.config.use_datarobot_llm_gateway = use_datarobot_llm_gateway
             agent.llm()
 

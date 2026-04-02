@@ -136,6 +136,24 @@ class MyAgent(LlamaIndexAgent):
         if self._llm is not None:
             return self._llm
 
+        if self.config.openai_api_base:
+            api_base = self.config.openai_api_base
+            api_key = self.config.openai_api_token or self.api_key
+            _raw_model = self.default_model
+            model = (
+                _raw_model
+                if _raw_model.startswith("openai/")
+                else f"openai/{_raw_model}"
+            )
+            if self.verbose:
+                print(f"Using OpenAI-compatible endpoint: {api_base}, model: {model}")
+            return DataRobotLiteLLM(
+                model=model,
+                api_base=api_base,
+                api_key=api_key,
+                timeout=self.timeout,
+            )
+
         api_base = self.litellm_api_base(self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id)
         model = self.model or self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:
