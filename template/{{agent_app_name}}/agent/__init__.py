@@ -1,4 +1,4 @@
-# Copyright 2025 DataRobot, Inc.
+# Copyright 2026 DataRobot, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,6 @@
 # limitations under the License.
 
 from agent.config import Config
-from agent.myagent import MyAgent
+from agent.myagent import MyAgent, custompy_adaptor
 
-__all__ = ["MyAgent", "Config"]
+__all__ = ["MyAgent", "Config", "custompy_adaptor"]

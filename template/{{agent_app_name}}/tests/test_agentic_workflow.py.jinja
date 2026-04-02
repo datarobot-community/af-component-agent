@@ -1,0 +1,2 @@
+{% if agent_template_framework == "nat" %}{% include 'template/{{agent_app_name}}/tests/test_agentic_workflow_templates/test_agentic_workflow_nat.py.j2' -%}
+{% else %}{% include 'template/{{agent_app_name}}/tests/test_agentic_workflow_templates/test_agentic_workflow_default.py.j2' -%}{% endif -%}

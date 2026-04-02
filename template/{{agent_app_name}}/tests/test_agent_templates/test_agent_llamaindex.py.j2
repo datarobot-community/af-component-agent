@@ -1,3 +1,17 @@
+# Copyright 2026 DataRobot, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import os
 from unittest.mock import MagicMock, patch
 
@@ -70,59 +84,6 @@ class TestMyAgentLlamaIndex:
         assert agent.api_key == "explicit-api-key"
         assert agent.api_base == "https://explicit-api-base.com"
 
-    def test_init_with_string_verbose_true(self):
-        """Test initialization with string 'true' for verbose parameter."""
-        # Setup
-        verbose_values = ["true", "TRUE", "True"]
-
-        for verbose in verbose_values:
-            # Execute
-            agent = MyAgent(verbose=verbose)
-
-            # Assert
-            assert agent.verbose is True
-
-    def test_init_with_string_verbose_false(self):
-        """Test initialization with string 'false' for verbose parameter."""
-        # Setup
-        verbose_values = ["false", "FALSE", "False"]
-
-        for verbose in verbose_values:
-            # Execute
-            agent = MyAgent(verbose=verbose)
-
-            # Assert
-            assert agent.verbose is False
-
-    def test_init_with_boolean_verbose(self):
-        """Test initialization with boolean values for verbose parameter."""
-        # Test with True
-        agent = MyAgent(verbose=True)
-        assert agent.verbose is True
-
-        # Test with False
-        agent = MyAgent(verbose=False)
-        assert agent.verbose is False
-
-    @patch.dict(os.environ, {}, clear=True)
-    def test_init_with_additional_kwargs(self):
-        """Test initialization with additional keyword arguments."""
-        # Setup
-        additional_kwargs = {"extra_param1": "value1", "extra_param2": 42}
-
-        # Execute
-        agent = MyAgent(**additional_kwargs)
-
-        # Assert - Additional kwargs should be accepted but not stored as attributes
-        assert agent.api_key is None  # Should fallback to env var or None
-        assert agent.api_base == "https://app.datarobot.com"  # Default value
-        assert agent.model is None
-        assert agent.verbose is True
-
-        # Verify that the extra parameters don't create attributes
-        with pytest.raises(AttributeError):
-            _ = agent.extra_param1
-
     @pytest.mark.parametrize(
         "api_base,expected_result",
         [
@@ -174,7 +135,7 @@ class TestMyAgentLlamaIndex:
     @patch("agent.myagent.DataRobotLiteLLM")
     @pytest.mark.parametrize("use_datarobot_llm_gateway", [True, False])
     def test_llm_with_identity_token(self, mock_llm, use_datarobot_llm_gateway):
-        with patch.dict(os.environ, {"{{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEPLOYMENT_ID": "test-id"}, clear=True):
+        with patch.dict(os.environ, {"LLM_DEPLOYMENT_ID": "test-id"}, clear=True):
             agent = MyAgent(
                 model="datarobot/azure/gpt-5-mini-2025-08-07",
                 forwarded_headers={
@@ -203,35 +164,29 @@ class TestMyAgentLlamaIndex:
                     },
                 )
 
-    def test_agent_planner_includes_workflow_tools(self):
-        """Test that agent_planner includes workflow_tools alongside mcp_tools."""
+    def test_agent_planner_includes_tools(self):
+        """Test that agent_planner includes provided tools."""
         extra_tool = MagicMock(spec=BaseTool)
         agent = MyAgent(
             api_key="test_key",
             api_base="test_base",
-            workflow_tools=[extra_tool],
+            tools=[extra_tool],
         )
         with patch.object(MyAgent, "llm", return_value=MockLLM()):
-            with patch.object(
-                type(agent), "mcp_tools", new_callable=lambda: property(lambda self: [])
-            ):
-                planner = agent.agent_planner
-                assert extra_tool in planner.tools
+            planner = agent.agent_planner
+            assert extra_tool in planner.tools
 
-    def test_agent_writer_includes_workflow_tools(self):
-        """Test that agent_writer includes workflow_tools alongside mcp_tools."""
+    def test_agent_writer_includes_tools(self):
+        """Test that agent_writer includes provided tools."""
         extra_tool = MagicMock(spec=BaseTool)
         agent = MyAgent(
             api_key="test_key",
             api_base="test_base",
-            workflow_tools=[extra_tool],
+            tools=[extra_tool],
         )
         with patch.object(MyAgent, "llm", return_value=MockLLM()):
-            with patch.object(
-                type(agent), "mcp_tools", new_callable=lambda: property(lambda self: [])
-            ):
-                writer = agent.agent_writer
-                assert extra_tool in writer.tools
+            writer = agent.agent_writer
+            assert extra_tool in writer.tools
 
     @pytest.mark.parametrize(
         "api_base,expected_result",
@@ -289,7 +244,7 @@ class TestMyAgentLlamaIndex:
     @patch("agent.myagent.DataRobotLiteLLM")
     def test_llm_deployment_with_api_base(self, mock_llm, api_base, expected_result):
         """Test api_base_litellm property with various URL formats."""
-        with patch.dict(os.environ, {"{{ _external_data.llm.llm_app_name|replace("-", "_")|upper }}_DEPLOYMENT_ID": "test-id"}, clear=True):
+        with patch.dict(os.environ, {"LLM_DEPLOYMENT_ID": "test-id"}, clear=True):
             agent = MyAgent(
                 api_base=api_base, model="datarobot/azure/gpt-5-mini-2025-08-07"
             )

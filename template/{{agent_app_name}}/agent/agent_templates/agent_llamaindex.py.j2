@@ -1,4 +1,4 @@
-# Copyright 2025 DataRobot, Inc.
+# Copyright 2026 DataRobot, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,13 +13,17 @@
 # limitations under the License.
 # mypy: disable-error-code=attr-defined
 from datetime import datetime
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional
 
-from datarobot_genai.core.agents import extract_user_prompt_content
+from datarobot_genai.core.agents import InvokeReturn, extract_user_prompt_content
+from datarobot_genai.core.agents.base import UsageMetrics
+from datarobot_genai.core.chat import agent_chat_completion_wrapper
+from datarobot_genai.core.mcp import MCPConfig
 from datarobot_genai.llama_index import (
     DataRobotLiteLLM,
 )
 from datarobot_genai.llama_index.agent import LlamaIndexAgent
+from datarobot_genai.llama_index.mcp import mcp_tools_context
 from llama_index.core.agent.workflow import (
     AgentWorkflow,
     FunctionAgent,
@@ -27,8 +31,12 @@ from llama_index.core.agent.workflow import (
 from llama_index.core.llms import LLM as BaseLLM
 from llama_index.core.tools import BaseTool
 from llama_index.core.workflow import Context
+from openai.types.chat import CompletionCreateParams
 
 from agent.config import Config
+
+if TYPE_CHECKING:
+    from ragas import MultiTurnSample
 
 
 class MyAgent(LlamaIndexAgent):
@@ -45,12 +53,11 @@ class MyAgent(LlamaIndexAgent):
         api_key: Optional[str] = None,
         api_base: Optional[str] = None,
         model: Optional[str] = None,
-        verbose: Optional[Union[bool, str]] = True,
+        verbose: bool = True,
         timeout: Optional[int] = 90,
-        *,
         llm: Optional[BaseLLM] = None,
-        workflow_tools: Optional[list[BaseTool]] = None,
-        **kwargs: Any,
+        tools: Optional[list[BaseTool]] = None,
+        forwarded_headers: Optional[dict[str, str]] = None,
     ):
         super().__init__(
             api_key=api_key,
@@ -58,10 +65,10 @@ class MyAgent(LlamaIndexAgent):
             model=model,
             verbose=verbose,
             timeout=timeout,
-            **kwargs,
+            tools=tools,
+            forwarded_headers=forwarded_headers,
         )
-        self._nat_llm = llm
-        self._workflow_tools = workflow_tools or []
+        self._llm = llm
         self.config = Config()
         self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
 
@@ -126,8 +133,8 @@ class MyAgent(LlamaIndexAgent):
         In NAT mode, returns the pre-configured LLM from NAT's Builder.
         In DRUM mode, creates a DataRobotLiteLLM instance.
         """
-        if self._nat_llm is not None:
-            return self._nat_llm
+        if self._llm is not None:
+            return self._llm
 
         api_base = self.litellm_api_base(self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id)
         model = self.model or self.default_model
@@ -169,7 +176,7 @@ class MyAgent(LlamaIndexAgent):
                 "Once you've recorded your notes, hand off control to the writer_agent."
             ),
             llm=self.llm(),
-            tools=[self.planner_notes_tool, *self.mcp_tools, *self._workflow_tools],
+            tools=[self.planner_notes_tool, *self.tools],
             can_handoff_to=["writer_agent"],
         )
 
@@ -194,7 +201,7 @@ class MyAgent(LlamaIndexAgent):
                 "Write in markdown format. Once complete, use the writer_report_tool to record your report."
             ),
             llm=self.llm(),
-            tools=[self.writer_report_tool, *self.mcp_tools, *self._workflow_tools],
+            tools=[self.writer_report_tool, *self.tools],
             # Writer is terminal in this simple flow; no handoff
         )
 
@@ -211,3 +218,23 @@ class MyAgent(LlamaIndexAgent):
         async with ctx.store.edit_state() as current_state:
             current_state["report_content"] = report_content
         return "Report written."
+
+
+async def custompy_adaptor(
+    completion_create_params: CompletionCreateParams,
+) -> InvokeReturn | tuple[str, Optional["MultiTurnSample"], UsageMetrics]:
+    forwarded_headers = completion_create_params.get("forwarded_headers", {})
+    authorization_context = completion_create_params.get("authorization_context", {})
+    mcp_config = MCPConfig(
+        forwarded_headers=forwarded_headers,
+        authorization_context=authorization_context,
+    )
+    async with mcp_tools_context(mcp_config) as mcp_tools:
+        agent = MyAgent(
+            model=completion_create_params.get("model"),
+            verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
+            timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
+            tools=mcp_tools,
+            forwarded_headers=forwarded_headers,  # type: ignore[arg-type]
+        )
+        return await agent_chat_completion_wrapper(agent, completion_create_params)

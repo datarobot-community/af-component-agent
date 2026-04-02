@@ -1,4 +1,4 @@
-# Copyright 2025 DataRobot, Inc.
+# Copyright 2026 DataRobot, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ class TestCustomModel:
         assert isinstance(event_loop, type(asyncio.get_event_loop()))
         thread_pool_executor.shutdown()
 
-    @patch("custom.MyAgent")
+    @patch("agent.myagent.MyAgent")
     @patch.dict(os.environ, {"LLM_DEPLOYMENT_ID": "TEST_VALUE"}, clear=True)
     @pytest.mark.parametrize("stream", [False, True])
     def test_chat(self, mock_agent, mock_agent_response, stream, load_model_result):
@@ -175,8 +175,10 @@ class TestCustomModel:
         # Verify mocks were called correctly
         mock_agent.assert_called_once_with(
             forwarded_headers=kwargs["headers"],
-            authorization_context={},
-            **completion_create_params,
+            model="test-model",
+            verbose=True,
+            timeout=90,
+            tools=[],
         )
         assert mock_agent_instance.invoke.called
         assert mock_agent_instance.invoke.call_args[0][0].messages == [
@@ -189,7 +191,7 @@ class TestCustomModel:
             ),
         ]
 
-    @patch("custom.MyAgent")
+    @patch("agent.myagent.MyAgent")
     @patch.dict(os.environ, {"LLM_DEPLOYMENT_ID": "TEST_VALUE"}, clear=True)
     def test_chat_streaming(self, mock_agent, load_model_result):
         from custom import chat
@@ -289,8 +291,10 @@ class TestCustomModel:
         # Verify mocks were called correctly
         mock_agent.assert_called_once_with(
             forwarded_headers=kwargs["headers"],
-            authorization_context={},
-            **completion_create_params,
+            model="test-model",
+            verbose=True,
+            timeout=90,
+            tools=[],
         )
         assert mock_agent_instance.invoke.called
         assert mock_agent_instance.invoke.call_args[0][0].messages == [

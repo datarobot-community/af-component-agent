@@ -1,4 +1,4 @@
-# Copyright 2025 DataRobot, Inc.
+# Copyright 2026 DataRobot, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,9 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Optional
 
+from datarobot_genai.core.agents import InvokeReturn
+from datarobot_genai.core.agents.base import UsageMetrics
+from datarobot_genai.core.chat import agent_chat_completion_wrapper
+from datarobot_genai.core.mcp import MCPConfig
 from datarobot_genai.nat.agent import NatAgent
+from openai.types.chat import CompletionCreateParams
+
+if TYPE_CHECKING:
+    from ragas import MultiTurnSample
 
 
 class MyAgent(NatAgent):
@@ -29,9 +37,9 @@ class MyAgent(NatAgent):
         api_key: str | None = None,
         api_base: str | None = None,
         model: str | None = None,
-        verbose: bool | str | None = True,
+        verbose: bool = True,
         timeout: int | None = 90,
-        **kwargs: Any,
+        forwarded_headers: dict[str, str] | None = None,
     ) -> None:
         super().__init__(
             workflow_path=Path(__file__).parent / "workflow.yaml",
@@ -40,5 +48,28 @@ class MyAgent(NatAgent):
             model=model,
             verbose=verbose,
             timeout=timeout,
-            **kwargs,
+            forwarded_headers=forwarded_headers,
         )
+
+
+async def custompy_adaptor(
+    completion_create_params: CompletionCreateParams,
+) -> InvokeReturn | tuple[str, Optional["MultiTurnSample"], UsageMetrics]:
+    forwarded_headers: dict[str, str] = completion_create_params.get(  # type: ignore[assignment]
+        "forwarded_headers", {}
+    )
+    authorization_context = completion_create_params.get("authorization_context", {})
+    mcp_config = MCPConfig(
+        forwarded_headers=forwarded_headers,
+        authorization_context=authorization_context,
+    )
+    server_config = mcp_config.server_config
+    headers = server_config["headers"] if server_config else {}
+    forwarded_headers.update(headers)
+    agent = MyAgent(
+        model=completion_create_params.get("model"),
+        verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
+        timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
+        forwarded_headers=forwarded_headers,
+    )
+    return await agent_chat_completion_wrapper(agent, completion_create_params)

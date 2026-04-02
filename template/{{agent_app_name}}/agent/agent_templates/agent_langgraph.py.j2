@@ -1,4 +1,4 @@
-# Copyright 2025 DataRobot, Inc.
+# Copyright 2026 DataRobot, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,20 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from datetime import datetime
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional
 
 from datarobot_genai.core.agents import (
+    InvokeReturn,
     make_system_prompt,
 )
+from datarobot_genai.core.agents.base import UsageMetrics
+from datarobot_genai.core.chat import agent_chat_completion_wrapper
+from datarobot_genai.core.mcp import MCPConfig
 from datarobot_genai.langgraph.agent import LangGraphAgent
+from datarobot_genai.langgraph.mcp import mcp_tools_context
 from langchain.agents import create_agent
 from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import BaseTool
 from langchain_litellm.chat_models import ChatLiteLLM
 from langgraph.graph import END, START, MessagesState, StateGraph
+from openai.types.chat import CompletionCreateParams
 
 from agent.config import Config
+
+if TYPE_CHECKING:
+    from ragas import MultiTurnSample
 
 
 class MyAgent(LangGraphAgent):
@@ -40,12 +49,11 @@ class MyAgent(LangGraphAgent):
         api_key: Optional[str] = None,
         api_base: Optional[str] = None,
         model: Optional[str] = None,
-        verbose: Optional[Union[bool, str]] = True,
+        verbose: bool = True,
         timeout: Optional[int] = 90,
-        *,
         llm: Optional[BaseChatModel] = None,
-        workflow_tools: Optional[list[BaseTool]] = None,
-        **kwargs: Any,
+        tools: Optional[list[BaseTool]] = None,
+        forwarded_headers: Optional[dict[str, str]] = None,
     ):
         """Initializes the MyAgent class with API key, base URL, model, and verbosity settings.
 
@@ -56,16 +64,15 @@ class MyAgent(LangGraphAgent):
                 Defaults to None, in which case it will use the DATAROBOT_ENDPOINT environment variable.
             model: Optional[str]: The LLM model to use.
                 Defaults to None.
-            verbose: Optional[Union[bool, str]]: Whether to enable verbose logging.
-                Accepts boolean or string values ("true"/"false"). Defaults to True.
+            verbose: bool: Whether to enable verbose logging. Defaults to True.
             timeout: Optional[int]: How long to wait for the agent to respond.
                 Defaults to 90 seconds.
             llm: Optional[BaseChatModel]: Pre-configured LLM instance provided by NAT.
                 When set, llm() returns this directly instead of creating a ChatLiteLLM.
-            workflow_tools: Optional[list[BaseTool]]: Additional tools from the workflow config (e.g. A2A client tools). Keyword-only.
-            **kwargs: Any: Additional keyword arguments passed to the agent.
-                Contains any parameters received in the CompletionCreateParams.
-
+            tools: Optional[list[BaseTool]]: Tools to use for the agent.
+                Defaults to None.
+            forwarded_headers: Optional[dict[str, str]]: Headers of the original request agent can use
+                to access external services. Defaults to None.
         Returns:
             None
         """
@@ -75,10 +82,10 @@ class MyAgent(LangGraphAgent):
             model=model,
             verbose=verbose,
             timeout=timeout,
-            **kwargs,
+            tools=tools,
+            forwarded_headers=forwarded_headers,
         )
-        self._nat_llm = llm
-        self._workflow_tools = workflow_tools or []
+        self._llm = llm
         self.config = Config()
         self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
         if model in ("unknown", "datarobot-deployed-llm"):
@@ -131,8 +138,8 @@ class MyAgent(LangGraphAgent):
         Returns:
             BaseChatModel: The model to use.
         """
-        if self._nat_llm is not None:
-            return self._nat_llm
+        if self._llm is not None:
+            return self._llm
 
         api_base = self.litellm_api_base(self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id)
         model = self.model or self.default_model
@@ -159,7 +166,7 @@ class MyAgent(LangGraphAgent):
     def agent_planner(self) -> Any:
         return create_agent(
             self.llm(),
-            tools=self.mcp_tools + self._workflow_tools,
+            tools=self.tools,
             system_prompt=make_system_prompt(
                 "You are a content planner. You create brief, structured outlines for blog articles. "
                 "You identify the most important points and cite relevant sources. Keep it simple and to the point - "
@@ -182,7 +189,7 @@ class MyAgent(LangGraphAgent):
     def agent_writer(self) -> Any:
         return create_agent(
             self.llm(),
-            tools=self.mcp_tools + self._workflow_tools,
+            tools=self.tools,
             system_prompt=make_system_prompt(
                 "You are a content writer working with a planner colleague.\n"
                 "You write opinion pieces based on the planner's outline and context. You provide objective and "
@@ -201,3 +208,23 @@ class MyAgent(LangGraphAgent):
             ),
             name="writer_agent",
         )
+
+
+async def custompy_adaptor(
+    completion_create_params: CompletionCreateParams,
+) -> InvokeReturn | tuple[str, Optional["MultiTurnSample"], UsageMetrics]:
+    forwarded_headers = completion_create_params.get("forwarded_headers", {})
+    authorization_context = completion_create_params.get("authorization_context", {})
+    mcp_config = MCPConfig(
+        forwarded_headers=forwarded_headers,
+        authorization_context=authorization_context,
+    )
+    async with mcp_tools_context(mcp_config) as mcp_tools:
+        agent = MyAgent(
+            model=completion_create_params.get("model"),
+            verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
+            timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
+            tools=mcp_tools,
+            forwarded_headers=forwarded_headers,  # type: ignore[arg-type]
+        )
+        return await agent_chat_completion_wrapper(agent, completion_create_params)
