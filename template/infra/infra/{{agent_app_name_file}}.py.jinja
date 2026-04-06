@@ -48,6 +48,7 @@ DEFAULT_CUSTOM_MODEL_WORKERS: Final[str] = "5" if ENABLE_AGENT_HA_MODE else "2"
 DEFAULT_DRUM_SERVER_TYPE: Final[str] = "gunicorn"
 DEFAULT_DRUM_GUNICORN_WORKER_CLASS: Final[str] = "sync"
 DEFAULT_DRUM_WORKER_CONNECTIONS: Final[str] = "1"
+DEFAULT_DRUM_CLIENT_REQUEST_TIMEOUT: Final[str] = "300"  # Default gunicorn timeout in current DRUM is 2 mins
 
 # DRUM runtime parameters that are safe to include defaultValue in metadata
 DRUM_PARAMS_WITH_DEFAULTS: Final[set[str]] = {
@@ -55,6 +56,7 @@ DRUM_PARAMS_WITH_DEFAULTS: Final[set[str]] = {
     "DRUM_SERVER_TYPE",
     "DRUM_GUNICORN_WORKER_CLASS",
     "DRUM_WORKER_CONNECTIONS",
+    "DRUM_CLIENT_REQUEST_TIMEOUT",
 }
 
 # Custom Model resource bundle configuration
@@ -467,6 +469,11 @@ agent_runtime_parameter_values.extend(
             key="DRUM_WORKER_CONNECTIONS",
             type="numeric",
             value=DEFAULT_DRUM_WORKER_CONNECTIONS,
+        ),
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key="DRUM_CLIENT_REQUEST_TIMEOUT",
+            type="numeric",
+            value=DEFAULT_DRUM_CLIENT_REQUEST_TIMEOUT,
         ),
     ]
 )
