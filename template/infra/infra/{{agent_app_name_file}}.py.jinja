@@ -48,7 +48,8 @@ DEFAULT_CUSTOM_MODEL_WORKERS: Final[str] = "5" if ENABLE_AGENT_HA_MODE else "2"
 DEFAULT_DRUM_SERVER_TYPE: Final[str] = "gunicorn"
 DEFAULT_DRUM_GUNICORN_WORKER_CLASS: Final[str] = "sync"
 DEFAULT_DRUM_WORKER_CONNECTIONS: Final[str] = "1"
-DEFAULT_DRUM_CLIENT_REQUEST_TIMEOUT: Final[str] = "300"  # Default gunicorn timeout in current DRUM is 2 mins
+# Default gunicorn timeout in current DRUM is 2 mins
+DEFAULT_DRUM_CLIENT_REQUEST_TIMEOUT: Final[str] = "300"
 
 # DRUM runtime parameters that are safe to include defaultValue in metadata
 DRUM_PARAMS_WITH_DEFAULTS: Final[set[str]] = {
