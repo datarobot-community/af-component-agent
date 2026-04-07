@@ -178,7 +178,9 @@ class TestCustomModel:
             model="test-model",
             verbose=True,
             timeout=90,
-            {% if agent_template_framework == "crewai" -%}stream=False,{% endif %}
+{%- if agent_template_framework == "crewai" %}
+            stream=False,
+{%- endif %}
         )
         assert mock_agent_instance.invoke.called
         assert mock_agent_instance.invoke.call_args[0][0].messages == [
@@ -294,7 +296,9 @@ class TestCustomModel:
             model="test-model",
             verbose=True,
             timeout=90,
-            {% if agent_template_framework == "crewai" -%}stream=False,{% endif %}
+{%- if agent_template_framework == "crewai" %}
+            stream=False,
+{%- endif %}
         )
         assert mock_agent_instance.invoke.called
         assert mock_agent_instance.invoke.call_args[0][0].messages == [
