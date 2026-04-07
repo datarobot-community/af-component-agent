@@ -184,6 +184,7 @@ class TestMyAgentLlamaIndex:
                 api_base="test_base",
                 model="datarobot/azure/gpt-5-mini-2025-08-07",
             )
+            _reset_llm_config_for_tests(agent)
             agent.llm()
             mock_llm.assert_called_once_with(
                 model="datarobot/azure/gpt-5-mini-2025-08-07",
