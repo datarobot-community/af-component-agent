@@ -27,8 +27,6 @@ def _reset_llm_config_for_tests(
     llm_default_model: str = "datarobot/azure/gpt-5-mini-2025-08-07",
 ) -> None:
     """Isolate LLM-related settings from the repo .env during tests."""
-    agent.config.openai_api_base = None
-    agent.config.openai_api_token = None
     agent.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model = llm_default_model
     agent.default_model = llm_default_model
 
@@ -244,42 +242,6 @@ class TestMyAgentLangGraph:
             agent.llm()
             mock_llm.assert_called_once_with(
                 model="datarobot/azure/gpt-5-mini-2025-08-07",
-                timeout=90,
-                streaming=True,
-                max_retries=3,
-            )
-
-    @patch("agent.myagent.ChatLiteLLM")
-    def test_llm_openai_compatible_endpoint(self, mock_llm):
-        """When openai_api_base is set, use ChatLiteLLM with openai/ model prefix."""
-        with patch.dict(os.environ, {}, clear=True):
-            agent = MyAgent(api_key="dr-key")
-            _reset_llm_config_for_tests(agent)
-            agent.config.openai_api_base = "http://localhost:11434/v1"
-            agent.config.openai_api_token = "compat-token"
-            agent.default_model = "llama3"
-            agent.llm()
-            mock_llm.assert_called_once_with(
-                model="openai/llama3",
-                api_base="http://localhost:11434/v1",
-                api_key="compat-token",
-                timeout=90,
-                streaming=True,
-                max_retries=3,
-            )
-
-    @patch("agent.myagent.ChatLiteLLM")
-    def test_llm_openai_compatible_preserves_openai_prefix(self, mock_llm):
-        with patch.dict(os.environ, {}, clear=True):
-            agent = MyAgent(api_key="dr-key")
-            _reset_llm_config_for_tests(agent)
-            agent.config.openai_api_base = "http://localhost:11434/v1"
-            agent.default_model = "openai/llama3"
-            agent.llm()
-            mock_llm.assert_called_once_with(
-                model="openai/llama3",
-                api_base="http://localhost:11434/v1",
-                api_key="dr-key",
                 timeout=90,
                 streaming=True,
                 max_retries=3,

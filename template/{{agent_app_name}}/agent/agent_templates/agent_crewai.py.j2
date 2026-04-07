@@ -85,16 +85,8 @@ class MyAgent(CrewAIAgent):
         self.config = Config()
         self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
         self.stream = stream
-        _is_openai_compat = (
-            not self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id
-            and not self.config.use_datarobot_llm_gateway
-        )
-        if _is_openai_compat and not self.default_model.startswith("openai/"):
-            self.default_model = f"openai/{self.default_model}"
         if model in ("unknown", "datarobot-deployed-llm"):
             self.model = self.default_model
-        elif _is_openai_compat and self.model and not self.model.startswith("openai/"):
-            self.model = f"openai/{self.model}"
 
     def llm(
         self,
@@ -115,24 +107,6 @@ class MyAgent(CrewAIAgent):
         """
         if self._llm is not None:
             return self._llm
-
-        if self.config.openai_api_base:
-            api_base = self.config.openai_api_base
-            api_key = self.config.openai_api_token or self.api_key
-            _raw_model = self.default_model
-            model = (
-                _raw_model
-                if _raw_model.startswith("openai/")
-                else f"openai/{_raw_model}"
-            )
-            if self.verbose:
-                print(f"Using OpenAI-compatible endpoint: {api_base}, model: {model}")
-            return LLM(
-                model=model,
-                api_base=api_base,
-                api_key=api_key,
-                timeout=self.timeout,
-            )
 
         deployment_id = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id
         model = self.model or self.default_model
