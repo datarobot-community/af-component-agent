@@ -251,7 +251,6 @@ async def custompy_adaptor(
         verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
         timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
         forwarded_headers=forwarded_headers,  # type: ignore[arg-type]
-
         # When run with drum, streaming does not work correctly, so we force it to False
         stream=False,
     )
