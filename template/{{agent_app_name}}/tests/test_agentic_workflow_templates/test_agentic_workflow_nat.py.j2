@@ -172,7 +172,7 @@ class TestCustomModel:
             }
             assert actual == expected
 
-        # Verify mocks were called correctly (NAT: no tools param)
+        # Verify mocks were called correctly (NAT uses noop MCP factory in the wrapper; tools are not passed via __init__)
         mock_agent.assert_called_once_with(
             model="test-model",
             verbose=True,
@@ -287,7 +287,7 @@ class TestCustomModel:
         assert final_chunk["pipeline_interactions"] == "interactions"
         assert final_chunk["usage"]["total_tokens"] == 5
 
-        # Verify mocks were called correctly (NAT: no tools param)
+        # Verify mocks were called correctly (NAT uses noop MCP factory in the wrapper; tools are not passed via __init__)
         mock_agent.assert_called_once_with(
             model="test-model",
             verbose=True,

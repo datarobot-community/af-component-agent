@@ -464,8 +464,8 @@ def test_custom_model_created(monkeypatch):
 
     runtime_parameter_values = kwargs["runtime_parameter_values"]
 
-    # Should have 5 params: 1 SESSION_SECRET_KEY + 4 DRUM params
-    assert len(runtime_parameter_values) == 5
+    # Should have 6 params: 1 SESSION_SECRET_KEY + 5 DRUM params
+    assert len(runtime_parameter_values) == 6
 
     # Find the SESSION_SECRET_KEY parameter
     session_secret_param = next(
@@ -1312,11 +1312,12 @@ class TestDrumRuntimeParameters:
                 "DRUM_SERVER_TYPE",
                 "DRUM_GUNICORN_WORKER_CLASS",
                 "DRUM_WORKER_CONNECTIONS",
+                "DRUM_CLIENT_REQUEST_TIMEOUT",
             ]
         }
 
-        # Verify all 4 DRUM parameters are present
-        assert len(drum_params) == 4
+        # Verify all 5 DRUM parameters are present
+        assert len(drum_params) == 5
 
         # Check CUSTOM_MODEL_WORKERS
         assert drum_params["CUSTOM_MODEL_WORKERS"].type == "numeric"
@@ -1333,6 +1334,10 @@ class TestDrumRuntimeParameters:
         # Check DRUM_WORKER_CONNECTIONS
         assert drum_params["DRUM_WORKER_CONNECTIONS"].type == "numeric"
         assert drum_params["DRUM_WORKER_CONNECTIONS"].value == "1"
+
+        # Check DRUM_CLIENT_REQUEST_TIMEOUT
+        assert drum_params["DRUM_CLIENT_REQUEST_TIMEOUT"].type == "numeric"
+        assert drum_params["DRUM_CLIENT_REQUEST_TIMEOUT"].value == "300"
 
     def test_drum_runtime_parameters_passed_to_custom_model(self, monkeypatch):
         """Test that DRUM runtime parameters are passed to CustomModel."""
@@ -1353,6 +1358,7 @@ class TestDrumRuntimeParameters:
             "DRUM_SERVER_TYPE",
             "DRUM_GUNICORN_WORKER_CLASS",
             "DRUM_WORKER_CONNECTIONS",
+            "DRUM_CLIENT_REQUEST_TIMEOUT",
         ]
 
         found_keys = [param.key for param in runtime_params if param.key in drum_keys]
