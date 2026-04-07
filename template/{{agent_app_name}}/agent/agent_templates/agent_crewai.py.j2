@@ -46,6 +46,7 @@ class MyAgent(CrewAIAgent):
         llm: Optional[LLM] = None,
         tools: Optional[list[BaseTool]] = None,
         forwarded_headers: Optional[dict[str, str]] = None,
+        stream: bool = True,
     ):
         """Initializes the MyAgent class with API key, base URL, model, and verbosity settings.
 
@@ -66,6 +67,8 @@ class MyAgent(CrewAIAgent):
                 Defaults to None.
             forwarded_headers: Optional[dict[str, str]]: Headers of the original request agent can use
                 to access external services. Defaults to None.
+            stream: Optional[bool]: Whether to stream the response.
+                Defaults to True.
         Returns:
             None
         """
@@ -81,6 +84,7 @@ class MyAgent(CrewAIAgent):
         self._llm = llm
         self.config = Config()
         self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
+        self.stream = stream
 
         if model in ("unknown", "datarobot-deployed-llm"):
             self.model = self.default_model
@@ -228,7 +232,7 @@ class MyAgent(CrewAIAgent):
             tasks=self.tasks,
             verbose=self.verbose,
             process=Process.sequential,
-            stream=True,
+            stream=self.stream,
         )
 
 
@@ -241,12 +245,15 @@ async def custompy_adaptor(
         forwarded_headers=forwarded_headers,
         authorization_context=authorization_context,
     )
-    async with mcp_tools_context(mcp_config) as mcp_tools:
-        agent = MyAgent(
-            model=completion_create_params.get("model"),
-            verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
-            timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
-            tools=mcp_tools,
-            forwarded_headers=forwarded_headers,  # type: ignore[arg-type]
-        )
-        return await agent_chat_completion_wrapper(agent, completion_create_params)
+    mcp_tools_factory = lambda: mcp_tools_context(mcp_config)  # noqa: E731
+    agent = MyAgent(
+        model=completion_create_params.get("model"),
+        verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
+        timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
+        forwarded_headers=forwarded_headers,  # type: ignore[arg-type]
+        # When run with drum, streaming does not work correctly, so we force it to False
+        stream=False,
+    )
+    return await agent_chat_completion_wrapper(
+        agent, completion_create_params, mcp_tools_factory
+    )

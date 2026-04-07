@@ -229,12 +229,13 @@ async def custompy_adaptor(
         forwarded_headers=forwarded_headers,
         authorization_context=authorization_context,
     )
-    async with mcp_tools_context(mcp_config) as mcp_tools:
-        agent = MyAgent(
-            model=completion_create_params.get("model"),
-            verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
-            timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
-            tools=mcp_tools,
-            forwarded_headers=forwarded_headers,  # type: ignore[arg-type]
-        )
-        return await agent_chat_completion_wrapper(agent, completion_create_params)
+    mcp_tools_factory = lambda: mcp_tools_context(mcp_config)  # noqa: E731
+    agent = MyAgent(
+        model=completion_create_params.get("model"),
+        verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
+        timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
+        forwarded_headers=forwarded_headers,  # type: ignore[arg-type]
+    )
+    return await agent_chat_completion_wrapper(
+        agent, completion_create_params, mcp_tools_factory
+    )
