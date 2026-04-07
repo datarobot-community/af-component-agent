@@ -26,9 +26,13 @@ def _reset_llm_config_for_tests(
     agent: MyAgent,
     *,
     llm_default_model: str = "datarobot/azure/gpt-5-mini-2025-08-07",
+    llm_deployment_id: str | None = None,
+    use_datarobot_llm_gateway: bool = False,
 ) -> None:
     """Isolate LLM-related settings from the repo .env during tests."""
     agent.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model = llm_default_model
+    agent.config.llm_deployment_id = llm_deployment_id
+    agent.config.use_datarobot_llm_gateway = use_datarobot_llm_gateway
     agent.default_model = llm_default_model
 
 
@@ -205,7 +209,7 @@ class TestMyAgentCrewAI:
         """Test api_base_litellm property with various URL formats."""
         with patch.dict(os.environ, {"LLM_DEPLOYMENT_ID": "test-id"}, clear=True):
             agent = MyAgent(api_base=api_base)
-            _reset_llm_config_for_tests(agent)
+            _reset_llm_config_for_tests(agent, llm_deployment_id="test-id")
             _ = agent.llm()
             mock_llm.assert_called_once_with(
                 model="datarobot/azure/gpt-5-mini-2025-08-07",
@@ -253,7 +257,7 @@ class TestMyAgentCrewAI:
                     "x-datarobot-identity-token": "xyz",
                 },
             )
-            _reset_llm_config_for_tests(agent)
+            _reset_llm_config_for_tests(agent, llm_deployment_id="test-id")
             agent.config.use_datarobot_llm_gateway = use_datarobot_llm_gateway
             agent.llm()
 
