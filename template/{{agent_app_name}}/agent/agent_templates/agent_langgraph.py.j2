@@ -88,16 +88,8 @@ class MyAgent(LangGraphAgent):
         self._llm = llm
         self.config = Config()
         self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
-        _is_openai_compat = (
-            not self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id
-            and not self.config.use_datarobot_llm_gateway
-        )
-        if _is_openai_compat and not self.default_model.startswith("openai/"):
-            self.default_model = f"openai/{self.default_model}"
         if model in ("unknown", "datarobot-deployed-llm"):
             self.model = self.default_model
-        elif _is_openai_compat and self.model and not self.model.startswith("openai/"):
-            self.model = f"openai/{self.model}"
 
     @property
     def workflow(self) -> StateGraph[MessagesState]:
