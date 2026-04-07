@@ -85,9 +85,16 @@ class MyAgent(CrewAIAgent):
         self.config = Config()
         self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
         self.stream = stream
-
+        _is_openai_compat = (
+            not self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id
+            and not self.config.use_datarobot_llm_gateway
+        )
+        if _is_openai_compat and not self.default_model.startswith("openai/"):
+            self.default_model = f"openai/{self.default_model}"
         if model in ("unknown", "datarobot-deployed-llm"):
             self.model = self.default_model
+        elif _is_openai_compat and self.model and not self.model.startswith("openai/"):
+            self.model = f"openai/{self.model}"
 
     def llm(
         self,
@@ -127,7 +134,7 @@ class MyAgent(CrewAIAgent):
                 timeout=self.timeout,
             )
 
-        api_base = self.litellm_api_base(self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id)
+        deployment_id = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id
         model = self.model or self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:
             model = self.default_model
@@ -136,13 +143,18 @@ class MyAgent(CrewAIAgent):
 
         config = {
             "model": model,
-            "api_base": api_base,
-            "api_key": self.api_key,
             "timeout": self.timeout,
         }
+        if deployment_id or self.config.use_datarobot_llm_gateway:
+            config["api_base"] = self.litellm_api_base(deployment_id)
+            config["api_key"] = self.api_key
 
-        if not self.config.use_datarobot_llm_gateway and self._identity_header:
-            config["extra_headers"] = self._identity_header  # type: ignore[assignment]
+        if (
+            deployment_id
+            and not self.config.use_datarobot_llm_gateway
+            and self._identity_header
+        ):
+            config["extra_headers"] = self._identity_header
 
         return LLM(**config)  # type: ignore[arg-type]
 

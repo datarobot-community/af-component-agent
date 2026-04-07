@@ -226,8 +226,6 @@ class TestMyAgentLangGraph:
         agent.llm()
         mock_llm.assert_called_once_with(
             model="datarobot/azure/gpt-5-mini-2025-08-07",
-            api_base="test_base/",
-            api_key="test_key",
             timeout=90,
             streaming=True,
             max_retries=3,
@@ -246,8 +244,6 @@ class TestMyAgentLangGraph:
             agent.llm()
             mock_llm.assert_called_once_with(
                 model="datarobot/azure/gpt-5-mini-2025-08-07",
-                api_base="https://app.datarobot.com/",
-                api_key="test_key",
                 timeout=90,
                 streaming=True,
                 max_retries=3,
