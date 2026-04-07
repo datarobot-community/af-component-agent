@@ -172,13 +172,12 @@ class TestCustomModel:
             }
             assert actual == expected
 
-        # Verify mocks were called correctly
+        # Verify mocks were called correctly (tools come from MCP factory inside the wrapper, not __init__)
         mock_agent.assert_called_once_with(
             forwarded_headers=kwargs["headers"],
             model="test-model",
             verbose=True,
             timeout=90,
-            tools=[],
         )
         assert mock_agent_instance.invoke.called
         assert mock_agent_instance.invoke.call_args[0][0].messages == [
@@ -288,13 +287,12 @@ class TestCustomModel:
         assert final_chunk["pipeline_interactions"] == "interactions"
         assert final_chunk["usage"]["total_tokens"] == 5
 
-        # Verify mocks were called correctly
+        # Verify mocks were called correctly (tools come from MCP factory inside the wrapper, not __init__)
         mock_agent.assert_called_once_with(
             forwarded_headers=kwargs["headers"],
             model="test-model",
             verbose=True,
             timeout=90,
-            tools=[],
         )
         assert mock_agent_instance.invoke.called
         assert mock_agent_instance.invoke.call_args[0][0].messages == [
