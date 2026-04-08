@@ -30,7 +30,7 @@ def _reset_llm_config_for_tests(
 ) -> None:
     """Isolate LLM-related settings from the repo .env during tests."""
     agent.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model = llm_default_model
-    agent.config.llm_deployment_id = llm_deployment_id
+    agent.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id = llm_deployment_id
     agent.config.use_datarobot_llm_gateway = use_datarobot_llm_gateway
     agent.default_model = llm_default_model
 
