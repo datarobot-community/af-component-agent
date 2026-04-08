@@ -22,7 +22,6 @@ from datarobot_genai.core.chat import agent_chat_completion_wrapper
 from datarobot_genai.core.mcp import MCPConfig
 from datarobot_genai.nat.agent import NatAgent
 
-from agent.version_info import LIB_VERSIONS
 from openai.types.chat import CompletionCreateParams
 
 if TYPE_CHECKING:
@@ -62,7 +61,6 @@ class MyAgent(NatAgent):
             timeout=timeout,
             forwarded_headers=forwarded_headers,
         )
-        print(f"[Library versions: {LIB_VERSIONS}]", flush=True)
 
 
 async def custompy_adaptor(
