@@ -75,6 +75,9 @@ authentication:
     _type: datarobot_api_key
 llms:
   datarobot_llm:
+    # If using an OpenAI-compatible endpoint, use:
+    # _type: openai
+    # model: <your LLM_DEFAULT_MODEL value>
     _type: datarobot-llm-component
 workflow:
   _type: per_user_tool_calling_agent
