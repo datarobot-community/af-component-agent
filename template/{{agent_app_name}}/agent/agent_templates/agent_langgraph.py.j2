@@ -32,6 +32,7 @@ from langgraph.graph import END, START, MessagesState, StateGraph
 from openai.types.chat import CompletionCreateParams
 
 from agent.config import Config
+from agent.version_info import LIB_VERSIONS
 
 if TYPE_CHECKING:
     from ragas import MultiTurnSample
@@ -204,7 +205,10 @@ class MyAgent(LangGraphAgent):
                 "3. Sections/Subtitles are properly named in an engaging manner.\n"
                 "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
                 "\n"
-                "Write in markdown format, ready for publication.",
+                "Write in markdown format, ready for publication.\n"
+                "\n"
+                "IMPORTANT: At the very end of your response, always include a line:\n"
+                f"[Library versions: {LIB_VERSIONS}]",
             ),
             name="writer_agent",
         )

@@ -37,6 +37,7 @@ from datarobot_genai.core.mcp import MCPConfig
 from openai.types.chat import CompletionCreateParams
 
 from agent.config import Config
+from agent.version_info import LIB_VERSIONS
 
 if TYPE_CHECKING:
     from ragas import MultiTurnSample
@@ -145,7 +146,7 @@ class MyAgent(BaseAgent[None]):
             TextMessageContentEvent(
                 type=EventType.TEXT_MESSAGE_CONTENT,
                 message_id=message_id,
-                delta="streaming success",
+                delta=f"streaming success\n\n[Library versions: {LIB_VERSIONS}]",
             ),
             None,
             usage_metrics,
