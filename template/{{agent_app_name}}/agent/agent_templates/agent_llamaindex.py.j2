@@ -140,6 +140,15 @@ class MyAgent(LlamaIndexAgent):
         model = self.model or self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:
             model = self.default_model
+
+        # Add openai/ prefix for bare model names (OpenAI-compatible endpoints)
+        if (
+            not deployment_id
+            and not self.config.use_datarobot_llm_gateway
+            and "/" not in model
+        ):
+            model = f"openai/{model}"
+
         if self.verbose:
             print(f"Using model: {model}")
 

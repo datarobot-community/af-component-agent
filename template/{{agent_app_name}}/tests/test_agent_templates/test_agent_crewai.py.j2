@@ -245,6 +245,36 @@ class TestMyAgentCrewAI:
             )
 
     @patch("agent.myagent.LLM")
+    def test_llm_openai_prefix_for_bare_model(self, mock_llm):
+        with patch.dict(os.environ, {}, clear=True):
+            agent = MyAgent(
+                api_key="test_key",
+                verbose=True,
+                model="ollama1",
+            )
+            _reset_llm_config_for_tests(agent, llm_default_model="ollama1")
+            agent.llm()
+            mock_llm.assert_called_once_with(
+                model="openai/ollama1",
+                timeout=90,
+            )
+
+    @patch("agent.myagent.LLM")
+    def test_llm_no_openai_prefix_for_prefixed_model(self, mock_llm):
+        with patch.dict(os.environ, {}, clear=True):
+            agent = MyAgent(
+                api_key="test_key",
+                verbose=True,
+                model="datarobot/azure/gpt-5-mini-2025-08-07",
+            )
+            _reset_llm_config_for_tests(agent)
+            agent.llm()
+            mock_llm.assert_called_once_with(
+                model="datarobot/azure/gpt-5-mini-2025-08-07",
+                timeout=90,
+            )
+
+    @patch("agent.myagent.LLM")
     @pytest.mark.parametrize("use_datarobot_llm_gateway", [True, False])
     def test_llm_with_identity_token(self, mock_llm, use_datarobot_llm_gateway):
         with patch.dict(os.environ, {"LLM_DEPLOYMENT_ID": "test-id"}, clear=True):
