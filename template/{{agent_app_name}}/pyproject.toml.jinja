@@ -5,8 +5,8 @@ description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
 {% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% else %}requires-python = ">=3.11, <3.14"{% endif %}
 dependencies = [
-    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, nat]{% elif agent_template_framework == 'crewai' %}[crewai, dragent]{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent]{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent]{% elif agent_template_framework == 'base' %}[dragent]{% elif agent_template_framework == 'nat' %}[nat, dragent]{% else %}[core]{% endif %}==0.11.0",
-    "datarobot-moderations==11.2.23",
+    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, nat]{% elif agent_template_framework == 'crewai' %}[crewai, dragent]{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent]{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent]{% elif agent_template_framework == 'base' %}[dragent]{% elif agent_template_framework == 'nat' %}[nat, dragent]{% else %}[core]{% endif %}==0.13.0",
+    "datarobot-moderations[all]==11.2.24",
     "datarobot-drum==1.17.11.post1",  # Lift upper limit after asyncio migration finished
     "datarobot-mlops==11.1.0",
     "langchain-litellm>=0.2.3",

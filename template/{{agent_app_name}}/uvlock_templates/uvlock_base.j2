@@ -84,7 +84,7 @@ dependencies = [
     { name = "datarobot-drum", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-genai", extra = ["dragent"], marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-mlops", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "datarobot-moderations", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "datarobot-moderations", extra = ["all"], marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "langchain-litellm", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opentelemetry-api", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opentelemetry-sdk", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -119,9 +119,9 @@ dev = [
 requires-dist = [
     { name = "anyio", specifier = ">=4.11.0,<4.12.0" },
     { name = "datarobot-drum", specifier = "==1.17.11.post1" },
-    { name = "datarobot-genai", extras = ["dragent"], specifier = "==0.11.0" },
+    { name = "datarobot-genai", extras = ["dragent"], specifier = "==0.13.0" },
     { name = "datarobot-mlops", specifier = "==11.1.0" },
-    { name = "datarobot-moderations", specifier = "==11.2.23" },
+    { name = "datarobot-moderations", extras = ["all"], specifier = "==11.2.24" },
     { name = "debugpy", marker = "extra == 'dev'", specifier = ">=1.8.20" },
     { name = "ecs-logging", marker = "extra == 'agentic-playground'", specifier = ">=2.2.0" },
     { name = "fastapi", extras = ["all"], marker = "extra == 'agentic-playground'", specifier = "==0.118.2" },
@@ -1001,11 +1001,11 @@ wheels = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.11.0"
+version = "0.13.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ce/41/5069a2710095943792613a637769e81a9c4f943178330c092ea46bc0ab0d/datarobot_genai-0.11.0.tar.gz", hash = "sha256:4eca49abf1c647231c1411a2bff6de514a169d57e33ac2624f4b0a803e288afb", size = 225237, upload-time = "2026-04-07T09:41:21.467Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/23/21/49deb4c0cde3e07c0059a6f935393d3d83ba751a63b4cc8dcadda7988d35/datarobot_genai-0.13.0.tar.gz", hash = "sha256:f8592efc84a9c4a97cb2384a762f1f9c82d1f0822da0e4dff7a39e697ecc930a", size = 226283, upload-time = "2026-04-08T14:05:04.236Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/49/fd/04e3d2b92865c91a10194a0e6b3bcc882314a19bc68e18007fad626a685d/datarobot_genai-0.11.0-py3-none-any.whl", hash = "sha256:d177838029640117052fac934c4e3c3879766680a52956d1a1c93565c809ea7e", size = 333545, upload-time = "2026-04-07T09:41:19.331Z" },
+    { url = "https://files.pythonhosted.org/packages/c8/56/ddb8bdb8a939617c8735437b24c0e917c16c549dcf88fbbfb81f8c78810d/datarobot_genai-0.13.0-py3-none-any.whl", hash = "sha256:545d1c527c680720362874194795731f337a474cd2a6414219a2fb5d5f265575", size = 334619, upload-time = "2026-04-08T14:05:01.726Z" },
 ]
 
 [package.optional-dependencies]
@@ -1052,28 +1052,13 @@ wheels = [
 
 [[package]]
 name = "datarobot-moderations"
-version = "11.2.23"
+version = "11.2.24"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "backoff", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "datarobot", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "datarobot-predict", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "deepeval", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "google-cloud-aiplatform", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "langchain", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "langchain-nvidia-ai-endpoints", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "langchain-openai", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "llama-index", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "llama-index-embeddings-azure-openai", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "llama-index-llms-bedrock-converse", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "llama-index-llms-langchain", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "llama-index-llms-vertex", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "nemo-microservices", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "nemoguardrails", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "numpy", version = "1.26.4", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version < '3.12' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform == 'linux') or (python_full_version < '3.12' and sys_platform == 'win32')" },
     { name = "numpy", version = "2.4.3", source = { registry = "https://pypi.org/simple" }, marker = "(python_full_version >= '3.12' and sys_platform == 'darwin') or (python_full_version >= '3.12' and sys_platform == 'linux') or (python_full_version >= '3.12' and sys_platform == 'win32')" },
-    { name = "openai", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opentelemetry-api", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opentelemetry-instrumentation", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opentelemetry-sdk", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1086,7 +1071,27 @@ dependencies = [
     { name = "trafaret", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/80/d7/7257251e2ce247cd3f837287b5e73cff0e50bf9475be3979ae3fd5ad634f/datarobot_moderations-11.2.23-py3-none-any.whl", hash = "sha256:8ceb44b746d2537744fbf1caf1100edefeb8a382e05aef315ae7b7c6eeb59998", size = 92239, upload-time = "2026-03-26T14:05:08.479Z" },
+    { url = "https://files.pythonhosted.org/packages/20/1c/7166a4f0a8e6065b976cac3f69d23e037fe88c57cbe15979c118bad8df9c/datarobot_moderations-11.2.24-py3-none-any.whl", hash = "sha256:f839897beb7e4c11e80b3624e4012935affd38d10e32aaddaf06d89471d971c2", size = 97487, upload-time = "2026-04-08T21:20:28.764Z" },
+]
+
+[package.optional-dependencies]
+all = [
+    { name = "datarobot", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "datarobot-predict", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "deepeval", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "google-cloud-aiplatform", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "langchain", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "langchain-nvidia-ai-endpoints", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "langchain-openai", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "llama-index", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "llama-index-embeddings-azure-openai", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "llama-index-llms-bedrock-converse", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "llama-index-llms-langchain", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "llama-index-llms-openai", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "llama-index-llms-vertex", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nemo-microservices", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "nemoguardrails", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "openai", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 
 [[package]]
