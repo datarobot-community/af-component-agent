@@ -85,6 +85,7 @@ class MyAgent(CrewAIAgent):
         self.config = Config()
         self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
         self.stream = stream
+
         if model in ("unknown", "datarobot-deployed-llm"):
             self.model = self.default_model
 
