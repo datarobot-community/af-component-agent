@@ -22,6 +22,20 @@ from llama_index.core.tools import BaseTool
 from agent import MyAgent
 
 
+def _reset_llm_config_for_tests(
+    agent: MyAgent,
+    *,
+    llm_default_model: str = "datarobot/azure/gpt-5-mini-2025-08-07",
+    llm_deployment_id: str | None = None,
+    use_datarobot_llm_gateway: bool = False,
+) -> None:
+    """Isolate LLM-related settings from the repo .env during tests."""
+    agent.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model = llm_default_model
+    agent.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id = llm_deployment_id
+    agent.config.use_datarobot_llm_gateway = use_datarobot_llm_gateway
+    agent.default_model = llm_default_model
+
+
 class TestMyAgentLlamaIndex:
     @pytest.fixture
     def agent(self):
@@ -122,6 +136,7 @@ class TestMyAgentLlamaIndex:
             agent = MyAgent(
                 api_base=api_base, model="datarobot/azure/gpt-5-mini-2025-08-07"
             )
+            _reset_llm_config_for_tests(agent)
             agent.config.use_datarobot_llm_gateway = True
             # We're using the LLM Gateway, it should use self.model
             _ = agent.llm()
@@ -143,6 +158,7 @@ class TestMyAgentLlamaIndex:
                     "x-datarobot-identity-token": "xyz",
                 },
             )
+            _reset_llm_config_for_tests(agent, llm_deployment_id="test-id")
             agent.config.use_datarobot_llm_gateway = use_datarobot_llm_gateway
             agent.llm()
 
@@ -163,6 +179,51 @@ class TestMyAgentLlamaIndex:
                         "extra_headers": {"X-DataRobot-Identity-Token": "xyz"},
                     },
                 )
+
+    @patch("agent.myagent.DataRobotLiteLLM")
+    def test_llm_without_deployment_or_gateway(self, mock_llm):
+        with patch.dict(os.environ, {}, clear=True):
+            agent = MyAgent(
+                api_key="test_key",
+                api_base="test_base",
+                model="datarobot/azure/gpt-5-mini-2025-08-07",
+            )
+            _reset_llm_config_for_tests(agent)
+            agent.llm()
+            mock_llm.assert_called_once_with(
+                model="datarobot/azure/gpt-5-mini-2025-08-07",
+                timeout=90,
+            )
+
+    @patch("agent.myagent.DataRobotLiteLLM")
+    def test_llm_openai_prefix_for_bare_model(self, mock_llm):
+        with patch.dict(os.environ, {}, clear=True):
+            agent = MyAgent(
+                api_key="test_key",
+                api_base="test_base",
+                model="ollama1",
+            )
+            _reset_llm_config_for_tests(agent, llm_default_model="ollama1")
+            agent.llm()
+            mock_llm.assert_called_once_with(
+                model="openai/ollama1",
+                timeout=90,
+            )
+
+    @patch("agent.myagent.DataRobotLiteLLM")
+    def test_llm_no_openai_prefix_for_prefixed_model(self, mock_llm):
+        with patch.dict(os.environ, {}, clear=True):
+            agent = MyAgent(
+                api_key="test_key",
+                api_base="test_base",
+                model="datarobot/azure/gpt-5-mini-2025-08-07",
+            )
+            _reset_llm_config_for_tests(agent)
+            agent.llm()
+            mock_llm.assert_called_once_with(
+                model="datarobot/azure/gpt-5-mini-2025-08-07",
+                timeout=90,
+            )
 
     def test_agent_planner_includes_tools(self):
         """Test that agent_planner includes provided tools."""
@@ -248,6 +309,7 @@ class TestMyAgentLlamaIndex:
             agent = MyAgent(
                 api_base=api_base, model="datarobot/azure/gpt-5-mini-2025-08-07"
             )
+            _reset_llm_config_for_tests(agent, llm_deployment_id="test-id")
             # We have a deployment, self.model should be used
             _ = agent.llm()
 

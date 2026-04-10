@@ -32,29 +32,44 @@ class MyAgent(CrewAIAgent):
 
 #### `llm()` Method
 
-**CRITICAL**: Do NOT modify, delete, or change this method. It MUST be kept exactly as shown below in the agent implementation:
+**CRITICAL**: Keep NAT short-circuit, then DataRobot deployment / gateway path. Do not modify how the model and API credentials are resolved.
 
 ```python
 def llm(
         self,
         auto_model_override: bool = True,
     ) -> LLM:
-        api_base = self.litellm_api_base(self.config.llm_deployment_id)
+        if self._llm is not None:
+            return self._llm
+
+        deployment_id = self.config.llm_deployment_id
         model = self.model or self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:
             model = self.default_model
+
+        # Add openai/ prefix for bare model names (OpenAI-compatible endpoints)
+        if (
+            not deployment_id
+            and not self.config.use_datarobot_llm_gateway
+            and "/" not in model
+        ):
+            model = f"openai/{model}"
+
         if self.verbose:
             print(f"Using model: {model}")
 
-        return LLM(
-            model=model,
-            api_base=api_base,
-            api_key=self.api_key,
-            timeout=self.timeout,
-        )
+        config = {
+            "model": model,
+            "timeout": self.timeout,
+        }
+        if deployment_id or self.config.use_datarobot_llm_gateway:
+            config["api_base"] = self.litellm_api_base(deployment_id)
+            config["api_key"] = self.api_key
+
+        return LLM(**config)
 ```
 
-**Why this is required**: This method handles model configuration, API authentication, and DataRobot LLM Gateway integration. Changing it will break deployment.
+**Why this is required**: This method handles model configuration, API authentication, and DataRobot LLM Gateway / deployment integration. Changing it will break deployment.
 
 #### `agents` Property
 Defines the list of sub-agents
@@ -110,30 +125,46 @@ class MyAgent(LangGraphAgent):
 
 #### `llm()` Method
 
-**CRITICAL**: Do NOT modify, delete, or change this method. It MUST be kept exactly as shown below in the agent implementation:
+**CRITICAL**: Keep NAT short-circuit, then DataRobot deployment / gateway path. Do not modify how the model and API credentials are resolved.
 
 ```python
 def llm(
     self,
     auto_model_override: bool = True,
 ) -> ChatLiteLLM:
-    api_base = self.litellm_api_base(self.config.llm_deployment_id)
+    if self._llm is not None:
+        return self._llm
+
+    deployment_id = self.config.llm_deployment_id
     model = self.model or self.default_model
     if auto_model_override and not self.config.use_datarobot_llm_gateway:
         model = self.default_model
+
+    # Add openai/ prefix for bare model names (OpenAI-compatible endpoints)
+    if (
+        not deployment_id
+        and not self.config.use_datarobot_llm_gateway
+        and "/" not in model
+    ):
+        model = f"openai/{model}"
+
     if self.verbose:
         print(f"Using model: {model}")
-    return ChatLiteLLM(
-        model=model,
-        api_base=api_base,
-        api_key=self.api_key,
-        timeout=self.timeout,
-        streaming=True,
-        max_retries=3,
-    )
+
+    config = {
+        "model": model,
+        "timeout": self.timeout,
+        "streaming": True,
+        "max_retries": 3,
+    }
+    if deployment_id or self.config.use_datarobot_llm_gateway:
+        config["api_base"] = self.litellm_api_base(deployment_id)
+        config["api_key"] = self.api_key
+
+    return ChatLiteLLM(**config)
 ```
 
-**Why this is required**: This method handles model configuration, API authentication, and DataRobot LLM Gateway integration. Changing it will break deployment.
+**Why this is required**: This method handles model configuration, API authentication, and DataRobot LLM Gateway / deployment integration. Changing it will break deployment.
 
 #### `workflow` Property
 Defines the agent's execution flow using LangGraph's StateGraph.
@@ -230,28 +261,44 @@ class MyAgent(LlamaIndexAgent):
 
 #### `llm()` Method
 
-**CRITICAL**: Do NOT modify, delete, or change this method. It MUST be kept exactly as shown below in the agent implementation:
+**CRITICAL**: Keep NAT short-circuit, then DataRobot deployment / gateway path. Do not modify how the model and API credentials are resolved.
 
 ```python
 def llm(
         self,
         auto_model_override: bool = True,
     ) -> DataRobotLiteLLM:
-        api_base = self.litellm_api_base(self.config.llm_deployment_id)
+        if self._llm is not None:
+            return self._llm
+
+        deployment_id = self.config.llm_deployment_id
         model = self.model or self.default_model
         if auto_model_override and not self.config.use_datarobot_llm_gateway:
             model = self.default_model
+
+        # Add openai/ prefix for bare model names (OpenAI-compatible endpoints)
+        if (
+            not deployment_id
+            and not self.config.use_datarobot_llm_gateway
+            and "/" not in model
+        ):
+            model = f"openai/{model}"
+
         if self.verbose:
             print(f"Using model: {model}")
-        return DataRobotLiteLLM(
-            model=model,
-            api_base=api_base,
-            api_key=self.api_key,
-            timeout=self.timeout,
-        )
+
+        config = {
+            "model": model,
+            "timeout": self.timeout,
+        }
+        if deployment_id or self.config.use_datarobot_llm_gateway:
+            config["api_base"] = self.litellm_api_base(deployment_id)
+            config["api_key"] = self.api_key
+
+        return DataRobotLiteLLM(**config)
 ```
 
-**Why this is required**: This method handles model configuration, API authentication, and DataRobot LLM Gateway integration. Changing it will break deployment.
+**Why this is required**: This method handles model configuration, API authentication, and DataRobot LLM Gateway / deployment integration. Changing it will break deployment.
 
 #### `make_input_message` Method
 Makes input message for the LLM
