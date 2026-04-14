@@ -11,8 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from datarobot_genai.core.agents import InvokeReturn
 from datarobot_genai.core.agents.base import UsageMetrics
@@ -23,6 +25,14 @@ from openai.types.chat import CompletionCreateParams
 
 if TYPE_CHECKING:
     from ragas import MultiTurnSample
+
+
+@asynccontextmanager
+async def noop_mcp_tools_context(
+    _mcp_config: MCPConfig,
+) -> AsyncGenerator[list[Any], None]:
+    """No-op MCP tools context for NAT: tools come from workflow.yaml, not DRUM MCP."""
+    yield []
 
 
 class MyAgent(NatAgent):
@@ -66,10 +76,13 @@ async def custompy_adaptor(
     server_config = mcp_config.server_config
     headers = server_config["headers"] if server_config else {}
     forwarded_headers.update(headers)
+    mcp_tools_factory = lambda: noop_mcp_tools_context(mcp_config)  # noqa: E731
     agent = MyAgent(
         model=completion_create_params.get("model"),
         verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
         timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
         forwarded_headers=forwarded_headers,
     )
-    return await agent_chat_completion_wrapper(agent, completion_create_params)
+    return await agent_chat_completion_wrapper(
+        agent, completion_create_params, mcp_tools_factory
+    )

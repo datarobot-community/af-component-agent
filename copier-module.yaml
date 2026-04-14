@@ -1,0 +1,12 @@
+module: af-component-agent
+short_description: "The agent component"
+repeatable: true
+depends_on:
+  base:
+    url: https://github.com/datarobot-community/af-component-base
+  llm:
+    url: https://github.com/datarobot-community/af-component-llm
+    repeatable: true
+  mcp:
+    url: https://github.com/datarobot-community/af-component-fastmcp-server
+    repeatable: true

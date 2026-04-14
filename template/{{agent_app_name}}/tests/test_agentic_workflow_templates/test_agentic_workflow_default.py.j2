@@ -196,7 +196,9 @@ class TestCustomModel:
             forwarded_headers=kwargs["headers"],
             verbose=True,
             timeout=90,
-            tools=[],
+{%- if agent_template_framework == "crewai" %}
+            stream=False,
+{%- endif %}
         )
 {% else %}
         mock_agent.assert_called_once_with(
@@ -336,7 +338,9 @@ class TestCustomModel:
             forwarded_headers=kwargs["headers"],
             verbose=True,
             timeout=90,
-            tools=[],
+{%- if agent_template_framework == "crewai" %}
+            stream=False,
+{%- endif %}
         )
 {% else %}
         mock_agent.assert_called_once_with(
