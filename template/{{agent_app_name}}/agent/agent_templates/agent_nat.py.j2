@@ -50,7 +50,7 @@ class MyAgent(NatAgent):
     ) -> None:
         super().__init__(
             *args,
-            workflow_path=workflow_path,
+            workflow_path=workflow_path,  # type: ignore[misc]
             **kwargs,
         )
 
