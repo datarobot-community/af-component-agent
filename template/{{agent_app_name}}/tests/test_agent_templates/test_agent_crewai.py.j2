@@ -13,8 +13,7 @@
 # limitations under the License.
 
 import json
-import os
-from unittest.mock import ANY, AsyncMock, Mock, patch
+from unittest.mock import AsyncMock, Mock, PropertyMock, patch
 
 import pytest
 from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
@@ -55,6 +54,7 @@ class TestMyAgentCrewAI:
         assert crew is not None
         assert crew.agents == agents
         assert crew.tasks == tasks
+        assert crew.stream is False, "Crew must not use stream=True"
 
     def test_kickoff_inputs(self):
         """Test kickoff_inputs produces correct dictionary."""
@@ -82,10 +82,11 @@ class TestMyAgentCrewAI:
         for sub_agent in agents:
             assert mock_tool in sub_agent.tools
 
-    @patch("agent.myagent.crew")
+    @patch.object(MyAgent, "crew", new_callable=PropertyMock)
+    @patch("agent.myagent.get_llm", return_value=Mock())
     @patch("datarobot_genai.crewai.agent.CrewAIRagasEventListener")
     def test_chat(
-        self, mock_event_listener, mock_crew, agent, load_model_result
+        self, mock_event_listener, mock_get_llm, mock_crew_prop, load_model_result
     ):
         from custom import chat
 
@@ -97,7 +98,9 @@ class TestMyAgentCrewAI:
                 total_tokens=3,
             ),
         )
+        mock_crew = Mock()
         mock_crew.kickoff_async = AsyncMock(return_value=crew_output)
+        mock_crew_prop.return_value = mock_crew
 
         events = [
             HumanMessage(content="Hi"),
@@ -118,10 +121,7 @@ class TestMyAgentCrewAI:
             "environment_var": True,
         }
 
-        with patch("agent.myagent.get_llm", return_value=Mock()):
-            response = chat(
-                completion_create_params, load_model_result=load_model_result
-            )
+        response = chat(completion_create_params, load_model_result=load_model_result)
 
         completion = json.loads(response.model_dump_json())
         actual_events = json.loads(completion["pipeline_interactions"])["user_input"]

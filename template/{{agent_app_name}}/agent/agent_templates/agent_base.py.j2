@@ -34,6 +34,9 @@ from datarobot_genai.core.agents import (
 )
 from datarobot_genai.core.chat import agent_chat_completion_wrapper
 from datarobot_genai.core.mcp import MCPConfig
+
+# Use langchain LLMs in the base example
+from datarobot_genai.langgraph.llm import get_llm
 from openai.types.chat import CompletionCreateParams
 
 if TYPE_CHECKING:

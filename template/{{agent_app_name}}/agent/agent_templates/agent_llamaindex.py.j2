@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # mypy: disable-error-code=attr-defined
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, Optional
 
 from datarobot_genai.core.agents import InvokeReturn, make_system_prompt
@@ -22,8 +21,11 @@ from datarobot_genai.core.mcp import MCPConfig
 from datarobot_genai.llama_index.agent import datarobot_agent_class_from_llamaindex
 from datarobot_genai.llama_index.llm import get_llm
 from datarobot_genai.llama_index.mcp import mcp_tools_context
-from llama_index.core.agent.workflow import AgentWorkflow, FunctionAgent
-from llama_index.core.tools import BaseTool
+from llama_index.core.agent.workflow import (
+    AgentWorkflow,
+    BaseWorkflowAgent,
+    FunctionAgent,
+)
 from llama_index.core.workflow import Context
 from llama_index.llms.litellm import LiteLLM
 from openai.types.chat import CompletionCreateParams
@@ -96,7 +98,7 @@ agent_writer = FunctionAgent(
     tools=[writer_report_tool],
 )
 
-agents = [agent_planner, agent_writer]
+agents: list[BaseWorkflowAgent] = [agent_planner, agent_writer]
 
 workflow = AgentWorkflow(
     agents=agents,

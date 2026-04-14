@@ -1,2 +1,5 @@
-{% if agent_template_framework in ['langgraph', 'llamaindex'] %}{% include 'template/{{agent_app_name}}/tests/test_dragent_templates/test_register_dragent.py.j2' -%}
+{% if agent_template_framework == "crewai" %}{% include 'template/{{agent_app_name}}/tests/test_dragent_templates/test_register_dragent_crewai.py.j2' -%}
+{% elif agent_template_framework == "langgraph" %}{% include 'template/{{agent_app_name}}/tests/test_dragent_templates/test_register_dragent_langgraph.py.j2' -%}
+{% elif agent_template_framework == "llamaindex" %}{% include 'template/{{agent_app_name}}/tests/test_dragent_templates/test_register_dragent_llamaindex.py.j2' -%}
+{% elif agent_template_framework == "base" %}{% include 'template/{{agent_app_name}}/tests/test_dragent_templates/test_register_dragent_base.py.j2' -%}
 {% endif -%}

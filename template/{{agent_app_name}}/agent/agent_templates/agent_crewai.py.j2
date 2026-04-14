@@ -11,11 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional
 
 from crewai import Agent, Crew, Process, Task
-from crewai.llm import LLM
-from crewai.tools import BaseTool
 from datarobot_genai.core.agents import InvokeReturn, make_system_prompt
 from datarobot_genai.core.agents.base import UsageMetrics
 from datarobot_genai.core.chat import agent_chat_completion_wrapper
@@ -97,7 +95,7 @@ crew = Crew(
     tasks=tasks,
     verbose=True,
     process=Process.sequential,
-    stream=True,
+    stream=False,
 )
 
 kickoff_inputs = lambda user_prompt_content: {
@@ -123,8 +121,6 @@ async def custompy_adaptor(
         verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
         timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
         forwarded_headers=forwarded_headers,  # type: ignore[arg-type]
-        # When run with drum, streaming does not work correctly, so we force it to False
-        stream=False,
     )
     return await agent_chat_completion_wrapper(
         agent, completion_create_params, mcp_tools_factory

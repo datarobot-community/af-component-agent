@@ -38,18 +38,14 @@ class TestCustomModel:
         assert isinstance(event_loop, type(asyncio.get_event_loop()))
         thread_pool_executor.shutdown()
 
-{% if agent_template_framework in ("crewai", "langgraph", "llamaindex") %}
     @patch("agent.myagent.get_llm")
-{% endif %}
     @patch("agent.myagent.MyAgent")
     @patch.dict(os.environ, {"LLM_DEPLOYMENT_ID": "TEST_VALUE"}, clear=True)
     @pytest.mark.parametrize("stream", [False, True])
     def test_chat(
         self,
         mock_agent,
-{% if agent_template_framework in ("crewai", "langgraph", "llamaindex") %}
         mock_get_llm,
-{% endif %}
         mock_agent_response,
         stream,
         load_model_result,
@@ -60,10 +56,8 @@ class TestCustomModel:
         mock_agent_instance = MagicMock()
         mock_agent_instance.invoke = Mock(return_value=mock_agent_response)
         mock_agent.return_value = mock_agent_instance
-{% if agent_template_framework in ("crewai", "langgraph", "llamaindex") %}
         mock_llm = Mock()
         mock_get_llm.return_value = mock_llm
-{% endif %}
 
         completion_create_params = {
             "model": "test-model",
@@ -189,25 +183,14 @@ class TestCustomModel:
             assert actual == expected
 
         # Verify mocks were called correctly
-{% if agent_template_framework in ("crewai", "langgraph", "llamaindex") %}
         mock_get_llm.assert_called_once_with(model_name="test-model")
         mock_agent.assert_called_once_with(
             llm=mock_llm,
             forwarded_headers=kwargs["headers"],
             verbose=True,
             timeout=90,
-{%- if agent_template_framework == "crewai" %}
-            stream=False,
-{%- endif %}
         )
-{% else %}
-        mock_agent.assert_called_once_with(
-            forwarded_headers=kwargs["headers"],
-            verbose=True,
-            timeout=90,
-            tools=[],
-        )
-{% endif %}
+
         assert mock_agent_instance.invoke.called
         assert mock_agent_instance.invoke.call_args[0][0].messages == [
             UserMessage(
@@ -219,17 +202,13 @@ class TestCustomModel:
             ),
         ]
 
-{% if agent_template_framework in ("crewai", "langgraph", "llamaindex") %}
     @patch("agent.myagent.get_llm")
-{% endif %}
     @patch("agent.myagent.MyAgent")
     @patch.dict(os.environ, {"LLM_DEPLOYMENT_ID": "TEST_VALUE"}, clear=True)
     def test_chat_streaming(
         self,
         mock_agent,
-{% if agent_template_framework in ("crewai", "langgraph", "llamaindex") %}
         mock_get_llm,
-{% endif %}
         load_model_result,
     ):
         from custom import chat
@@ -277,10 +256,8 @@ class TestCustomModel:
         mock_agent_instance = MagicMock()
         mock_agent_instance.invoke = Mock(return_value=mock_streaming_generator())
         mock_agent.return_value = mock_agent_instance
-{% if agent_template_framework in ("crewai", "langgraph", "llamaindex") %}
         mock_llm = Mock()
         mock_get_llm.return_value = mock_llm
-{% endif %}
 
         completion_create_params = {
             "model": "test-model",
@@ -331,25 +308,13 @@ class TestCustomModel:
         assert final_chunk["usage"]["total_tokens"] == 5
 
         # Verify mocks were called correctly
-{% if agent_template_framework in ("crewai", "langgraph", "llamaindex") %}
         mock_get_llm.assert_called_once_with(model_name="test-model")
         mock_agent.assert_called_once_with(
             llm=mock_llm,
             forwarded_headers=kwargs["headers"],
             verbose=True,
             timeout=90,
-{%- if agent_template_framework == "crewai" %}
-            stream=False,
-{%- endif %}
         )
-{% else %}
-        mock_agent.assert_called_once_with(
-            forwarded_headers=kwargs["headers"],
-            verbose=True,
-            timeout=90,
-            tools=[],
-        )
-{% endif %}
         assert mock_agent_instance.invoke.called
         assert mock_agent_instance.invoke.call_args[0][0].messages == [
             UserMessage(
