@@ -20,6 +20,7 @@ from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 
 from agent import MyAgent
 from agent.myagent import (
+    _PLACEHOLDER_MODELS,
     agent_planner,
     agent_writer,
     agents,
@@ -81,6 +82,43 @@ class TestMyAgentCrewAI:
         agent = MyAgent(llm=mock_llm, tools=[mock_tool])
         for sub_agent in agents:
             assert mock_tool in sub_agent.tools
+
+    @pytest.mark.parametrize(
+        "model_value, expected_model_name",
+        [
+            ("unknown", None),
+            ("gpt-4", "gpt-4"),
+            ("datarobot-deployed-llm", "datarobot-deployed-llm"),
+            (None, None),
+        ],
+    )
+    @patch.object(MyAgent, "crew", new_callable=PropertyMock)
+    @patch("agent.myagent.get_llm", return_value=Mock())
+    @patch("agent.myagent.agent_chat_completion_wrapper", new_callable=AsyncMock)
+    @patch("agent.myagent.mcp_tools_context")
+    def test_custompy_adaptor_filters_placeholder_models(
+        self,
+        mock_mcp_ctx,
+        mock_wrapper,
+        mock_get_llm,
+        mock_crew_prop,
+        model_value,
+        expected_model_name,
+    ):
+        from agent.myagent import custompy_adaptor
+
+        mock_crew_prop.return_value = Mock()
+        completion_create_params = {
+            "model": model_value,
+            "messages": [{"role": "user", "content": "hi"}],
+        }
+        import asyncio
+
+        asyncio.get_event_loop().run_until_complete(
+            custompy_adaptor(completion_create_params)
+        )
+        mock_get_llm.assert_called_once()
+        assert mock_get_llm.call_args[1]["model_name"] == expected_model_name
 
     @patch.object(MyAgent, "crew", new_callable=PropertyMock)
     @patch("agent.myagent.get_llm", return_value=Mock())
