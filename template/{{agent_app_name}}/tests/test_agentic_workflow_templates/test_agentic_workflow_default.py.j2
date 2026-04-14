@@ -183,7 +183,13 @@ class TestCustomModel:
             assert actual == expected
 
         # Verify mocks were called correctly
+        {% if agent_template_framework == "crewai" -%}
+        mock_get_llm.assert_called_once_with(
+            model_name="test-model", parameters={"stream_options": None}
+        )
+        {% else -%}
         mock_get_llm.assert_called_once_with(model_name="test-model")
+        {% endif -%}
         mock_agent.assert_called_once_with(
             llm=mock_llm,
             forwarded_headers=kwargs["headers"],
@@ -308,7 +314,13 @@ class TestCustomModel:
         assert final_chunk["usage"]["total_tokens"] == 5
 
         # Verify mocks were called correctly
+        {% if agent_template_framework == "crewai" -%}
+        mock_get_llm.assert_called_once_with(
+            model_name="test-model", parameters={"stream_options": None}
+        )
+        {% else -%}
         mock_get_llm.assert_called_once_with(model_name="test-model")
+        {% endif -%}
         mock_agent.assert_called_once_with(
             llm=mock_llm,
             forwarded_headers=kwargs["headers"],

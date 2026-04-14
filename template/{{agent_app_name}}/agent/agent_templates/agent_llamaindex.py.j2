@@ -143,10 +143,8 @@ async def custompy_adaptor(
     )
     mcp_tools_factory = lambda: mcp_tools_context(mcp_config)  # noqa: E731
     model_name = completion_create_params.get("model")
-    if model_name in _PLACEHOLDER_MODELS:
-        model_name = None
     agent = MyAgent(
-        llm=get_llm(model_name=model_name),
+        llm=get_llm(model_name=model_name if model_name not in _PLACEHOLDER_MODELS else None),
         verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
         timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
         forwarded_headers=forwarded_headers,  # type: ignore[arg-type]
