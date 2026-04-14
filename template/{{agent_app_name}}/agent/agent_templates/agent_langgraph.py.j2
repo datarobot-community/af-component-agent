@@ -42,7 +42,7 @@ prompt_template = ChatPromptTemplate.from_messages(
         ),
         (
             "user",
-            "The topic is {% raw %}{{topic}}{% endraw %}. Make sure you find any interesting and "
+            "The topic is {topic}. Make sure you find any interesting and "
             f"relevant information given the current year is {datetime.now().year}.",
         ),
     ]
