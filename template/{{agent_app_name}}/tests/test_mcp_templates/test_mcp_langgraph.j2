@@ -44,6 +44,7 @@ def langgraph_common_mocks():
             "agent.myagent.mcp_tools_context", side_effect=_mock_mcp_tools_context
         ) as mock_mcp_tools_context,
         patch("agent.myagent.MyAgent") as mock_agent_class,
+        patch("agent.myagent.get_llm", return_value=MagicMock()),
     ):
 
         async def invoke(*args, **kwargs):
