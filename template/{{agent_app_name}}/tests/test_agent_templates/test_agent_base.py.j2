@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import os
-from unittest.mock import patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from ag_ui.core import (
@@ -137,3 +137,37 @@ class TestMyAgentBase:
             agent = MyAgent(api_base=api_base)
             result = agent.litellm_api_base(None)
             assert result == expected_result
+
+    @pytest.mark.parametrize(
+        "model_value, expected_model_name",
+        [
+            ("unknown", None),
+            ("gpt-4", "gpt-4"),
+            ("datarobot-deployed-llm", "datarobot-deployed-llm"),
+            (None, None),
+        ],
+    )
+    @patch("agent.myagent.get_llm", return_value=Mock())
+    @patch("agent.myagent.agent_chat_completion_wrapper", new_callable=AsyncMock)
+    @patch("agent.myagent.mcp_tools_context")
+    def test_custompy_adaptor_filters_placeholder_models(
+        self,
+        mock_mcp_ctx,
+        mock_wrapper,
+        mock_get_llm,
+        model_value,
+        expected_model_name,
+    ):
+        from agent.myagent import custompy_adaptor
+
+        completion_create_params = {
+            "model": model_value,
+            "messages": [{"role": "user", "content": "hi"}],
+        }
+        import asyncio
+
+        asyncio.get_event_loop().run_until_complete(
+            custompy_adaptor(completion_create_params)
+        )
+        mock_get_llm.assert_called_once()
+        assert mock_get_llm.call_args[1]["model_name"] == expected_model_name
