@@ -38,7 +38,10 @@ class Config(DataRobotAppFrameworkBaseSettings):  # type: ignore[misc]
     external_mcp_url: str | None = None
 {%- if use_agent_memory %}
     mem0_api_key: str | None = None
-{%- endif %}
+    agent_memory_default_ttl_seconds: int = Field(
+        default={{ agent_memory_default_ttl_seconds }}, ge=0
+    )
+{% endif %}
 
     local_dev_port: int = Field(
         default=8842, validation_alias="{{agent_app_name|upper}}_PORT", ge=1, le=65535

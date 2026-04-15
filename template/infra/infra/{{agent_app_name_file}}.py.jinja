@@ -51,6 +51,14 @@ DEFAULT_DRUM_WORKER_CONNECTIONS: Final[str] = "1"
 # Default gunicorn timeout in current DRUM is 2 mins
 DEFAULT_DRUM_CLIENT_REQUEST_TIMEOUT: Final[str] = "300"
 
+{% if use_agent_memory -%}
+# Agent memory runtime parameters
+AGENT_MEMORY_DEFAULT_TTL_SECONDS: Final[str] = "AGENT_MEMORY_DEFAULT_TTL_SECONDS"
+DEFAULT_AGENT_MEMORY_TTL_SECONDS: Final[str] = os.environ.get(
+    AGENT_MEMORY_DEFAULT_TTL_SECONDS, "{{ agent_memory_default_ttl_seconds }}"
+)
+{% endif %}
+
 # DRUM runtime parameters that are safe to include defaultValue in metadata
 DRUM_PARAMS_WITH_DEFAULTS: Final[set[str]] = {
     "CUSTOM_MODEL_WORKERS",
@@ -481,6 +489,15 @@ agent_runtime_parameter_values.extend(
         ),
     ]
 )
+{% if use_agent_memory %}
+agent_runtime_parameter_values.append(
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        key=AGENT_MEMORY_DEFAULT_TTL_SECONDS,
+        type="numeric",
+        value=DEFAULT_AGENT_MEMORY_TTL_SECONDS,
+    )
+)
+{% endif %}
 
 # Handle session secret key credential
 SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
