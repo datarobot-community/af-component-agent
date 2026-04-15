@@ -384,6 +384,7 @@ if ENABLE_AGENT_HA_MODE:
     pulumi.info(
         f"High Availability mode enabled, agent deployment will be configured with:\n"
         f"- workers: {DEFAULT_CUSTOM_MODEL_WORKERS}\n"
+        f"- resource_bundle: {DEFAULT_AGENT_RESOURCE_BUNDLE_ID}\n"
         f"- replicas: {DEFAULT_AGENT_REPLICAS}\n"
         f"- max_computes: {DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES}"
     )
