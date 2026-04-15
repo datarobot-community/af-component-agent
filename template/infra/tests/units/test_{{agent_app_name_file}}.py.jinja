@@ -512,6 +512,7 @@ def test_custom_model_created_pinned_version_id(monkeypatch):
 def test_custom_model_resource_bundle_and_replicas(monkeypatch):
     """Test that CustomModel is created with correct resource_bundle_id and replicas."""
     monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
+    monkeypatch.delenv("ENABLE_AGENT_HA_MODE", raising=False)
 
     import importlib
     import infra.{{agent_app_name}} as agent_infra
@@ -523,11 +524,28 @@ def test_custom_model_resource_bundle_and_replicas(monkeypatch):
     agent_infra.pulumi_datarobot.CustomModel.assert_called_once()
     args, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
 
-    # Verify resource_bundle_id is set to cpu.3xlarge
+    # Verify resource_bundle_id is set to cpu.3xlarge (non-HA default)
     assert kwargs["resource_bundle_id"] == "cpu.3xlarge"
 
     # Verify replicas is set to 1
     assert kwargs["replicas"] == 1
+
+
+def test_custom_model_resource_bundle_and_replicas_ha_mode(monkeypatch):
+    """HA mode uses larger resource bundle and multiple replicas."""
+    monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
+    monkeypatch.setenv("ENABLE_AGENT_HA_MODE", "true")
+
+    import importlib
+    import infra.{{agent_app_name}} as agent_infra
+
+    agent_infra.pulumi_datarobot.CustomModel.reset_mock()
+    importlib.reload(agent_infra)
+
+    agent_infra.pulumi_datarobot.CustomModel.assert_called_once()
+    args, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
+    assert kwargs["resource_bundle_id"] == "cpu.5xlarge"
+    assert kwargs["replicas"] == 2
 
 
 def test_agentic_playground_and_blueprint_created(monkeypatch):
@@ -817,6 +835,7 @@ class TestEnableAgentHAMode:
 
         assert agent_infra.ENABLE_AGENT_HA_MODE is False
         assert agent_infra.DEFAULT_CUSTOM_MODEL_WORKERS == "2"
+        assert agent_infra.DEFAULT_AGENT_RESOURCE_BUNDLE_ID == "cpu.3xlarge"
         assert agent_infra.DEFAULT_AGENT_REPLICAS == 1
         assert agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 2
 
@@ -830,6 +849,7 @@ class TestEnableAgentHAMode:
 
         assert agent_infra.ENABLE_AGENT_HA_MODE is False
         assert agent_infra.DEFAULT_CUSTOM_MODEL_WORKERS == "2"
+        assert agent_infra.DEFAULT_AGENT_RESOURCE_BUNDLE_ID == "cpu.3xlarge"
         assert agent_infra.DEFAULT_AGENT_REPLICAS == 1
         assert agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 2
 
@@ -843,6 +863,7 @@ class TestEnableAgentHAMode:
 
         assert agent_infra.ENABLE_AGENT_HA_MODE is True
         assert agent_infra.DEFAULT_CUSTOM_MODEL_WORKERS == "5"
+        assert agent_infra.DEFAULT_AGENT_RESOURCE_BUNDLE_ID == "cpu.5xlarge"
         assert agent_infra.DEFAULT_AGENT_REPLICAS == 2
         assert agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 4
 
@@ -866,10 +887,12 @@ class TestEnableAgentHAMode:
             assert agent_infra.ENABLE_AGENT_HA_MODE is expected
             if expected:
                 assert agent_infra.DEFAULT_CUSTOM_MODEL_WORKERS == "5"
+                assert agent_infra.DEFAULT_AGENT_RESOURCE_BUNDLE_ID == "cpu.5xlarge"
                 assert agent_infra.DEFAULT_AGENT_REPLICAS == 2
                 assert agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 4
             else:
                 assert agent_infra.DEFAULT_CUSTOM_MODEL_WORKERS == "2"
+                assert agent_infra.DEFAULT_AGENT_RESOURCE_BUNDLE_ID == "cpu.3xlarge"
                 assert agent_infra.DEFAULT_AGENT_REPLICAS == 1
                 assert agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 2
 

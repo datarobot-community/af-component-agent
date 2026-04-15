@@ -39,8 +39,8 @@ DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
 
 # Toggle for High Availability (HA) and Load Balancing configuration for agent deployment
 # To enable HA mode: Add ENABLE_AGENT_HA_MODE="true" to your .env file in the project root
-# When enabled: workers=5, replicas=2, max_computes=4
-# When disabled (default): workers=2, replicas=1, max_computes=2
+# When enabled: workers=5, resource_bundle=cpu.5xlarge, replicas=2, max_computes=4
+# When disabled (default): workers=2, resource_bundle=cpu.3xlarge, replicas=1, max_computes=2
 ENABLE_AGENT_HA_MODE = os.environ.get("ENABLE_AGENT_HA_MODE", "false").lower() == "true"
 
 # Custom Model DRUM runtime parameters (concurrency configuration)
@@ -61,7 +61,9 @@ DRUM_PARAMS_WITH_DEFAULTS: Final[set[str]] = {
 }
 
 # Custom Model resource bundle configuration
-DEFAULT_AGENT_RESOURCE_BUNDLE_ID: Final[str] = "cpu.3xlarge"
+DEFAULT_AGENT_RESOURCE_BUNDLE_ID: Final[str] = (
+    "cpu.5xlarge" if ENABLE_AGENT_HA_MODE else "cpu.3xlarge"
+)
 DEFAULT_AGENT_REPLICAS: Final[int] = 2 if ENABLE_AGENT_HA_MODE else 1
 
 # Agent deployment configuration (HPA autoscaling)
@@ -382,6 +384,7 @@ if ENABLE_AGENT_HA_MODE:
     pulumi.info(
         f"High Availability mode enabled, agent deployment will be configured with:\n"
         f"- workers: {DEFAULT_CUSTOM_MODEL_WORKERS}\n"
+        f"- resource_bundle: {DEFAULT_AGENT_RESOURCE_BUNDLE_ID}\n"
         f"- replicas: {DEFAULT_AGENT_REPLICAS}\n"
         f"- max_computes: {DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES}"
     )
