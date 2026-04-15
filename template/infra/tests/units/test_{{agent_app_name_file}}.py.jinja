@@ -464,7 +464,6 @@ def test_custom_model_created(monkeypatch):
     assert isinstance(kwargs["files"], list)
 
     runtime_parameter_values = kwargs["runtime_parameter_values"]
-
 {% if use_agent_memory %}
     # Should have 7 params: 1 SESSION_SECRET_KEY + 5 DRUM params + memory TTL
     assert len(runtime_parameter_values) == 7
@@ -472,7 +471,6 @@ def test_custom_model_created(monkeypatch):
     # Should have 6 params: 1 SESSION_SECRET_KEY + 5 DRUM params
     assert len(runtime_parameter_values) == 6
 {% endif %}
-
     # Find the SESSION_SECRET_KEY parameter
     session_secret_param = next(
         (p for p in runtime_parameter_values if p.key == "SESSION_SECRET_KEY"), None
@@ -480,7 +478,6 @@ def test_custom_model_created(monkeypatch):
     assert session_secret_param is not None
     assert session_secret_param.type == "credential"
     assert session_secret_param.value is not None
-
 {% if use_agent_memory %}
     memory_ttl_param = next(
         (
@@ -504,7 +501,6 @@ def test_custom_model_created(monkeypatch):
     )
     assert memory_ttl_param is None
 {% endif %}
-
 
 def test_custom_model_created_pinned_version_id(monkeypatch):
     """Test that pulumi_datarobot.CustomModel is created with correct arguments."""
@@ -1202,15 +1198,13 @@ class TestGenerateMetadataYaml:
             RuntimeParam(key="CUSTOM_MODEL_WORKERS", type="numeric", value="5"),
             # DRUM string parameter - should HAVE defaultValue (in allowlist)
             RuntimeParam(key="DRUM_SERVER_TYPE", type="string", value="gunicorn"),
-{% if use_agent_memory %}
-            # Agent memory TTL parameter - should NOT have defaultValue
+{% if use_agent_memory %}            # Agent memory TTL parameter - should NOT have defaultValue
             RuntimeParam(
                 key="AGENT_MEMORY_DEFAULT_TTL_SECONDS",
                 type="numeric",
                 value="{{ agent_memory_default_ttl_seconds }}",
             ),
-{% endif %}
-            # String parameter with special characters - should NOT have defaultValue (not in allowlist)
+{% endif %}            # String parameter with special characters - should NOT have defaultValue (not in allowlist)
             RuntimeParam(
                 key="EXTERNAL_MCP_HEADERS", type="string", value='{"auth": "token"}'
             ),
@@ -1238,7 +1232,6 @@ class TestGenerateMetadataYaml:
 {% else %}
         assert len(params) == 5
 {% endif %}
-
         # String parameter - should NOT have defaultValue (not in allowlist)
         assert params[0]["fieldName"] == "LLM_DEPLOYMENT_ID"
         assert params[0]["type"] == "string"
@@ -1267,7 +1260,6 @@ class TestGenerateMetadataYaml:
             "DRUM parameters in allowlist should have defaultValue"
         )
         assert params[3]["defaultValue"] == "gunicorn"
-
 {% if use_agent_memory %}
         # Agent memory TTL parameter - should NOT have defaultValue
         assert params[4]["fieldName"] == "AGENT_MEMORY_DEFAULT_TTL_SECONDS"
@@ -1290,7 +1282,6 @@ class TestGenerateMetadataYaml:
             "String parameters with sensitive data should not have defaultValue"
         )
 {% endif %}
-
     def test_with_empty_parameters(self, tmp_path, monkeypatch):
         """Test _generate_metadata_yaml generates correct YAML with empty parameter list."""
         import infra.{{agent_app_name}} as agent_infra
@@ -1348,7 +1339,6 @@ class TestGenerateMetadataYaml:
         assert "old" not in metadata
         assert metadata["name"] == "{{agent_app_name}}"
         assert metadata["runtimeParameterDefinitions"][0]["fieldName"] == "NEW_PARAM"
-
 
 {% if use_agent_memory %}
 class TestAgentMemoryRuntimeParameter:
@@ -1420,7 +1410,6 @@ class TestAgentMemoryRuntimeParameter:
 
         assert memory_ttl_param is None
 {% endif %}
-
 
 class TestDrumRuntimeParameters:
     def test_drum_runtime_parameters_included(self, monkeypatch):
