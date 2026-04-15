@@ -24,15 +24,6 @@ use_agent_memory:
   help: "Do you want to opt in to agent memory? (default: no) (WIP)"
   default: no
 
-agent_memory_default_ttl_seconds:
-  type: int
-  help: "Default TTL for agent memory, in seconds. (default: 2592000, 30 days)"
-  default: 2592000
-  when: "{{ use_agent_memory }}"
-  validator: >-
-    {% if agent_memory_default_ttl_seconds < 0 %}ERROR: Agent memory TTL must be greater than or equal to 0
-    {% endif %}
-
 agent_template_framework:
   type: str
   default: |-
