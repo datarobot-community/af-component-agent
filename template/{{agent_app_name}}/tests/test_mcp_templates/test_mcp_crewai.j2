@@ -36,6 +36,7 @@ def crewai_common_mocks():
     with (
         patch("datarobot_genai.crewai.mcp.MCPServerAdapter") as mock_adapter_class,
         patch("agent.myagent.MyAgent") as mock_agent_class,
+        patch("agent.myagent.get_llm", return_value=MagicMock()),
     ):
         mock_adapter = MagicMock()
         mock_adapter.__enter__.return_value = []

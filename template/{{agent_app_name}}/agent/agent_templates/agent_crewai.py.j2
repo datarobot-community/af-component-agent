@@ -11,229 +11,101 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Optional
 
-from crewai import LLM, Agent, Crew, Process, Task
-from crewai.tools import BaseTool
-from datarobot_genai.core.agents import InvokeReturn
+from crewai import Agent, Crew, Process, Task
+from datarobot_genai.core.agents import InvokeReturn, make_system_prompt
 from datarobot_genai.core.agents.base import UsageMetrics
 from datarobot_genai.core.chat import agent_chat_completion_wrapper
 from datarobot_genai.core.mcp import MCPConfig
-from datarobot_genai.crewai.agent import CrewAIAgent
+from datarobot_genai.crewai.agent import datarobot_agent_class_from_crew
+from datarobot_genai.crewai.llm import get_llm
 from datarobot_genai.crewai.mcp import mcp_tools_context
 from openai.types.chat import CompletionCreateParams
-
-from agent.config import Config
 
 if TYPE_CHECKING:
     from ragas import MultiTurnSample
 
+_PLACEHOLDER_MODELS = frozenset({"unknown"})
 
-class MyAgent(CrewAIAgent):
-    """MyAgent is a custom agent that uses CrewAI to plan and write content.
-    It utilizes DataRobot's LLM Gateway or a specific deployment for language model interactions.
-    This example illustrates 2 agents that handle content creation tasks, including planning and writing
-    blog posts.
-    """
+llm = get_llm()
 
-    def __init__(
-        self,
-        api_key: Optional[str] = None,
-        api_base: Optional[str] = None,
-        model: Optional[str] = None,
-        verbose: bool = True,
-        timeout: Optional[int] = 90,
-        llm: Optional[LLM] = None,
-        tools: Optional[list[BaseTool]] = None,
-        forwarded_headers: Optional[dict[str, str]] = None,
-        stream: bool = True,
-    ):
-        """Initializes the MyAgent class with API key, base URL, model, and verbosity settings.
+agent_planner = Agent(
+    role="Planner",
+    goal="Create a simple, focused outline for {topic} with key points and sources.",
+    backstory=make_system_prompt(
+        "You create brief, structured outlines for blog articles. "
+        "You identify the most important points and cite relevant sources. "
+        "Keep it simple and to the point - this is just an outline for the writer. "
+        "You have access to tools that can help you research and gather information. "
+        "Use these tools when required to collect accurate and up-to-date information "
+        "about the topic for your planning and research."
+    ),
+    allow_delegation=False,
+    verbose=True,
+    llm=llm,
+)
 
-        Args:
-            api_key: Optional[str]: API key for authentication with DataRobot services.
-                Defaults to None, in which case it will use the DATAROBOT_API_TOKEN environment variable.
-            api_base: Optional[str]: Base URL for the DataRobot API.
-                Defaults to None, in which case it will use the DATAROBOT_ENDPOINT environment variable.
-            model: Optional[str]: The LLM model to use.
-                Defaults to None.
-            verbose: Optional[Union[bool, str]]: Whether to enable verbose logging.
-                Accepts boolean or string values ("true"/"false"). Defaults to True.
-            timeout: Optional[int]: How long to wait for the agent to respond.
-                Defaults to 90 seconds.
-            llm: Optional[LLM]: Pre-configured LLM instance provided by NAT.
-                When set, llm() returns this directly instead of creating a new LLM.
-            tools: Optional[list[BaseTool]]: Tools to use for the agent.
-                Defaults to None.
-            forwarded_headers: Optional[dict[str, str]]: Headers of the original request agent can use
-                to access external services. Defaults to None.
-            stream: Optional[bool]: Whether to stream the response.
-                Defaults to True.
-        Returns:
-            None
-        """
-        super().__init__(
-            api_key=api_key,
-            api_base=api_base,
-            model=model,
-            verbose=verbose,
-            timeout=timeout,
-            forwarded_headers=forwarded_headers,
-            tools=tools,
-        )
-        self._llm = llm
-        self.config = Config()
-        self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
-        self.stream = stream
+agent_writer = Agent(
+    role="Writer",
+    goal="Write a concise, insightful opinion piece about {topic}. Maximum 500 words.",
+    backstory=make_system_prompt(
+        "You write opinion pieces based on the planner's outline and context. "
+        "You provide objective and impartial insights backed by the planner's information. "
+        "You acknowledge when your statements are opinions versus objective facts. "
+        "You have access to tools that can help you verify facts and gather additional "
+        "supporting information. Use these tools when required to ensure accuracy and "
+        "find relevant details while writing."
+    ),
+    allow_delegation=False,
+    verbose=True,
+    llm=llm,
+)
 
-        if model in ("unknown", "datarobot-deployed-llm"):
-            self.model = self.default_model
+agents = [agent_planner, agent_writer]
 
-    def llm(
-        self,
-        auto_model_override: bool = True,
-    ) -> LLM:
-        """Returns the LLM to use for agent nodes.
+task_plan = Task(
+    description=(
+        "Create a simple outline for {topic} with:\n"
+        "1. 10-15 key points or facts (bullet points only, no paragraphs)\n"
+        "2. 2-3 relevant sources or references\n"
+        "3. A brief suggested structure (intro, 2-3 sections, conclusion)\n"
+        "Do NOT write paragraphs or detailed explanations. Just provide a focused list.\n"
+        "{chat_history}"
+    ),
+    expected_output="A simple outline with 10-15 bullet points, 2-3 sources, and a basic structure. "
+    "No paragraphs or lengthy explanations.",
+    agent=agent_planner,
+)
 
-        In NAT mode, returns the pre-configured LLM provided at construction.
-        In DRUM mode, creates a CrewAI LLM instance using the configured API credentials.
+task_write = Task(
+    description=(
+        "1. Use the content plan to craft a compelling blog post on {topic}.\n"
+        "2. Structure with an engaging introduction, insightful body, and summarizing conclusion.\n"
+        "3. Sections/Subtitles are properly named in an engaging manner.\n"
+        "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
+        "{chat_history}"
+    ),
+    expected_output="A well-written blog post in markdown format, ready for publication. Maximum 500 words total.",
+    agent=agent_writer,
+)
 
-        Args:
-            auto_model_override: Optional[bool]: If True, it will try and use the model
-                specified in the request but automatically back out if the LLM Gateway is
-                not available. Only applies in DRUM mode.
+tasks = [task_plan, task_write]
 
-        Returns:
-            LLM: The model to use.
-        """
-        if self._llm is not None:
-            return self._llm
+crew = Crew(
+    agents=agents,
+    tasks=tasks,
+    verbose=True,
+    process=Process.sequential,
+    stream=False,
+)
 
-        api_base = self.litellm_api_base(self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id)
-        model = self.model or self.default_model
-        if auto_model_override and not self.config.use_datarobot_llm_gateway:
-            model = self.default_model
-        if self.verbose:
-            print(f"Using model: {model}")
+kickoff_inputs = lambda user_prompt_content: {
+    "topic": str(user_prompt_content),
+    "chat_history": "",
+}
 
-        config = {
-            "model": model,
-            "api_base": api_base,
-            "api_key": self.api_key,
-            "timeout": self.timeout,
-        }
-
-        if not self.config.use_datarobot_llm_gateway and self._identity_header:
-            config["extra_headers"] = self._identity_header  # type: ignore[assignment]
-
-        return LLM(**config)  # type: ignore[arg-type]
-
-    def make_kickoff_inputs(self, user_prompt_content: str) -> dict[str, Any]:
-        """Map the user prompt into Crew kickoff inputs expected by tasks/agents.
-
-        The ``chat_history`` field opts into automatic history injection. When
-        prior turns are available the base class populates it with a formatted
-        "Prior conversation:\\n..." block; on the first turn it remains an empty
-        string. Place ``{chat_history}`` at the end of task descriptions to
-        include it as a self-contained section that disappears gracefully when
-        there is no history yet.
-        """
-        return {
-            "topic": str(user_prompt_content),
-            "chat_history": "",
-        }
-
-    @property
-    def agents(self) -> List[Agent]:
-        return [self.agent_planner, self.agent_writer]
-
-    @property
-    def tasks(self) -> List[Task]:
-        return [self.task_plan, self.task_write]
-
-    @property
-    def agent_planner(self) -> Agent:
-        """Content Planner agent."""
-        return Agent(
-            role="Planner",
-            goal="Create a simple, focused outline for {topic} with key points and sources.",
-            backstory=(
-                "You create brief, structured outlines for blog articles. "
-                "You identify the most important points and cite relevant sources. "
-                "Keep it simple and to the point - this is just an outline for the writer. "
-                "You have access to tools that can help you research and gather information. "
-                "Use these tools when required to collect accurate and up-to-date information "
-                "about the topic for your planning and research."
-            ),
-            allow_delegation=False,
-            verbose=self.verbose,
-            llm=self.llm(),
-            tools=self.tools,
-        )
-
-    @property
-    def agent_writer(self) -> Agent:
-        """Content Writer agent."""
-        return Agent(
-            role="Writer",
-            goal="Write a concise, insightful opinion piece about {topic}. Maximum 500 words.",
-            backstory=(
-                "You write opinion pieces based on the planner's outline and context. "
-                "You provide objective and impartial insights backed by the planner's information. "
-                "You acknowledge when your statements are opinions versus objective facts. "
-                "You have access to tools that can help you verify facts and gather additional "
-                "supporting information. Use these tools when required to ensure accuracy and "
-                "find relevant details while writing."
-            ),
-            allow_delegation=False,
-            verbose=self.verbose,
-            llm=self.llm(),
-            tools=self.tools,
-        )
-
-    @property
-    def task_plan(self) -> Task:
-        return Task(
-            description=(
-                "Create a simple outline for {topic} with:\n"
-                "1. 10-15 key points or facts (bullet points only, no paragraphs)\n"
-                "2. 2-3 relevant sources or references\n"
-                "3. A brief suggested structure (intro, 2-3 sections, conclusion)\n"
-                "Do NOT write paragraphs or detailed explanations. Just provide a focused list.\n"
-                "{chat_history}"
-            ),
-            expected_output="A simple outline with 10-15 bullet points, 2-3 sources, and a basic structure. "
-            "No paragraphs or lengthy explanations.",
-            agent=self.agent_planner,
-        )
-
-    @property
-    def task_write(self) -> Task:
-        return Task(
-            description=(
-                "1. Use the content plan to craft a compelling blog post on {topic}.\n"
-                "2. Structure with an engaging introduction, insightful body, and summarizing conclusion.\n"
-                "3. Sections/Subtitles are properly named in an engaging manner.\n"
-                "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
-                "{chat_history}"
-            ),
-            expected_output="A well-written blog post in markdown format, ready for publication. Maximum 500 words total.",
-            agent=self.agent_writer,
-        )
-
-    def crew(self) -> Crew:
-        """Create a CrewAI workflow instance.
-
-        Default implementation in base class `CrewAIAgent` constructs a Crew with provided agents and tasks.
-        Here you can override to customize Crew options.
-        """
-        return Crew(
-            agents=self.agents,
-            tasks=self.tasks,
-            verbose=self.verbose,
-            process=Process.sequential,
-            stream=self.stream,
-        )
+MyAgent = datarobot_agent_class_from_crew(crew, agents, tasks, kickoff_inputs)
 
 
 async def custompy_adaptor(
@@ -246,13 +118,15 @@ async def custompy_adaptor(
         authorization_context=authorization_context,
     )
     mcp_tools_factory = lambda: mcp_tools_context(mcp_config)  # noqa: E731
+    model_name = completion_create_params.get("model")
     agent = MyAgent(
-        model=completion_create_params.get("model"),
+        llm=get_llm(
+            model_name=model_name if model_name not in _PLACEHOLDER_MODELS else None,
+            parameters={"stream_options": None},
+        ),
         verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
         timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
         forwarded_headers=forwarded_headers,  # type: ignore[arg-type]
-        # When run with drum, streaming does not work correctly, so we force it to False
-        stream=False,
     )
     return await agent_chat_completion_wrapper(
         agent, completion_create_params, mcp_tools_factory

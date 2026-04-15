@@ -12,212 +12,124 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # mypy: disable-error-code=attr-defined
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, Optional
 
-from datarobot_genai.core.agents import InvokeReturn, extract_user_prompt_content
+from datarobot_genai.core.agents import InvokeReturn, make_system_prompt
 from datarobot_genai.core.agents.base import UsageMetrics
 from datarobot_genai.core.chat import agent_chat_completion_wrapper
 from datarobot_genai.core.mcp import MCPConfig
-from datarobot_genai.llama_index import (
-    DataRobotLiteLLM,
-)
-from datarobot_genai.llama_index.agent import LlamaIndexAgent
+from datarobot_genai.llama_index.agent import datarobot_agent_class_from_llamaindex
+from datarobot_genai.llama_index.llm import get_llm
 from datarobot_genai.llama_index.mcp import mcp_tools_context
 from llama_index.core.agent.workflow import (
     AgentWorkflow,
+    BaseWorkflowAgent,
     FunctionAgent,
 )
-from llama_index.core.llms import LLM as BaseLLM
-from llama_index.core.tools import BaseTool
 from llama_index.core.workflow import Context
+from llama_index.llms.litellm import LiteLLM
 from openai.types.chat import CompletionCreateParams
-
-from agent.config import Config
 
 if TYPE_CHECKING:
     from ragas import MultiTurnSample
 
+_PLACEHOLDER_MODELS = frozenset({"unknown"})
 
-class MyAgent(LlamaIndexAgent):
-    """MyAgent is a custom agent that uses LlamaIndex to plan, write, and edit content.
-    It utilizes DataRobot's LLM Gateway or a specific deployment for language model interactions.
-    This example illustrates 2 agents that handle content creation tasks, including planning and writing
-    blog posts.
 
-    Supports to be exposed via the DataRobot DRUM or the Nvidia Nemo Agent Toolkit.
-    """
+llm = LiteLLM(model="placeholder")
 
-    def __init__(
-        self,
-        api_key: Optional[str] = None,
-        api_base: Optional[str] = None,
-        model: Optional[str] = None,
-        verbose: bool = True,
-        timeout: Optional[int] = 90,
-        llm: Optional[BaseLLM] = None,
-        tools: Optional[list[BaseTool]] = None,
-        forwarded_headers: Optional[dict[str, str]] = None,
-    ):
-        super().__init__(
-            api_key=api_key,
-            api_base=api_base,
-            model=model,
-            verbose=verbose,
-            timeout=timeout,
-            tools=tools,
-            forwarded_headers=forwarded_headers,
-        )
-        self._llm = llm
-        self.config = Config()
-        self.default_model = self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model
 
-        if model in ("unknown", "datarobot-deployed-llm"):
-            self.model = self.default_model
+async def planner_notes_tool(ctx: Context, notes: str, notes_title: str) -> str:
+    """Record planning notes into the shared workflow state."""
+    async with ctx.store.edit_state() as current_state:
+        if "planner_notes" not in current_state:
+            current_state["planner_notes"] = {}
+        current_state["planner_notes"][notes_title] = notes
+    return "Notes recorded."
 
-    def make_input_message(self, completion_create_params: Any) -> str:
-        """Create an input string for the workflow.
 
-        Chat history is injected via the `{chat_history}` placeholder.
-        The base class (LlamaIndexAgent) will detect this placeholder and
-        replace it with the actual history summary when available.
-        """
-        user_prompt_content = extract_user_prompt_content(completion_create_params)
-        # NOTE: The `{{ '{{chat_history}}' }}` syntax below is a Jinja2 template escape pattern.
-        # It outputs the literal string `{chat_history}` at render time, which the base class
-        # then replaces at runtime with a formatted "Prior conversation:\n..." section when
-        # history is available, or with an empty string on the first turn.
-        return (
-            f"Your task is to write a concise report on a topic. "
-            f"The topic is '{user_prompt_content}'. Make sure you find any interesting and relevant "
-            f"information given the current year is {datetime.now().year}. "
-            f"Keep the final report under 500 words and don't overthink - this is a simple example task. "
-            f"{{ '{{chat_history}}' }}"
-        )
+async def writer_report_tool(ctx: Context, report_content: str) -> str:
+    """Record the final report into the shared workflow state."""
+    async with ctx.store.edit_state() as current_state:
+        current_state["report_content"] = report_content
+    return "Report written."
 
-    async def build_workflow(self) -> AgentWorkflow:
-        return AgentWorkflow(
-            agents=[self.agent_planner, self.agent_writer],
-            root_agent=self.agent_planner.name,
-            initial_state={
-                "planner_notes": {},
-                "report_content": "Not written yet.",
-            },
-        )
 
-    def extract_response_text(self, result_state: Any, events: list[Any]) -> str:
-        """Safely extract the final report text from the workflow state or events."""
-        # Preferred path: use the workflow state when available
-        if isinstance(result_state, dict) and "report_content" in result_state:
-            return str(result_state["report_content"])
+agent_planner = FunctionAgent(
+    name="planner_agent",
+    description="Useful for planning content on a given topic and recording notes for the plan.",
+    system_prompt=make_system_prompt(
+        "You are the planner_agent that creates brief, structured outlines for blog articles. "
+        "You identify the most important points and cite relevant sources. Keep it simple and to the point.\n"
+        "\n"
+        "You have access to tools that can help you research and gather information. Use these tools when "
+        "required to collect accurate and up-to-date information about the topic for your planning and research.\n"
+        "\n"
+        "Record notes that include:\n"
+        "1. 10-15 key points or facts (bullet points only, no paragraphs)\n"
+        "2. 2-3 relevant sources or references\n"
+        "3. A brief suggested structure (intro, 2-3 sections, conclusion)\n"
+        "\n"
+        "Do NOT write paragraphs or detailed explanations. Just provide a focused list. "
+        "Once you've recorded your notes, hand off control to the writer_agent."
+    ),
+    llm=llm,
+    tools=[planner_notes_tool],
+    can_handoff_to=["writer_agent"],
+)
 
-        # Fallback: best-effort extraction from the last event that carries text.
-        for event in reversed(events or []):
-            resp = getattr(event, "response", None)
-            if resp is not None and getattr(resp, "content", None):
-                return str(resp.content)
-            if hasattr(event, "delta") and getattr(event, "delta", None):
-                return str(event.delta)
-            if hasattr(event, "text") and getattr(event, "text", None):
-                return str(event.text)
+agent_writer = FunctionAgent(
+    name="writer_agent",
+    description="Useful for writing a report on a given topic.",
+    system_prompt=make_system_prompt(
+        "You are the writer_agent that writes opinion pieces based on the planner_agent's outline and notes. "
+        "You provide objective and impartial insights backed by the planner's information. You acknowledge when "
+        "your statements are opinions versus objective facts.\n"
+        "\n"
+        "You have access to tools that can help you verify facts and gather additional supporting information. "
+        "Use these tools when required to ensure accuracy and find relevant details while writing.\n"
+        "\n"
+        "1. Use the planner notes to craft a compelling blog post.\n"
+        "2. Structure with an engaging introduction, insightful body, and summarizing conclusion.\n"
+        "3. Sections/Subtitles should be properly named in an engaging manner.\n"
+        "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
+        "\n"
+        "Write in markdown format. Once complete, use the writer_report_tool to record your report."
+    ),
+    llm=llm,
+    tools=[writer_report_tool],
+)
 
-        # Last resort: empty string
-        return ""
+agents: list[BaseWorkflowAgent] = [agent_planner, agent_writer]
 
-    def llm(
-        self,
-        auto_model_override: bool = True,
-    ) -> BaseLLM:
-        """Returns the LLM to use.
+workflow = AgentWorkflow(
+    agents=agents,
+    root_agent=agent_planner.name,
+    initial_state={
+        "planner_notes": {},
+        "report_content": "Not written yet.",
+    },
+)
 
-        In NAT mode, returns the pre-configured LLM from NAT's Builder.
-        In DRUM mode, creates a DataRobotLiteLLM instance.
-        """
-        if self._llm is not None:
-            return self._llm
 
-        api_base = self.litellm_api_base(self.config.{{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id)
-        model = self.model or self.default_model
-        if auto_model_override and not self.config.use_datarobot_llm_gateway:
-            model = self.default_model
-        if self.verbose:
-            print(f"Using model: {model}")
+def extract_response_text(result_state: Any, events: list[Any]) -> str:
+    """Safely extract the final report text from the workflow state or events."""
+    if isinstance(result_state, dict) and "report_content" in result_state:
+        return str(result_state["report_content"])
 
-        config = {
-            "model": model,
-            "api_base": api_base,
-            "api_key": self.api_key,
-            "timeout": self.timeout,
-        }
+    for event in reversed(events or []):
+        resp = getattr(event, "response", None)
+        if resp is not None and getattr(resp, "content", None):
+            return str(resp.content)
+        if hasattr(event, "delta") and getattr(event, "delta", None):
+            return str(event.delta)
+        if hasattr(event, "text") and getattr(event, "text", None):
+            return str(event.text)
 
-        if not self.config.use_datarobot_llm_gateway and self._identity_header:
-            config["additional_kwargs"] = {"extra_headers": self._identity_header}  # type: ignore[assignment]
+    return ""
 
-        return DataRobotLiteLLM(**config)
 
-    @property
-    def agent_planner(self) -> FunctionAgent:
-        return FunctionAgent(
-            name="planner_agent",
-            description="Useful for planning content on a given topic and recording notes for the plan.",
-            system_prompt=(
-                "You are the planner_agent that creates brief, structured outlines for blog articles. "
-                "You identify the most important points and cite relevant sources. Keep it simple and to the point.\n"
-                "\n"
-                "You have access to tools that can help you research and gather information. Use these tools when "
-                "required to collect accurate and up-to-date information about the topic for your planning and research.\n"
-                "\n"
-                "Record notes that include:\n"
-                "1. 10-15 key points or facts (bullet points only, no paragraphs)\n"
-                "2. 2-3 relevant sources or references\n"
-                "3. A brief suggested structure (intro, 2-3 sections, conclusion)\n"
-                "\n"
-                "Do NOT write paragraphs or detailed explanations. Just provide a focused list. "
-                "Once you've recorded your notes, hand off control to the writer_agent."
-            ),
-            llm=self.llm(),
-            tools=[self.planner_notes_tool, *self.tools],
-            can_handoff_to=["writer_agent"],
-        )
-
-    @property
-    def agent_writer(self) -> FunctionAgent:
-        return FunctionAgent(
-            name="writer_agent",
-            description="Useful for writing a report on a given topic.",
-            system_prompt=(
-                "You are the writer_agent that writes opinion pieces based on the planner_agent's outline and notes. "
-                "You provide objective and impartial insights backed by the planner's information. You acknowledge when "
-                "your statements are opinions versus objective facts.\n"
-                "\n"
-                "You have access to tools that can help you verify facts and gather additional supporting information. "
-                "Use these tools when required to ensure accuracy and find relevant details while writing.\n"
-                "\n"
-                "1. Use the planner notes to craft a compelling blog post.\n"
-                "2. Structure with an engaging introduction, insightful body, and summarizing conclusion.\n"
-                "3. Sections/Subtitles should be properly named in an engaging manner.\n"
-                "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
-                "\n"
-                "Write in markdown format. Once complete, use the writer_report_tool to record your report."
-            ),
-            llm=self.llm(),
-            tools=[self.writer_report_tool, *self.tools],
-            # Writer is terminal in this simple flow; no handoff
-        )
-
-    @staticmethod
-    async def planner_notes_tool(ctx: Context, notes: str, notes_title: str) -> str:
-        async with ctx.store.edit_state() as current_state:
-            if "planner_notes" not in current_state:
-                current_state["planner_notes"] = {}
-            current_state["planner_notes"][notes_title] = notes
-        return "Notes recorded."
-
-    @staticmethod
-    async def writer_report_tool(ctx: Context, report_content: str) -> str:
-        async with ctx.store.edit_state() as current_state:
-            current_state["report_content"] = report_content
-        return "Report written."
+MyAgent = datarobot_agent_class_from_llamaindex(workflow, agents, extract_response_text)
 
 
 async def custompy_adaptor(
@@ -230,8 +142,11 @@ async def custompy_adaptor(
         authorization_context=authorization_context,
     )
     mcp_tools_factory = lambda: mcp_tools_context(mcp_config)  # noqa: E731
+    model_name = completion_create_params.get("model")
     agent = MyAgent(
-        model=completion_create_params.get("model"),
+        llm=get_llm(
+            model_name=model_name if model_name not in _PLACEHOLDER_MODELS else None
+        ),
         verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
         timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
         forwarded_headers=forwarded_headers,  # type: ignore[arg-type]

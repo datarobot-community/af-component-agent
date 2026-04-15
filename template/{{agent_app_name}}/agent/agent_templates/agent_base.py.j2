@@ -34,12 +34,15 @@ from datarobot_genai.core.agents import (
 )
 from datarobot_genai.core.chat import agent_chat_completion_wrapper
 from datarobot_genai.core.mcp import MCPConfig
-from openai.types.chat import CompletionCreateParams
 
-from agent.config import Config
+# Use langchain LLMs in the base example
+from datarobot_genai.langgraph.llm import get_llm
+from openai.types.chat import CompletionCreateParams
 
 if TYPE_CHECKING:
     from ragas import MultiTurnSample
+
+_PLACEHOLDER_MODELS = frozenset({"unknown"})
 
 
 @asynccontextmanager
@@ -55,50 +58,6 @@ class MyAgent(BaseAgent[None]):
     implements the minimum required methods and attributes to function as a DataRobot agent.
     """
 
-    def __init__(
-        self,
-        api_key: Optional[str] = None,
-        api_base: Optional[str] = None,
-        model: Optional[str] = None,
-        verbose: bool = True,
-        timeout: Optional[int] = 90,
-        llm: Optional[Any] = None,
-        tools: Optional[list[Any]] = None,
-        forwarded_headers: Optional[dict[str, str]] = None,
-    ):
-        """Initializes the MyAgent class with API key, base URL, model, and verbosity settings.
-
-        Args:
-            api_key: Optional[str]: API key for authentication with DataRobot services.
-                Defaults to None, in which case it will use the DATAROBOT_API_TOKEN environment variable.
-            api_base: Optional[str]: Base URL for the DataRobot API.
-                Defaults to None, in which case it will use the DATAROBOT_ENDPOINT environment variable.
-            model: Optional[str]: The LLM model to use.
-                Defaults to None.
-            verbose: bool: Whether to enable verbose logging. Defaults to True.
-            timeout: Optional[int]: How long to wait for the agent to respond.
-                Defaults to 90 seconds.
-            llm: Optional[Any]: Pre-configured LLM instance provided by NAT.
-                When set, can be used directly instead of creating a new LLM instance.
-            tools: Optional[list[Any]]: Tools to use for the agent.
-                Defaults to None.
-            forwarded_headers: Optional[dict[str, str]]: Headers of the original request agent can use
-                to access external services. Defaults to None.
-        Returns:
-            None
-        """
-        super().__init__(
-            api_key=api_key,
-            api_base=api_base,
-            model=model,
-            verbose=verbose,
-            timeout=timeout,
-            tools=tools,
-            forwarded_headers=forwarded_headers,
-        )
-        self._llm = llm
-        self.config = Config()
-
     async def invoke(self, run_agent_input: RunAgentInput) -> InvokeReturn:
         """Run the agent with the provided completion parameters.
 
@@ -109,10 +68,8 @@ class MyAgent(BaseAgent[None]):
         Returns:
             An async generator yielding tuples of (Event, pipeline_interactions, usage_metrics).
         """
-        # Retrieve the starting user prompt from the RunAgentInput
         user_prompt_content = extract_user_prompt_content(run_agent_input)
 
-        # Print commands may need flush=True to ensure they are displayed in real-time.
         print("Running agent with user prompt:", user_prompt_content, flush=True)
 
         usage_metrics: UsageMetrics = default_usage_metrics()
@@ -159,8 +116,6 @@ class MyAgent(BaseAgent[None]):
             usage_metrics,
         )
 
-        # Create a list of events from the event listener
-        # This should be populated with the agent's AG-UI events or message deltas
         events: list[Any] = []
 
         pipeline_interactions = self.create_pipeline_interactions_from_events(events)
@@ -184,8 +139,11 @@ async def custompy_adaptor(
         authorization_context=authorization_context,
     )
     mcp_tools_factory = lambda: mcp_tools_context(mcp_config)  # noqa: E731
+    model_name = completion_create_params.get("model")
     agent = MyAgent(
-        model=completion_create_params.get("model"),
+        llm=get_llm(
+            model_name=model_name if model_name not in _PLACEHOLDER_MODELS else None
+        ),
         verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
         timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
         forwarded_headers=forwarded_headers,  # type: ignore[arg-type]

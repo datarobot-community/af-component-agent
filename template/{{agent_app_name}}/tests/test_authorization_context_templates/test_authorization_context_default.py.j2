@@ -36,6 +36,12 @@ def mock_agent():
         yield mock, mock_instance
 
 
+@pytest.fixture(autouse=True)
+def mock_get_llm():
+    with patch("agent.myagent.get_llm", return_value=Mock()) as mock:
+        yield mock
+
+
 @pytest.fixture
 def mock_mcp_tools_context():
     with patch("agent.myagent.mcp_tools_context") as mock:
