@@ -156,9 +156,6 @@ def execute(
     > task cli -- execute --completion_json "example-completion.json"
     > task cli -- execute --completion_json "example-chat-history-completion.json"
     """
-    if len(user_prompt) == 0 and len(completion_json) == 0:
-        raise click.UsageError("User prompt message or completion json must provided.")
-
     if os.environ.get("ENABLE_DRAGENT_SERVER", "false").lower() == "true":
         raise click.UsageError(
             "ENABLE_DRAGENT_SERVER is enabled. The CLI is not supported in dragent mode.\n"
@@ -167,6 +164,9 @@ def execute(
             "  task {{ agent_app_name }}:run     -- Run agent locally (in-process)\n"
             "  task {{ agent_app_name }}:query   -- Query a running server"
         )
+
+    if len(user_prompt) == 0 and len(completion_json) == 0:
+        raise click.UsageError("User prompt message or completion json must provided.")
 
     click.echo("Running agent...")
     response = environment.interface.local(
@@ -265,11 +265,6 @@ def execute_deployment(
     > task cli -- execute-deployment --completion_json "example-completion.json" --deployment_id 680a77a9a3
     > task cli -- execute-deployment --completion_json "example-chat-history-completion.json" --deployment_id 680a77a9a3
     """
-    if len(user_prompt) == 0 and len(completion_json) == 0:
-        raise click.UsageError("User prompt message or completion json must provided.")
-    if len(deployment_id) == 0:
-        raise click.UsageError("Deployment ID must be provided.")
-
     if os.environ.get("ENABLE_DRAGENT_SERVER", "false").lower() == "true":
         raise click.UsageError(
             "ENABLE_DRAGENT_SERVER is enabled. The CLI is not supported in dragent mode.\n"
@@ -278,6 +273,11 @@ def execute_deployment(
             "  task {{ agent_app_name }}:run     -- Run agent locally (in-process)\n"
             "  task {{ agent_app_name }}:query   -- Query a running server"
         )
+
+    if len(user_prompt) == 0 and len(completion_json) == 0:
+        raise click.UsageError("User prompt message or completion json must provided.")
+    if len(deployment_id) == 0:
+        raise click.UsageError("Deployment ID must be provided.")
 
     click.echo("Querying deployment...")
     response = environment.interface.deployment(
