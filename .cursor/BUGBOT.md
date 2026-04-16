@@ -133,4 +133,3 @@ Current exclusions:
 | `pymilvus` | langchain-milvus | Transitive dep of langchain-milvus; has CVEs |
 | `diskcache` | transitive | Not used; has CVEs |
 | `uv` | build tooling | Not a runtime dependency |
-| `flask` | nvidia-nat-core 1.6.0 | Only used in NAT examples |

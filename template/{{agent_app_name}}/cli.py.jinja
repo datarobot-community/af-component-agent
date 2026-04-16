@@ -163,7 +163,7 @@ def execute(
         raise click.UsageError(
             "ENABLE_DRAGENT_SERVER is enabled. The CLI is not supported in dragent mode.\n"
             "Use the following tasks instead:\n"
-            "  task {{ agent_app_name }}:serve   -- Start the dragent server\n"
+            "  task {{ agent_app_name }}:dev     -- Start the dragent server\n"
             "  task {{ agent_app_name }}:run     -- Run agent locally (in-process)\n"
             "  task {{ agent_app_name }}:query   -- Query a running server"
         )
@@ -203,7 +203,7 @@ def execute_custom_model(
         raise click.UsageError(
             "ENABLE_DRAGENT_SERVER is enabled. The CLI is not supported in dragent mode.\n"
             "Use the following tasks instead:\n"
-            "  task {{ agent_app_name }}:serve   -- Start the dragent server\n"
+            "  task {{ agent_app_name }}:dev     -- Start the dragent server\n"
             "  task {{ agent_app_name }}:run     -- Run agent locally (in-process)\n"
             "  task {{ agent_app_name }}:query   -- Query a running server"
         )
@@ -274,7 +274,7 @@ def execute_deployment(
         raise click.UsageError(
             "ENABLE_DRAGENT_SERVER is enabled. The CLI is not supported in dragent mode.\n"
             "Use the following tasks instead:\n"
-            "  task {{ agent_app_name }}:serve   -- Start the dragent server\n"
+            "  task {{ agent_app_name }}:dev     -- Start the dragent server\n"
             "  task {{ agent_app_name }}:run     -- Run agent locally (in-process)\n"
             "  task {{ agent_app_name }}:query   -- Query a running server"
         )

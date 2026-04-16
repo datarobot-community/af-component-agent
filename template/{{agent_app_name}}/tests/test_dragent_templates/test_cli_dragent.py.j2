@@ -35,7 +35,7 @@ class TestCliDRAgentModeBlocked:
         result = runner.invoke(cli, ["execute", "--user_prompt", "test"])
         assert result.exit_code != 0
         assert "ENABLE_DRAGENT_SERVER is enabled" in result.output
-        assert "serve" in result.output
+        assert "dev" in result.output
         assert "run" in result.output
         assert "query" in result.output
 
@@ -57,7 +57,7 @@ class TestCliDRAgentModeBlocked:
         )
         assert result.exit_code != 0
         assert "ENABLE_DRAGENT_SERVER is enabled" in result.output
-        assert "serve" in result.output
+        assert "dev" in result.output
 
     def test_execute_custom_model_blocked_in_dragent_mode(self):
         runner = CliRunner()
@@ -73,4 +73,4 @@ class TestCliDRAgentModeBlocked:
         )
         assert result.exit_code != 0
         assert "ENABLE_DRAGENT_SERVER is enabled" in result.output
-        assert "serve" in result.output
+        assert "dev" in result.output

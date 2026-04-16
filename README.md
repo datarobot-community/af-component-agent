@@ -178,7 +178,6 @@ Some transitive dependencies are excluded via `sys_platform == 'never'` override
 | `pymilvus` | langchain-milvus | Transitive dep of langchain-milvus; has CVEs |
 | `diskcache` | transitive | Not used by agent projects; has CVEs |
 | `uv` | build tooling | Not a runtime dependency |
-| `flask` | nvidia-nat-core 1.6.0 | Only used in NAT examples, not core library code |
 
 # Next steps and cross-links
 
