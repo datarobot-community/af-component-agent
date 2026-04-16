@@ -195,6 +195,10 @@ override-dependencies = [
     "langgraph>=1.1.0,<2.0.0",
     "langgraph-prebuilt>=1.0.0,<2.0.0",
 
+    # Keep this in sync with the ag-ui-protocol version in fastapi_server/pyproject.toml of the
+    # recipe-datarobot-agent-application.
+    "ag-ui-protocol==0.1.15",
+
     # CVE fixes
     "litellm>=1.83.0,<2.0.0",
     "nltk>=3.9.3",
