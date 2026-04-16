@@ -201,6 +201,33 @@ tasks:
           pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || echo "No development server process found"
         fi
 
+  serve:
+    desc: "🚀 Start the dragent server"
+    deps:
+      - auth-check
+    cmds:
+      - |
+        {% raw %}{{.UV_CMD}}{% endraw %} run nat --log-level {% raw %}{{.LOCAL_NAT_LOG_LEVEL}}{% endraw %} dragent serve --config_file agent/workflow.yaml --port {% raw %}{{.AGENT_PORT}}{% endraw %} {% raw %}{{.CLI_ARGS}}{% endraw %}
+    silent: true
+
+  run:
+    desc: "▶️ Run the agent locally (in-process, no server needed)"
+    deps:
+      - auth-check
+    cmds:
+      - |
+        {% raw %}{{.UV_CMD}}{% endraw %} run nat --log-level {% raw %}{{.LOCAL_NAT_LOG_LEVEL}}{% endraw %} dragent run --config_file agent/workflow.yaml {% raw %}{{.CLI_ARGS}}{% endraw %}
+    silent: true
+
+  query:
+    desc: "🔍 Query a running local or remote agent"
+    deps:
+      - auth-check
+    cmds:
+      - |
+        {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent query {% raw %}{{.CLI_ARGS}}{% endraw %}
+    silent: true
+
   create-docker-context:
     desc: 🐳 Create the template for a local docker_context image
     vars:
