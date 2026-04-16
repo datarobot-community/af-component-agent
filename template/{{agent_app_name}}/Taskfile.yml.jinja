@@ -109,7 +109,7 @@ tasks:
         if [ "{% raw %}{{.START_DEV}}{% endraw %}" -eq "1" ]; then
           # Kill any existing dev server processes
           if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-            pkill -f 'nat.*start dragent_fastapi' 2>/dev/null || true
+            pkill -f 'nat.*dragent serve' 2>/dev/null || true
           else
             pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || true
           fi
@@ -117,7 +117,7 @@ tasks:
           # Start dev server in background
           echo "🚀 Starting dev server in background..."
           if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-            {% raw %}{{.UV_CMD}}{% endraw %} run nat --log-level {% raw %}{{.LOCAL_NAT_LOG_LEVEL}}{% endraw %} start dragent_fastapi --config_file agent/workflow.yaml --reload true --port {% raw %}{{.AGENT_PORT}}{% endraw %} &
+            {% raw %}{{.UV_CMD}}{% endraw %} run nat --log-level {% raw %}{{.LOCAL_NAT_LOG_LEVEL}}{% endraw %} dragent serve --config_file agent/workflow.yaml --reload true --port {% raw %}{{.AGENT_PORT}}{% endraw %} &
           else
             {% raw %}{{.UV_CMD}}{% endraw %} run python dev.py &
           fi
@@ -138,7 +138,7 @@ tasks:
             if [ $i -eq 30 ]; then
               echo "❌ Dev server failed to start within 30 seconds"
               if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-                pkill -f 'nat.*start dragent_fastapi' 2>/dev/null || true
+                pkill -f 'nat.*dragent serve' 2>/dev/null || true
               else
                 pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || true
               fi
@@ -167,7 +167,7 @@ tasks:
         if [ "{% raw %}{{.START_DEV}}{% endraw %}" -eq "1" ]; then
           echo "🛑 Stopping dev server..."
           if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-            pkill -f 'nat.*start dragent_fastapi' 2>/dev/null || true
+            pkill -f 'nat.*dragent serve' 2>/dev/null || true
           else
             pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || true
           fi
@@ -184,7 +184,7 @@ tasks:
     cmds:
       - |
         if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-          {% raw %}{{.UV_CMD}}{% endraw %} run nat --log-level {% raw %}{{.LOCAL_NAT_LOG_LEVEL}}{% endraw %} start dragent_fastapi --config_file agent/workflow.yaml --reload true --port {% raw %}{{.AGENT_PORT}}{% endraw %}
+          {% raw %}{{.UV_CMD}}{% endraw %} run nat --log-level {% raw %}{{.LOCAL_NAT_LOG_LEVEL}}{% endraw %} dragent serve --config_file agent/workflow.yaml --reload true --port {% raw %}{{.AGENT_PORT}}{% endraw %}
         else
           {% raw %}{{.UV_CMD}}{% endraw %} run python dev.py --autoreload
         fi
@@ -196,19 +196,10 @@ tasks:
       - |
         echo "Stopping development server"
         if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-          pkill -f 'nat.*start dragent_fastapi' 2>/dev/null || echo "No development server process found"
+          pkill -f 'nat.*dragent serve' 2>/dev/null || echo "No development server process found"
         else
           pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || echo "No development server process found"
         fi
-
-  serve:
-    desc: "🚀 Start the dragent server"
-    deps:
-      - auth-check
-    cmds:
-      - |
-        {% raw %}{{.UV_CMD}}{% endraw %} run nat --log-level {% raw %}{{.LOCAL_NAT_LOG_LEVEL}}{% endraw %} dragent serve --config_file agent/workflow.yaml --port {% raw %}{{.AGENT_PORT}}{% endraw %} {% raw %}{{.CLI_ARGS}}{% endraw %}
-    silent: true
 
   run:
     desc: "▶️ Run the agent locally (in-process, no server needed)"
