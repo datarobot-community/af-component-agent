@@ -129,13 +129,16 @@ Use https://github.com/datarobot-community/app-framework/tree/main/skills/dataro
 
 Every new dependency added to `pyproject.toml` or `uv.lock` should be justified. Review PRs that introduce new packages and verify they are actually needed.
 
-`pyproject.toml` contains an `exclude-dependencies` list under `[tool.uv]`. These packages are intentionally excluded because they are unused transitive dependencies pulled in by upstream packages. Do not remove entries from this list or re-add these packages without TECHLEAD approval.
+In this repo, unwanted transitive packages are not listed under uv’s `exclude-dependencies`. Instead, `template/{{agent_app_name}}/pyproject.toml.jinja` uses `[tool.uv] override-dependencies` with impossible environment markers (for example `"<package>; sys_platform == 'never'"`) so the resolver drops those dependencies. Compatibility and CVE pins live in the same `override-dependencies` block. Do not remove exclusion overrides or re-add blocked packages without TECHLEAD approval.
 
-Current exclusions:
+Current blocked packages (see `# Excluded` in `override-dependencies`):
 
-| Package | Pulled in by | Reason |
-|---|---|---|
-| `uv` | build tooling | Not a runtime dependency |
-| `langchain-milvus` | langchain ecosystem | Unused vector store integration |
-| `pymilvus` | langchain-milvus | Transitive dep of langchain-milvus |
-| `flask` | nvidia-nat-core 1.6.0 | Only used in NAT examples, not core library code |
+| Package | Reason |
+|---|---|
+| `gevent` | Not used |
+| `onnxruntime` | Not used |
+| `fastembed` | Not used |
+| `langchain-milvus` | Unused; CVE exposure |
+| `pymilvus` | Unused; CVE exposure |
+| `diskcache` | Unused; CVE exposure |
+| `annoy` | Unused; build issues |
