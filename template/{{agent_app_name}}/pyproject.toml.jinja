@@ -175,8 +175,8 @@ follow_imports = "skip"
 required-version = ">=0.7.0"
 override-dependencies = [
     # Compatibility
-    "fastapi>=0.118.2,<0.133.0",  # 0.132 is the last version compatiable with NAT 1.6.0
-    "starlette>=0.49.1,<1.0.0",  # 0.52.1 is the last version compatiable with NAT 1.6.0
+    "fastapi>=0.118.2,<0.133.0",  # NAT 1.6.0 uses add_event_handler removed in starlette 1.0 (https://github.com/NVIDIA/NeMo-Agent-Toolkit/issues/1882)
+    "starlette>=0.49.1,<1.0.0",  # constrained by fastapi<0.133.0 (https://github.com/NVIDIA/NeMo-Agent-Toolkit/issues/1882)
     "pyarrow==21.0.0",
     # crewai and drum pin otel to 1.34.x but datarobot-moderations needs 0.60b1
     # instrumentation which requires otel 1.39.x. Override the entire otel family
