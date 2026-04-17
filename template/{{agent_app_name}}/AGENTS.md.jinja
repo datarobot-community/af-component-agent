@@ -8,9 +8,13 @@ The following command should be run after agent code modification:
 dr task run {{ agent_app_name }}:install
 ```
 
+> **Warning:** When using a custom Docker context (`DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT` is unset and an `agent/docker_context/` folder is present), modifying `pyproject.toml` or `uv.lock` triggers a full execution environment rebuild on the next deployment. This rebuild can take **10–20 minutes** depending on the number of dependencies. When using the default DataRobot execution environment (the default configuration), dependency changes do not trigger a rebuild.
+
 ## Agent Structure
 
 Agent must be implemented in the following location withing the `{{ agent_app_name }}/agent` directory. None of the other files outside of this directory are related.
+
+For detailed documentation, see [docs/agent/README.md](../docs/agent/README.md).
 
 {% if agent_template_framework == "crewai" %}
 
@@ -18,62 +22,50 @@ Agent must implement the following components:
 
 ### 1. Class Definition
 
-```python
-from crewai import LLM, Agent, Task
-from datarobot_genai.crewai.agent import CrewAIAgent
+`MyAgent` is generated using `datarobot_agent_class_from_crew`:
 
-class MyAgent(CrewAIAgent):
-    """Your agent description here."""
+```python
+from crewai import Agent, Crew, Process, Task
+from datarobot_genai.crewai.agent import datarobot_agent_class_from_crew
+
+kickoff_inputs = lambda user_prompt_content: {"topic": str(user_prompt_content), "chat_history": ""}
+MyAgent = datarobot_agent_class_from_crew(crew, agents, tasks, kickoff_inputs)
 ```
 
 **Important**: `MyAgent` class should NOT be renamed!
 
-### 2. Required Properties and Methods in Class Definition
+### 2. Agent and Task Definitions
 
-#### `llm()` Method
-
-**CRITICAL**: Do NOT modify, delete, or change this method. It MUST be kept exactly as shown below in the agent implementation:
+Define CrewAI agents with `role`, `goal`, and `backstory`, and tasks with `description` and `expected_output`:
 
 ```python
-def llm(
-        self,
-        auto_model_override: bool = True,
-    ) -> LLM:
-        api_base = self.litellm_api_base(self.config.llm_deployment_id)
-        model = self.model or self.default_model
-        if auto_model_override and not self.config.use_datarobot_llm_gateway:
-            model = self.default_model
-        if self.verbose:
-            print(f"Using model: {model}")
+agent_planner = Agent(
+    role="Planner",
+    goal="Create a simple, focused outline for {topic} with key points and sources.",
+    backstory=make_system_prompt("You create brief, structured outlines..."),
+    allow_delegation=False,
+    verbose=True,
+    llm=llm,
+)
 
-        return LLM(
-            model=model,
-            api_base=api_base,
-            api_key=self.api_key,
-            timeout=self.timeout,
-        )
+task_plan = Task(
+    description="Create a simple outline for {topic} with: ...",
+    expected_output="A simple outline with 10-15 bullet points...",
+    agent=agent_planner,
+)
 ```
 
-**Why this is required**: This method handles model configuration, API authentication, and DataRobot LLM Gateway integration. Changing it will break deployment.
+### 3. LLM Resolution
 
-#### `agents` Property
-Defines the list of sub-agents
+The LLM is resolved via `get_llm()` from `datarobot_genai.crewai.llm`:
 
 ```python
-@property
-def agents(self) -> List[Agent]:
-        return [self.agent_1, self.agent_2]
+from datarobot_genai.crewai.llm import get_llm
+
+llm = get_llm()
 ```
 
-#### `tasks` Property
-Defines the list of tasks for the sub-agents
-
-```python
-@property
-def tasks(self) -> List[Task]:
-        return [self.task_1, self.task_2]
-```
-
+**CRITICAL**: Do NOT instantiate LLMs directly. Always use `get_llm()` which handles DataRobot LLM Gateway integration, deployed models, and external LLM providers.
 
 ### 4. Agent tools
 
@@ -83,13 +75,9 @@ def tasks(self) -> List[Task]:
 dr task run {{ agent_app_name }}:install
 ```
 
-**IMPORTANT**: Tools must be imported and used in `MyAgent` implementation.
+**IMPORTANT**: Tools must be imported and used in agent/task definitions.
 
-
-### 5. Preferred LLM model
-
-Preferred model should be set using ```self.model = "{preferred_model_here}"``` which will then be read in each ```self.llm()``` invocation.
-**Important**: `self.model` parameter must be prefixed with `datarobot/`.
+For detailed CrewAI documentation, see [docs/agent/frameworks/crewai.md](../docs/agent/frameworks/crewai.md).
 
 {% elif agent_template_framework == "langgraph" %}
 
@@ -97,96 +85,67 @@ Agent must implement the following components:
 
 ### 1. Class Definition
 
-```python
-from datarobot_genai.langgraph.agent import LangGraphAgent
+`MyAgent` is generated using `datarobot_agent_class_from_langgraph` with a graph factory and prompt template:
 
-class MyAgent(LangGraphAgent):
-    """Your agent description here."""
+```python
+from datarobot_genai.langgraph.agent import datarobot_agent_class_from_langgraph
+
+MyAgent = datarobot_agent_class_from_langgraph(graph_factory, prompt_template)
 ```
 
 **Important**: `MyAgent` class should NOT be renamed!
 
-### 2. Required Properties and Methods in Class Definition
+### 2. Prompt Template
 
-#### `llm()` Method
-
-**CRITICAL**: Do NOT modify, delete, or change this method. It MUST be kept exactly as shown below in the agent implementation:
+Define a `ChatPromptTemplate` that structures user input:
 
 ```python
-def llm(
-    self,
-    auto_model_override: bool = True,
-) -> ChatLiteLLM:
-    api_base = self.litellm_api_base(self.config.llm_deployment_id)
-    model = self.model or self.default_model
-    if auto_model_override and not self.config.use_datarobot_llm_gateway:
-        model = self.default_model
-    if self.verbose:
-        print(f"Using model: {model}")
-    return ChatLiteLLM(
-        model=model,
-        api_base=api_base,
-        api_key=self.api_key,
-        timeout=self.timeout,
-        streaming=True,
-        max_retries=3,
-    )
+prompt_template = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful assistant. Chat history: {chat_history}"),
+    ("user", "The topic is {topic}."),
+])
 ```
 
-**Why this is required**: This method handles model configuration, API authentication, and DataRobot LLM Gateway integration. Changing it will break deployment.
+### 3. Graph Factory
 
-#### `workflow` Property
-Defines the agent's execution flow using LangGraph's StateGraph.
+Define a function that receives an LLM, tools, and verbosity flag, and returns a `StateGraph`:
 
 ```python
-@property
-def workflow(self) -> StateGraph[MessagesState]:
-    langgraph_workflow = StateGraph[
-        MessagesState, None, MessagesState, MessagesState
-    ](MessagesState)
+def graph_factory(llm, tools, verbose=False):
+    planner = create_agent(llm, tools=tools,
+        system_prompt=make_system_prompt("You are a content planner. ..."),
+        name="planner_agent", debug=verbose)
+    writer = create_agent(llm, tools=tools,
+        system_prompt=make_system_prompt("You are a content writer. ..."),
+        name="writer_agent", debug=verbose)
 
-    # Add nodes for each agent component
-    langgraph_workflow.add_node("agent_node", self.agent_node)
-
-    # Define edges (workflow connections)
-    langgraph_workflow.add_edge(START, "agent_node")
-    langgraph_workflow.add_edge("agent_node", END)
-
-    return langgraph_workflow  # type: ignore[return-value]
+    workflow = StateGraph(MessagesState)
+    workflow.add_node("planner_node", planner)
+    workflow.add_node("writer_node", writer)
+    workflow.add_edge(START, "planner_node")
+    workflow.add_edge("planner_node", "writer_node")
+    workflow.add_edge("writer_node", END)
+    return workflow
 ```
 
-#### `prompt_template` Property
+**IMPORTANT**: Use `create_agent` from `langchain.agents` to create agent nodes. Use `make_system_prompt()` from `datarobot_genai.core.agents` for consistent prompt formatting.
 
-Use it to define how user prompt is formatted for the agent.
+### 4. LLM Resolution
+
+The LLM is resolved via `get_llm()` from `datarobot_genai.langgraph.llm` in `custompy_adaptor`:
 
 ```python
-@property
-def prompt_template(self) -> ChatPromptTemplate:
-    return ChatPromptTemplate.from_messages([
-        ("user", "{user_prompt_content}"),
-    ])
+from datarobot_genai.langgraph.llm import get_llm
+
+agent = MyAgent(
+    llm=get_llm(model_name=model_name),
+    ...
+)
 ```
 
-**IMPORTANT**: The template must accept `{user_prompt_content}` to receive user prompts.
+**CRITICAL**: Do NOT instantiate LLMs directly. Always use `get_llm()` which handles DataRobot LLM Gateway integration, deployed models, and external LLM providers.
 
-### 3. Agent Nodes
-
-Agent nodes are typically created using `create_agent`.
-**IMPORTANT**: Use `create_agent` call to create agent's node while passing the preferred LLM, system prompt and required tools into it.
-
-```python
-@property
-def agent_node(self) -> Any:
-    return create_agent(
-        self.llm(),
-        tools=self.tools,  # or [] for no tools
-        system_prompt=make_system_prompt(
-            "Your agent's system prompt here."
-        ),
-    )
-```
-
-### 4. Agent tools
+### 5. Agent tools
 
 **IMPORTANT**: Add required tools in the `{{ agent_app_name }}/agent` directory. Do not add/modify any files outside of this directory. If some of the tools require adding new packages, they should be added to the pyproject.toml and properly installed using command
 
@@ -194,13 +153,9 @@ def agent_node(self) -> Any:
 dr task run {{ agent_app_name }}:install
 ```
 
-**IMPORTANT**: Tools must be imported and used in `MyAgent` implementation.
+**IMPORTANT**: Tools must be imported and passed to agent nodes inside `graph_factory`.
 
-
-### 5. Preferred LLM model
-
-Preferred model should be set using ```self.model = "{preferred_model_here}"``` which will then be read in each ```self.llm()``` invocation.
-**Important**: `self.model` parameter must be prefixed with `datarobot/`.
+For detailed LangGraph documentation, see [docs/agent/frameworks/langgraph.md](../docs/agent/frameworks/langgraph.md).
 
 {% elif agent_template_framework == "llamaindex" %}
 
@@ -208,90 +163,51 @@ Agent must implement the following components:
 
 ### 1. Class Definition
 
-```python
-from datarobot_genai.core.agents import extract_user_prompt_content
-from datarobot_genai.llama_index import (
-    DataRobotLiteLLM,
-)
-from datarobot_genai.llama_index.agent import LlamaIndexAgent
-from llama_index.core.agent.workflow import (
-    AgentWorkflow,
-    FunctionAgent,
-)
-from llama_index.core.workflow import Context
+`MyAgent` is generated using `datarobot_agent_class_from_llamaindex`:
 
-class MyAgent(LlamaIndexAgent):
-    """Your agent description here."""
+```python
+from datarobot_genai.llama_index.agent import datarobot_agent_class_from_llamaindex
+
+MyAgent = datarobot_agent_class_from_llamaindex(workflow, agents, extract_response_text)
 ```
 
 **Important**: `MyAgent` class should NOT be renamed!
 
-### 2. Required Properties and Methods in Class Definition
+### 2. Agent and Workflow Definitions
 
-#### `llm()` Method
-
-**CRITICAL**: Do NOT modify, delete, or change this method. It MUST be kept exactly as shown below in the agent implementation:
+Define LlamaIndex agents with `system_prompt`, tools, and handoff targets:
 
 ```python
-def llm(
-        self,
-        auto_model_override: bool = True,
-    ) -> DataRobotLiteLLM:
-        api_base = self.litellm_api_base(self.config.llm_deployment_id)
-        model = self.model or self.default_model
-        if auto_model_override and not self.config.use_datarobot_llm_gateway:
-            model = self.default_model
-        if self.verbose:
-            print(f"Using model: {model}")
-        return DataRobotLiteLLM(
-            model=model,
-            api_base=api_base,
-            api_key=self.api_key,
-            timeout=self.timeout,
-        )
+agent_planner = FunctionAgent(
+    name="planner_agent",
+    description="Useful for planning content on a given topic.",
+    system_prompt=make_system_prompt("You are the planner_agent..."),
+    llm=llm,
+    tools=[planner_notes_tool],
+    can_handoff_to=["writer_agent"],
+)
+
+workflow = AgentWorkflow(
+    agents=[agent_planner, agent_writer],
+    root_agent=agent_planner.name,
+    initial_state={"planner_notes": {}, "report_content": "Not written yet."},
+)
 ```
 
-**Why this is required**: This method handles model configuration, API authentication, and DataRobot LLM Gateway integration. Changing it will break deployment.
+### 3. LLM Resolution
 
-#### `make_input_message` Method
-Makes input message for the LLM
+The LLM is resolved via `get_llm()` from `datarobot_genai.llama_index.llm` in `custompy_adaptor`:
 
 ```python
-def make_input_message(self, completion_create_params: Any) -> str:
-        user_prompt_content = extract_user_prompt_content(completion_create_params)
-        return (
-            f"Your task is to write a concise report on a topic. "
-            f"The topic is '{user_prompt_content}'. Make sure you find any interesting and relevant "
-            f"information given the current year is {str(datetime.now().year)}. "
-            f"Keep the final report under 500 words and don't overthink - this is a simple example task."
-        )
+from datarobot_genai.llama_index.llm import get_llm
+
+agent = MyAgent(
+    llm=get_llm(model_name=model_name),
+    ...
+)
 ```
 
-**IMPORTANT**: The template must accept `{user_prompt_content}` to receive user prompts.
-
-#### `extract_response_text` Method
-Extracts LLM response.
-
-```python
-def extract_response_text(self, result_state: Any, events: list[Any]) -> str:
-        return str(result_state["report_content"])
-```
-
-#### `build_workflow` Method
-Builds agent workflow.
-
-```python
-def build_workflow(self) -> AgentWorkflow:
-        return AgentWorkflow(
-            agents=[self.agent_1, self.agent_2],
-            root_agent=self.agent_1.name,
-            initial_state={
-                "planner_notes": {},
-                "report_content": "Not finished yet.",
-            },
-        )
-```
-
+**CRITICAL**: Do NOT instantiate LLMs directly. Always use `get_llm()` which handles DataRobot LLM Gateway integration, deployed models, and external LLM providers.
 
 ### 4. Agent tools
 
@@ -301,13 +217,9 @@ def build_workflow(self) -> AgentWorkflow:
 dr task run {{ agent_app_name }}:install
 ```
 
-**IMPORTANT**: Tools must be imported and used in `MyAgent` implementation.
+**IMPORTANT**: Tools must be imported and used in `FunctionAgent` definitions.
 
-
-### 5. Preferred LLM model
-
-Preferred model should be set using ```self.model = "{preferred_model_here}"``` which will then be read in each ```self.llm()``` invocation.
-**Important**: `self.model` parameter must be prefixed with `datarobot/`.
+For detailed LlamaIndex documentation, see [docs/agent/frameworks/llamaindex.md](../docs/agent/frameworks/llamaindex.md).
 
 {% elif agent_template_framework == "nat" %}
 
@@ -319,41 +231,40 @@ Agent must implement the following components:
 from datarobot_genai.nat.agent import NatAgent
 
 class MyAgent(NatAgent):
-    """Your agent description here."""
+    def __init__(self, *args, workflow_path=Path(__file__).parent / "workflow.yaml", **kwargs):
+        super().__init__(*args, workflow_path=workflow_path, **kwargs)
 ```
 
 **Important**: `MyAgent` class should NOT be renamed!
 
-### 2. Required Properties and Methods in Class Definition
+### 2. Agent Workflow
 
-#### `__init__` Method
+All agent logic is defined declaratively in `workflow.yaml`. Functions, LLMs, tools, and orchestration are all configured in YAML:
 
-**CRITICAL**: Do NOT modify, delete, or change this method. It MUST be kept exactly as shown below in the agent implementation:
+```yaml
+functions:
+  planner:
+    _type: chat_completion
+    llm_name: datarobot_llm
+    system_prompt: |
+      You are a content planner...
 
-```python
-def __init__(
-        self,
-        api_key: str | None = None,
-        api_base: str | None = None,
-        model: str | None = None,
-        verbose: bool | str | None = True,
-        timeout: int | None = 90,
-        **kwargs: Any,
-    ) -> None:
-        super().__init__(
-            workflow_path=Path(__file__).parent / "workflow.yaml",
-            api_key=api_key,
-            api_base=api_base,
-            model=model,
-            verbose=verbose,
-            timeout=timeout,
-            **kwargs,
-        )
+workflow:
+  _type: per_user_tool_calling_agent
+  llm_name: datarobot_llm
+  tool_names:
+    - planner
+    - writer
+    - mcp_tools
+  system_prompt: |
+    You are a blog content orchestrator...
 ```
 
-### 3. Agent Workflow
+### 3. Custom Tools
 
-Change agent workflow in the  workflow.yaml file.
+Register custom Python tools using `nat_tool()` from `datarobot_genai.nat.tool` in `register.py`, then reference them by name in `workflow.yaml`.
+
+For detailed NAT documentation, see [docs/agent/frameworks/nat.md](../docs/agent/frameworks/nat.md).
 
 {% else %}
 
@@ -371,8 +282,6 @@ from datarobot_genai.core.agents import (
     extract_user_prompt_content,
 )
 
-from agent.config import Config
-
 class MyAgent(BaseAgent[None]):
     """Your agent description here."""
 ```
@@ -383,9 +292,37 @@ class MyAgent(BaseAgent[None]):
 
 #### `invoke(run_agent_input: RunAgentInput)` Method
 
-Run the agent with the provided completion parameters.
+Run the agent with the provided completion parameters. This is an async generator that yields `(event, pipeline_interactions, usage_metrics)` tuples using AG-UI events:
+
+```python
+async def invoke(self, run_agent_input: RunAgentInput) -> InvokeReturn:
+    user_prompt_content = extract_user_prompt_content(run_agent_input)
+
+    yield (RunStartedEvent(...), None, usage_metrics)
+    yield (TextMessageStartEvent(...), None, usage_metrics)
+    yield (TextMessageContentEvent(..., delta="response text"), None, usage_metrics)
+    yield (TextMessageEndEvent(...), None, usage_metrics)
+    yield (RunFinishedEvent(...), pipeline_interactions, usage_metrics)
+```
+
 [THIS METHOD IS REQUIRED SO THE SERVER CAN CALL THE AGENT]
 
+### 3. LLM Resolution
+
+The LLM is resolved via `get_llm()` from `datarobot_genai.langgraph.llm` in `custompy_adaptor`:
+
+```python
+from datarobot_genai.langgraph.llm import get_llm
+
+agent = MyAgent(
+    llm=get_llm(model_name=model_name),
+    ...
+)
+```
+
+**CRITICAL**: Do NOT instantiate LLMs directly. Always use `get_llm()` which handles DataRobot LLM Gateway integration, deployed models, and external LLM providers.
+
+For detailed Base agent documentation, see [docs/agent/frameworks/base.md](../docs/agent/frameworks/base.md).
 
 {% endif -%}
 
@@ -410,3 +347,17 @@ Run the following shell command to validate the agent after deployment. If the r
 ```shell
 task agent:cli -- execute-deployment --user_prompt "Agent specific prompt to validate that it's working" --deployment_id <deployment_id>
 ```
+
+## Migrations
+
+### 11.8.8 — New agent format (class-based → factory-based)
+
+Starting with agent component version 11.8.8 ([af-component-agent#474](https://github.com/datarobot-community/af-component-agent/pull/474)), agent templates (except `base`) no longer require defining agents within a `MyAgent` class. Agents are now defined using native framework primitives at module level and converted to `MyAgent` via a helper function (`datarobot_agent_class_from_*`). The LLM is also decoupled from the agent class and injected via `get_llm()`.
+
+If you are upgrading an existing agent from a version prior to 11.8.8, follow the migration guide for your framework:
+
+- [LangGraph migration](../docs/agent/langgraph-migration-to-11.8.8.md)
+- [CrewAI migration](../docs/agent/crewai-migration-to-11.8.8.md)
+- [LlamaIndex migration](../docs/agent/llamaindex-migration-to-11.8.8.md)
+- [Base agent migration](../docs/agent/base-migration-to-11.8.8.md)
+- [NAT agent migration](../docs/agent/nat-migration-to-11.8.8.md)
