@@ -11,7 +11,7 @@ Template partials are expected to be in template/{{agent_app_name}}/uvlock_templ
 {% elif agent_template_framework == "nat" -%}
     {% include 'template/{{agent_app_name}}/uvlock_templates/uvlock_nat.j2' %}
 {% elif use_agent_memory -%}
-    {% include 'template/{{agent_app_name}}/uvlock_templates/uv_lock_base_memory.j2' %}
+    {% include 'template/{{agent_app_name}}/uvlock_templates/uvlock_base_memory.j2' %}
 {% else -%}
     {% include 'template/{{agent_app_name}}/uvlock_templates/uvlock_base.j2' %}
 {%- endif %}
