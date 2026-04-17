@@ -156,15 +156,6 @@ def execute(
     > task cli -- execute --completion_json "example-completion.json"
     > task cli -- execute --completion_json "example-chat-history-completion.json"
     """
-    if os.environ.get("ENABLE_DRAGENT_SERVER", "false").lower() == "true":
-        raise click.UsageError(
-            "ENABLE_DRAGENT_SERVER is enabled. The CLI is not supported in dragent mode.\n"
-            "Use the following tasks instead:\n"
-            "  task {{ agent_app_name }}:dev     -- Start the dragent server\n"
-            "  task {{ agent_app_name }}:run     -- Run agent locally (in-process)\n"
-            "  task {{ agent_app_name }}:query   -- Query a running server"
-        )
-
     if len(user_prompt) == 0 and len(completion_json) == 0:
         raise click.UsageError("User prompt message or completion json must provided.")
 
@@ -199,14 +190,6 @@ def execute_custom_model(
     # Run the agent with a JSON user prompt
     > task cli -- execute-custom-model --user_prompt '{"topic": "Artificial Intelligence"}' --custom_model_id 680a77a9a3
     """
-    if os.environ.get("ENABLE_DRAGENT_SERVER", "false").lower() == "true":
-        raise click.UsageError(
-            "ENABLE_DRAGENT_SERVER is enabled. The CLI is not supported in dragent mode.\n"
-            "Use the following tasks instead:\n"
-            "  task {{ agent_app_name }}:dev     -- Start the dragent server\n"
-            "  task {{ agent_app_name }}:run     -- Run agent locally (in-process)\n"
-            "  task {{ agent_app_name }}:query   -- Query a running server"
-        )
     if len(user_prompt) == 0:
         raise click.UsageError("User prompt message must be provided.")
     if len(custom_model_id) == 0:
@@ -265,15 +248,6 @@ def execute_deployment(
     > task cli -- execute-deployment --completion_json "example-completion.json" --deployment_id 680a77a9a3
     > task cli -- execute-deployment --completion_json "example-chat-history-completion.json" --deployment_id 680a77a9a3
     """
-    if os.environ.get("ENABLE_DRAGENT_SERVER", "false").lower() == "true":
-        raise click.UsageError(
-            "ENABLE_DRAGENT_SERVER is enabled. The CLI is not supported in dragent mode.\n"
-            "Use the following tasks instead:\n"
-            "  task {{ agent_app_name }}:dev     -- Start the dragent server\n"
-            "  task {{ agent_app_name }}:run     -- Run agent locally (in-process)\n"
-            "  task {{ agent_app_name }}:query   -- Query a running server"
-        )
-
     if len(user_prompt) == 0 and len(completion_json) == 0:
         raise click.UsageError("User prompt message or completion json must provided.")
     if len(deployment_id) == 0:
