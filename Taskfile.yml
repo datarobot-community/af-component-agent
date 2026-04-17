@@ -40,6 +40,9 @@ tasks:
 
   render-template:
     desc: "Render template"
+    vars:
+      USE_MEMORY: "{{.USE_MEMORY| default 0}}"
+      AGENT_TEMPLATE_FRAMEWORK: '{{ trimSuffix "_memory" .AGENT }}'
     cmds:
       - echo "Rendering template {{.AGENT}}"
       # Clean up the existing rendered directory except for .venv to speed up rendering and avoid conflict checks
@@ -47,7 +50,7 @@ tasks:
       - mkdir -p ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/
       - cp ./fixtures/.datarobot/answers/llm-llm.yml ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/llm-llm.yml
       - cp ./fixtures/.datarobot/answers/drmcp-mcp_server.yml ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/drmcp-mcp_server.yml
-      - uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_template_framework={{.AGENT}} --vcs-ref=HEAD
+      - uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_template_framework={{.AGENT_TEMPLATE_FRAMEWORK}} --data use_agent_memory={{.USE_MEMORY}} --vcs-ref=HEAD
       - cp ./fixtures/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/Taskfile.yml
       - mkdir -p ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra
       - cp ./fixtures/infra/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/infra/Taskfile.yml
@@ -89,6 +92,7 @@ tasks:
       - task: render-template
         vars:
           AGENT: "{{.AGENT}}"
+          USE_MEMORY: "{{.USE_MEMORY| default 0}}"
       - task: install-rendered
         vars:
           AGENT: "{{.AGENT}}"
@@ -123,6 +127,7 @@ tasks:
       - task: render-install
         vars:
           AGENT: "{{.AGENT}}"
+          USE_MEMORY: "{{.USE_MEMORY| default 0}}"
       - echo "Running tests for {{.AGENT}}"
       - |
           if [ "{{.SKIP_LINT}}" != "1" ]; then
@@ -145,6 +150,16 @@ tasks:
       - task: test-agent
         vars:
           AGENT: base
+          SKIP_LINT: "{{.SKIP_LINT| default 0}}"
+          SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
+
+  test-memory:
+    desc: "Run tests for base agent with memory enabled"
+    cmds:
+      - task: test-agent
+        vars:
+          AGENT: base_memory
+          USE_MEMORY: yes
           SKIP_LINT: "{{.SKIP_LINT| default 0}}"
           SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
 
@@ -229,6 +244,7 @@ tasks:
       - task: render-template
         vars:
           AGENT: "{{.AGENT}}"
+          USE_MEMORY: "{{.USE_MEMORY| default 0}}"
       - |
           if [ "$UPGRADE_LOCK" = "1" ]; then
             uv lock -U --directory $RENDER_DIR/agent_{{.AGENT}}/agent
@@ -243,6 +259,11 @@ tasks:
       - task: update-lock-file
         vars:
           AGENT: "base"
+
+      - task: update-lock-file
+        vars:
+          AGENT: "base_memory"
+          USE_MEMORY: "yes"
 
       - task: update-lock-file
         vars:
