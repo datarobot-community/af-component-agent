@@ -40,7 +40,7 @@ Application Framework Design Principles. Also:
 | PRODUCT | @dr-nate-daly-pm | |
 | TECHLEAD | @tsdaemon | |
 | DOC | @smagee-robot @jendavies | |
-| APPS-Customer Engineering | @carsongee @luke-shulman @zach-ingbretsen | |
+| APPS-Customer Engineering | @carsongee | |
 
 ## A. Critical areas
 
