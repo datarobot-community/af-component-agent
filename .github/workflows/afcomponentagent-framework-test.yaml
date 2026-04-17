@@ -28,14 +28,22 @@ jobs:
         framework:
           - name: base
             agent_name: agent_generic_base
+            use_memory: no
+          - name: base
+            agent_name: agent_generic_base_with_memory
+            use_memory: yes
           - name: crewai
             agent_name: agent_crewai
+            use_memory: no
           - name: langgraph
             agent_name: agent_langgraph
+            use_memory: no
           - name: llamaindex
             agent_name: agent_llamaindex
+            use_memory: no
           - name: nat
             agent_name: agent_nat
+            use_memory: no
     steps:
       - name: Checkout
         uses: "actions/checkout@v6"
@@ -48,7 +56,7 @@ jobs:
       - name: Render copier instance
         uses: ./.github/actions/render-copier-instance
         with:
-          copier-args: '--defaults --data agent_app_name=${{ matrix.framework.agent_name }} --data agent_template_framework=${{ matrix.framework.name }} --data base_answers_file=.datarobot/answers/base.yml'
+          copier-args: '--defaults --data agent_app_name=${{ matrix.framework.agent_name }} --data agent_template_framework=${{ matrix.framework.name }} --data use_agent_memory=${{ matrix.framework.use_memory }} --data base_answers_file=.datarobot/answers/base.yml'
       - name: Check lock file
         shell: sh
         working-directory: ./rendered/${{ matrix.framework.agent_name }}
