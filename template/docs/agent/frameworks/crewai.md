@@ -129,7 +129,7 @@ CrewAI agents receive tools through three channels:
 
 ### MCP tools
 
-MCP tools are loaded at runtime via `mcp_tools_context()` from `datarobot_genai.crewai.mcp`. These are automatically injected&mdash;you don't need to modify agent code to use them.
+MCP tools are loaded at runtime via `mcp_tools_context()` from `datarobot_genai.crewai.mcp`. These are automatically injected&mdash;you don't need to modify agent code to use them. See [MCP server](../../mcp-server.md).
 
 ### Workflow tools (DRAgent only)
 

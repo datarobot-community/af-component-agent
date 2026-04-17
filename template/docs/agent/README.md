@@ -137,7 +137,7 @@ Agents can use tools to extend their capabilities. Tools are injected at runtime
 
 ### MCP tools
 
-MCP tools are loaded from the MCP server via `mcp_tools_context()`. Each framework has its own MCP adapter in `datarobot_genai` (e.g. `datarobot_genai.langgraph.mcp`, `datarobot_genai.crewai.mcp`). The MCP server provides tools for DataRobot operations and can be extended with custom tools.
+MCP tools are loaded from the MCP server via `mcp_tools_context()`. Each framework has its own MCP adapter in `datarobot_genai` (e.g. `datarobot_genai.langgraph.mcp`, `datarobot_genai.crewai.mcp`). The MCP server provides tools for DataRobot operations and can be extended with custom tools. See [MCP server](../mcp-server.md) for details.
 
 ### Workflow tools (DRAgent only)
 
@@ -201,6 +201,9 @@ DRUM serves the agent as a DataRobot custom model, exposing an OpenAI-compatible
 - **Status**&mdash;experimental, in active development. Enabled via the `ENABLE_DRAGENT_SERVER` environment variable.
 - **Streaming**&mdash;native async streaming via `DRAgentEventResponse`.
 
+> [!IMPORTANT]
+> When using DRAgent, the agent CLI is unavailable.
+
 DRAgent enables features that are not available with DRUM:
 
 - **Agent-to-Agent (A2A)**&mdash;expose your agent as an A2A server and connect to remote agents. See [Agent2Agent](./agent2agent.md).
@@ -215,7 +218,8 @@ ENABLE_DRAGENT_SERVER=true
 
 When enabled locally, the Taskfile starts NAT with the `dragent_fastapi` front-end instead of DRUM. In deployed environments, the `ENABLE_DRAGENT_SERVER` runtime parameter is set automatically by the infrastructure.
 
-**Note:** DRAgent is experimental and currently under active development. Use at your own risk.
+> [!NOTE]
+> DRAgent is experimental and currently under active development. Use at your own risk.
 
 ## Agent types
 
@@ -243,11 +247,11 @@ Migration guides per framework:
 
 | Framework | Migration guide |
 |---|---|
-| LangGraph | [langgraph-migration-to-11.8.8.md](./langgraph-migration-to-11.8.8.md) |
-| CrewAI | [crewai-migration-to-11.8.8.md](./crewai-migration-to-11.8.8.md) |
-| LlamaIndex | [llamaindex-migration-to-11.8.8.md](./llamaindex-migration-to-11.8.8.md) |
-| Base | [base-migration-to-11.8.8.md](./base-migration-to-11.8.8.md) |
-| NAT | [nat-migration-to-11.8.8.md](./nat-migration-to-11.8.8.md) |
+| LangGraph | [migration-to-11.8.8-langgraph.md](./frameworks/migration-to-11.8.8-langgraph.md) |
+| CrewAI | [migration-to-11.8.8-crewai.md](./frameworks/migration-to-11.8.8-crewai.md) |
+| LlamaIndex | [migration-to-11.8.8-llamaindex.md](./frameworks/migration-to-11.8.8-llamaindex.md) |
+| Base | [migration-to-11.8.8-base.md](./frameworks/migration-to-11.8.8-base.md) |
+| NAT | [migration-to-11.8.8-nat.md](./frameworks/migration-to-11.8.8-nat.md) |
 
 ## Further reading
 

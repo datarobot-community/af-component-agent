@@ -132,7 +132,7 @@ LlamaIndex agents receive tools through three channels:
 
 ### MCP tools
 
-MCP tools load at runtime via `mcp_tools_context()` from `datarobot_genai.llama_index.mcp`. The framework injects these automatically&mdash;you don't need to modify agent code to use them.
+MCP tools load at runtime via `mcp_tools_context()` from `datarobot_genai.llama_index.mcp`. The framework injects these automatically&mdash;you don't need to modify agent code to use them. See [MCP server](../../mcp-server.md).
 
 ### Workflow tools (DRAgent only)
 

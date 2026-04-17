@@ -128,7 +128,7 @@ LangGraph agents receive tools through three channels, all merged into a single 
 
 ### MCP tools
 
-MCP tools load at runtime through `mcp_tools_context()` from `datarobot_genai.langgraph.mcp`. The framework injects them automatically&mdash;you don't need to modify agent code to use them.
+MCP tools load at runtime through `mcp_tools_context()` from `datarobot_genai.langgraph.mcp`. The framework injects them automatically&mdash;you don't need to modify agent code to use them. See [MCP server](../../mcp-server.md).
 
 ### Workflow tools (DRAgent only)
 
