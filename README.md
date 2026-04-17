@@ -165,20 +165,6 @@ For additional help:
 - [Contact DataRobot support](https://docs.datarobot.com/en/docs/get-started/troubleshooting/general-help.html).
 - Open an issue on the [GitHub repository](https://github.com/datarobot-community/af-component-agent).
 
-# Excluded dependencies
-
-Some transitive dependencies are excluded via `sys_platform == 'never'` overrides in the template `pyproject.toml` because they are unused by agent projects. Do not re-add them without confirming they are actually needed.
-
-| Package | Pulled in by | Reason for exclusion |
-|---|---|---|
-| `gevent` | transitive | Not used by agent projects |
-| `onnxruntime` | transitive | Not used by agent projects |
-| `fastembed` | transitive | Not used by agent projects |
-| `langchain-milvus` | langchain ecosystem | Unused vector store integration; has CVEs |
-| `pymilvus` | langchain-milvus | Transitive dep of langchain-milvus; has CVEs |
-| `diskcache` | transitive | Not used by agent projects; has CVEs |
-| `uv` | build tooling | Not a runtime dependency |
-
 # Next steps and cross-links
 
 After applying the component and verifying local tests pass, explore these resources to go further.

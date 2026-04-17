@@ -115,21 +115,3 @@ When bumping child components, list all the changes:
 ### B10. Use git rename when moving files
 
 copier relies on git history when it updates component and merges with local changes. Recently we have moved agent.py → myagent.py, and this broke downstream templates, so we had to add a custom migration.
-
-### B11. Dependency discipline
-
-Every new dependency added to `pyproject.toml.jinja` or lock files should be justified. Review PRs that introduce new packages and verify they are actually needed.
-
-The template `pyproject.toml.jinja` contains a list of excluded transitive dependencies using the `sys_platform == 'never'` pattern in `override-dependencies`. These packages are intentionally excluded because they are unused transitive dependencies pulled in by upstream packages. Do not remove entries from this list or re-add these packages without TECHLEAD approval.
-
-Current exclusions:
-
-| Package | Pulled in by | Reason |
-|---|---|---|
-| `gevent` | transitive | Not used by agent projects |
-| `onnxruntime` | transitive | Not used by agent projects |
-| `fastembed` | transitive | Not used by agent projects |
-| `langchain-milvus` | langchain ecosystem | Unused vector store; has CVEs |
-| `pymilvus` | langchain-milvus | Transitive dep of langchain-milvus; has CVEs |
-| `diskcache` | transitive | Not used; has CVEs |
-| `uv` | build tooling | Not a runtime dependency |
