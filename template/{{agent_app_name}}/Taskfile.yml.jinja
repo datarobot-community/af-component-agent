@@ -106,6 +106,7 @@ tasks:
       - |
         if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
           # Translate cli.py commands to nat dragent commands
+          export DRAGENT_CONFIG_FILE="${DRAGENT_CONFIG_FILE:-agent/workflow.yaml}"
           ARGS="{% raw %}{{.CLI_ARGS}}{% endraw %}"
           ARGS="${ARGS//--user_prompt/--input}"
           ARGS="${ARGS//--deployment_id/--deployment-id}"
