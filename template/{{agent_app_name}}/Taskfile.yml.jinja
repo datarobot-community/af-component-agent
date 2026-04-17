@@ -216,7 +216,7 @@ tasks:
       - auth-check
     cmds:
       - |
-        {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent query {% raw %}{{.CLI_ARGS}}{% endraw %}
+        {% raw %}{{.UV_CMD}}{% endraw %} run nat --log-level {% raw %}{{.LOCAL_NAT_LOG_LEVEL}}{% endraw %} dragent query {% raw %}{{.CLI_ARGS}}{% endraw %}
     silent: true
 
   create-docker-context:
