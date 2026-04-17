@@ -230,6 +230,7 @@ tasks:
     cmds:
       - task: validate-windows-compatibility
       - task: test-base
+      - task: test-memory
       - task: test-crewai
       - task: test-langgraph
       - task: test-llamaindex
@@ -259,12 +260,10 @@ tasks:
       - task: update-lock-file
         vars:
           AGENT: "base"
-
       - task: update-lock-file
         vars:
           AGENT: "base_memory"
           USE_MEMORY: "yes"
-
       - task: update-lock-file
         vars:
           AGENT: "crewai"
