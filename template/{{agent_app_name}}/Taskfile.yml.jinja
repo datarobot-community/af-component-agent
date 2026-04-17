@@ -113,8 +113,8 @@ tasks:
           ARGS="${ARGS//--stream/}"
           ARGS="${ARGS//--show_output/}"
           case "$ARGS" in
-            execute-deployment\ *) {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent ${ARGS/execute-deployment/query} ;;
-            execute\ *)
+            execute-deployment*) {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent ${ARGS/execute-deployment/query} ;;
+            execute*)
               if [ "{% raw %}{{.START_DEV}}{% endraw %}" -eq "1" ]; then
                 {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent ${ARGS/execute/run}
               else
