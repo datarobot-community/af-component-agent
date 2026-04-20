@@ -58,11 +58,13 @@ Auto-start the dev server for a single test (starts and stops automatically):
 task agent:cli START_DEV=1 -- execute --user_prompt "Artificial Intelligence"
 ```
 
-With a full completion JSON file (useful for testing chat history):
+With a full completion JSON file (useful for testing chat history). The file is parsed and messages are extracted into an AG-UI payload:
 
 ```sh
 task agent:cli -- execute --completion_json "example-completion.json"
 ```
+
+> **Note:** `--completion_json` is only supported when querying a running server (the default). It is not supported with `START_DEV=1` (run mode), which executes a single workflow invocation without a server.
 
 ### Deployed agent execution
 
@@ -77,7 +79,7 @@ task agent:cli -- execute-deployment --user_prompt "Artificial Intelligence" --d
 | Flag | Description |
 |---|---|
 | `--user_prompt` | Text or JSON prompt to send. |
-| `--completion_json` | Path to a JSON file with full chat completion params. |
+| `--completion_json` | Path to a JSON file with full chat completion params. Not supported with `START_DEV=1`. |
 | `--stream` | Enable streaming response. |
 | `--show_output` | Display full response inline (otherwise saved to `execute_output.json`). |
 | `--deployment_id` | Target a deployed agent instead of local. |
