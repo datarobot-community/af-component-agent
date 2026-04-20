@@ -117,7 +117,7 @@ tasks:
             execute-deployment) {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent query "$@" ;;
             execute-custom-model) echo "execute-custom-model is not supported in dragent mode. Use execute-deployment instead."; exit 1 ;;
             execute)
-              if [ "{% raw %}{{.IN_PROCESS}}{% endraw %}" -eq "1" ]; then
+              if [ "{% raw %}{{.IN_PROCESS}}{% endraw %}" = "1" ]; then
                 {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent run "$@"
               else
                 {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent query --local "$@"
