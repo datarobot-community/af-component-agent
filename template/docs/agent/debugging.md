@@ -61,7 +61,7 @@ task agent:cli START_DEV=1 -- execute --user_prompt "Artificial Intelligence"
 With a prompt from a text file:
 
 ```sh
-task agent:cli -- execute --file "prompt.txt"
+task agent:cli -- execute --file "example-prompt.txt"
 ```
 
 ### Deployed agent execution
