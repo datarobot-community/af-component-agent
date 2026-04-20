@@ -155,6 +155,17 @@ Set `verbose=True` when instantiating `MyAgent` to get detailed logging of agent
 
 You can also enable verbose mode via the CLI completion JSON by adding `"verbose": true` to the `extra_body` field.
 
+### NAT log level (DRAgent mode)
+
+When running in DRAgent mode (`ENABLE_DRAGENT_SERVER=true`), control NAT's log verbosity with the `NAT_LOG_LEVEL` environment variable:
+
+```sh
+export NAT_LOG_LEVEL=DEBUG
+dr task run agent:dev
+```
+
+Supported values: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. Defaults to `INFO` if not set.
+
 ## Common issues
 
 ### Development server not starting
