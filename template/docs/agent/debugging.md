@@ -26,7 +26,7 @@ Then send requests from a second terminal using the CLI.
 
 ### DRAgent mode
 
-When `ENABLE_DRAGENT_SERVER=true` is set, the development server starts NAT with the `dragent_fastapi` front-end instead of DRUM. The CLI automatically detects this and sends AG-UI requests to `/generate/stream`.
+When `ENABLE_DRAGENT_SERVER=true` is set, the development server runs `nat dragent serve` instead of DRUM. The Taskfile forwards CLI commands directly to `nat dragent run` or `nat dragent query`.
 
 ## Testing with the CLI
 

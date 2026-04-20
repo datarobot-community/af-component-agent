@@ -201,7 +201,7 @@ tasks:
       - |
         echo "Stopping development server"
         if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-          pkill -f 'nat.*dragent serve' 2>/dev/null || echo "No development server process found"
+          pkill -f 'nat dragent serve --config_file' 2>/dev/null || echo "No development server process found"
         else
           pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || echo "No development server process found"
         fi
