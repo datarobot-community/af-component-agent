@@ -120,7 +120,7 @@ tasks:
             execute)
               if [ "{% raw %}{{.START_DEV}}{% endraw %}" -eq "1" ]; then
                 for _arg in "$@"; do
-                  case "$_arg" in --completion_json|--completion-json)
+                  case "$_arg" in --completion_json|--completion_json=*|--completion-json|--completion-json=*)
                     echo "Error: --completion_json is not supported with START_DEV=1 (run mode)."; exit 1 ;;
                   esac
                 done
