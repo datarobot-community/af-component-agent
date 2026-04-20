@@ -105,24 +105,28 @@ tasks:
       - echo "Running CLI {% raw %}{{.CLI_ARGS}}{% endraw %}"
       - |
         if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-          # Forward cli.py commands to nat dragent (flags pass through unchanged)
+          # Forward cli.py commands to nat dragent (flags pass through unchanged).
+          # set -- preserves Taskfile quoting; shift strips the command name;
+          # "$@" forwards remaining args safely.
           export DRAGENT_CONFIG_FILE="${DRAGENT_CONFIG_FILE:-agent/workflow.yaml}"
-          ARGS="{% raw %}{{.CLI_ARGS}}{% endraw %}"
-          case "$ARGS" in
-            execute-deployment\ *|execute-deployment) {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent ${ARGS/execute-deployment/query} ;;
-            execute-custom-model*) echo "execute-custom-model is not supported in dragent mode. Use execute-deployment instead."; exit 1 ;;
-            execute\ *|execute)
+          set -- {% raw %}{{.CLI_ARGS}}{% endraw %}
+          CMD="$1"; shift
+          case "$CMD" in
+            execute-deployment) {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent query "$@" ;;
+            execute-custom-model) echo "execute-custom-model is not supported in dragent mode. Use execute-deployment instead."; exit 1 ;;
+            execute)
               if [ "{% raw %}{{.START_DEV}}{% endraw %}" -eq "1" ]; then
-                if echo "$ARGS" | grep -q -- '--completion_json\|--completion-json'; then
-                  echo "Error: --completion_json is not supported with START_DEV=1 (run mode)."
-                  exit 1
-                fi
-                {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent ${ARGS/execute/run}
+                for _arg in "$@"; do
+                  case "$_arg" in --completion_json|--completion-json)
+                    echo "Error: --completion_json is not supported with START_DEV=1 (run mode)."; exit 1 ;;
+                  esac
+                done
+                {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent run "$@"
               else
-                {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent ${ARGS/execute/query --local}
+                {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent query --local "$@"
               fi
               ;;
-            *) echo "Unknown command. Supported: execute, execute-deployment"; exit 1 ;;
+            *) echo "Unknown command '$CMD'. Supported: execute, execute-deployment"; exit 1 ;;
           esac
         else
           if [ "{% raw %}{{.START_DEV}}{% endraw %}" -eq "1" ]; then
