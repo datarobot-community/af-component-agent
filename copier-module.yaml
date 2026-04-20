@@ -8,5 +8,5 @@ depends_on:
     url: https://github.com/datarobot-community/af-component-llm
     repeatable: true
   mcp:
-    url: https://github.com/datarobot-community/af-component-fastmcp-server
+    url: https://github.com/datarobot-community/af-component-datarobot-mcp
     repeatable: true
