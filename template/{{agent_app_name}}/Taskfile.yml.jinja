@@ -110,6 +110,9 @@ tasks:
           # "$@" forwards remaining args safely.
           export DRAGENT_CONFIG_FILE="${DRAGENT_CONFIG_FILE:-agent/workflow.yaml}"
           set -- {% raw %}{{.CLI_ARGS}}{% endraw %}
+          if [ $# -eq 0 ]; then
+            echo "Usage: task {{ agent_app_name }}:cli -- <execute|execute-deployment> [flags]"; exit 1
+          fi
           CMD="$1"; shift
           case "$CMD" in
             execute-deployment) {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent query "$@" ;;
