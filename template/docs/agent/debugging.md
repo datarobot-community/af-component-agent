@@ -58,13 +58,11 @@ Auto-start the dev server for a single test (starts and stops automatically):
 task agent:cli START_DEV=1 -- execute --user_prompt "Artificial Intelligence"
 ```
 
-With a full completion JSON file (useful for testing chat history). The file is parsed and messages are extracted into an AG-UI payload:
+With a prompt from a text file:
 
 ```sh
-task agent:cli -- execute --completion_json "example-completion.json"
+task agent:cli -- execute --file "prompt.txt"
 ```
-
-> **Note:** `--completion_json` is only supported when querying a running server (the default). It is not supported with `START_DEV=1` (run mode), which executes a single workflow invocation without a server.
 
 ### Deployed agent execution
 
@@ -79,9 +77,10 @@ task agent:cli -- execute-deployment --user_prompt "Artificial Intelligence" --d
 | Flag | Description |
 |---|---|
 | `--user_prompt` | Text or JSON prompt to send. |
-| `--completion_json` | Path to a JSON file with full chat completion params. Not supported with `START_DEV=1`. |
-| `--stream` | Enable streaming response. |
-| `--show_output` | Display full response inline (otherwise saved to `execute_output.json`). |
+| `--completion_json` | Path to a JSON file with full chat completion params. Not supported with dragent mode. |
+| `--file` | Path to a text file whose contents are used as the prompt. Dragent mode only. |
+| `--stream` | Enable streaming response. Not supported with dragent mode. |
+| `--show_output` | Display full response inline. Not supported with dragent mode. |
 | `--deployment_id` | Target a deployed agent instead of local. |
 
 ## Debugging in VS Code
