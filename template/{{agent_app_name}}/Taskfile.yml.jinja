@@ -113,6 +113,10 @@ tasks:
             execute-custom-model*) echo "execute-custom-model is not supported in dragent mode. Use execute-deployment instead."; exit 1 ;;
             execute\ *|execute)
               if [ "{% raw %}{{.START_DEV}}{% endraw %}" -eq "1" ]; then
+                if echo "$ARGS" | grep -q -- '--completion_json\|--completion-json'; then
+                  echo "Error: --completion_json is not supported with START_DEV=1 (run mode)."
+                  exit 1
+                fi
                 {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent ${ARGS/execute/run}
               else
                 {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent ${ARGS/execute/query --local}
