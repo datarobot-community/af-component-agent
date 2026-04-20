@@ -119,11 +119,10 @@ tasks:
             execute-custom-model) echo "execute-custom-model is not supported in dragent mode. Use execute-deployment instead."; exit 1 ;;
             execute)
               if [ "{% raw %}{{.START_DEV}}{% endraw %}" -eq "1" ]; then
-                for _arg in "$@"; do
-                  case "$_arg" in --completion_json|--completion_json=*|--completion-json|--completion-json=*)
+                case " $* " in
+                  *" --completion_json "*|*" --completion_json="*|*" --completion-json "*|*" --completion-json="*)
                     echo "Error: --completion_json is not supported with START_DEV=1 (run mode)."; exit 1 ;;
-                  esac
-                done
+                esac
                 {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent run "$@"
               else
                 {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent query --local "$@"
@@ -201,7 +200,7 @@ tasks:
       - |
         echo "Stopping development server"
         if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-          pkill -f 'nat dragent serve --config_file' 2>/dev/null || echo "No development server process found"
+          pkill -f 'nat dragent serve' 2>/dev/null || echo "No development server process found"
         else
           pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || echo "No development server process found"
         fi
