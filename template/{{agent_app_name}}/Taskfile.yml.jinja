@@ -125,7 +125,7 @@ tasks:
               ;;
             *) echo "Unknown command '$CMD'. Supported: execute, execute-deployment"; exit 1 ;;
           esac
-          exit 0
+          exit $?
         fi
         if [ "{% raw %}{{.START_DEV}}{% endraw %}" -eq "1" ]; then
           # Kill any existing dev server processes
