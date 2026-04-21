@@ -499,7 +499,7 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
         ),
     )
 
-{% if use_agent_memory %}
+{%- if use_agent_memory %}
 # Handle Mem0 key credential
 MEM0_API_KEY: Final[str] = "MEM0_API_KEY"
 
