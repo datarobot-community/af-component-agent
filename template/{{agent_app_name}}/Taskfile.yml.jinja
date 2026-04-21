@@ -2,8 +2,6 @@
 # https://taskfile.dev
 version: '3'
 vars:
-  LOCAL_NAT_LOG_LEVEL:
-    sh: echo "${LOCAL_NAT_LOG_LEVEL:-info}"
   # Cross-platform environment cleaning - uses 'env -u' on Unix systems, falls back to empty string on Windows
   UV_CMD:
     sh: |
@@ -101,26 +99,41 @@ tasks:
     desc: 🖥️ Run the CLI with provided arguments
     vars:
       START_DEV: "{% raw %}{{.START_DEV}}{% endraw %}"
+      IN_PROCESS: "{% raw %}{{.IN_PROCESS}}{% endraw %}"
     deps:
       - auth-check
     cmds:
       - echo "Running CLI {% raw %}{{.CLI_ARGS}}{% endraw %}"
       - |
+        # DRAgent mode: forward cli.py commands to nat dragent and exit.
+        if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
+          export DRAGENT_CONFIG_FILE="${DRAGENT_CONFIG_FILE:-agent/workflow.yaml}"
+          set -- {% raw %}{{.CLI_ARGS}}{% endraw %}
+          if [ $# -eq 0 ]; then
+            echo "Usage: task {{ agent_app_name }}:cli -- <execute|execute-deployment> [flags]"; exit 1
+          fi
+          CMD="$1"; shift
+          case "$CMD" in
+            execute-deployment) {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent query "$@" ;;
+            execute-custom-model) echo "execute-custom-model is not supported in dragent mode. Use execute-deployment instead."; exit 1 ;;
+            execute)
+              if [ "{% raw %}{{.IN_PROCESS}}{% endraw %}" = "1" ]; then
+                {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent run "$@"
+              else
+                {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent query --local "$@"
+              fi
+              ;;
+            *) echo "Unknown command '$CMD'. Supported: execute, execute-deployment"; exit 1 ;;
+          esac
+          exit $?
+        fi
         if [ "{% raw %}{{.START_DEV}}{% endraw %}" -eq "1" ]; then
           # Kill any existing dev server processes
-          if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-            pkill -f 'nat.*start dragent_fastapi' 2>/dev/null || true
-          else
-            pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || true
-          fi
+          pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || true
 
           # Start dev server in background
           echo "🚀 Starting dev server in background..."
-          if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-            {% raw %}{{.UV_CMD}}{% endraw %} run nat --log-level {% raw %}{{.LOCAL_NAT_LOG_LEVEL}}{% endraw %} start dragent_fastapi --config_file agent/workflow.yaml --reload true --port {% raw %}{{.AGENT_PORT}}{% endraw %} &
-          else
-            {% raw %}{{.UV_CMD}}{% endraw %} run python dev.py &
-          fi
+          {% raw %}{{.UV_CMD}}{% endraw %} run python dev.py &
           DEV_SERVER_PID=$!
           echo "Dev server started with PID: $DEV_SERVER_PID"
 
@@ -137,16 +150,13 @@ tasks:
             i=$((i + 1))
             if [ $i -eq 30 ]; then
               echo "❌ Dev server failed to start within 30 seconds"
-              if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-                pkill -f 'nat.*start dragent_fastapi' 2>/dev/null || true
-              else
-                pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || true
-              fi
+              pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || true
               exit 1
             fi
           done
         fi
       - |
+        if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then exit 0; fi
         # Run CLI and handle cleanup regardless of exit code
         CLI_EXIT_CODE=0
         UV_PROJECT={% raw %}{{.TASKFILE_DIR}}{% endraw %} {% raw %}{{.UV_CMD}}{% endraw %} run cli.py {% raw %}{{.CLI_ARGS}}{% endraw %} || CLI_EXIT_CODE=$?
@@ -166,11 +176,7 @@ tasks:
         # Clean up dev server processes if we started them
         if [ "{% raw %}{{.START_DEV}}{% endraw %}" -eq "1" ]; then
           echo "🛑 Stopping dev server..."
-          if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-            pkill -f 'nat.*start dragent_fastapi' 2>/dev/null || true
-          else
-            pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || true
-          fi
+          pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || true
           echo "✅ Dev server stopped"
         fi
 
@@ -184,7 +190,7 @@ tasks:
     cmds:
       - |
         if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-          {% raw %}{{.UV_CMD}}{% endraw %} run nat --log-level {% raw %}{{.LOCAL_NAT_LOG_LEVEL}}{% endraw %} start dragent_fastapi --config_file agent/workflow.yaml --reload true --port {% raw %}{{.AGENT_PORT}}{% endraw %}
+          {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent serve --config_file agent/workflow.yaml --reload true --port {% raw %}{{.AGENT_PORT}}{% endraw %}
         else
           {% raw %}{{.UV_CMD}}{% endraw %} run python dev.py --autoreload
         fi
@@ -196,7 +202,7 @@ tasks:
       - |
         echo "Stopping development server"
         if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-          pkill -f 'nat.*start dragent_fastapi' 2>/dev/null || echo "No development server process found"
+          pkill -f 'nat dragent serve' 2>/dev/null || echo "No development server process found"
         else
           pkill -f '{% raw %}{{.UV_CMD}}{% endraw %} run python dev.py' 2>/dev/null || echo "No development server process found"
         fi

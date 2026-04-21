@@ -26,7 +26,7 @@ Then send requests from a second terminal using the CLI.
 
 ### DRAgent mode
 
-When `ENABLE_DRAGENT_SERVER=true` is set, the development server starts NAT with the `dragent_fastapi` front-end instead of DRUM. The CLI automatically detects this and sends AG-UI requests to `/generate/stream`.
+When `ENABLE_DRAGENT_SERVER=true` is set, the development server runs `nat dragent serve` instead of DRUM. The Taskfile forwards CLI commands directly to `nat dragent run` or `nat dragent query`.
 
 ## Testing with the CLI
 
@@ -58,11 +58,22 @@ Auto-start the dev server for a single test (starts and stops automatically):
 task agent:cli START_DEV=1 -- execute --user_prompt "Artificial Intelligence"
 ```
 
-With a full completion JSON file (useful for testing chat history):
+With a prompt from a text file:
 
 ```sh
-task agent:cli -- execute --completion_json "example-completion.json"
+task agent:cli -- execute --file "example-prompt.txt"
 ```
+
+### DRAgent in-process execution
+
+When `ENABLE_DRAGENT_SERVER=true`, use `IN_PROCESS=1` to run the workflow directly without a server:
+
+```sh
+task agent:cli IN_PROCESS=1 -- execute --user_prompt "Artificial Intelligence"
+task agent:cli IN_PROCESS=1 -- execute --file "example-prompt.txt"
+```
+
+Without `IN_PROCESS=1`, execute sends requests to a running server (`task agent:dev`).
 
 ### Deployed agent execution
 
@@ -77,9 +88,10 @@ task agent:cli -- execute-deployment --user_prompt "Artificial Intelligence" --d
 | Flag | Description |
 |---|---|
 | `--user_prompt` | Text or JSON prompt to send. |
-| `--completion_json` | Path to a JSON file with full chat completion params. |
-| `--stream` | Enable streaming response. |
-| `--show_output` | Display full response inline (otherwise saved to `execute_output.json`). |
+| `--completion_json` | Path to a JSON file with full chat completion params. Not supported with dragent mode. |
+| `--file` | Path to a text file whose contents are used as the prompt. Dragent mode only. |
+| `--stream` | Enable streaming response. Not supported with dragent mode. |
+| `--show_output` | Display full response inline. Not supported with dragent mode. |
 | `--deployment_id` | Target a deployed agent instead of local. |
 
 ## Debugging in VS Code
@@ -152,6 +164,17 @@ The **Run Agent** configuration points to `agent/dev.py`, sets the working direc
 Set `verbose=True` when instantiating `MyAgent` to get detailed logging of agent execution, LLM calls, and tool invocations. In the template, verbosity is enabled by default in `custom.py`.
 
 You can also enable verbose mode via the CLI completion JSON by adding `"verbose": true` to the `extra_body` field.
+
+### NAT log level (DRAgent mode)
+
+When running in DRAgent mode (`ENABLE_DRAGENT_SERVER=true`), control NAT's log verbosity with the `NAT_LOG_LEVEL` environment variable:
+
+```sh
+export NAT_LOG_LEVEL=DEBUG
+dr task run agent:dev
+```
+
+Supported values: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. Defaults to `INFO` if not set.
 
 ## Common issues
 
