@@ -216,7 +216,7 @@ To enable DRAgent, set the following in your `.env` file:
 ENABLE_DRAGENT_SERVER=true
 ```
 
-When enabled locally, the Taskfile starts NAT with the `dragent_fastapi` front-end instead of DRUM. In deployed environments, the `ENABLE_DRAGENT_SERVER` runtime parameter is set automatically by the infrastructure.
+When enabled locally, the Taskfile runs `nat dragent serve` instead of DRUM and forwards CLI commands directly to `nat dragent run`/`query`. In deployed environments, the `ENABLE_DRAGENT_SERVER` runtime parameter is set automatically by the infrastructure.
 
 > [!NOTE]
 > DRAgent is experimental and currently under active development. Use at your own risk.
