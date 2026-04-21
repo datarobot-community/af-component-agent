@@ -195,6 +195,9 @@ class TestCustomModel:
             forwarded_headers=kwargs["headers"],
             verbose=True,
             timeout=90,
+{%- if use_agent_memory %}
+            memory_client=None,
+{%- endif %}
         )
 
         assert mock_agent_instance.invoke.called
@@ -326,6 +329,9 @@ class TestCustomModel:
             forwarded_headers=kwargs["headers"],
             verbose=True,
             timeout=90,
+{%- if use_agent_memory %}
+            memory_client=None,
+{%- endif %}
         )
         assert mock_agent_instance.invoke.called
         assert mock_agent_instance.invoke.call_args[0][0].messages == [
