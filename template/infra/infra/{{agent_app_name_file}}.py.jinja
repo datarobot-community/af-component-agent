@@ -499,6 +499,25 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
         ),
     )
 
+{% if use_agent_memory %}
+# Handle Mem0 key credential
+MEM0_API_KEY: Final[str] = "MEM0_API_KEY"
+
+if mem0_api_key := os.environ.get(MEM0_API_KEY):
+    pulumi.export(MEM0_API_KEY, mem0_api_key)
+    mem0_api_key_cred = pulumi_datarobot.ApiTokenCredential(
+        {{agent_app_name}}_asset_name + " Mem0 API Key",
+        args=pulumi_datarobot.ApiTokenCredentialArgs(api_token=str(mem0_api_key)),
+    )
+    agent_runtime_parameter_values.append(
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            type="credential",
+            key=MEM0_API_KEY,
+            value=mem0_api_key_cred.id,
+        ),
+    )
+{% endif %}
+
 if _is_dragent_server_enabled:
     enable_dragent_server_runtime_param = (
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
