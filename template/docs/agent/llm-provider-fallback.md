@@ -33,6 +33,7 @@ Add imports:
 ```python
 import litellm
 from datarobot_genai.core.config import Config
+from langchain_litellm import ChatLiteLLMRouter
 ```
 
 Add `fallback_config` field to `LanggraphAgentConfig`:
@@ -81,7 +82,7 @@ async def langgraph_agent(config: LanggraphAgentConfig, builder: Builder) -> Asy
     yield FunctionInfo.from_fn(_response_fn, description=config.description)
 
 
-def _build_litellm_router(fallback_cfg: dict) -> litellm.Router:
+def _build_litellm_router(fallback_cfg: dict) -> ChatLiteLLMRouter:
     def _to_litellm_params(llm_cfg: dict) -> dict:
         env_config = Config()
         endpoint = llm_cfg.get("datarobot_endpoint") or env_config.datarobot_endpoint
@@ -117,11 +118,12 @@ def _build_litellm_router(fallback_cfg: dict) -> litellm.Router:
     if fallback_cfg.get("cooldown_time") is not None:
         router_settings["cooldown_time"] = fallback_cfg["cooldown_time"]
     
-    return litellm.Router(
+    router = litellm.Router(
         model_list=model_list,
         fallbacks=[{"primary": [f"fallback_{i}" for i in range(len(fallback_params))]}],
         **router_settings,
     )
+    return ChatLiteLLMRouter(router=router)
 ```
 
 ## DRUM (myagent.py)
@@ -130,9 +132,7 @@ Add imports:
 ```python
 import litellm
 from datarobot_genai.core.config import Config
-from langchain_core.language_models import BaseChatModel
-from langchain_core.outputs import ChatResult, ChatGeneration
-from langchain_core.messages import AIMessage, BaseMessage
+from langchain_litellm import ChatLiteLLMRouter
 ```
 
 Add helper:
@@ -143,7 +143,7 @@ def _build_litellm_router_for_langgraph(
     use_datarobot_gateway: bool = True,
     allowed_fails: int = 3,
     cooldown_time: float | None = None,
-) -> BaseChatModel:
+) -> ChatLiteLLMRouter:
     env_config = Config()
     endpoint = env_config.datarobot_endpoint
     api_key = env_config.datarobot_api_token
@@ -179,23 +179,7 @@ def _build_litellm_router_for_langgraph(
         fallbacks=[{"primary": [f"fallback_{i}" for i in range(len(fallback_models))]}],
         **router_settings,
     )
-    
-    class RouterChatModel(BaseChatModel):
-        @property
-        def _llm_type(self) -> str:
-            return "datarobot-router"
-        
-        def _generate(self, messages: list[BaseMessage], stop: list[str] | None = None, run_manager = None, **kwargs) -> ChatResult:
-            litellm_messages = [{"role": "user" if hasattr(msg, "content") else "assistant", "content": str(msg.content)} for msg in messages]
-            response = router.completion("primary", messages=litellm_messages, **kwargs)
-            return ChatResult(generations=[ChatGeneration(message=AIMessage(content=response.choices[0].message.content or ""))])
-        
-        async def _agenerate(self, messages: list[BaseMessage], stop: list[str] | None = None, run_manager = None, **kwargs) -> ChatResult:
-            litellm_messages = [{"role": "user" if hasattr(msg, "content") else "assistant", "content": str(msg.content)} for msg in messages]
-            response = await router.acompletion("primary", messages=litellm_messages, **kwargs)
-            return ChatResult(generations=[ChatGeneration(message=AIMessage(content=response.choices[0].message.content or ""))])
-    
-    return RouterChatModel()
+    return ChatLiteLLMRouter(router=router)
 ```
 
 Replace `get_llm()` call in `custompy_adaptor`:
