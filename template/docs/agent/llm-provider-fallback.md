@@ -92,7 +92,7 @@ def _build_litellm_router(fallback_cfg: dict) -> ChatLiteLLMRouter:
         if llm_cfg.get("use_datarobot_llm_gateway", True):
             return {
                 "model": f"datarobot/{model_name}" if not model_name.startswith("datarobot/") else model_name,
-                "api_base": f"{endpoint.rstrip('/')}/v1/chat/completions",
+                "api_base": f"{endpoint.rstrip('/')}",
                 "api_key": api_key,
             }
         else:
@@ -153,7 +153,7 @@ def _build_litellm_router_for_langgraph(
             "model_name": "primary",
             "litellm_params": {
                 "model": f"datarobot/{primary_model}" if not primary_model.startswith("datarobot/") else primary_model,
-                "api_base": f"{endpoint.rstrip('/')}/v1/chat/completions",
+                "api_base": f"{endpoint.rstrip('/')}",
                 "api_key": api_key,
             },
         },
@@ -162,7 +162,7 @@ def _build_litellm_router_for_langgraph(
                 "model_name": f"fallback_{i}",
                 "litellm_params": {
                     "model": f"datarobot/{model}" if not model.startswith("datarobot/") else model,
-                    "api_base": f"{endpoint.rstrip('/')}/v1/chat/completions",
+                    "api_base": f"{endpoint.rstrip('/')}",
                     "api_key": api_key,
                 },
             }
