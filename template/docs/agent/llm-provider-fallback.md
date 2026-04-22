@@ -9,22 +9,22 @@ Automatic failover between LLM providers using `litellm.Router`.
 
 ### workflow.yaml
 
-Add `fallback_config` section:
+Add `fallback_config` inside the `workflow` section:
 
 ```yaml
-llms:
-  datarobot_llm:
-    _type: datarobot-llm-component
-
-fallback_config:
-  primary:
-    llm_default_model: azure/gpt-5-mini-2025-08-07
-    use_datarobot_llm_gateway: true
-  fallbacks:
-    - llm_default_model: anthropic/claude-opus-4-20250514
+workflow:
+  _type: langgraph_agent
+  llm_name: datarobot_llm
+  description: LangGraph planner/writer agent
+  fallback_config:
+    primary:
+      llm_default_model: azure/gpt-5-mini-2025-08-07
       use_datarobot_llm_gateway: true
-  allowed_fails: 3
-  cooldown_time: 60.0
+    fallbacks:
+      - llm_default_model: anthropic/claude-opus-4-20250514
+        use_datarobot_llm_gateway: true
+    allowed_fails: 3
+    cooldown_time: 60.0
 ```
 
 ### register.py
@@ -32,8 +32,14 @@ fallback_config:
 Add imports:
 ```python
 import litellm
-from nat.core.config_manager import get_config_manager
 from datarobot_genai.core.config import Config
+```
+
+Add `fallback_config` field to `LanggraphAgentConfig`:
+```python
+class LanggraphAgentConfig(AgentBaseConfig, name="langgraph_agent"):
+    tool_names: list[FunctionGroupRef] = []
+    fallback_config: dict | None = None
 ```
 
 Modify `langgraph_agent` function:
@@ -45,12 +51,8 @@ async def langgraph_agent(config: LanggraphAgentConfig, builder: Builder) -> Asy
     llm = await builder.get_llm(config.llm_name, wrapper_type=LLMFrameworkEnum.LANGCHAIN)
     workflow_tools = await builder.get_tools(config.tool_names, wrapper_type=LLMFrameworkEnum.LANGCHAIN)
 
-    config_mgr = get_config_manager()
-    fallback_cfg = config_mgr.get("fallback_config")
-    
-    if fallback_cfg:
-        router = _build_litellm_router(fallback_cfg)
-        llm_to_use = router
+    if config.fallback_config:
+        llm_to_use = _build_litellm_router(config.fallback_config)
     else:
         llm_to_use = llm
 
