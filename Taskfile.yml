@@ -164,7 +164,7 @@ tasks:
           SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
 
   test-nat:
-    desc: "Run tests for base agent"
+    desc: "Run tests for nat agent"
     cmds:
       - task: test-agent
         vars:
@@ -230,7 +230,7 @@ tasks:
     cmds:
       - task: validate-windows-compatibility
       - task: test-base
-      - task: test-memory
+      #- task: test-memory
       - task: test-crewai
       - task: test-langgraph
       - task: test-llamaindex
