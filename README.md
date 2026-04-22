@@ -81,7 +81,7 @@ The following components must be applied to the project **before** this componen
 |------|-----------|------------|
 | `base` | [https://github.com/datarobot-community/af-component-base](https://github.com/datarobot-community/af-component-base) | No |
 | `llm` | [https://github.com/datarobot-community/af-component-llm](https://github.com/datarobot-community/af-component-llm) | Yes |
-| `mcp` | [https://github.com/datarobot-community/af-component-fastmcp-server](https://github.com/datarobot-community/af-component-fastmcp-server) | Yes |
+| `mcp` | [https://github.com/datarobot-community/af-component-datarobot-mcp](https://github.com/datarobot-community/af-component-datarobot-mcp) | Yes |
 
 # Authentication and configuration
 
