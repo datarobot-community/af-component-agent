@@ -37,7 +37,9 @@ class TestCustomModel:
         assert isinstance(thread_pool_executor, ThreadPoolExecutor)
         assert isinstance(event_loop, type(asyncio.get_event_loop()))
         thread_pool_executor.shutdown()
-
+{% if use_agent_memory %}
+    @patch("agent.myagent.Mem0Client")
+{%- endif %}
     @patch("agent.myagent.get_llm")
     @patch("agent.myagent.MyAgent")
     @patch.dict(
@@ -50,6 +52,9 @@ class TestCustomModel:
         self,
         mock_agent,
         mock_get_llm,
+{%- if use_agent_memory %}
+        mock_mem0_client,
+{%- endif %}
         mock_agent_response,
         stream,
         load_model_result,
@@ -62,6 +67,10 @@ class TestCustomModel:
         mock_agent.return_value = mock_agent_instance
         mock_llm = Mock()
         mock_get_llm.return_value = mock_llm
+{%- if use_agent_memory %}
+        mock_mem0_client_instance = Mock()
+        mock_mem0_client.return_value = mock_mem0_client_instance
+{%- endif %}
 
         completion_create_params = {
             "model": "test-model",
@@ -200,9 +209,13 @@ class TestCustomModel:
             verbose=True,
             timeout=90,
 {%- if use_agent_memory %}
-            memory_client=None,
+            memory_client=mock_mem0_client_instance,
 {%- endif %}
         )
+{%- if use_agent_memory %}
+        assert mock_mem0_client.called
+        assert mock_mem0_client.call_args.kwargs == {"api_key": "some_key"}
+{%- endif %}
 
         assert mock_agent_instance.invoke.called
         assert mock_agent_instance.invoke.call_args[0][0].messages == [
@@ -334,7 +347,7 @@ class TestCustomModel:
             verbose=True,
             timeout=90,
 {%- if use_agent_memory %}
-            memory_client=None,
+            memory_client=None,  # None because MEM0_API_KEY is not set
 {%- endif %}
         )
         assert mock_agent_instance.invoke.called
