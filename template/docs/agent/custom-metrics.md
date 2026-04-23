@@ -31,14 +31,14 @@ custom_metric = CustomMetric.create(
 )
 ```
 
-Once metric is created, you can retrieve it with
+Once a metric is created, you can retrieve it with
 ```python
 from datarobot.models.deployment import CustomMetric
 
 custom_metric = CustomMetric.get(deployment_id="<deployment_id>", custom_metric_id="<custom_metric_id>")
 ```
 
-Or list all metrics for a deployment with
+List all metrics for a deployment using
 ```python
 from datarobot.models.deployment import CustomMetric
 
@@ -47,8 +47,8 @@ custom_metrics = CustomMetric.list(deployment_id="<deployment_id>")
 
 ### 2. Submit value
 
-Once a custom metric is created, you can submit value multiple times. 
-You do not need to create a new metric for each value you want to track.
+Once a custom metric is created, you can submit values multiple times. 
+You do not need to create a new metric for each value that you want to track.
 
 For deployment-specific metrics:
 
@@ -62,7 +62,7 @@ For model-specific metrics:
 custom_metric.submit_single_value(value=16, model_package_id="<model_package_id>")
 ```
 
-Model package id can be retrieved on deployment object for submitting value to the current model
+The model package id can be retrieved from a deployment object and used for submitting values to the current model
 
 ```python
 from datarobot.models.deployment import Deployment
@@ -73,4 +73,4 @@ model_package_id = Deployment.get("deployment_id").model_package['id']
 
 ## Quick reference
 
-For a complete guide of what custom metric has to offer, refer to the custom metric page in [DataRobot Python API client documentation](https://docs.datarobot.com/en/docs/api/dev-learning/python/mlops/custom_metrics.html).
+For a complete guide on using custom metrics, refer to the custom metric page in [DataRobot Python API client documentation](https://docs.datarobot.com/en/docs/api/dev-learning/python/mlops/custom_metrics.html).
