@@ -5,7 +5,7 @@ description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
 {% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% else %}requires-python = ">=3.11, <3.14"{% endif %}
 dependencies = [
-    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, nat{% elif agent_template_framework == 'crewai' %}[crewai, dragent{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent{% elif agent_template_framework == 'base' %}[dragent{% elif agent_template_framework == 'nat' %}[nat, dragent{% else %}[core{% endif %}{% if use_agent_memory %}, memory]{% else %}]{% endif %}==0.15.13",
+    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, nat{% elif agent_template_framework == 'crewai' %}[crewai, dragent{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent{% elif agent_template_framework == 'base' %}[dragent{% elif agent_template_framework == 'nat' %}[nat, dragent{% else %}[core{% endif %}{% if use_agent_memory %}, memory]{% else %}]{% endif %}==0.15.14.dev1304",
     "datarobot-moderations[all]==11.2.24",
     "datarobot-drum==1.17.11.post1",  # Lift upper limit after asyncio migration finished
     "datarobot-mlops==11.1.0",
@@ -173,6 +173,7 @@ follow_imports = "skip"
 
 [tool.uv]
 required-version = ">=0.7.0"
+prerelease = "allow"
 override-dependencies = [
     # Compatibility
     "fastapi>=0.118.2,<0.133.0",  # NAT 1.6.0 uses add_event_handler removed in starlette 1.0 (https://github.com/NVIDIA/NeMo-Agent-Toolkit/issues/1882)
@@ -222,6 +223,14 @@ environments = [
   "sys_platform == 'linux'",
   "sys_platform == 'win32'"
 ]
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+explicit = true
+
+[tool.uv.sources]
+datarobot-genai = { index = "testpypi" }
 
 # This can be set to allow for proxy indexes in air-gapped environments
 # [[tool.uv.index]]

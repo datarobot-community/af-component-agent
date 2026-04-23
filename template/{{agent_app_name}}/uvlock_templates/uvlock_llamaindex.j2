@@ -18,6 +18,9 @@ supported-markers = [
     "sys_platform == 'win32'",
 ]
 
+[options]
+prerelease-mode = "allow"
+
 [manifest]
 overrides = [
     { name = "ag-ui-protocol", specifier = "==0.1.15" },
@@ -135,7 +138,7 @@ dev = [
 requires-dist = [
     { name = "anyio", specifier = ">=4.11.0,<4.12.0" },
     { name = "datarobot-drum", specifier = "==1.17.11.post1" },
-    { name = "datarobot-genai", extras = ["llamaindex", "dragent"], specifier = "==0.15.13" },
+    { name = "datarobot-genai", extras = ["llamaindex", "dragent"], specifier = "==0.15.14.dev1304", index = "https://test.pypi.org/simple/" },
     { name = "datarobot-mlops", specifier = "==11.1.0" },
     { name = "datarobot-moderations", extras = ["all"], specifier = "==11.2.24" },
     { name = "debugpy", marker = "extra == 'dev'", specifier = ">=1.8.20" },
@@ -1037,11 +1040,11 @@ wheels = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.15.13"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f9/68/f16fe1cb9ee890edaeb23981c2c93c3063fd4141c4e1d955e9afcfdc598c/datarobot_genai-0.15.13.tar.gz", hash = "sha256:3cc391f6875df8d63ee830700223ef2db72aefdbd1bc4b00299924e3db694702", size = 246434, upload-time = "2026-04-23T15:50:03.876Z" }
+version = "0.15.14.dev1304"
+source = { registry = "https://test.pypi.org/simple/" }
+sdist = { url = "https://test-files.pythonhosted.org/packages/7a/9a/bd7c621b645e9b41a96664c2a0978d6b8099129537be95d47df9907c23d1/datarobot_genai-0.15.14.dev1304.tar.gz", hash = "sha256:764ca1236264ec96ab35d39a03aa8a21377648f3738f310f5249ee4975187570", size = 247034, upload-time = "2026-04-23T21:40:15.91Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/54/5c/e06d004ba4e5396a9330c8b728635328e7b89be5cbd9928eab875587d23e/datarobot_genai-0.15.13-py3-none-any.whl", hash = "sha256:e6037582c3429c7cd8739b53694f388528aeb19b04d92771b9b6b6a6190e09ee", size = 359819, upload-time = "2026-04-23T15:50:01.951Z" },
+    { url = "https://test-files.pythonhosted.org/packages/93/b4/181ea6b79c32a90f514d33c8c346e5510411317329ad3bafa45ccb205d2d/datarobot_genai-0.15.14.dev1304-py3-none-any.whl", hash = "sha256:64991ca278fc1ef2673304f417ea5c63d6aad8468fd136c14962f94eb68cf743", size = 360534, upload-time = "2026-04-23T21:40:13.33Z" },
 ]
 
 [package.optional-dependencies]
