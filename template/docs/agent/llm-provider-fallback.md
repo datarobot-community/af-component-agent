@@ -5,7 +5,7 @@ Automatic failover between LLM providers using `litellm.Router`.
 > [!NOTE]
 > Manual implementation. Once `datarobot-genai >= 0.15.8` is released, see [Simplified approach](#simplified-approach-with-datarobot-genai-0158).
 
-## DRAgent (register.py + workflow.yaml)
+## LangGraph DRAgent (register.py + workflow.yaml)
 
 ### workflow.yaml
 
@@ -123,10 +123,10 @@ def _build_litellm_router(fallback_cfg: dict) -> ChatLiteLLMRouter:
         fallbacks=[{"primary": [f"fallback_{i}" for i in range(len(fallback_params))]}],
         **router_settings,
     )
-    return ChatLiteLLMRouter(router=router)
+    return ChatLiteLLMRouter(router=router, streaming=True)
 ```
 
-## DRUM (myagent.py)
+## LangGraph DRUM (myagent.py)
 
 Add imports:
 ```python
@@ -179,12 +179,377 @@ def _build_litellm_router_for_langgraph(
         fallbacks=[{"primary": [f"fallback_{i}" for i in range(len(fallback_models))]}],
         **router_settings,
     )
-    return ChatLiteLLMRouter(router=router)
+    return ChatLiteLLMRouter(router=router, streaming=True)
 ```
 
 Replace `get_llm()` call in `custompy_adaptor`:
 ```python
 llm = _build_litellm_router_for_langgraph(
+    primary_model="azure/gpt-5-mini-2025-08-07",
+    fallback_models=["anthropic/claude-opus-4-20250514"],
+    use_datarobot_gateway=True,
+    allowed_fails=3,
+    cooldown_time=60.0,
+)
+```
+
+## CrewAI DRAgent (register.py + workflow.yaml)
+
+### workflow.yaml
+
+Add `fallback_config` inside the `workflow` section:
+
+```yaml
+workflow:
+  _type: crewai_agent
+  llm_name: datarobot_llm
+  description: CrewAI planner/writer agent
+  fallback_config:
+    primary:
+      llm_default_model: azure/gpt-5-mini-2025-08-07
+      use_datarobot_llm_gateway: true
+    fallbacks:
+      - llm_default_model: anthropic/claude-opus-4-20250514
+        use_datarobot_llm_gateway: true
+    allowed_fails: 3
+    cooldown_time: 60.0
+```
+
+### register.py
+
+Add imports:
+```python
+import json
+import uuid
+import litellm
+from crewai import LLM
+from crewai.events import crewai_event_bus
+from crewai.events.types.llm_events import LLMStreamChunkEvent
+from datarobot_genai.core.config import Config
+```
+
+Add `fallback_config` field to `CrewaiAgentConfig`:
+```python
+class CrewaiAgentConfig(AgentBaseConfig, name="crewai_agent"):
+    tool_names: list[FunctionGroupRef] = []
+    fallback_config: dict | None = None
+```
+
+Modify `crewai_agent` function:
+
+```python
+async def crewai_agent(config: CrewaiAgentConfig, builder: Builder) -> AsyncGenerator[Any, None]:
+    from agent.myagent import MyAgent
+
+    llm = await builder.get_llm(config.llm_name, wrapper_type=LLMFrameworkEnum.CREWAI)
+    workflow_tools = await builder.get_tools(config.tool_names, wrapper_type=LLMFrameworkEnum.CREWAI)
+
+    if config.fallback_config:
+        llm_to_use = _build_crewai_router_llm(config.fallback_config)
+    else:
+        llm_to_use = llm
+
+    async def _response_fn(input_message: RunAgentInput):
+        forwarded_headers = extract_datarobot_headers_from_context()
+        authorization_context = extract_authorization_from_context()
+        mcp_config = MCPConfig(
+            forwarded_headers=forwarded_headers,
+            authorization_context=authorization_context,
+        )
+        async with mcp_tools_context(mcp_config) as mcp_tools:
+            tools = workflow_tools + mcp_tools
+            agent = MyAgent(
+                llm=llm_to_use,
+                verbose=config.verbose,
+                forwarded_headers=forwarded_headers,
+                tools=tools,
+            )
+            agent.crew.stream = True
+
+            async for event, pipeline_interactions, usage_metrics in agent.invoke(input_message):
+                yield DRAgentEventResponse(
+                    events=[event],
+                    usage_metrics=usage_metrics,
+                    pipeline_interactions=pipeline_interactions,
+                )
+
+    yield FunctionInfo.from_fn(_response_fn, description=config.description)
+```
+
+Add helpers:
+
+```python
+def _merge_streaming_tool_calls(tool_calls_seen: list) -> list[dict]:
+    merged: dict[int, dict] = {}
+    for tc in tool_calls_seen:
+        idx = tc.index
+        if idx not in merged:
+            merged[idx] = {"id": "", "name": "", "arguments": ""}
+        if tc.id:
+            merged[idx]["id"] = tc.id
+        if tc.function and tc.function.name:
+            merged[idx]["name"] = tc.function.name
+        if tc.function and tc.function.arguments is not None:
+            merged[idx]["arguments"] += tc.function.arguments
+    return [
+        {
+            "id": v["id"],
+            "type": "function",
+            "function": {"name": v["name"], "arguments": v["arguments"]},
+        }
+        for v in merged.values()
+    ]
+
+
+def _build_crewai_router_llm(fallback_cfg: dict) -> LLM:
+    def _to_litellm_params(llm_cfg: dict) -> dict:
+        env_config = Config()
+        endpoint = llm_cfg.get("datarobot_endpoint") or env_config.datarobot_endpoint
+        api_key = llm_cfg.get("datarobot_api_token") or env_config.datarobot_api_token
+        model_name = llm_cfg.get("llm_default_model") or "datarobot-deployed-llm"
+
+        if llm_cfg.get("use_datarobot_llm_gateway", True):
+            return {
+                "model": f"datarobot/{model_name}" if not model_name.startswith("datarobot/") else model_name,
+                "api_base": f"{endpoint.rstrip('/')}",
+                "api_key": api_key,
+            }
+        else:
+            deployment_id = llm_cfg.get("llm_deployment_id") or llm_cfg.get("nim_deployment_id")
+            if deployment_id:
+                return {
+                    "model": f"datarobot/{model_name}" if not model_name.startswith("datarobot/") else model_name,
+                    "api_base": f"{endpoint.rstrip('/')}/deployments/{deployment_id}/v1",
+                    "api_key": api_key,
+                }
+            else:
+                return {"model": model_name, "api_key": api_key}
+
+    primary_params = _to_litellm_params(fallback_cfg["primary"])
+    fallback_params = [_to_litellm_params(fb) for fb in fallback_cfg.get("fallbacks", [])]
+
+    model_list = [
+        {"model_name": "primary", "litellm_params": primary_params},
+        *[{"model_name": f"fallback_{i}", "litellm_params": p} for i, p in enumerate(fallback_params)],
+    ]
+
+    router_settings: dict = {"allowed_fails": fallback_cfg.get("allowed_fails", 3)}
+    if fallback_cfg.get("cooldown_time") is not None:
+        router_settings["cooldown_time"] = fallback_cfg["cooldown_time"]
+
+    router = litellm.Router(
+        model_list=model_list,
+        fallbacks=[{"primary": [f"fallback_{i}" for i in range(len(fallback_params))]}],
+        **router_settings,
+    )
+
+    class RouterLitellmOnlyLLM(LLM):
+        def __new__(cls, *args, **kwargs):
+            return object.__new__(cls)
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.is_litellm = True
+            self._llm_router = router
+
+        def call(self, messages, tools=None, callbacks=None, available_tools=None, **kwargs):
+            call_id = str(uuid.uuid4())
+            accumulated = []
+            tool_calls_seen = []
+            for chunk in self._llm_router.completion(
+                "primary",
+                messages=messages,
+                stream=True,
+                **({"tools": tools} if tools else {}),
+            ):
+                delta = chunk.choices[0].delta
+                if delta.content:
+                    accumulated.append(delta.content)
+                    crewai_event_bus.emit(
+                        self,
+                        event=LLMStreamChunkEvent(chunk=delta.content, call_id=call_id),
+                    )
+                    if callbacks:
+                        for cb in callbacks:
+                            if hasattr(cb, "on_llm_new_token"):
+                                cb.on_llm_new_token(delta.content)
+                if getattr(delta, "tool_calls", None):
+                    tool_calls_seen.extend(delta.tool_calls)
+            if tool_calls_seen:
+                return json.dumps({"tool_calls": _merge_streaming_tool_calls(tool_calls_seen)})
+            return "".join(accumulated)
+
+        async def acall(self, messages, tools=None, callbacks=None, available_tools=None, **kwargs):
+            accumulated = []
+            tool_calls_seen = []
+            response = await self._llm_router.acompletion(
+                "primary",
+                messages=messages,
+                stream=True,
+                **({"tools": tools} if tools else {}),
+            )
+            async for chunk in response:
+                delta = chunk.choices[0].delta
+                if delta.content:
+                    accumulated.append(delta.content)
+                    if callbacks:
+                        for cb in callbacks:
+                            if hasattr(cb, "on_llm_new_token"):
+                                cb.on_llm_new_token(delta.content)
+                if getattr(delta, "tool_calls", None):
+                    tool_calls_seen.extend(delta.tool_calls)
+            if tool_calls_seen:
+                return json.dumps({"tool_calls": _merge_streaming_tool_calls(tool_calls_seen)})
+            return "".join(accumulated)
+
+    return RouterLitellmOnlyLLM(model="datarobot-router")
+```
+
+## CrewAI DRUM (myagent.py)
+
+Add imports:
+```python
+import json
+import uuid
+import litellm
+from crewai import LLM
+from crewai.events import crewai_event_bus
+from crewai.events.types.llm_events import LLMStreamChunkEvent
+from datarobot_genai.core.config import Config
+```
+
+Add helpers:
+```python
+def _merge_streaming_tool_calls(tool_calls_seen: list) -> list[dict]:
+    merged: dict[int, dict] = {}
+    for tc in tool_calls_seen:
+        idx = tc.index
+        if idx not in merged:
+            merged[idx] = {"id": "", "name": "", "arguments": ""}
+        if tc.id:
+            merged[idx]["id"] = tc.id
+        if tc.function and tc.function.name:
+            merged[idx]["name"] = tc.function.name
+        if tc.function and tc.function.arguments is not None:
+            merged[idx]["arguments"] += tc.function.arguments
+    return [
+        {
+            "id": v["id"],
+            "type": "function",
+            "function": {"name": v["name"], "arguments": v["arguments"]},
+        }
+        for v in merged.values()
+    ]
+
+
+def _build_crewai_router_llm(
+    primary_model: str,
+    fallback_models: list[str],
+    use_datarobot_gateway: bool = True,
+    allowed_fails: int = 3,
+    cooldown_time: float | None = None,
+) -> LLM:
+    env_config = Config()
+    endpoint = env_config.datarobot_endpoint
+    api_key = env_config.datarobot_api_token
+
+    model_list = [
+        {
+            "model_name": "primary",
+            "litellm_params": {
+                "model": f"datarobot/{primary_model}" if not primary_model.startswith("datarobot/") else primary_model,
+                "api_base": f"{endpoint.rstrip('/')}",
+                "api_key": api_key,
+            },
+        },
+        *[
+            {
+                "model_name": f"fallback_{i}",
+                "litellm_params": {
+                    "model": f"datarobot/{model}" if not model.startswith("datarobot/") else model,
+                    "api_base": f"{endpoint.rstrip('/')}",
+                    "api_key": api_key,
+                },
+            }
+            for i, model in enumerate(fallback_models)
+        ],
+    ]
+
+    router_settings: dict = {"allowed_fails": allowed_fails}
+    if cooldown_time is not None:
+        router_settings["cooldown_time"] = cooldown_time
+
+    router = litellm.Router(
+        model_list=model_list,
+        fallbacks=[{"primary": [f"fallback_{i}" for i in range(len(fallback_models))]}],
+        **router_settings,
+    )
+
+    class RouterLitellmOnlyLLM(LLM):
+        def __new__(cls, *args, **kwargs):
+            return object.__new__(cls)
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.is_litellm = True
+            self._llm_router = router
+
+        def call(self, messages, tools=None, callbacks=None, available_tools=None, **kwargs):
+            call_id = str(uuid.uuid4())
+            accumulated = []
+            tool_calls_seen = []
+            for chunk in self._llm_router.completion(
+                "primary",
+                messages=messages,
+                stream=True,
+                **({"tools": tools} if tools else {}),
+            ):
+                delta = chunk.choices[0].delta
+                if delta.content:
+                    accumulated.append(delta.content)
+                    crewai_event_bus.emit(
+                        self,
+                        event=LLMStreamChunkEvent(chunk=delta.content, call_id=call_id),
+                    )
+                    if callbacks:
+                        for cb in callbacks:
+                            if hasattr(cb, "on_llm_new_token"):
+                                cb.on_llm_new_token(delta.content)
+                if getattr(delta, "tool_calls", None):
+                    tool_calls_seen.extend(delta.tool_calls)
+            if tool_calls_seen:
+                return json.dumps({"tool_calls": _merge_streaming_tool_calls(tool_calls_seen)})
+            return "".join(accumulated)
+
+        async def acall(self, messages, tools=None, callbacks=None, available_tools=None, **kwargs):
+            accumulated = []
+            tool_calls_seen = []
+            response = await self._llm_router.acompletion(
+                "primary",
+                messages=messages,
+                stream=True,
+                **({"tools": tools} if tools else {}),
+            )
+            async for chunk in response:
+                delta = chunk.choices[0].delta
+                if delta.content:
+                    accumulated.append(delta.content)
+                    if callbacks:
+                        for cb in callbacks:
+                            if hasattr(cb, "on_llm_new_token"):
+                                cb.on_llm_new_token(delta.content)
+                if getattr(delta, "tool_calls", None):
+                    tool_calls_seen.extend(delta.tool_calls)
+            if tool_calls_seen:
+                return json.dumps({"tool_calls": _merge_streaming_tool_calls(tool_calls_seen)})
+            return "".join(accumulated)
+
+    return RouterLitellmOnlyLLM(model="datarobot-router")
+```
+
+Replace the module-level `llm = get_llm()` and the `get_llm()` call inside `custompy_adaptor`:
+```python
+llm = _build_crewai_router_llm(
     primary_model="azure/gpt-5-mini-2025-08-07",
     fallback_models=["anthropic/claude-opus-4-20250514"],
     use_datarobot_gateway=True,
@@ -206,7 +571,7 @@ llm = _build_litellm_router_for_langgraph(
 
 ## Simplified approach with datarobot-genai 0.15.8+
 
-### DRAgent
+### LangGraph DRAgent
 
 ```yaml
 llms:
@@ -224,11 +589,27 @@ llms:
 
 No `register.py` changes needed.
 
-### DRUM
+### LangGraph DRUM
 
 ```python
 from datarobot_genai.core.config import LLMConfig
 from datarobot_genai.langgraph.llm import get_router_llm
+
+primary = LLMConfig(llm_default_model="azure/gpt-5-mini-2025-08-07", use_datarobot_llm_gateway=True)
+fallbacks = [LLMConfig(llm_default_model="anthropic/claude-opus-4-20250514", use_datarobot_llm_gateway=True)]
+
+llm = get_router_llm(primary, fallbacks, {"allowed_fails": 3, "cooldown_time": 60.0})
+```
+
+### CrewAI DRAgent
+
+Same `workflow.yaml` structure with `_type: crewai_agent`. No `register.py` changes needed.
+
+### CrewAI DRUM
+
+```python
+from datarobot_genai.core.config import LLMConfig
+from datarobot_genai.crewai.llm import get_router_llm
 
 primary = LLMConfig(llm_default_model="azure/gpt-5-mini-2025-08-07", use_datarobot_llm_gateway=True)
 fallbacks = [LLMConfig(llm_default_model="anthropic/claude-opus-4-20250514", use_datarobot_llm_gateway=True)]
