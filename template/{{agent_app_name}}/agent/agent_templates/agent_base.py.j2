@@ -34,10 +34,17 @@ from datarobot_genai.core.agents import (
 )
 from datarobot_genai.core.chat import agent_chat_completion_wrapper
 from datarobot_genai.core.mcp import MCPConfig
+{%- if use_agent_memory %}
+from datarobot_genai.core.memory.mem0client import Mem0Client
+{%- endif %}
 
 # Use langchain LLMs in the base example
 from datarobot_genai.langgraph.llm import get_llm
 from openai.types.chat import CompletionCreateParams
+{%- if use_agent_memory %}
+
+from agent.config import Config
+{%- endif %}
 
 if TYPE_CHECKING:
     from ragas import MultiTurnSample
@@ -140,6 +147,9 @@ async def custompy_adaptor(
     )
     mcp_tools_factory = lambda: mcp_tools_context(mcp_config)  # noqa: E731
     model_name = completion_create_params.get("model")
+{%- if use_agent_memory %}
+    config = Config()
+{%- endif %}
     agent = MyAgent(
         llm=get_llm(
             model_name=model_name if model_name not in _PLACEHOLDER_MODELS else None
@@ -147,6 +157,11 @@ async def custompy_adaptor(
         verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
         timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
         forwarded_headers=forwarded_headers,  # type: ignore[arg-type]
+{%- if use_agent_memory %}
+        memory_client=Mem0Client(api_key=config.mem0_api_key)
+        if config.mem0_api_key
+        else None,
+{%- endif %}
     )
     return await agent_chat_completion_wrapper(
         agent, completion_create_params, mcp_tools_factory
