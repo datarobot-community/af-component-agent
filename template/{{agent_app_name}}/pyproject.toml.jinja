@@ -5,7 +5,7 @@ description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
 {% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% else %}requires-python = ">=3.11, <3.14"{% endif %}
 dependencies = [
-    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, nat{% elif agent_template_framework == 'crewai' %}[crewai, dragent{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent{% elif agent_template_framework == 'base' %}[dragent{% elif agent_template_framework == 'nat' %}[nat, dragent{% else %}[core{% endif %}{% if use_agent_memory %}, memory]{% else %}]{% endif %}==0.15.6",
+    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, nat{% elif agent_template_framework == 'crewai' %}[crewai, dragent{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent{% elif agent_template_framework == 'base' %}[dragent{% elif agent_template_framework == 'nat' %}[nat, dragent{% else %}[core{% endif %}{% if use_agent_memory %}, memory]{% else %}]{% endif %}==0.15.13",
     "datarobot-moderations[all]==11.2.24",
     "datarobot-drum==1.17.11.post1",  # Lift upper limit after asyncio migration finished
     "datarobot-mlops==11.1.0",
@@ -191,7 +191,7 @@ override-dependencies = [
     # Upstream issue: https://github.com/NVIDIA/NeMo-Agent-Toolkit/issues/1802
     "crewai[litellm]>=1.11.0,<2.0.0",
 
-    # Unlock latest langgprah
+    # Unlock latest langgraph
     "langgraph>=1.1.0,<2.0.0",
     "langgraph-prebuilt>=1.0.0,<2.0.0",
 
