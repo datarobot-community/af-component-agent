@@ -443,6 +443,7 @@ def test_custom_model_created(monkeypatch):
 
     environment_variables = {
         "SESSION_SECRET_KEY": "secret_value",
+        "MEM0_API_KEY": "some_mem0_api_key",
     }
     with patch.dict(os.environ, environment_variables):
         importlib.reload(agent_infra)
@@ -465,7 +466,7 @@ def test_custom_model_created(monkeypatch):
     runtime_parameter_values = kwargs["runtime_parameter_values"]
 
     # Should have 6 params: 1 SESSION_SECRET_KEY + 5 DRUM params
-    assert len(runtime_parameter_values) == 6
+    assert len(runtime_parameter_values) == {{ 7 if use_agent_memory else 6 }}
 
     # Find the SESSION_SECRET_KEY parameter
     session_secret_param = next(
@@ -474,6 +475,15 @@ def test_custom_model_created(monkeypatch):
     assert session_secret_param is not None
     assert session_secret_param.type == "credential"
     assert session_secret_param.value is not None
+
+{%- if use_agent_memory %}
+    mem0_param = next(
+        (p for p in runtime_parameter_values if p.key == "MEM0_API_KEY"), None
+    )
+    assert mem0_param is not None
+    assert mem0_param.type == "credential"
+    assert mem0_param.value is not None
+{%- endif %}
 
 
 def test_custom_model_created_pinned_version_id(monkeypatch):

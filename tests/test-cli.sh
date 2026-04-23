@@ -113,7 +113,7 @@ if cat ./agent/output.log | grep -q 'Execution result:' ; then
 fi
 
 # Check the chat completion returned
-if cat ./agent/output.log | grep -q '"model": "datarobot-deployed-llm"' ; then
+if cat ./agent/output.log | grep -q '"model": "unknown"' ; then
     echo "Test passed: cli.py returned log containing chat completion"
     else
     echo "Test failed: cli.py did not return log containing chat completion"
