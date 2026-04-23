@@ -42,3 +42,4 @@ jobs:
         env:
           UV_CACHE_DIR: /.uv_cache
           BASE_RENDER_DIR: ./rendered
+          LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"

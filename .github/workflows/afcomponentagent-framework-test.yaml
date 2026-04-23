@@ -89,6 +89,7 @@ jobs:
           uvx --from go-task-bin task test-coverage
         env:
           UV_CACHE_DIR: /.uv_cache
+          LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"
       - name: Install agentic playground dependencies
         shell: sh
         working-directory: ./rendered/${{ matrix.framework.agent_name }}
@@ -103,3 +104,4 @@ jobs:
           uvx --from go-task-bin task test-coverage
         env:
           UV_CACHE_DIR: /.uv_cache
+          LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"
