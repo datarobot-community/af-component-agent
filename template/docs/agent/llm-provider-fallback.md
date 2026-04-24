@@ -25,7 +25,7 @@ workflow:
     fallbacks:
       - llm_default_model: anthropic/claude-opus-4-20250514
         use_datarobot_llm_gateway: true
-    allowed_fails: 3
+    allowed_fails: 2
     cooldown_time: 60.0
 ```
 
@@ -94,7 +94,7 @@ def _build_litellm_router(fallback_cfg: dict) -> ChatLiteLLMRouter:
         *[{"model_name": f"fallback_{i}", "litellm_params": p} for i, p in enumerate(fallback_params)],
     ]
 
-    router_settings = {"allowed_fails": fallback_cfg.get("allowed_fails", 3)}
+    router_settings = {"allowed_fails": fallback_cfg.get("allowed_fails", 2)}
     if fallback_cfg.get("cooldown_time") is not None:
         router_settings["cooldown_time"] = fallback_cfg["cooldown_time"]
 
@@ -121,7 +121,7 @@ def _build_litellm_router_for_langgraph(
     primary_model: str,
     fallback_models: list[str],
     use_datarobot_gateway: bool = True,
-    allowed_fails: int = 3,
+    allowed_fails: int = 2,
     cooldown_time: float | None = None,
 ) -> ChatLiteLLMRouter:
     env_config = Config()
@@ -168,7 +168,7 @@ llm = _build_litellm_router_for_langgraph(
     primary_model="azure/gpt-5-mini-2025-08-07",
     fallback_models=["anthropic/claude-opus-4-20250514"],
     use_datarobot_gateway=True,
-    allowed_fails=3,
+    allowed_fails=2,
     cooldown_time=60.0,
 )
 ```
@@ -285,7 +285,7 @@ workflow:
     fallbacks:
       - llm_default_model: anthropic/claude-opus-4-20250514
         use_datarobot_llm_gateway: true
-    allowed_fails: 3
+    allowed_fails: 2
     cooldown_time: 60.0
 ```
 
@@ -355,7 +355,7 @@ def _build_litellm_router_for_llamaindex(fallback_cfg: dict) -> LiteLLM:
         *[{"model_name": f"fallback_{i}", "litellm_params": p} for i, p in enumerate(fallback_params)],
     ]
 
-    router_settings = {"allowed_fails": fallback_cfg.get("allowed_fails", 3)}
+    router_settings = {"allowed_fails": fallback_cfg.get("allowed_fails", 2)}
     if fallback_cfg.get("cooldown_time") is not None:
         router_settings["cooldown_time"] = fallback_cfg["cooldown_time"]
 
@@ -487,7 +487,7 @@ def _build_litellm_router_for_llamaindex(
     primary_model: str,
     fallback_models: list[str],
     use_datarobot_gateway: bool = True,
-    allowed_fails: int = 3,
+    allowed_fails: int = 2,
     cooldown_time: float | None = None,
 ) -> LiteLLM:
     fallback_cfg = {
@@ -518,7 +518,7 @@ agent = MyAgent(
         primary_model="azure/gpt-5-mini-2025-08-07",
         fallback_models=["anthropic/claude-opus-4-20250514"],
         use_datarobot_gateway=True,
-        allowed_fails=3,
+        allowed_fails=2,
         cooldown_time=60.0,
     ),
     verbose=completion_create_params.get("verbose", True),
@@ -535,5 +535,5 @@ agent = MyAgent(
 | `use_datarobot_llm_gateway` | bool | Route through DataRobot LLM gateway | LangGraph, CrewAI, LlamaIndex |
 | `llm_deployment_id` | str | DataRobot LLM deployment ID | LangGraph, CrewAI, LlamaIndex |
 | `nim_deployment_id` | str | DataRobot NIM deployment ID | LangGraph, CrewAI, LlamaIndex |
-| `allowed_fails` | int | Failures before cooldown (default: 3) | LangGraph, LlamaIndex |
+| `allowed_fails` | int | Failures before cooldown (default: 2) | LangGraph, LlamaIndex |
 | `cooldown_time` | float | Seconds in cooldown before retry | LangGraph, LlamaIndex |
