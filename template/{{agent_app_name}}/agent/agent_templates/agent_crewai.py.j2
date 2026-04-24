@@ -18,12 +18,12 @@ from datarobot_genai.core.agents import InvokeReturn, make_system_prompt
 from datarobot_genai.core.agents.base import UsageMetrics
 from datarobot_genai.core.chat import agent_chat_completion_wrapper
 from datarobot_genai.core.mcp import MCPConfig
-from datarobot_genai.crewai.agent import datarobot_agent_class_from_crew
-from datarobot_genai.crewai.llm import get_llm
-from datarobot_genai.crewai.mcp import mcp_tools_context
 {%- if use_agent_memory %}
 from datarobot_genai.core.memory.mem0client import Mem0Client
 {%- endif %}
+from datarobot_genai.crewai.agent import datarobot_agent_class_from_crew
+from datarobot_genai.crewai.llm import get_llm
+from datarobot_genai.crewai.mcp import mcp_tools_context
 from openai.types.chat import CompletionCreateParams
 {%- if use_agent_memory %}
 
