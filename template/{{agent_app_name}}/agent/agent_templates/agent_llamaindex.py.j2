@@ -24,6 +24,9 @@ from datarobot_genai.llama_index.mcp import mcp_tools_context
 {%- if use_agent_memory == 'mem0' %}
 from datarobot_genai.core.memory.mem0client import Mem0Client
 {%- endif %}
+from datarobot_genai.llama_index.agent import datarobot_agent_class_from_llamaindex
+from datarobot_genai.llama_index.llm import get_llm
+from datarobot_genai.llama_index.mcp import mcp_tools_context
 from llama_index.core.agent.workflow import (
     AgentWorkflow,
     BaseWorkflowAgent,
