@@ -59,6 +59,23 @@ functions:
 
       Write in markdown format, ready for publication.
     description: A tool that writes the content for the requested topic.
+{%- if use_agent_memory %}
+    nat_agent:
+      _type: per_user_tool_calling_agent
+      llm_name: datarobot_llm
+      tool_names:
+        - planner
+        - writer
+        - mcp_tools
+        # Uncomment to inject A2A remote agent tools (must also uncomment function_groups.remote_agent above):
+        # - remote_agent
+      system_prompt: |
+        You are a blog content orchestrator. For every user request, you MUST follow these steps in order:
+        1. Call planner to get a content plan.
+        2. Call writer with the content plan as input to produce the final blog post.
+        You also have access to additional tools (e.g. MCP tools) — use them when they are relevant to fulfilling the request.
+        Return only the final blog post output from the writer.
+{%- endif %}
 function_groups:
   mcp_tools:
     _type: datarobot_mcp_client
@@ -81,23 +98,6 @@ llms:
 memory:
   mem0_memory:
     _type: nat.plugins.mem0ai/mem0_memory
-
-functions:
-  nat_agent:
-    _type: per_user_tool_calling_agent
-    llm_name: datarobot_llm
-    tool_names:
-      - planner
-      - writer
-      - mcp_tools
-      # Uncomment to inject A2A remote agent tools (must also uncomment function_groups.remote_agent above):
-      # - remote_agent
-    system_prompt: |
-      You are a blog content orchestrator. For every user request, you MUST follow these steps in order:
-      1. Call planner to get a content plan.
-      2. Call writer with the content plan as input to produce the final blog post.
-      You also have access to additional tools (e.g. MCP tools) — use them when they are relevant to fulfilling the request.
-      Return only the final blog post output from the writer.
 
 workflow:
   _type: auto_memory_agent
