@@ -64,16 +64,14 @@ With a prompt from a text file:
 task agent:cli -- execute --file "example-prompt.txt"
 ```
 
-### DRAgent in-process execution
+### DRAgent execution
 
-When `ENABLE_DRAGENT_SERVER=true`, use `IN_PROCESS=1` to run the workflow directly without a server:
+When `ENABLE_DRAGENT_SERVER=true`, `execute` runs the workflow directly in-process via `nat dragent run` without needing a running server:
 
 ```sh
-task agent:cli IN_PROCESS=1 -- execute --user_prompt "Artificial Intelligence"
-task agent:cli IN_PROCESS=1 -- execute --file "example-prompt.txt"
+task agent:cli -- execute --user_prompt "Artificial Intelligence"
+task agent:cli -- execute --file "example-prompt.txt"
 ```
-
-Without `IN_PROCESS=1`, execute sends requests to a running server (`task agent:dev`).
 
 ### Deployed agent execution
 
