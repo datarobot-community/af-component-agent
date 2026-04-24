@@ -99,7 +99,6 @@ tasks:
     desc: 🖥️ Run the CLI with provided arguments
     vars:
       START_DEV: "{% raw %}{{.START_DEV}}{% endraw %}"
-      IN_PROCESS: "{% raw %}{{.IN_PROCESS}}{% endraw %}"
     deps:
       - auth-check
     cmds:
@@ -116,13 +115,7 @@ tasks:
           case "$CMD" in
             execute-deployment) {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent query "$@" ;;
             execute-custom-model) echo "execute-custom-model is not supported in dragent mode. Use execute-deployment instead."; exit 1 ;;
-            execute)
-              if [ "{% raw %}{{.IN_PROCESS}}{% endraw %}" = "1" ]; then
-                {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent run "$@"
-              else
-                {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent query --local "$@"
-              fi
-              ;;
+            execute) {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent run "$@" ;;
             *) echo "Unknown command '$CMD'. Supported: execute, execute-deployment"; exit 1 ;;
           esac
           exit $?
