@@ -76,6 +76,35 @@ authentication:
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
+
+{%- if use_agent_memory %}
+memory:
+  mem0_memory:
+    _type: nat.plugins.mem0ai/mem0_memory
+
+functions:
+  nat_agent:
+    _type: per_user_tool_calling_agent
+    llm_name: datarobot_llm
+    tool_names:
+      - planner
+      - writer
+      - mcp_tools
+      # Uncomment to inject A2A remote agent tools (must also uncomment function_groups.remote_agent above):
+      # - remote_agent
+    system_prompt: |
+      You are a blog content orchestrator. For every user request, you MUST follow these steps in order:
+      1. Call planner to get a content plan.
+      2. Call writer with the content plan as input to produce the final blog post.
+      You also have access to additional tools (e.g. MCP tools) — use them when they are relevant to fulfilling the request.
+      Return only the final blog post output from the writer.
+
+workflow:
+  _type: auto_memory_agent
+  inner_agent_name: nat_agent
+  memory_name: mem0_memory
+  llm_name: datarobot_llm
+{% else %}
 workflow:
   _type: per_user_tool_calling_agent
   llm_name: datarobot_llm
@@ -91,3 +120,4 @@ workflow:
     2. Call writer with the content plan as input to produce the final blog post.
     You also have access to additional tools (e.g. MCP tools) — use them when they are relevant to fulfilling the request.
     Return only the final blog post output from the writer.
+{%- endif %}
