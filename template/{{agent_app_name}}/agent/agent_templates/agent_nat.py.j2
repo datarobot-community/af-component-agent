@@ -78,7 +78,6 @@ class MyAgent(NatAgent):
 {%- endif %}
 
 
-
 async def custompy_adaptor(
     completion_create_params: CompletionCreateParams,
 ) -> InvokeReturn | tuple[str, Optional["MultiTurnSample"], UsageMetrics]:
