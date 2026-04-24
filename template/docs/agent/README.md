@@ -15,6 +15,7 @@ For the official DataRobot documentation on agent components, see [Agent compone
 | [Front servers](#front-servers) | The two supported front server implementations: DRUM and DRAgent. |
 | [Agent types](#agent-types) | Supported agent frameworks and links to examples. |
 | [Debugging](./debugging.md) | Debug agents locally using the CLI, VS Code, and PyCharm. |
+| [Local evaluation](./evaluation.md) | Evaluate agentic workflows locally with Pytest and integrate tests into CI/CD pipelines. |
 | [Further reading](#further-reading) | Links to official DataRobot docs for troubleshooting, tracing, global tools, and more. |
 
 ## Features
@@ -175,7 +176,7 @@ Agent configuration is managed by the `Config` class in `agent/config.py`, which
 
 Values set to `SET_VIA_PULUMI_OR_MANUALLY` are automatically replaced with field defaults at startup.
 
-For LLM configuration details, see [LLM configuration](../llm-configuration.md).
+For LLM configuration details, see [LLM component](../llm.md).
 
 ## Front servers
 
