@@ -21,7 +21,14 @@ from datarobot_genai.core.agents.base import UsageMetrics
 from datarobot_genai.core.chat import agent_chat_completion_wrapper
 from datarobot_genai.core.mcp import MCPConfig
 from datarobot_genai.nat.agent import NatAgent
+{%- if use_agent_memory %}
+from datarobot_genai.core.memory.mem0client import Mem0Client
+{%- endif %}
 from openai.types.chat import CompletionCreateParams
+{%- if use_agent_memory %}
+
+from agent.config import Config
+{%- endif %}
 
 if TYPE_CHECKING:
     from ragas import MultiTurnSample
@@ -70,10 +77,18 @@ async def custompy_adaptor(
     headers = server_config["headers"] if server_config else {}
     forwarded_headers.update(headers)
     mcp_tools_factory = lambda: noop_mcp_tools_context(mcp_config)  # noqa: E731
+{%- if use_agent_memory %}
+    config = Config()
+{%- endif %}
     agent = MyAgent(
         verbose=completion_create_params.get("verbose", True),
         timeout=completion_create_params.get("timeout", 90),
         forwarded_headers=forwarded_headers,
+{%- if use_agent_memory %}
+        memory_client=Mem0Client(api_key=config.mem0_api_key)
+        if config.mem0_api_key
+        else None,
+{%- endif %}
     )
     return await agent_chat_completion_wrapper(
         agent, completion_create_params, mcp_tools_factory
