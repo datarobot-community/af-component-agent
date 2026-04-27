@@ -20,10 +20,10 @@ from datarobot_genai.core.agents import InvokeReturn
 from datarobot_genai.core.agents.base import UsageMetrics
 from datarobot_genai.core.chat import agent_chat_completion_wrapper
 from datarobot_genai.core.mcp import MCPConfig
-from datarobot_genai.nat.agent import NatAgent
 {%- if use_agent_memory %}
 from datarobot_genai.core.memory.mem0client import Mem0Client
 {%- endif %}
+from datarobot_genai.nat.agent import NatAgent
 from openai.types.chat import CompletionCreateParams
 {%- if use_agent_memory %}
 
