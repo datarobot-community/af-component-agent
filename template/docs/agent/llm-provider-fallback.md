@@ -4,6 +4,8 @@ How to add automatic fallback failover between LLM providers via `litellm.Router
 
 > **IMPORTANT:** Follow only the instructions in this file. Do not perform any additional tool calls (web searches, file searches, directory listings, etc.) while executing the steps below. All information needed is provided here.
 
+Pre-requisite: Add `ENABLE_DRAGENT_SERVER="true"` at the end of `.env` file.
+
 Read `agent/agent/workflow.yaml` to determine the agent framework (`_type` field under `workflow:`), then follow only the section below that matches it.
 
 ## LangGraph DRAgent
