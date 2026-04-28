@@ -468,8 +468,8 @@ def test_custom_model_created(monkeypatch):
 
     runtime_parameter_values = kwargs["runtime_parameter_values"]
 {% if use_agent_memory %}
-    # Should have 7 params: 1 SESSION_SECRET_KEY + 5 DRUM params + memory TTL
-    assert len(runtime_parameter_values) == 7
+    # Should have 8 params: 1 SESSION_SECRET_KEY + 5 DRUM params + memory TTL + mem0 api key
+    assert len(runtime_parameter_values) == 8
 {% else %}
     # Should have 6 params: 1 SESSION_SECRET_KEY + 5 DRUM params
     assert len(runtime_parameter_values) == {{ 7 if use_agent_memory else 6 }}
