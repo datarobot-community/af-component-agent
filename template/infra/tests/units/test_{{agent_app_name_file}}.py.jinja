@@ -472,7 +472,6 @@ def test_custom_model_created(monkeypatch):
     assert len(runtime_parameter_values) == 8
 {% else %}
     # Should have 6 params: 1 SESSION_SECRET_KEY + 5 DRUM params
-    assert len(runtime_parameter_values) == {{ 7 if use_agent_memory else 6 }}
     assert len(runtime_parameter_values) == 6
 {% endif %}
     # Find the SESSION_SECRET_KEY parameter
@@ -1243,8 +1242,7 @@ class TestGenerateMetadataYaml:
                 type="numeric",
                 value=DEFAULT_AGENT_MEMORY_TTL_SECONDS,
             ),
-{% endif %}
-        ]
+{% endif %}        ]
 
         # Call the function with tmp_path as the custom model folder
         agent_infra._generate_metadata_yaml("{{agent_app_name}}", str(tmp_path), mock_params)

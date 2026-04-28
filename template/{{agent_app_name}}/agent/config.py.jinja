@@ -22,11 +22,9 @@ from typing import Any
 
 from datarobot.core.config import DataRobotAppFrameworkBaseSettings
 from pydantic import Field, model_validator
-
 {% if use_agent_memory %}
 DEFAULT_AGENT_MEMORY_TTL_SECONDS = 2_592_000
 {% endif %}
-
 
 class Config(DataRobotAppFrameworkBaseSettings):  # type: ignore[misc]
     """
