@@ -21,6 +21,8 @@ from collections import namedtuple
 # Ensure the test directory is in sys.path for proper imports
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+DEFAULT_AGENT_MEMORY_TTL_SECONDS = "2592000"
+
 
 # Patch all Pulumi resources and functions used in the module
 @pytest.fixture(autouse=True)
@@ -499,7 +501,7 @@ def test_custom_model_created(monkeypatch):
     )
     assert memory_ttl_param is not None
     assert memory_ttl_param.type == "numeric"
-    assert memory_ttl_param.value == "{{ agent_memory_default_ttl_seconds }}"
+    assert memory_ttl_param.value == DEFAULT_AGENT_MEMORY_TTL_SECONDS
 {% else %}
     memory_ttl_param = next(
         (
@@ -1231,16 +1233,17 @@ class TestGenerateMetadataYaml:
             RuntimeParam(key="CUSTOM_MODEL_WORKERS", type="numeric", value="5"),
             # DRUM string parameter - should HAVE defaultValue (in allowlist)
             RuntimeParam(key="DRUM_SERVER_TYPE", type="string", value="gunicorn"),
+            # String parameter with special characters - should NOT have defaultValue (not in allowlist)
+            RuntimeParam(
+                key="EXTERNAL_MCP_HEADERS", type="string", value='{"auth": "token"}'
+            ),
 {% if use_agent_memory %}            # Agent memory TTL parameter - should NOT have defaultValue
             RuntimeParam(
                 key="AGENT_MEMORY_DEFAULT_TTL_SECONDS",
                 type="numeric",
-                value="{{ agent_memory_default_ttl_seconds }}",
+                value=DEFAULT_AGENT_MEMORY_TTL_SECONDS,
             ),
-{% endif %}            # String parameter with special characters - should NOT have defaultValue (not in allowlist)
-            RuntimeParam(
-                key="EXTERNAL_MCP_HEADERS", type="string", value='{"auth": "token"}'
-            ),
+{% endif %}
         ]
 
         # Call the function with tmp_path as the custom model folder
@@ -1293,26 +1296,19 @@ class TestGenerateMetadataYaml:
             "DRUM parameters in allowlist should have defaultValue"
         )
         assert params[3]["defaultValue"] == "gunicorn"
-{% if use_agent_memory %}
-        # Agent memory TTL parameter - should NOT have defaultValue
-        assert params[4]["fieldName"] == "AGENT_MEMORY_DEFAULT_TTL_SECONDS"
-        assert params[4]["type"] == "numeric"
-        assert "defaultValue" not in params[4], (
-            "Agent memory TTL parameter should not have defaultValue"
-        )
 
-        # String parameter with sensitive data - should NOT have defaultValue (not in allowlist)
-        assert params[5]["fieldName"] == "EXTERNAL_MCP_HEADERS"
-        assert params[5]["type"] == "string"
-        assert "defaultValue" not in params[5], (
-            "String parameters with sensitive data should not have defaultValue"
-        )
-{% else %}
         # String parameter with sensitive data - should NOT have defaultValue (not in allowlist)
         assert params[4]["fieldName"] == "EXTERNAL_MCP_HEADERS"
         assert params[4]["type"] == "string"
         assert "defaultValue" not in params[4], (
             "String parameters with sensitive data should not have defaultValue"
+        )
+{% if use_agent_memory %}
+        # Agent memory TTL parameter - should NOT have defaultValue
+        assert params[5]["fieldName"] == "AGENT_MEMORY_DEFAULT_TTL_SECONDS"
+        assert params[5]["type"] == "numeric"
+        assert "defaultValue" not in params[5], (
+            "Agent memory TTL parameter should not have defaultValue"
         )
 {% endif %}
     def test_with_empty_parameters(self, tmp_path, monkeypatch):
@@ -1396,7 +1392,7 @@ class TestAgentMemoryRuntimeParameter:
 
         assert memory_ttl_param is not None
         assert memory_ttl_param.type == "numeric"
-        assert memory_ttl_param.value == "{{ agent_memory_default_ttl_seconds }}"
+        assert memory_ttl_param.value == DEFAULT_AGENT_MEMORY_TTL_SECONDS
 
     def test_default_ttl_runtime_parameter_uses_env_override(self, monkeypatch):
         """Test that the agent memory TTL runtime parameter can be set from env."""

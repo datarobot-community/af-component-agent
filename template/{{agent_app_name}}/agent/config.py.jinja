@@ -23,6 +23,10 @@ from typing import Any
 from datarobot.core.config import DataRobotAppFrameworkBaseSettings
 from pydantic import Field, model_validator
 
+{% if use_agent_memory %}
+DEFAULT_AGENT_MEMORY_TTL_SECONDS = 2_592_000
+{% endif %}
+
 
 class Config(DataRobotAppFrameworkBaseSettings):  # type: ignore[misc]
     """
@@ -36,16 +40,11 @@ class Config(DataRobotAppFrameworkBaseSettings):  # type: ignore[misc]
     use_datarobot_llm_gateway: bool = False
     mcp_deployment_id: str | None = None
     external_mcp_url: str | None = None
-<<<<<<< HEAD
-{%- if use_agent_memory %}
+{% if use_agent_memory %}
     mem0_api_key: str | None = None
     agent_memory_default_ttl_seconds: int = Field(
-        default={{ agent_memory_default_ttl_seconds }}, ge=0
+        default=DEFAULT_AGENT_MEMORY_TTL_SECONDS, ge=0
     )
-=======
-{% if use_agent_memory %}
-    agent_memory_default_ttl_seconds: int = Field(default={{ agent_memory_default_ttl_seconds }}, ge=0)
->>>>>>> b30baec (formatting)
 {% endif %}
     local_dev_port: int = Field(
         default=8842, validation_alias="{{agent_app_name|upper}}_PORT", ge=1, le=65535
