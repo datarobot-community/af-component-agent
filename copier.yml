@@ -23,7 +23,6 @@ use_agent_memory:
   type: bool
   help: "Do you want to opt in to agent memory? (default: no) (WIP)"
   default: no
-  when: false
 
 agent_template_framework:
   type: str

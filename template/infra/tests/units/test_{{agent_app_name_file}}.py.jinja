@@ -21,6 +21,8 @@ from collections import namedtuple
 # Ensure the test directory is in sys.path for proper imports
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+AGENT_MEMORY_TTL_SECONDS = "AGENT_MEMORY_TTL_SECONDS"
+
 
 # Patch all Pulumi resources and functions used in the module
 @pytest.fixture(autouse=True)
@@ -434,6 +436,7 @@ def test_reset_environment_between_tests():
 def test_custom_model_created(monkeypatch):
     """Test that pulumi_datarobot.CustomModel is created with correct arguments."""
     monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
+    monkeypatch.delenv(AGENT_MEMORY_TTL_SECONDS, raising=False)
 
     import importlib
     import infra.{{agent_app_name}} as agent_infra
@@ -464,10 +467,13 @@ def test_custom_model_created(monkeypatch):
     assert isinstance(kwargs["files"], list)
 
     runtime_parameter_values = kwargs["runtime_parameter_values"]
-
+{% if use_agent_memory %}
+    # Should have 8 params: 1 SESSION_SECRET_KEY + 5 DRUM params + memory TTL + mem0 api key
+    assert len(runtime_parameter_values) == 8
+{% else %}
     # Should have 6 params: 1 SESSION_SECRET_KEY + 5 DRUM params
-    assert len(runtime_parameter_values) == {{ 7 if use_agent_memory else 6 }}
-
+    assert len(runtime_parameter_values) == 6
+{% endif %}
     # Find the SESSION_SECRET_KEY parameter
     session_secret_param = next(
         (p for p in runtime_parameter_values if p.key == "SESSION_SECRET_KEY"), None
@@ -483,8 +489,21 @@ def test_custom_model_created(monkeypatch):
     assert mem0_param is not None
     assert mem0_param.type == "credential"
     assert mem0_param.value is not None
-{%- endif %}
 
+    memory_ttl_param = next(
+        (p for p in runtime_parameter_values if p.key == AGENT_MEMORY_TTL_SECONDS),
+        None,
+    )
+    assert memory_ttl_param is not None
+    assert memory_ttl_param.type == "numeric"
+    assert memory_ttl_param.value == "2592000"
+{% else %}
+    memory_ttl_param = next(
+        (p for p in runtime_parameter_values if p.key == AGENT_MEMORY_TTL_SECONDS),
+        None,
+    )
+    assert memory_ttl_param is None
+{% endif %}
 
 def test_custom_model_created_pinned_version_id(monkeypatch):
     """Test that pulumi_datarobot.CustomModel is created with correct arguments."""
@@ -1209,7 +1228,13 @@ class TestGenerateMetadataYaml:
             RuntimeParam(
                 key="EXTERNAL_MCP_HEADERS", type="string", value='{"auth": "token"}'
             ),
-        ]
+{% if use_agent_memory %}            # Agent memory TTL parameter - should NOT have defaultValue
+            RuntimeParam(
+                key=AGENT_MEMORY_TTL_SECONDS,
+                type="numeric",
+                value="2592000",
+            ),
+{% endif %}        ]
 
         # Call the function with tmp_path as the custom model folder
         agent_infra._generate_metadata_yaml("{{agent_app_name}}", str(tmp_path), mock_params)
@@ -1228,8 +1253,11 @@ class TestGenerateMetadataYaml:
 
         # Verify parameters maintain order and correct types
         params = metadata["runtimeParameterDefinitions"]
+{% if use_agent_memory %}
+        assert len(params) == 6
+{% else %}
         assert len(params) == 5
-
+{% endif %}
         # String parameter - should NOT have defaultValue (not in allowlist)
         assert params[0]["fieldName"] == "LLM_DEPLOYMENT_ID"
         assert params[0]["type"] == "string"
@@ -1265,7 +1293,14 @@ class TestGenerateMetadataYaml:
         assert "defaultValue" not in params[4], (
             "String parameters with sensitive data should not have defaultValue"
         )
-
+{% if use_agent_memory %}
+        # Agent memory TTL parameter - should NOT have defaultValue
+        assert params[5]["fieldName"] == AGENT_MEMORY_TTL_SECONDS
+        assert params[5]["type"] == "numeric"
+        assert "defaultValue" not in params[5], (
+            "Agent memory TTL parameter should not have defaultValue"
+        )
+{% endif %}
     def test_with_empty_parameters(self, tmp_path, monkeypatch):
         """Test _generate_metadata_yaml generates correct YAML with empty parameter list."""
         import infra.{{agent_app_name}} as agent_infra
@@ -1324,6 +1359,76 @@ class TestGenerateMetadataYaml:
         assert metadata["name"] == "{{agent_app_name}}"
         assert metadata["runtimeParameterDefinitions"][0]["fieldName"] == "NEW_PARAM"
 
+{% if use_agent_memory %}
+class TestAgentMemoryRuntimeParameter:
+    def test_default_ttl_runtime_parameter_included(self, monkeypatch):
+        """Test that the agent memory TTL runtime parameter is included by default."""
+        monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
+        monkeypatch.delenv(AGENT_MEMORY_TTL_SECONDS, raising=False)
+
+        import importlib
+        import infra.{{agent_app_name}} as agent_infra
+
+        importlib.reload(agent_infra)
+
+        memory_ttl_param = next(
+            (
+                param
+                for param in agent_infra.agent_runtime_parameter_values
+                if param.key == AGENT_MEMORY_TTL_SECONDS
+            ),
+            None,
+        )
+
+        assert memory_ttl_param is not None
+        assert memory_ttl_param.type == "numeric"
+        assert memory_ttl_param.value == "2592000"
+
+    def test_default_ttl_runtime_parameter_uses_env_override(self, monkeypatch):
+        """Test that the agent memory TTL runtime parameter can be set from env."""
+        monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
+        monkeypatch.setenv(AGENT_MEMORY_TTL_SECONDS, "86400")
+
+        import importlib
+        import infra.{{agent_app_name}} as agent_infra
+
+        importlib.reload(agent_infra)
+
+        memory_ttl_param = next(
+            (
+                param
+                for param in agent_infra.agent_runtime_parameter_values
+                if param.key == AGENT_MEMORY_TTL_SECONDS
+            ),
+            None,
+        )
+
+        assert memory_ttl_param is not None
+        assert memory_ttl_param.type == "numeric"
+        assert memory_ttl_param.value == "86400"
+{% else %}
+class TestAgentMemoryRuntimeParameter:
+    def test_ttl_runtime_parameter_excluded_when_memory_disabled(self, monkeypatch):
+        """Test that the agent memory TTL runtime parameter is excluded by default."""
+        monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
+        monkeypatch.setenv(AGENT_MEMORY_TTL_SECONDS, "86400")
+
+        import importlib
+        import infra.{{agent_app_name}} as agent_infra
+
+        importlib.reload(agent_infra)
+
+        memory_ttl_param = next(
+            (
+                param
+                for param in agent_infra.agent_runtime_parameter_values
+                if param.key == AGENT_MEMORY_TTL_SECONDS
+            ),
+            None,
+        )
+
+        assert memory_ttl_param is None
+{% endif %}
 
 class TestDrumRuntimeParameters:
     def test_drum_runtime_parameters_included(self, monkeypatch):
