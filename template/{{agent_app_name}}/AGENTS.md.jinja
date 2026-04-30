@@ -1,5 +1,9 @@
 # Agent Development Instructions
 
+{% if agent_template_framework == "nat" %}
+> **Framework (NAT):** See [docs/agent/frameworks/nat.md](../docs/agent/frameworks/nat.md), the [custom-tool checklist](../docs/agent/frameworks/nat.md#checklist-every-custom-nat_tool-must-appear-in-functions-do-not-skip), and [NAT `workflow.yaml` requirements](../docs/agent/frameworks/nat.md#nat-workflowyaml-requirements-read-this-first). Each `nat_tool` needs a matching `functions` entry in `workflow.yaml` and its name in `workflow.tool_names`. The template imports `agent.register` from `myagent.py` so new `nat_tool` registrations run at import time; you can move that import to `agent/__init__.py` if you prefer.
+
+{% endif %}
 ## Dependencies Installation
 
 The following command should be run after agent code modification:
@@ -228,7 +232,11 @@ Agent must implement the following components:
 ### 1. Class Definition
 
 ```python
+from pathlib import Path
+
 from datarobot_genai.nat.agent import NatAgent
+
+import agent.register  # noqa: F401 - matches generated myagent.py; ensures nat_tool side effects load
 
 class MyAgent(NatAgent):
     def __init__(self, *args, workflow_path=Path(__file__).parent / "workflow.yaml", **kwargs):
@@ -262,7 +270,7 @@ workflow:
 
 ### 3. Custom Tools
 
-Register custom Python tools using `nat_tool()` from `datarobot_genai.nat.tool` in `register.py`, then reference them by name in `workflow.yaml`.
+Register custom Python tools using `nat_tool()` from `datarobot_genai.nat.tool` in `register.py`. For **each** tool name, add a matching `functions.<name>` entry in `workflow.yaml` with `_type: <name>` and a `description`, include the name in `workflow.tool_names`, and ensure `register.py` is imported (see class definition above). See the [checklist](../docs/agent/frameworks/nat.md#checklist-every-custom-nat_tool-must-appear-in-functions-do-not-skip) and [Custom local tools](../docs/agent/frameworks/nat.md#custom-local-tools) in [docs/agent/frameworks/nat.md](../docs/agent/frameworks/nat.md).
 
 For detailed NAT documentation, see [docs/agent/frameworks/nat.md](../docs/agent/frameworks/nat.md).
 
