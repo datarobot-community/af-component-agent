@@ -48,7 +48,7 @@ Each entry under `primary` and `fallbacks` is an `LLMConfig` with these fields:
 | Field | Type | Description |
 |---|---|---|
 | `use_datarobot_llm_gateway` | `bool` | `true` = route through DataRobot LLM Gateway (default). `false` = use a deployment or external provider. |
-| `llm_default_model` | `str` | Model string (e.g. `azure/gpt-4o-2024-11-20`, `anthropic/claude-opus-4-20250514`). |
+| `llm_default_model` | `str` | Model string (e.g. `azure/gpt-5-mini-2025-08-07`, `anthropic/claude-opus-4-20250514`). |
 | `llm_deployment_id` | `str \| None` | DataRobot deployment ID when routing to a deployed LLM (overrides env). |
 | `nim_deployment_id` | `str \| None` | DataRobot deployment ID for NIM-based routing. |
 | `datarobot_endpoint` | `str \| None` | Per-entry DataRobot endpoint URL override. |

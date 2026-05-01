@@ -40,12 +40,12 @@ general:
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
-  # To enable LLM provider fallback/failover, replace the block above with the following:
+  # To enable LLM provider fallback/failover, remove the datarobot_llm block above and uncomment the following:
   # datarobot_llm:
   #   _type: datarobot-llm-router
   #   primary:
   #     use_datarobot_llm_gateway: true
-  #     llm_default_model: azure/gpt-4o-2024-11-20
+  #     llm_default_model: azure/gpt-5-mini-2025-08-07
   #   fallbacks:
   #     - use_datarobot_llm_gateway: true
   #       llm_default_model: anthropic/claude-opus-4-20250514
