@@ -142,3 +142,14 @@ Current blocked packages (see `# Excluded` in `override-dependencies`):
 | `pymilvus` | Unused; CVE exposure |
 | `diskcache` | Unused; CVE exposure |
 | `annoy` | Unused; build issues |
+| `uv` | Not a runtime dependency |
+| `build` | Python build system pulled in by crewai; runtime unnecessary |
+| `kubernetes` | K8s client pulled in by crewai-tools; not used |
+| `stagehand` | Playwright web automation pulled in by crewai-tools; not used |
+| `pytube` | YouTube downloader pulled in by crewai-tools; not used |
+| `youtube-transcript-api` | YouTube transcripts pulled in by crewai-tools; not used |
+| `lancedb` | Optional vector DB pulled in by crewai; not used |
+| `openpyxl` | Excel parser pulled in by crewai-tools; not used |
+| `python-docx` | Word doc parser pulled in by crewai-tools; not used |
+| `llama-index-cli` | CLI tool pulled in by llama-index; not needed at runtime |
+| `scikit-network` | Graph analysis pulled in by ragas; not used |

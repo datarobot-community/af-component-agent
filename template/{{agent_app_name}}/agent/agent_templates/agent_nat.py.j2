@@ -28,6 +28,7 @@ from openai.types.chat import CompletionCreateParams
 {%- if use_agent_memory %}
 
 from agent.config import Config
+from ag_ui.core import RunAgentInput
 {%- endif %}
 
 if TYPE_CHECKING:
@@ -60,6 +61,21 @@ class MyAgent(NatAgent):
             workflow_path=workflow_path,  # type: ignore[misc]
             **kwargs,
         )
+
+{%- if use_agent_memory %}
+    def make_user_prompt(self, run_agent_input: RunAgentInput) -> str:
+        """Create the user prompt text. Override to customize formatting.
+
+        Chat history is automatically appended by `invoke` when
+        max_history_messages > 0 (controlled via DATAROBOT_GENAI_MAX_HISTORY_MESSAGES env var).
+        Include a `{memory}` placeholder in the returned prompt to opt into
+        automatic long-term memory retrieval and storage for the run.
+
+        Default implementation returns the raw user message content.
+        """
+        user_prompt_content = super().make_user_prompt(run_agent_input)
+        return user_prompt_content + "\n{memory}"
+{%- endif %}
 
 
 async def custompy_adaptor(

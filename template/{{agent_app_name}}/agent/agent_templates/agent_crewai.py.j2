@@ -110,6 +110,9 @@ crew = Crew(
 kickoff_inputs = lambda user_prompt_content: {
     "topic": str(user_prompt_content),
     "chat_history": "",
+{%- if use_agent_memory %}
+    "memory": "",
+{%- endif %}
 }
 
 MyAgent = datarobot_agent_class_from_crew(crew, agents, tasks, kickoff_inputs)

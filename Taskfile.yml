@@ -129,6 +129,7 @@ tasks:
           AGENT: "{{.AGENT}}"
           USE_MEMORY: "{{.USE_MEMORY| default 0}}"
       - echo "Running tests for {{.AGENT}}"
+      - cd $RENDER_DIR/agent_{{.AGENT}} && echo "LLM_DEFAULT_MODEL='datarobot/azure/gpt-5-mini-2025-08-07'" >> .env
       - |
           if [ "{{.SKIP_LINT}}" != "1" ]; then
             task agent:lint-check --dir $RENDER_DIR/agent_{{.AGENT}}

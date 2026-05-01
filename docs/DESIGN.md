@@ -15,6 +15,7 @@ Defined in `copier.yml`:
 | `agent_app_name` | Name and root folder of the generated project. Must be a valid Python identifier. |
 | `agent_template_framework` | Framework flavour: `base`, `crewai`, `langgraph`, `llamaindex`, or `nat`. |
 | `use_low_code_interface` | When `true`, forces `agent_template_framework=nat`. |
+| `use_agent_memory` | Enables agent memory runtime parameter wiring and a default TTL of 2,592,000 seconds (30 days). |
 | `base_answers_file`, `llm_answers_file`, `mcp_answers_file` | Paths to DataRobot component answer files consumed via `_external_data`. |
 
 The `_exclude` directive in `copier.yml` ensures that `*.j2` partials and `*_templates/` directories are never copied into the rendered output — they exist only as include sources.
