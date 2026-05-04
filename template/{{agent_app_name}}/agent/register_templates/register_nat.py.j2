@@ -14,7 +14,13 @@
 
 """NAT custom tool registration.
 
-Add ``nat_tool(...)`` calls here for Python-backed tools. Each name must also
-appear under ``functions`` in ``workflow.yaml`` and in ``workflow.tool_names``.
-See ``docs/agent/frameworks/nat.md``.
+Register tools with a **module-level call** after the function is defined::
+
+    nat_tool(my_function, "my_function")
+
+Do **not** use ``@nat_tool()`` as a decorator with no arguments; that raises
+``TypeError: nat_tool() missing 2 required positional arguments: 'fn' and 'name'``.
+
+Each tool name must also appear under ``functions`` in ``workflow.yaml`` and in
+``workflow.tool_names``. See ``docs/agent/frameworks/nat.md``.
 """

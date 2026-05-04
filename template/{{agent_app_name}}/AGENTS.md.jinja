@@ -270,7 +270,7 @@ workflow:
 
 ### 3. Custom Tools
 
-Register custom Python tools using `nat_tool()` from `datarobot_genai.nat.tool` in `register.py`. For **each** tool name, add a matching `functions.<name>` entry in `workflow.yaml` with `_type: <name>` and a `description`, include the name in `workflow.tool_names`, and ensure `register.py` is imported (see class definition above). See the [checklist](../docs/agent/frameworks/nat.md#checklist-every-custom-nat_tool-must-appear-in-functions-do-not-skip) and [Custom local tools](../docs/agent/frameworks/nat.md#custom-local-tools) in [docs/agent/frameworks/nat.md](../docs/agent/frameworks/nat.md).
+Register custom Python tools by calling **`nat_tool(fn, tool_name, ...)`** from `datarobot_genai.nat.tool` at module level in `register.py` (not `@nat_tool()` with no arguments). For **each** tool name, add a matching `functions.<name>` entry in `workflow.yaml` with `_type: <name>` and a `description`, include the name in `workflow.tool_names`, and ensure `register.py` is imported (see class definition above). See the [checklist](../docs/agent/frameworks/nat.md#checklist-every-custom-nat_tool-must-appear-in-functions-do-not-skip) and [Custom local tools](../docs/agent/frameworks/nat.md#custom-local-tools) in [docs/agent/frameworks/nat.md](../docs/agent/frameworks/nat.md).
 
 For detailed NAT documentation, see [docs/agent/frameworks/nat.md](../docs/agent/frameworks/nat.md).
 

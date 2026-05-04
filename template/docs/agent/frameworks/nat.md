@@ -41,7 +41,7 @@ from pathlib import Path
 
 from datarobot_genai.nat.agent import NatAgent
 
-import agent.register  # noqa: F401 - load nat_tool() registrations from register.py
+import agent.register  # noqa: F401 - load nat_tool(fn, name, ...) registrations from register.py
 
 class MyAgent(NatAgent):
     def __init__(self, *args, workflow_path=Path(__file__).parent / "workflow.yaml", **kwargs):
@@ -128,7 +128,9 @@ function_groups:
 
 ### Custom local tools
 
-To add a custom tool to a NAT agent, define a plain Python function and register it using `nat_tool()` from `datarobot_genai.nat.tool` in `register.py`. Then reference it by name in `workflow.yaml`.
+To add a custom tool to a NAT agent, define a plain Python function and register it with **`nat_tool(fn, tool_name, ...)`** from `datarobot_genai.nat.tool` in `register.py` (a **call** at module level after the function exists). Then reference `tool_name` in `workflow.yaml`.
+
+**Do not** use `@nat_tool()` as a decorator with no arguments; `nat_tool` requires the function and name as positional arguments, and bare `@nat_tool()` raises `TypeError: nat_tool() missing 2 required positional arguments: 'fn' and 'name'`.
 
 **Step 1**&mdash;Define the tool function (e.g. in `agent/agent/tools.py`):
 
