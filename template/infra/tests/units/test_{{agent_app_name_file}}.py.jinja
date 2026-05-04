@@ -484,16 +484,15 @@ def test_custom_model_created(monkeypatch):
     assert session_secret_param is not None
     assert session_secret_param.type == "credential"
     assert session_secret_param.value is not None
-
 {%- if use_agent_memory == 'mem0' %}
+
     mem0_param = next(
         (p for p in runtime_parameter_values if p.key == "MEM0_API_KEY"), None
     )
     assert mem0_param is not None
     assert mem0_param.type == "credential"
     assert mem0_param.value is not None
-{% endif %}
-
+{%- endif %}
 {% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
     memory_ttl_param = next(
         (p for p in runtime_parameter_values if p.key == AGENT_MEMORY_TTL_SECONDS),
