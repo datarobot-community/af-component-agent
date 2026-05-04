@@ -27,6 +27,7 @@ use_agent_memory:
     None: none
     Mem0: mem0
     "Datarobot Memory Service": datarobot_memory_service
+  when: false
 
 agent_template_framework:
   type: str
