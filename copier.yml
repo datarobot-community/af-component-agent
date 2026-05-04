@@ -138,3 +138,33 @@ _migrations:
           rm -rf "$APP/.copier_migration_tmp"
         done
     when: "{{ _stage == 'after' and _copier_operation == 'update' }}"
+  # Migrate legacy boolean memory answers to the current provider choice.
+  #
+  # `use_agent_memory` used to be a bool, so older answers can contain
+  # yes/no or true/false. The current question is a string choice where the
+  # no-memory provider is stored as `none`.
+  - version: "11.8.28"
+    command:
+      - bash
+      - -lc
+      - |
+        set -euo pipefail
+        for ANSWERS_FILE in .datarobot/answers/agent-*.yml; do
+          [ -f "$ANSWERS_FILE" ] || continue
+          python3 - "$ANSWERS_FILE" <<'PY'
+        from pathlib import Path
+        import re
+        import sys
+
+        answers_file = Path(sys.argv[1])
+        text = answers_file.read_text(encoding="utf-8")
+        legacy_bool_answer = re.compile(
+            r"^(\s*use_agent_memory:\s*)(['\"]?)(?:yes|no|true|false)\2(\s*(?:#.*)?)$",
+            re.IGNORECASE | re.MULTILINE,
+        )
+        updated = legacy_bool_answer.sub(r"\1none\3", text)
+        if updated != text:
+            answers_file.write_text(updated, encoding="utf-8")
+        PY
+        done
+    when: "{{ _stage == 'before' and _copier_operation == 'update' }}"
