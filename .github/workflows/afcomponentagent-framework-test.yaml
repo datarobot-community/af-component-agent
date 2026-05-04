@@ -28,22 +28,22 @@ jobs:
         framework:
           - name: base
             agent_name: agent_generic_base
-            use_memory: none
+            use_memory: "none"
           - name: base
             agent_name: agent_with_memory
-            use_memory: mem0
+            use_memory: "mem0"
           - name: crewai
             agent_name: agent_crewai
-            use_memory: none
+            use_memory: "none"
           - name: langgraph
             agent_name: agent_langgraph
-            use_memory: none
+            use_memory: "none"
           - name: llamaindex
             agent_name: agent_llamaindex
-            use_memory: none
+            use_memory: "none"
           - name: nat
             agent_name: agent_nat
-            use_memory: none
+            use_memory: "none"
     steps:
       - name: Checkout
         uses: "actions/checkout@v6"
