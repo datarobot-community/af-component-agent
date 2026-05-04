@@ -240,7 +240,7 @@ environments = [
 
 [dependency-groups]
 extras = []
-{% if agent_template_framework in ['base', 'crewai', 'langgraph', 'llamaindex'] %}
+{% if agent_template_framework in ['base', 'crewai', 'langgraph', 'llamaindex'] or (agent_template_framework == 'nat' and use_agent_memory == 'mem0') %}
 
 [project.entry-points.'nat.plugins']
 {{ agent_template_framework }}_agent = "agent.register"
