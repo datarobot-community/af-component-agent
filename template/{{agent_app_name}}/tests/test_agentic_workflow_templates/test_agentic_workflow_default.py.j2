@@ -37,7 +37,7 @@ class TestCustomModel:
         assert isinstance(thread_pool_executor, ThreadPoolExecutor)
         assert isinstance(event_loop, type(asyncio.get_event_loop()))
         thread_pool_executor.shutdown()
-{% if use_agent_memory %}
+{% if use_agent_memory == 'mem0' %}
     @patch("agent.myagent.Mem0Client")
 {%- endif %}
     @patch("agent.myagent.get_llm")
@@ -52,7 +52,7 @@ class TestCustomModel:
         self,
         mock_agent,
         mock_get_llm,
-{%- if use_agent_memory %}
+{%- if use_agent_memory == 'mem0' %}
         mock_mem0_client,
 {%- endif %}
         mock_agent_response,
@@ -67,7 +67,7 @@ class TestCustomModel:
         mock_agent.return_value = mock_agent_instance
         mock_llm = Mock()
         mock_get_llm.return_value = mock_llm
-{%- if use_agent_memory %}
+{%- if use_agent_memory == 'mem0' %}
         mock_mem0_client_instance = Mock()
         mock_mem0_client.return_value = mock_mem0_client_instance
 {%- endif %}
@@ -208,11 +208,11 @@ class TestCustomModel:
             forwarded_headers=kwargs["headers"],
             verbose=True,
             timeout=90,
-{%- if use_agent_memory %}
+{%- if use_agent_memory == 'mem0' %}
             memory_client=mock_mem0_client_instance,
 {%- endif %}
         )
-{%- if use_agent_memory %}
+{%- if use_agent_memory == 'mem0' %}
         assert mock_mem0_client.called
         assert mock_mem0_client.call_args.kwargs == {"api_key": "some_key"}
 {%- endif %}
@@ -346,7 +346,7 @@ class TestCustomModel:
             forwarded_headers=kwargs["headers"],
             verbose=True,
             timeout=90,
-{%- if use_agent_memory %}
+{%- if use_agent_memory == 'mem0' %}
             memory_client=None,  # None because MEM0_API_KEY is not set
 {%- endif %}
         )
