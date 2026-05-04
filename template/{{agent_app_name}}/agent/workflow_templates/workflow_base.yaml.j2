@@ -50,28 +50,10 @@ llms:
   #       llm_default_model: anthropic/claude-opus-4-20250514
   #   num_retries: 1
 
-{%- if use_agent_memory %}
-memory:
-  mem0_memory:
-    _type: nat.plugins.mem0ai/mem0_memory
-
-functions:
-  base_agent:
-    _type: base_agent
-    llm_name: datarobot_llm
-    description: Base agent example
-
-workflow:
-  _type: auto_memory_agent
-  inner_agent_name: base_agent
-  memory_name: mem0_memory
-  llm_name: datarobot_llm
-{% else %}
 workflow:
   _type: base_agent
   llm_name: datarobot_llm
   description: Base agent example
-{%- endif %}
 
 authentication:
   datarobot_auth:

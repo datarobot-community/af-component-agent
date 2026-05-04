@@ -59,7 +59,7 @@ functions:
 
       Write in markdown format, ready for publication.
     description: A tool that writes the content for the requested topic.
-{%- if use_agent_memory %}
+{%- if use_agent_memory == 'mem0' %}
   nat_agent:
     _type: per_user_tool_calling_agent
     llm_name: datarobot_llm
@@ -94,7 +94,7 @@ llms:
   datarobot_llm:
     _type: datarobot-llm-component
 
-{%- if use_agent_memory %}
+{%- if use_agent_memory == 'mem0' %}
 memory:
   mem0_memory:
     _type: nat.plugins.mem0ai/mem0_memory

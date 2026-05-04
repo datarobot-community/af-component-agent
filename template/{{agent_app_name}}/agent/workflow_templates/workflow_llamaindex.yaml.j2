@@ -52,32 +52,12 @@ llms:
   #       llm_default_model: anthropic/claude-opus-4-20250514
   #   num_retries: 1
 
-{%- if use_agent_memory %}
-memory:
-  mem0_memory:
-    _type: nat.plugins.mem0ai/mem0_memory
-
-functions:
-  llamaindex_agent:
-    _type: llamaindex_agent
-    llm_name: datarobot_llm
-    description: LlamaIndex planner/writer agent
-    # tool_names:
-    #   - remote_agent
-
-workflow:
-  _type: auto_memory_agent
-  inner_agent_name: llamaindex_agent
-  memory_name: mem0_memory
-  llm_name: datarobot_llm
-{% else %}
 workflow:
   _type: llamaindex_agent
   llm_name: datarobot_llm
   description: LlamaIndex planner/writer agent
   # tool_names:
   #   - remote_agent
-{%- endif %}
 
 authentication:
   datarobot_auth:
