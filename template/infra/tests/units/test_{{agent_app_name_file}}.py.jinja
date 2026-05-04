@@ -470,7 +470,7 @@ def test_custom_model_created(monkeypatch):
 {% if use_agent_memory == 'mem0' %}
     # Should have 8 params: 1 SESSION_SECRET_KEY + 5 DRUM params + memory TTL + mem0 api key
     assert len(runtime_parameter_values) == 8
-{% elif use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
+{% elif use_agent_memory in ['datarobot_memory_service'] %}
     # Should have 7 params: 1 SESSION_SECRET_KEY + 5 DRUM params + memory TTL
     assert len(runtime_parameter_values) == 7
 {% else %}
