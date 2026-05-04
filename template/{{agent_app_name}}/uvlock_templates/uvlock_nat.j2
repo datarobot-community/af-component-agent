@@ -108,7 +108,7 @@ source = { editable = "." }
 dependencies = [
     { name = "anyio", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-drum", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "datarobot-genai", extra = [{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}"dragent", "memory", "nat"{% else %}"dragent", "nat"{% endif %}], marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "datarobot-genai", extra = ["dragent", "memory", "nat"], marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-mlops", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-moderations", extra = ["all"], marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "langchain-litellm", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -146,10 +146,14 @@ requires-dist = [
     { name = "anyio", specifier = ">=4.11.0,<4.12.0" },
     { name = "datarobot-drum", specifier = "==1.17.11.post1" },
 <<<<<<< HEAD
+<<<<<<< HEAD
     { name = "datarobot-genai", extras = ["nat", "dragent"], specifier = "==0.15.34" },
 =======
     { name = "datarobot-genai", extras = ["nat", "dragent"{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}, "memory"{% endif %}], specifier = "==0.15.24" },
 >>>>>>> 36c5e53 (Update nat workflow to use dr memory mem0 client and automemory wrapper)
+=======
+    { name = "datarobot-genai", extras = ["nat", "dragent", "memory"], specifier = "==0.15.24" },
+>>>>>>> 2721e21 (Always include memory)
     { name = "datarobot-mlops", specifier = "==11.1.0" },
     { name = "datarobot-moderations", extras = ["all"], specifier = "==11.2.24" },
     { name = "debugpy", marker = "extra == 'dev'", specifier = ">=1.8.20" },
@@ -1057,11 +1061,9 @@ dragent = [
     { name = "requests", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "starlette", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
-{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] -%}
 memory = [
     { name = "mem0ai", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
-{% endif -%}
 nat = [
     { name = "ag-ui-protocol", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "anyio", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1993,7 +1995,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/04/4b/29cac41a4d98d144bf5f6d33995617b185d14b22401f75ca86f384e87ff1/h11-0.16.0-py3-none-any.whl", hash = "sha256:63cf8bbe7522de3bf65932fda1d9c2772064ffb3dae62d55932da54b31cb6c86", size = 37515, upload-time = "2025-04-24T03:35:24.344Z" },
 ]
 
-{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] -%}
 [[package]]
 name = "h2"
 version = "4.3.0"
@@ -2007,7 +2008,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/69/b2/119f6e6dcbd96f9069ce9a2665e0146588dc9f88f29549711853645e736a/h2-4.3.0-py3-none-any.whl", hash = "sha256:c438f029a25f7945c69e0ccf0fb951dc3f73a5f6412981daee861431b70e2bdd", size = 61779, upload-time = "2025-08-23T18:12:17.779Z" },
 ]
 
-{% endif -%}
 [[package]]
 name = "hf-xet"
 version = "1.4.3"
@@ -2032,7 +2032,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/8a/7c/44314ecd0e89f8b2b51c9d9e5e7a60a9c1c82024ac471d415860557d3cd8/hf_xet-1.4.3-cp37-abi3-win_arm64.whl", hash = "sha256:7c2c7e20bcfcc946dc67187c203463f5e932e395845d098cc2a93f5b67ca0b47", size = 3533664, upload-time = "2026-03-31T22:40:12.152Z" },
 ]
 
-{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] -%}
 [[package]]
 name = "hpack"
 version = "4.1.0"
@@ -2042,7 +2041,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/07/c6/80c95b1b2b94682a72cbdbfb85b81ae2daffa4291fbfa1b1464502ede10d/hpack-4.1.0-py3-none-any.whl", hash = "sha256:157ac792668d995c657d93111f46b4535ed114f0c9c8d672271bbec7eae1b496", size = 34357, upload-time = "2025-01-22T21:44:56.92Z" },
 ]
 
-{% endif -%}
 [[package]]
 name = "httpcore"
 version = "1.0.9"
@@ -2100,13 +2098,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl", hash = "sha256:d909fcccc110f8c7faf814ca82a9a4d816bc5a6dbfea25d6591d6985b8ba59ad", size = 73517, upload-time = "2024-12-06T15:37:21.509Z" },
 ]
 
-{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] -%}
 [package.optional-dependencies]
 http2 = [
     { name = "h2", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 
-{% endif -%}
 [[package]]
 name = "httpx-sse"
 version = "0.4.3"
@@ -2135,7 +2131,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/a8/af/48ac8483240de756d2438c380746e7130d1c6f75802ef22f3c6d49982787/huggingface_hub-0.36.2-py3-none-any.whl", hash = "sha256:48f0c8eac16145dfce371e9d2d7772854a4f591bcb56c9cf548accf531d54270", size = 566395, upload-time = "2026-02-06T09:24:11.133Z" },
 ]
 
-{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] -%}
 [[package]]
 name = "hyperframe"
 version = "6.1.0"
@@ -2145,7 +2140,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/48/30/47d0bf6072f7252e6521f3447ccfa40b421b6824517f82854703d0f5a98b/hyperframe-6.1.0-py3-none-any.whl", hash = "sha256:b03380493a519fce58ea5af42e4a42317bf9bd425596f7a0835ffce80f1a42e5", size = 13007, upload-time = "2025-01-22T21:41:47.295Z" },
 ]
 
-{% endif -%}
 [[package]]
 name = "identify"
 version = "2.6.19"
@@ -3312,7 +3306,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/b3/38/89ba8ad64ae25be8de66a6d463314cf1eb366222074cfda9ee839c56a4b4/mdurl-0.1.2-py3-none-any.whl", hash = "sha256:84008a41e51615a49fc9966191ff91509e3c40b939176e643fd50a5c2196b8f8", size = 9979, upload-time = "2022-08-14T12:40:09.779Z" },
 ]
 
-{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] -%}
 [[package]]
 name = "mem0ai"
 version = "1.0.11"
@@ -3331,7 +3324,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/b8/b5/f822c94e1b901f8a700af134c2473646de9a7db26364566f6a72d527d235/mem0ai-1.0.11-py3-none-any.whl", hash = "sha256:bcf4d678dc0a4d4e8eccaebe05562eae022fcdc825a0e3095d02f28cf61a5b6d", size = 297138, upload-time = "2026-04-06T11:31:41.716Z" },
 ]
 
-{% endif -%}
 [[package]]
 name = "memory-profiler"
 version = "0.61.0"
@@ -5147,7 +5139,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/01/1b/5dbe84eefc86f48473947e2f41711aded97eecef1231f4558f1f02713c12/pyzmq-27.1.0-pp311-pypy311_pp73-win_amd64.whl", hash = "sha256:c9f7f6e13dff2e44a6afeaf2cf54cee5929ad64afaf4d40b50f93c58fc687355", size = 544862, upload-time = "2025-09-08T23:09:56.509Z" },
 ]
 
-{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] -%}
 [[package]]
 name = "qdrant-client"
 version = "1.17.1"
@@ -5166,7 +5157,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/68/69/77d1a971c4b933e8c79403e99bcbb790463da5e48333cc4fd5d412c63c98/qdrant_client-1.17.1-py3-none-any.whl", hash = "sha256:6cda4064adfeaf211c751f3fbc00edbbdb499850918c7aff4855a9a759d56cbd", size = 389947, upload-time = "2026-03-13T17:13:43.156Z" },
 ]
 
-{% endif -%}
 [[package]]
 name = "ragas"
 version = "0.4.3"

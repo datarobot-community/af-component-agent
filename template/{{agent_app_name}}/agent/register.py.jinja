@@ -2,5 +2,5 @@
 {% elif agent_template_framework == "llamaindex" %}{% include 'template/{{agent_app_name}}/agent/register_templates/register_llamaindex.py.j2' -%}
 {% elif agent_template_framework == "crewai" %}{% include 'template/{{agent_app_name}}/agent/register_templates/register_crewai.py.j2' -%}
 {% elif agent_template_framework == "base" %}{% include 'template/{{agent_app_name}}/agent/register_templates/register_base.py.j2' -%}
-{% elif agent_template_framework == "nat" and use_agent_memory == "mem0" %}{% include 'template/{{agent_app_name}}/agent/register_templates/register_nat.py.j2' -%}
+{% elif agent_template_framework == "nat" %}{% include 'template/{{agent_app_name}}/agent/register_templates/register_nat.py.j2' -%}
 {% endif -%}
