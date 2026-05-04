@@ -41,7 +41,7 @@ tasks:
   render-template:
     desc: "Render template"
     vars:
-      USE_MEMORY: "{{.USE_MEMORY| default 0}}"
+      USE_MEMORY: '{{.USE_MEMORY| default "none"}}'
       AGENT_TEMPLATE_FRAMEWORK: '{{ trimSuffix "_memory" .AGENT }}'
     cmds:
       - echo "Rendering template {{.AGENT}}"
@@ -92,7 +92,7 @@ tasks:
       - task: render-template
         vars:
           AGENT: "{{.AGENT}}"
-          USE_MEMORY: "{{.USE_MEMORY| default 0}}"
+          USE_MEMORY: '{{.USE_MEMORY| default "none"}}'
       - task: install-rendered
         vars:
           AGENT: "{{.AGENT}}"
@@ -127,7 +127,7 @@ tasks:
       - task: render-install
         vars:
           AGENT: "{{.AGENT}}"
-          USE_MEMORY: "{{.USE_MEMORY| default 0}}"
+          USE_MEMORY: '{{.USE_MEMORY| default "none"}}'
       - echo "Running tests for {{.AGENT}}"
       - cd $RENDER_DIR/agent_{{.AGENT}} && echo "LLM_DEFAULT_MODEL='datarobot/azure/gpt-5-mini-2025-08-07'" >> .env
       - |
@@ -155,12 +155,12 @@ tasks:
           SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
 
   test-memory:
-    desc: "Run tests for base agent with memory enabled"
+    desc: "Run tests for base agent with Mem0 memory enabled"
     cmds:
       - task: test-agent
         vars:
           AGENT: base_memory
-          USE_MEMORY: yes
+          USE_MEMORY: mem0
           SKIP_LINT: "{{.SKIP_LINT| default 0}}"
           SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
 
@@ -248,7 +248,7 @@ tasks:
       - task: render-template
         vars:
           AGENT: "{{.AGENT}}"
-          USE_MEMORY: "{{.USE_MEMORY| default 0}}"
+          USE_MEMORY: '{{.USE_MEMORY| default "none"}}'
       - |
           if [ "$UPGRADE_LOCK" = "1" ]; then
             uv lock -U --directory $RENDER_DIR/agent_{{.AGENT}}/agent
@@ -266,7 +266,7 @@ tasks:
       - task: update-lock-file
         vars:
           AGENT: "base_memory"
-          USE_MEMORY: "yes"
+          USE_MEMORY: "mem0"
       - task: update-lock-file
         vars:
           AGENT: "crewai"

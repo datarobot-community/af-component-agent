@@ -20,9 +20,13 @@ use_low_code_interface:
   default: no
 
 use_agent_memory:
-  type: bool
-  help: "Do you want to opt in to agent memory? (default: no) (WIP)"
-  default: no
+  type: str
+  help: "Choose an agent memory provider:"
+  default: none
+  choices:
+    None: none
+    Mem0: mem0
+    "Datarobot Memory Service": datarobot_memory_service
 
 agent_template_framework:
   type: str

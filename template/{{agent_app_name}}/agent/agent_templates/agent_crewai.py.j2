@@ -21,11 +21,11 @@ from datarobot_genai.core.mcp import MCPConfig
 from datarobot_genai.crewai.agent import datarobot_agent_class_from_crew
 from datarobot_genai.crewai.llm import get_llm
 from datarobot_genai.crewai.mcp import mcp_tools_context
-{%- if use_agent_memory %}
+{%- if use_agent_memory == 'mem0' %}
 from datarobot_genai.core.memory.mem0client import Mem0Client
 {%- endif %}
 from openai.types.chat import CompletionCreateParams
-{%- if use_agent_memory %}
+{%- if use_agent_memory == 'mem0' %}
 
 from agent.config import Config
 {%- endif %}
@@ -110,7 +110,7 @@ crew = Crew(
 kickoff_inputs = lambda user_prompt_content: {
     "topic": str(user_prompt_content),
     "chat_history": "",
-{%- if use_agent_memory %}
+{%- if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
     "memory": "",
 {%- endif %}
 }
@@ -129,7 +129,7 @@ async def custompy_adaptor(
     )
     mcp_tools_factory = lambda: mcp_tools_context(mcp_config)  # noqa: E731
     model_name = completion_create_params.get("model")
-{%- if use_agent_memory %}
+{%- if use_agent_memory == 'mem0' %}
     config = Config()
 {%- endif %}
     agent = MyAgent(
@@ -140,7 +140,7 @@ async def custompy_adaptor(
         verbose=completion_create_params.get("verbose", True),
         timeout=completion_create_params.get("timeout", 90),
         forwarded_headers=forwarded_headers,
-{%- if use_agent_memory %}
+{%- if use_agent_memory == 'mem0' %}
         memory_client=Mem0Client(api_key=config.mem0_api_key)
         if config.mem0_api_key
         else None,
