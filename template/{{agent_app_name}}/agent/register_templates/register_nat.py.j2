@@ -38,11 +38,13 @@ from nat.utils.exception_handlers.automatic_retries import patch_with_retry
 # which only exists on newer NAT versions. Inject a ``None`` default so the
 # wrapper falls through to its X-User-ID header / default_user fallback chain.
 if not hasattr(Context, "user_manager"):
-    Context.user_manager = None  # type: ignore[attr-defined]
+    setattr(Context, "user_manager", None)
 
 
-class DRMem0MemoryClientConfig(  # type: ignore[call-arg, misc]
-    MemoryBaseConfig, RetryMixin, name="dr_mem0_memory"
+class DRMem0MemoryClientConfig(  # type: ignore[call-arg]
+    MemoryBaseConfig,  # type: ignore[misc]
+    RetryMixin,  # type: ignore[misc]
+    name="dr_mem0_memory",
 ):
     """NAT memory backend backed by datarobot-genai's Mem0Client."""
 
