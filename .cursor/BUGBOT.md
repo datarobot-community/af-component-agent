@@ -121,6 +121,40 @@ Each component should store its documentation in `docs` folder and provide conte
 
 Use https://github.com/datarobot-community/app-framework/tree/main/skills/datarobot-app-framework-doc-update to generate or review documentation changes to make sure they are up to the standards.
 
+### B4. User-facing documentation
+
+**Relationship to other rules**
+
+- User-visible changes may require both **B2** (CHANGELOG) and updates under this section. When both apply, **mention them in one comment thread** so authors get a single checklist.
+- If the PR falls under critical areas that already require DOC involvement (**A1**, **A10**, **A15**, **A20**, or others with explicit DOC requirements), **do not duplicate** generic B3 boilerplate. Reference that section and only add B3-specific gaps (for example exact README paths).
+
+**When to assess**
+
+Decide whether the changes would impact or require updates to user-facing documentation in this repository (for example README files, setup or deployment guides, architecture or customization docs aimed at users, or in-repo descriptions of behavior, configuration, or interfaces).
+
+**Changes that usually do not require documentation updates** (use judgment; avoid nagging when the diff is limited to cases like these):
+
+- Comments-only, internal refactors, or test-only changes with no user-facing behavior
+- Tooling or dependency bumps that do not change documented setup, configuration, or workflows in this repo
+- Fixes that do not alter documented commands, defaults, env vars, or public surfaces described in-repo
+
+**How authors can satisfy this rule**
+
+- Include the documentation updates in the PR, **or**
+- Add a **Documentation** line to the PR description (or a single top-level PR comment), for example: `Documentation: updated README.md and agent/AGENTS.md` or `Documentation: N/A — no user-visible change` or `Documentation: deferred — [DOC-123](https://…) will cover new MCP env vars.`
+- When that line is present and substantive, treat it as meeting the justification or deferral path **unless the diff clearly contradicts** it (for example new user-facing flags with no doc mention and no deferral).
+- For **deferral**, a **linked DOC ticket** plus a **short scope** of what documentation will follow is preferred over an unexplained omission.
+
+**Discussion**
+
+For unclear cases, authors may contact **DOC** stakeholders (see the Stakeholders table) or raise the question in the PR / issue tracker for guidance.
+
+**BugBot behavior when documentation likely needs updates** and the PR has no doc changes and no acceptable justification or deferral:
+
+- Leave **one consolidated comment** on the PR (or append to an existing documentation thread); do not file multiple comments with the same ask.
+- In that comment, **name specific files or topics** that appear affected (for example `README.md` install steps, `agent/AGENTS.md` conventions) so the author has an actionable checklist.
+- Ask the author to update the documentation, add a **Documentation** line with justification, or add a **linked DOC ticket** with scope for deferral.
+
 ### B10. Use `git rename` when moving files
 
 `copier` relies on `git` history when it updates component and merges with local changes. Recently we have moved `agent.py` → `myagent.py`, and this broke downstream templates, so we had to add a custom migration.
