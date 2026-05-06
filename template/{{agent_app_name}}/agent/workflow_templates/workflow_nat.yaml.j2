@@ -59,6 +59,24 @@ functions:
 
       Write in markdown format, ready for publication.
     description: A tool that writes the content for the requested topic.
+{%- if use_agent_memory == 'mem0' %}
+  nat_agent:
+    # Use the non-per-user variant so the auto_memory_agent wrapper (which resolves
+    # `inner_agent_name` via builder.get_function() at workflow build time) can find it.
+    # Per-user functions / function groups (e.g. mcp_tools) are built lazily and are
+    # not visible to workflow-time wrappers, so they cannot be referenced here.
+    _type: tool_calling_agent
+    llm_name: datarobot_llm
+    description: "Blog content orchestrator that plans and writes a blog post."
+    tool_names:
+      - planner
+      - writer
+    system_prompt: |
+      You are a blog content orchestrator. For every user request, you MUST follow these steps in order:
+      1. Call planner to get a content plan.
+      2. Call writer with the content plan as input to produce the final blog post.
+      Return only the final blog post output from the writer.
+{%- endif %}
 function_groups:
   mcp_tools:
     _type: datarobot_mcp_client
@@ -76,17 +94,19 @@ authentication:
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
-  # To enable LLM provider fallback/failover, remove the datarobot_llm block above and uncomment the following:
-  # datarobot_llm:
-  #   _type: datarobot-llm-router
-  #   primary:
-  #     use_datarobot_llm_gateway: true
-  #     llm_default_model: azure/gpt-5-mini-2025-08-07
-  #   fallbacks:
-  #     - use_datarobot_llm_gateway: true
-  #       llm_default_model: anthropic/claude-opus-4-20250514
-  #   num_retries: 1
 
+{%- if use_agent_memory == 'mem0' %}
+memory:
+  mem0_memory:
+    _type: dr_mem0_memory
+
+workflow:
+  _type: auto_memory_agent
+  inner_agent_name: nat_agent
+  memory_name: mem0_memory
+  llm_name: datarobot_llm
+  description: "Blog content orchestrator with automatic memory capture and retrieval."
+{% else %}
 workflow:
   _type: per_user_tool_calling_agent
   llm_name: datarobot_llm
@@ -102,3 +122,4 @@ workflow:
     2. Call writer with the content plan as input to produce the final blog post.
     You also have access to additional tools (e.g. MCP tools) — use them when they are relevant to fulfilling the request.
     Return only the final blog post output from the writer.
+{%- endif %}

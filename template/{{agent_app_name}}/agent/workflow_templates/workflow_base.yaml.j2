@@ -36,6 +36,14 @@ general:
 #     url: "https://app.datarobot.com/api/v2/deployments/<deployment-id>/directAccess/a2a/"
 #     auth_provider: datarobot_auth
 
+{% if use_agent_memory == 'mem0' %}
+functions:
+  base_agent:
+    _type: base_agent
+    llm_name: datarobot_llm
+    description: Base agent example
+
+{% endif %}
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
@@ -50,10 +58,23 @@ llms:
   #       llm_default_model: anthropic/claude-opus-4-20250514
   #   num_retries: 1
 
+{% if use_agent_memory == 'mem0' %}
+memory:
+  mem0_memory:
+    _type: dr_mem0_memory
+
+workflow:
+  _type: auto_memory_agent
+  inner_agent_name: base_agent
+  memory_name: mem0_memory
+  llm_name: datarobot_llm
+  description: Base agent example with automatic memory capture and retrieval
+{% else %}
 workflow:
   _type: base_agent
   llm_name: datarobot_llm
   description: Base agent example
+{% endif %}
 
 authentication:
   datarobot_auth:
