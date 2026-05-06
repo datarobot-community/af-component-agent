@@ -59,7 +59,11 @@ class TestMyAgentCrewAI:
     def test_kickoff_inputs(self):
         """Test kickoff_inputs produces correct dictionary."""
         result = kickoff_inputs("test topic")
-        assert result == {"topic": "test topic", "chat_history": ""}
+        expected = {"topic": "test topic", "chat_history": ""}
+{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
+        expected["memory"] = ""
+{% endif %}
+        assert result == expected
 
     def test_myagent_is_crewai_agent_subclass(self):
         """Test that MyAgent inherits from CrewAIAgent."""
