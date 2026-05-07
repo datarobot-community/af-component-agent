@@ -49,16 +49,25 @@ class TestMyAgentLangGraph:
         input_vars = prompt_template.input_variables
         assert "chat_history" in input_vars
         assert "topic" in input_vars
+        uses_memory = {{ use_agent_memory in ['mem0', 'datarobot_memory_service'] }}
+        if uses_memory:
+            assert "memory" in input_vars
 
     def test_prompt_template_formats_with_variables(self):
         """Test that prompt_template can be formatted with chat_history and topic."""
-        messages = prompt_template.format_messages(
-            chat_history="User asked about AI trends.",
-            topic="artificial intelligence",
-        )
+        format_kwargs = {
+            "chat_history": "User asked about AI trends.",
+            "topic": "artificial intelligence",
+        }
+        uses_memory = {{ use_agent_memory in ['mem0', 'datarobot_memory_service'] }}
+        if uses_memory:
+            format_kwargs["memory"] = "User prefers concise answers."
+        messages = prompt_template.format_messages(**format_kwargs)
         assert len(messages) == 2
         assert "{chat_history}" not in messages[0].content
         assert "{topic}" not in messages[1].content
+        if uses_memory:
+            assert "{memory}" not in messages[0].content
         assert "artificial intelligence" in messages[1].content
 
     @patch("agent.myagent.create_agent")
