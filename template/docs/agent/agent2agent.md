@@ -1,6 +1,6 @@
 # Agent-to-Agent (A2A)
 
-Template agents can expose themselves as A2A servers and connect to remote agents via the agent-to-agent protocol.
+Template agents can expose themselves as A2A servers and connect to remote agents via the agent-to-agent protocol. For authentication configuration, see [A2A Authentication](./agent2agent-auth.md).
 
 To expose an agent via A2A:
 
