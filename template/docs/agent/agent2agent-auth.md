@@ -129,26 +129,6 @@ Both steps authenticate the client using private key JWT, signing assertions wit
 | `token_request.audience` | Yes | Final resource identifier for the agent. |
 | `token_request.scopes` | No | Scopes the caller must request. Defaults to `["read_data"]`. |
 
-## Server-side configuration reference: `external`
-
-Optional fields under `general.front_end.a2a.external` that control additional identity metadata and the agent card URL.
-
-| Field | Purpose |
-|-------|---------|
-| `external.id` | Catalog discovery identifier. Emitted as the `urn:datarobot:agent:identity:external` extension on the agent card. |
-| `external.url` | Overrides the auto-generated agent card endpoint URL. |
-
-Example:
-
-```yaml
-general:
-  front_end:
-    a2a:
-      external:
-        id: "my-agent-id"
-        url: "https://my-agent-id.example.com/a2a/"
-```
-
 ## Client-side configuration reference: `okta_cross_app_access`
 
 | Field | Default | Purpose |
