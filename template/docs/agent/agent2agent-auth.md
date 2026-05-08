@@ -103,7 +103,7 @@ function_groups:
 
 ### Infrastructure: automatic runtime parameter provisioning
 
-When `cross_application_access` is configured in `workflow.yaml`, the infra module automatically detects it and provisions the required runtime parameters on deployment:
+When authentication (with `_type: okta_cross_app_access`) is declared in the `authentication` section of `workflow.yaml`, the infra module automatically detects it and provisions the required runtime parameters on deployment:
 
 - `PRINCIPAL_ID` — Injected as a plain string runtime parameter from the `PRINCIPAL_ID` environment variable.
 - `PRIVATE_JWK` — Stored securely as a DataRobot credential (`ApiTokenCredential`) and injected as a `credential`-type runtime parameter from the `PRIVATE_JWK` environment variable.
@@ -157,4 +157,4 @@ authentication:
 | `ValueError: Could not parse private_jwk` | `PRIVATE_JWK` is neither valid base64-encoded JSON nor raw JSON. | Verify your JWK — try `echo $PRIVATE_JWK | base64 -d | python -m json.tool`. |
 | `ValueError: Agent card ... missing required fields` | Remote agent card doesn't have the XAA extension. | Verify the remote agent has `cross_application_access` configured in its `workflow.yaml`. |
 | `RuntimeError: Failed to fetch agent card` | Network/auth issue reaching the agent card URL. | Check the `url` in your `function_groups` config and network connectivity. |
-| PRIVATE_JWK not provisioned to runtime | `cross_application_access` not present in `workflow.yaml` at deploy time. | Ensure `workflow.yaml` has the `cross_application_access` block uncommented before deploying. |
+| PRIVATE_JWK not provisioned to runtime | `okta_auth` with `_type: okta_cross_app_access` not present in the `authentication` section of `workflow.yaml` at deploy time. | Ensure the `okta_auth` block is uncommented in `workflow.yaml` before deploying. |

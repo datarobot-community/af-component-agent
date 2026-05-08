@@ -130,19 +130,26 @@ def _check_a2a_server_enabled() -> bool:
 _is_a2a_server_enabled = _check_a2a_server_enabled()
 
 
-def _check_xaa_enabled() -> bool:
+def _check_okta_xaa_credentials_needed() -> bool:
+    """Check if Okta XAA client credentials (PRINCIPAL_ID, PRIVATE_JWK) are needed.
+
+    These are required when the agent uses the okta_cross_app_access auth provider
+    to call remote XAA-protected agents. Server-side cross_application_access config
+    only advertises XAA requirements on the agent card and does not need these credentials.
+    """
     workflow_yaml_path = project_dir.parent / "{{agent_app_name}}" / "agent" / "workflow.yaml"
     if not workflow_yaml_path.exists():
         return False
     with open(workflow_yaml_path) as f:
         workflow_config = yaml.safe_load(f) or {}
-    xaa = (
-        ((workflow_config.get("general") or {}).get("front_end") or {}).get("a2a") or {}
-    ).get("cross_application_access")
-    return xaa is not None
+    auth_section = workflow_config.get("authentication") or {}
+    return any(
+        isinstance(cfg, dict) and cfg.get("_type") == "okta_cross_app_access"
+        for cfg in auth_section.values()
+    )
 
 
-_is_xaa_enabled = _check_xaa_enabled()
+_is_okta_xaa_credentials_needed = _check_okta_xaa_credentials_needed()
 
 
 def _generate_metadata_yaml(
@@ -549,7 +556,7 @@ if mem0_api_key := os.environ.get(MEM0_API_KEY):
 {% endif %}
 
 # Handle Okta XAA credentials for A2A authentication
-if _is_xaa_enabled:
+if _is_okta_xaa_credentials_needed:
     PRINCIPAL_ID_KEY: Final[str] = "PRINCIPAL_ID"
     principal_id = os.environ.get(PRINCIPAL_ID_KEY, "")
     if principal_id:
