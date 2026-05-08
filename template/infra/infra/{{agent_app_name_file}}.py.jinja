@@ -123,7 +123,7 @@ def _check_a2a_server_enabled() -> bool:
         return False
     with open(workflow_yaml_path) as f:
         workflow_config = yaml.safe_load(f) or {}
-    a2a = workflow_config.get("general", {}).get("front_end", {}).get("a2a")
+    a2a = ((workflow_config.get("general") or {}).get("front_end") or {}).get("a2a")
     return a2a is not None
 
 
@@ -137,11 +137,8 @@ def _check_xaa_enabled() -> bool:
     with open(workflow_yaml_path) as f:
         workflow_config = yaml.safe_load(f) or {}
     xaa = (
-        workflow_config.get("general", {})
-        .get("front_end", {})
-        .get("a2a", {})
-        .get("cross_application_access")
-    )
+        ((workflow_config.get("general") or {}).get("front_end") or {}).get("a2a") or {}
+    ).get("cross_application_access")
     return xaa is not None
 
 
