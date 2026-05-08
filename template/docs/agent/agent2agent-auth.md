@@ -1,9 +1,9 @@
 # A2A Authentication
 
-This guide covers how to configure authentication for Agent-to-Agent (A2A) communication. There are two supported authentication methods:
+This page outlines how to configure authentication for Agent-to-Agent (A2A) communication. There are two supported authentication methods:
 
-1. **DataRobot API key** — simple bearer token auth for DataRobot-hosted agents. Configured by default in all templates.
-2. **Okta cross-application access (XAA)** — two-step token exchange for federated Okta environments (hybrid RFC 8693 / RFC 7523 flow). Opt-in via `workflow.yaml`.
+1. **DataRobot API key** — A simple bearer token auth for DataRobot-hosted agents. Configured by default in all templates.
+2. **Okta cross-application access (XAA)** — A two-step token exchange for federated Okta environments (hybrid RFC 8693 / RFC 7523 flow). Opt-in via `workflow.yaml`.
 
 Both methods use the `authenticated_a2a_client` function group on the client side. See [Agent2Agent](./agent2agent.md) for how to expose A2A endpoints and connect to remote agents.
 
@@ -60,7 +60,7 @@ The `auth` extra is included in the generated `pyproject.toml` and provides the 
 
 ### `workflow.yaml` configuration
 
-**Step 1** — Enable XAA on this agent's A2A server (server-side). Uncomment the `cross_application_access` block under `general.front_end.a2a`:
+1. Enable XAA on this agent's A2A server (server-side). Uncomment the `cross_application_access` block under `general.front_end.a2a`:
 
 ```yaml
 general:
@@ -91,7 +91,7 @@ authentication:
     _type: okta_cross_app_access
 ```
 
-**Step 3** — Connect to a remote XAA-protected agent. Uncomment and configure the `remote_agent` function group:
+3. Connect to a remote XAA-protected agent. Uncomment and configure the `remote_agent` function group:
 
 ```yaml
 function_groups:
@@ -105,19 +105,19 @@ function_groups:
 
 When `cross_application_access` is configured in `workflow.yaml`, the infra module automatically detects it and provisions the required runtime parameters on deployment:
 
-- `PRINCIPAL_ID` — injected as a plain string runtime parameter from the `PRINCIPAL_ID` environment variable.
-- `PRIVATE_JWK` — stored securely as a DataRobot credential (`ApiTokenCredential`) and injected as a `credential`-type runtime parameter from the `PRIVATE_JWK` environment variable.
+- `PRINCIPAL_ID` — Injected as a plain string runtime parameter from the `PRINCIPAL_ID` environment variable.
+- `PRIVATE_JWK` — Stored securely as a DataRobot credential (`ApiTokenCredential`) and injected as a `credential`-type runtime parameter from the `PRIVATE_JWK` environment variable.
 
 Set both in your `.env` file before running `dr run deploy`.
 
 ### How XAA works
 
-The flow operates in two steps:
+The XAA flow operates in two steps:
 
 1. **Token Exchange (RFC 8693)** — The caller's incoming Okta access token is exchanged for an ID-JAG (Identity Assertion Authorization Grant) via the org-level Authorization Server (`token_exchange.trusted_issuer`).
 2. **JWT Bearer Grant (RFC 7523)** — The ID-JAG is exchanged for a scoped access token at the resource AS token endpoint (`token_request.token_url`), granting access to the target agent with the requested scopes.
 
-Both steps authenticate the client using private key JWT, signing assertions with the key from `PRIVATE_JWK`.
+Both steps authenticate the client using a private JWT key, signing assertions with the key from `PRIVATE_JWK`.
 
 ## Server-side configuration reference: `cross_application_access`
 
