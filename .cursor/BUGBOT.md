@@ -187,3 +187,10 @@ Current blocked packages (see `# Excluded` in `override-dependencies`):
 | `python-docx` | Word doc parser pulled in by crewai-tools; not used |
 | `llama-index-cli` | CLI tool pulled in by llama-index; not needed at runtime |
 | `scikit-network` | Graph analysis pulled in by ragas; not used |
+| `watchdog` | File watcher for nemoguardrails hot-reload; not used at runtime |
+| `prompt-toolkit` | Interactive CLI shell for nemoguardrails CLI; not used at runtime |
+| `wcwidth` | Unicode width tables; sole dependent was prompt-toolkit |
+| `typer` | CLI framework for nemoguardrails CLI; not used at runtime |
+| `shellingham` | Shell detection; sole dependent was typer |
+| `pyfiglet` | ASCII banner renderer for deepeval CLI; not used at runtime |
+| `wheel` | Build-time packaging tool; not a runtime dependency |
