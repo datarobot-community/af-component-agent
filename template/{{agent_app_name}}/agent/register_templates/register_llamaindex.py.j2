@@ -18,9 +18,15 @@ from ag_ui.core import RunAgentInput
 from datarobot_genai.dragent.frontends.response import DRAgentEventResponse
 from nat.builder.builder import Builder
 from nat.builder.framework_enum import LLMFrameworkEnum
+{% if use_agent_memory == 'mem0' -%}
+from nat.cli.register_workflow import register_function
+{% else -%}
 from nat.cli.register_workflow import register_per_user_function
+{% endif -%}
 from nat.data_models.agent import AgentBaseConfig
 from nat.data_models.component_ref import FunctionGroupRef
+
+from agent import register_memory as _register_memory  # noqa: F401
 
 
 class LlamaindexAgentConfig(AgentBaseConfig, name="llamaindex_agent"):  # type: ignore[call-arg, misc]
@@ -33,18 +39,26 @@ class LlamaindexAgentConfig(AgentBaseConfig, name="llamaindex_agent"):  # type: 
     tool_names: list[FunctionGroupRef] = []
 
 
+{% if use_agent_memory == 'mem0' -%}
+@register_function(  # type: ignore[untyped-decorator]
+    config_type=LlamaindexAgentConfig,
+    framework_wrappers=[LLMFrameworkEnum.LLAMA_INDEX],
+)
+{% else -%}
 @register_per_user_function(  # type: ignore[untyped-decorator]
     config_type=LlamaindexAgentConfig,
     input_type=RunAgentInput,
     streaming_output_type=DRAgentEventResponse,
     framework_wrappers=[LLMFrameworkEnum.LLAMA_INDEX],
 )
+{% endif -%}
 async def llamaindex_agent(
     config: LlamaindexAgentConfig, builder: Builder
 ) -> AsyncGenerator[Any, None]:
     from datarobot_genai.core.mcp import MCPConfig
     from datarobot_genai.dragent.frontends.converters import (
-        aggregate_dragent_event_responses,
+        aggregate_dragent_event_responses,{% if use_agent_memory == 'mem0' %}
+        convert_dragent_event_response_to_str,{% endif %}
     )
     from datarobot_genai.llama_index.mcp import mcp_tools_context
     from datarobot_genai.nat.helpers import (
@@ -95,8 +109,23 @@ async def llamaindex_agent(
                     usage_metrics=usage_metrics,
                     pipeline_interactions=pipeline_interactions,
                 )
+{% if use_agent_memory == 'mem0' %}
+    async def _response_to_str(
+        responses: AsyncGenerator[DRAgentEventResponse],
+    ) -> str:
+        aggregated = aggregate_dragent_event_responses(
+            [response async for response in responses]
+        )
+        return convert_dragent_event_response_to_str(aggregated)
 
+    yield FunctionInfo.create(
+        stream_fn=_response_fn,
+        stream_to_single_fn=_response_to_str,
+        description=config.description,
+    )
+{% else %}
     yield FunctionInfo.from_fn(
         _response_fn,
         description=config.description,
     )
+{% endif -%}

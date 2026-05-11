@@ -50,7 +50,7 @@ DEFAULT_DRUM_GUNICORN_WORKER_CLASS: Final[str] = "sync"
 DEFAULT_DRUM_WORKER_CONNECTIONS: Final[str] = "1"
 # Default gunicorn timeout in current DRUM is 2 mins
 DEFAULT_DRUM_CLIENT_REQUEST_TIMEOUT: Final[str] = "300"
-{% if use_agent_memory %}
+{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
 # Agent memory runtime parameters
 AGENT_MEMORY_TTL_SECONDS: Final[str] = "AGENT_MEMORY_TTL_SECONDS"
 CONFIGURED_AGENT_MEMORY_TTL_SECONDS: Final[str] = os.environ.get(
@@ -487,7 +487,7 @@ agent_runtime_parameter_values.extend(
         ),
     ]
 )
-{% if use_agent_memory %}
+{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
 agent_runtime_parameter_values.append(
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
         key=AGENT_MEMORY_TTL_SECONDS,
@@ -514,7 +514,7 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
         ),
     )
 
-{%- if use_agent_memory %}
+{%- if use_agent_memory == 'mem0' %}
 # Handle Mem0 key credential
 MEM0_API_KEY: Final[str] = "MEM0_API_KEY"
 
