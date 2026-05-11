@@ -226,7 +226,6 @@ override-dependencies = [
     "llama-index-cli; sys_platform == 'never'",  # CLI tool pulled in by llama-index; not needed at runtime
     "scikit-network; sys_platform == 'never'",  # graph analysis pulled in by ragas; not used
     # nemoguardrails — server / CLI stack pulled in via datarobot-moderations[all]; not used at runtime
-    "uvicorn; sys_platform == 'never'",  # ASGI server for guardrails API server; not used
     "watchdog; sys_platform == 'never'",  # file watcher for guardrails hot-reload; not used
     "prompt_toolkit; sys_platform == 'never'",  # interactive CLI shell for guardrails CLI; not used
     "typer; sys_platform == 'never'",  # CLI framework for guardrails CLI; not used
