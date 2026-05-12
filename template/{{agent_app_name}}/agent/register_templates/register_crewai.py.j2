@@ -26,7 +26,7 @@ from nat.cli.register_workflow import register_per_user_function
 from nat.data_models.agent import AgentBaseConfig
 from nat.data_models.component_ref import FunctionGroupRef
 
-from agent import register_memory as _register_memory  # noqa: F401
+{% if use_agent_memory != 'none' %}from agent import register_memory as _register_memory  # noqa: F401 {% endif %}
 
 
 class CrewaiAgentConfig(AgentBaseConfig, name="crewai_agent"):  # type: ignore[call-arg, misc]

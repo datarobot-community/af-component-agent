@@ -19,7 +19,6 @@ store and retrieve long-term memory without depending on the upstream
 ``nvidia-nat-mem0ai`` package (which pins an older mem0ai SDK that conflicts
 with ``datarobot-genai[memory]``).
 """
-{% if use_agent_memory == 'mem0' %}
 import asyncio
 import os
 from collections.abc import AsyncGenerator
@@ -157,4 +156,3 @@ async def dr_mem0_memory_client(
         )
 
     yield editor
-{% endif -%}
