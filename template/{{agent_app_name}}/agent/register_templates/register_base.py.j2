@@ -24,8 +24,10 @@ from nat.cli.register_workflow import register_per_user_function
 {% endif -%}
 from nat.data_models.agent import AgentBaseConfig
 from nat.data_models.component_ref import FunctionGroupRef
+{%- if use_agent_memory != 'none' %}
 
-{% if use_agent_memory != 'none' %}from agent import register_memory as _register_memory  # noqa: F401 {% endif %}
+from agent import register_memory as _register_memory  # noqa: F401
+{%- endif %}
 
 
 class BaseAgentConfig(AgentBaseConfig, name="base_agent"):  # type: ignore[call-arg, misc]
