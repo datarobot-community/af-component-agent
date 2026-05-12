@@ -265,10 +265,6 @@ tasks:
           AGENT: "base"
       - task: update-lock-file
         vars:
-          AGENT: "base_memory"
-          USE_MEMORY: "mem0"
-      - task: update-lock-file
-        vars:
           AGENT: "crewai"
       - task: update-lock-file
         vars:
