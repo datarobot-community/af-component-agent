@@ -49,7 +49,9 @@ class TestMyAgentLangGraph:
         input_vars = prompt_template.input_variables
         assert "chat_history" in input_vars
         assert "topic" in input_vars
-        {% if uses_memory != 'none' %}assert "memory" in input_vars{% endif %}
+{%- if use_agent_memory != 'none' %}
+        assert "memory" in input_vars
+{%- endif %}
 
     def test_prompt_template_formats_with_variables(self):
         """Test that prompt_template can be formatted with chat_history and topic."""
@@ -57,12 +59,16 @@ class TestMyAgentLangGraph:
             "chat_history": "User asked about AI trends.",
             "topic": "artificial intelligence",
         }
-        {% if uses_memory != 'none' %}format_kwargs["memory"] = "User prefers concise answers."{% endif %}
+{%- if use_agent_memory != 'none' %}
+        format_kwargs["memory"] = "User prefers concise answers."
+{%- endif %}
         messages = prompt_template.format_messages(**format_kwargs)
         assert len(messages) == 2
         assert "{chat_history}" not in messages[0].content
         assert "{topic}" not in messages[1].content
-        {% if uses_memory != 'none' %}assert "{memory}" not in messages[0].content{% endif %}
+{%- if use_agent_memory != 'none' %}
+        assert "{memory}" not in messages[0].content
+{%- endif %}
         assert "artificial intelligence" in messages[1].content
 
     @patch("agent.myagent.create_agent")
