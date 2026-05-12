@@ -227,8 +227,8 @@ override-dependencies = [
     "scikit-network; sys_platform == 'never'",  # graph analysis pulled in by ragas; not used
     # nemoguardrails — server / CLI stack pulled in via datarobot-moderations[all]; not used at runtime
     "watchdog; sys_platform == 'never'",  # file watcher for guardrails hot-reload; not used
-    "prompt-toolkit; sys_platform == 'never'",  # interactive CLI shell for guardrails CLI; not used
-    "wcwidth; sys_platform == 'never'",  # Unicode width tables; sole dependent was prompt-toolkit
+    # prompt-toolkit and wcwidth are intentionally NOT excluded: IPython (via ipykernel / agentic_playground)
+    # has a hard import-time dependency on prompt-toolkit; excluding it causes ModuleNotFoundError at runtime.
     "typer; sys_platform == 'never'",  # CLI framework for guardrails CLI; not used
     "shellingham; sys_platform == 'never'",  # shell detection; sole dependent was typer
     # deepeval — CLI / reporting stack pulled in via datarobot-moderations[all]; not used at runtime
