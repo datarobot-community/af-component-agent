@@ -11,11 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""NAT workflow registrations.
+"""NAT custom tool registration and workflow plugins.
+
+Register tools with a **module-level call** after the function is defined::
+
+    nat_tool(my_function, "my_function")
+
+Do **not** use ``@nat_tool()`` as a decorator with no arguments; that raises
+``TypeError: nat_tool() missing 2 required positional arguments: 'fn' and 'name'``.
+
+Each tool name must also appear under ``functions`` in ``workflow.yaml`` and in
+``workflow.tool_names``. See ``docs/agent/frameworks/nat.md``.
 
 Framework-specific NAT plugins are loaded from datarobot-genai and NAT
-entrypoints. Mem0 memory registration lives in ``agent.register_memory`` so it
-can be shared by every workflow template.
+entrypoints. When Mem0 is enabled, memory registration lives in
+``agent.register_memory`` so it can be shared by every workflow template.
 """
 {% if use_agent_memory == 'mem0' %}
 from agent import register_memory as _register_memory  # noqa: F401

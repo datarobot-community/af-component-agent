@@ -31,6 +31,8 @@ from openai.types.chat import CompletionCreateParams
 from agent.config import Config
 {%- endif %}
 
+import agent.register  # noqa: F401 - load nat_tool side effects when added in register.py
+
 if TYPE_CHECKING:
     from ragas import MultiTurnSample
 
