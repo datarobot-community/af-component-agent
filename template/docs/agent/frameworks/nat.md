@@ -4,7 +4,7 @@ The NAT (NVIDIA NeMo Agent Toolkit) agent uses a YAML-first configuration to def
 
 ## NAT `workflow.yaml` requirements (read this first)
 
-If you use this template **without** LangGraph, CrewAI, or LlamaIndex, your `dr start` choice is likely NAT. **NAT validates `workflow.yaml` with a fixed schema.** Other parts of this repository document LangGraph-oriented patterns; those are **not** valid inside NAT’s `functions` block unless a NAT discriminator explicitly supports them.
+**NAT validates `workflow.yaml` with a fixed schema.** Other parts of this repository document LangGraph-oriented patterns; those are **not** valid inside NAT’s `functions` block unless a NAT discriminator explicitly supports them.
 
 1. **Do not use `python_function` in `functions`.** Some examples in the ecosystem use `_type: python_function` with `module_path` and `function_name` to point at Python callables. That is **not** a valid [NAT function discriminator](https://docs.nvidia.com/nemo/agent-toolkit/index.html). You will get errors such as: `Input tag 'python_function' found using discriminator() does not match any of the expected tags`. For custom code, use **`nat_tool` in `register.py` plus a matching `functions` entry** (see [Custom local tools](#custom-local-tools) below) or only [built-in NAT `/_type` values](https://docs.nvidia.com/nemo/agent-toolkit/index.html).
 
