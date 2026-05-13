@@ -81,7 +81,7 @@ general:
           audience: "https://your-org.okta.com/oauth2/ausXXXXXXXXXXXXXXX"
         token_request:
           token_url: "https://your-org.okta.com/oauth2/ausXXXXXXXXXXXXXXX/v1/token"
-          audience: "https://app.datarobot.com/<org_id>/<agent_id>"
+          audience: "https://example.com/agents/my-agent-id"
           scopes:
             - "dr.impersonation"
 ```
