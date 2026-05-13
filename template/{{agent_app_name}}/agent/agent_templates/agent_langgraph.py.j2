@@ -119,7 +119,7 @@ def graph_factory(
         last = state["messages"][-1]
         if isinstance(last, AIMessage):
             return {"messages": [HumanMessage(content=last.content)]}
-        return {}
+        return {"messages": []}
 
     langgraph_workflow = StateGraph(MessagesState)
     langgraph_workflow.add_node("planner_node", agent_planner)
