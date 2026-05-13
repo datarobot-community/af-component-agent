@@ -83,7 +83,7 @@ general:
           token_url: "https://your-org.okta.com/oauth2/ausXXXXXXXXXXXXXXX/v1/token"
           audience: "https://app.datarobot.com/<org_id>/<agent_id>"
           scopes:
-            - "read_data"
+            - "dr.impersonation"
 ```
 
 **Step 2** — Add the Okta auth provider (client-side). Uncomment the `okta_auth` block in the `authentication` section:
