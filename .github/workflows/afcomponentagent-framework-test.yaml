@@ -33,6 +33,7 @@ jobs:
           - name: base
             agent_name: agent_with_memory
             use_memory: "mem0"
+            apply_memory_component: true
           - name: crewai
             agent_name: agent_crewai
             use_memory: "none"
@@ -48,12 +49,37 @@ jobs:
     steps:
       - name: Checkout
         uses: "actions/checkout@v6"
+      - name: Checkout memory component
+        if: matrix.framework.apply_memory_component == true
+        uses: actions/checkout@v6
+        with:
+          repository: datarobot-community/af-component-memory
+          path: af-component-memory
       - name: Render template
         uses: datarobot-oss/copier-template-validator@main
         with:
           working-directory: .
           rendered-dir: ./rendered
-          copier-args: '--data agent_app_name=${{ matrix.framework.agent_name }} --data agent_template_framework=${{ matrix.framework.name }} --data use_agent_memory=${{ matrix.framework.use_memory }} --data base_answers_file=.datarobot/answers/base.yml'
+          copier-args: >-
+            --data agent_app_name=${{ matrix.framework.agent_name }}
+            --data agent_template_framework=${{ matrix.framework.name }}
+            --data base_answers_file=.datarobot/answers/base.yml
+            ${{ matrix.framework.apply_memory_component == true && '--data use_memory_provider=mem0' || '' }}
+      - name: Apply memory component
+        if: matrix.framework.apply_memory_component == true
+        shell: sh
+        run: |
+          cp ./fixtures/.datarobot/answers/memory-memory.yml ./rendered/${{ matrix.framework.agent_name }}/.datarobot/answers/memory-memory.yml
+          cp ./fixtures/.datarobot/answers/agent-agent.yml ./rendered/${{ matrix.framework.agent_name }}/.datarobot/answers/agent-agent.yml
+          uvx copier copy ./af-component-memory ./rendered/${{ matrix.framework.agent_name }} --defaults \
+            --data memory_app_name=memory \
+            --data use_memory_provider=mem0 \
+            --data agent_app_name=agent \
+            --data agent_template_framework=${{ matrix.framework.name }} \
+            --data agent_answers_file=.datarobot/answers/agent-agent.yml \
+            --data base_answers_file=.datarobot/answers/base.yml
+        env:
+          UV_CACHE_DIR: /.uv_cache
       - name: Check lock file
         shell: sh
         working-directory: ./rendered/${{ matrix.framework.agent_name }}

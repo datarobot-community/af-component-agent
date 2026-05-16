@@ -10,3 +10,7 @@ depends_on:
   mcp:
     url: https://github.com/datarobot-community/af-component-datarobot-mcp
     repeatable: true
+collaborates_with:
+  memory:
+    url: https://github.com/datarobot-community/af-component-memory
+    repeatable: true

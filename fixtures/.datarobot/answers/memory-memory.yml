@@ -1,0 +1,7 @@
+# Fixture memory answers for agent template tests with memory enabled
+_commit: fixture
+_src_path: fixture
+memory_app_name: memory
+use_memory_provider: mem0
+agent_answers_file: .datarobot/answers/agent-agent.yml
+base_answers_file: .datarobot/answers/base.yml
