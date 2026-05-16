@@ -19,14 +19,14 @@ use_low_code_interface:
   help: "Do you want to use low-code YAML-based configuration (i.e. NeMo Agent Toolkit) for your agent? (default: no)"
   default: no
 
-use_agent_memory:
+memory_answers_file:
   type: str
-  help: "Choose an agent memory provider:"
-  default: none
-  choices:
-    None: none
-    Mem0: mem0
-    "Datarobot Memory Service": datarobot_memory_service
+  default: ".datarobot/answers/memory-memory.yml"
+  help: "Path to the memory component answers file (optional; used when af-component-memory is applied)"
+
+use_memory_provider:
+  type: str
+  default: "{{ _external_data.memory.use_memory_provider | default('none', true) }}"
   when: false
 
 agent_template_framework:
@@ -81,6 +81,7 @@ _external_data:
   base: "{{ base_answers_file }}"
   llm: "{{ llm_answers_file }}"
   mcp: "{{ mcp_answers_file }}"
+  memory: "{{ memory_answers_file }}"
 
 _subdirectory: template
 _answers_file: ".datarobot/answers/agent-{{ agent_app_name }}.yml"
@@ -139,12 +140,9 @@ _migrations:
           rm -rf "$APP/.copier_migration_tmp"
         done
     when: "{{ _stage == 'after' and _copier_operation == 'update' }}"
-  # Migrate legacy boolean memory answers to the current provider choice.
-  #
-  # `use_agent_memory` used to be a bool, so older answers can contain
-  # yes/no or true/false. The current question is a string choice where the
-  # no-memory provider is stored as `none`.
-  - version: "11.8.28"
+  # Drop legacy use_agent_memory from agent answers; memory is configured via
+  # af-component-memory (.datarobot/answers/memory-*.yml).
+  - version: "11.9.3"
     command:
       - bash
       - -lc
@@ -159,11 +157,12 @@ _migrations:
 
         answers_file = Path(sys.argv[1])
         text = answers_file.read_text(encoding="utf-8")
-        legacy_bool_answer = re.compile(
-            r"^(\s*use_agent_memory:\s*)(['\"]?)(?:yes|no|true|false)\2(\s*(?:#.*)?)$",
-            re.IGNORECASE | re.MULTILINE,
+        updated = re.sub(
+            r"^use_agent_memory:.*\n",
+            "",
+            text,
+            flags=re.MULTILINE,
         )
-        updated = legacy_bool_answer.sub(r"\1none\3", text)
         if updated != text:
             answers_file.write_text(updated, encoding="utf-8")
         PY

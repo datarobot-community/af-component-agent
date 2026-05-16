@@ -27,6 +27,6 @@ Framework-specific NAT plugins are loaded from datarobot-genai and NAT
 entrypoints. When Mem0 is enabled, memory registration lives in
 ``agent.register_memory`` so it can be shared by every workflow template.
 """
-{% if use_agent_memory == 'mem0' %}
+{% if use_memory_provider == 'mem0' %}
 from agent import register_memory as _register_memory  # noqa: F401
 {% endif -%}

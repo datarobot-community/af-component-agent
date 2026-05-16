@@ -209,7 +209,7 @@ class TestCustomModel:
             "timeout": 90,
             "forwarded_headers": ANY,
         }
-        uses_memory = {{ use_agent_memory == 'mem0' }}
+        uses_memory = {{ use_memory_provider == 'mem0' }}
         if uses_memory:
             expected_agent_kwargs["memory_client"] = None
         mock_agent.assert_called_once_with(**expected_agent_kwargs)
@@ -333,7 +333,7 @@ class TestCustomModel:
             "timeout": 90,
             "forwarded_headers": ANY,
         }
-        uses_memory = {{ use_agent_memory == 'mem0' }}
+        uses_memory = {{ use_memory_provider == 'mem0' }}
         if uses_memory:
             expected_agent_kwargs["memory_client"] = None
         mock_agent.assert_called_once_with(**expected_agent_kwargs)

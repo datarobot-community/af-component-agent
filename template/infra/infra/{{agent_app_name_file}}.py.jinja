@@ -34,6 +34,11 @@ from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 from . import project_dir, use_case
 
 from .{{ _external_data.llm.llm_app_name }} import custom_model_runtime_parameters as llm_custom_model_runtime_parameters
+{% if use_memory_provider in ['mem0', 'datarobot_memory_service'] %}
+from .lib{{ _external_data.memory.memory_app_name_file | default('memory', true) }} import (
+    get_memory_runtime_parameter_values,
+)
+{% endif %}
 
 DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
 
@@ -50,13 +55,6 @@ DEFAULT_DRUM_GUNICORN_WORKER_CLASS: Final[str] = "sync"
 DEFAULT_DRUM_WORKER_CONNECTIONS: Final[str] = "1"
 # Default gunicorn timeout in current DRUM is 2 mins
 DEFAULT_DRUM_CLIENT_REQUEST_TIMEOUT: Final[str] = "300"
-{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
-# Agent memory runtime parameters
-AGENT_MEMORY_TTL_SECONDS: Final[str] = "AGENT_MEMORY_TTL_SECONDS"
-CONFIGURED_AGENT_MEMORY_TTL_SECONDS: Final[str] = os.environ.get(
-    AGENT_MEMORY_TTL_SECONDS, "2592000"
-)
-{% endif %}
 # DRUM runtime parameters that are safe to include defaultValue in metadata
 DRUM_PARAMS_WITH_DEFAULTS: Final[set[str]] = {
     "CUSTOM_MODEL_WORKERS",
@@ -509,13 +507,9 @@ agent_runtime_parameter_values.extend(
         ),
     ]
 )
-{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
-agent_runtime_parameter_values.append(
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        key=AGENT_MEMORY_TTL_SECONDS,
-        type="numeric",
-        value=CONFIGURED_AGENT_MEMORY_TTL_SECONDS,
-    )
+{% if use_memory_provider in ['mem0', 'datarobot_memory_service'] %}
+agent_runtime_parameter_values.extend(
+    get_memory_runtime_parameter_values({{agent_app_name}}_asset_name)
 )
 {% endif %}
 
@@ -535,25 +529,6 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
             value=session_secret_cred.id,
         ),
     )
-
-{%- if use_agent_memory == 'mem0' %}
-# Handle Mem0 key credential
-MEM0_API_KEY: Final[str] = "MEM0_API_KEY"
-
-if mem0_api_key := os.environ.get(MEM0_API_KEY):
-    pulumi.export(MEM0_API_KEY, mem0_api_key)
-    mem0_api_key_cred = pulumi_datarobot.ApiTokenCredential(
-        {{agent_app_name}}_asset_name + " Mem0 API Key",
-        args=pulumi_datarobot.ApiTokenCredentialArgs(api_token=str(mem0_api_key)),
-    )
-    agent_runtime_parameter_values.append(
-        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-            type="credential",
-            key=MEM0_API_KEY,
-            value=mem0_api_key_cred.id,
-        ),
-    )
-{% endif %}
 
 # Handle Okta XAA credentials for A2A authentication
 if _is_okta_xaa_credentials_needed:

@@ -1,0 +1,8 @@
+# Fixture agent answers referenced by memory component rendering in tests
+_commit: fixture
+_src_path: fixture
+agent_app_name: agent
+agent_template_framework: base
+base_answers_file: .datarobot/answers/base.yml
+llm_answers_file: .datarobot/answers/llm-llm.yml
+mcp_answers_file: .datarobot/answers/drmcp-mcp_server.yml

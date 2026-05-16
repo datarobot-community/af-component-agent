@@ -18,14 +18,14 @@ from ag_ui.core import RunAgentInput
 from datarobot_genai.dragent.frontends.response import DRAgentEventResponse
 from nat.builder.builder import Builder
 from nat.builder.framework_enum import LLMFrameworkEnum
-{% if use_agent_memory == 'mem0' -%}
+{% if use_memory_provider == 'mem0' -%}
 from nat.cli.register_workflow import register_function
 {% else -%}
 from nat.cli.register_workflow import register_per_user_function
 {% endif -%}
 from nat.data_models.agent import AgentBaseConfig
 from nat.data_models.component_ref import FunctionGroupRef
-{%- if use_agent_memory == 'mem0' %}
+{%- if use_memory_provider == 'mem0' %}
 
 from agent import register_memory as _register_memory  # noqa: F401
 {%- endif %}
@@ -41,7 +41,7 @@ class CrewaiAgentConfig(AgentBaseConfig, name="crewai_agent"):  # type: ignore[c
     tool_names: list[FunctionGroupRef] = []
 
 
-{% if use_agent_memory == 'mem0' -%}
+{% if use_memory_provider == 'mem0' -%}
 @register_function(  # type: ignore[untyped-decorator]
     config_type=CrewaiAgentConfig,
     framework_wrappers=[LLMFrameworkEnum.CREWAI],
@@ -60,7 +60,7 @@ async def crewai_agent(
     from datarobot_genai.core.mcp import MCPConfig
     from datarobot_genai.crewai.mcp import mcp_tools_context
     from datarobot_genai.dragent.frontends.converters import (
-        aggregate_dragent_event_responses,{% if use_agent_memory == 'mem0' %}
+        aggregate_dragent_event_responses,{% if use_memory_provider == 'mem0' %}
         convert_dragent_event_response_to_str,{% endif %}
     )
     from datarobot_genai.nat.helpers import (
@@ -111,7 +111,7 @@ async def crewai_agent(
                     usage_metrics=usage_metrics,
                     pipeline_interactions=pipeline_interactions,
                 )
-{% if use_agent_memory == 'mem0' %}
+{% if use_memory_provider == 'mem0' %}
     async def _response_to_str(
         responses: AsyncGenerator[DRAgentEventResponse],
     ) -> str:

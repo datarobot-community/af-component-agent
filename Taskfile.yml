@@ -43,6 +43,7 @@ tasks:
     vars:
       USE_MEMORY: '{{.USE_MEMORY| default "none"}}'
       AGENT_TEMPLATE_FRAMEWORK: '{{ trimSuffix "_memory" .AGENT }}'
+      MEMORY_COMPONENT_PATH: '{{.MEMORY_COMPONENT_PATH| default "../af-component-memory"}}'
     cmds:
       - echo "Rendering template {{.AGENT}}"
       # Clean up the existing rendered directory except for .venv to speed up rendering and avoid conflict checks
@@ -50,7 +51,29 @@ tasks:
       - mkdir -p ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/
       - cp ./fixtures/.datarobot/answers/llm-llm.yml ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/llm-llm.yml
       - cp ./fixtures/.datarobot/answers/drmcp-mcp_server.yml ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/drmcp-mcp_server.yml
-      - uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_template_framework={{.AGENT_TEMPLATE_FRAMEWORK}} --data use_agent_memory={{.USE_MEMORY}} --vcs-ref=HEAD
+      - |
+          MEMORY_ARGS=""
+          if [ "{{.USE_MEMORY}}" != "none" ]; then
+            cp ./fixtures/.datarobot/answers/memory-memory.yml ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/memory-memory.yml
+            cp ./fixtures/.datarobot/answers/agent-agent.yml ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/agent-agent.yml
+            MEMORY_ARGS="--data memory_answers_file=.datarobot/answers/memory-memory.yml"
+          fi
+          uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --overwrite \
+            --data agent_template_framework={{.AGENT_TEMPLATE_FRAMEWORK}} \
+            $MEMORY_ARGS --vcs-ref=HEAD
+      - |
+          if [ "{{.USE_MEMORY}}" != "none" ] && [ -d "{{.MEMORY_COMPONENT_PATH}}" ]; then
+            uvx copier copy "{{.MEMORY_COMPONENT_PATH}}" ./$RENDER_DIR/agent_{{.AGENT}} --defaults --overwrite \
+              --data memory_app_name=memory \
+              --data use_memory_provider={{.USE_MEMORY}} \
+              --data agent_app_name=agent \
+              --data agent_template_framework={{.AGENT_TEMPLATE_FRAMEWORK}} \
+              --data agent_answers_file=.datarobot/answers/agent-agent.yml \
+              --data base_answers_file=.datarobot/answers/base.yml \
+              --vcs-ref=HEAD
+          elif [ "{{.USE_MEMORY}}" != "none" ]; then
+            echo "WARNING: af-component-memory not found at {{.MEMORY_COMPONENT_PATH}}; skipping memory overlay"
+          fi
       - cp ./fixtures/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/Taskfile.yml
       - mkdir -p ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra
       - cp ./fixtures/infra/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/infra/Taskfile.yml
