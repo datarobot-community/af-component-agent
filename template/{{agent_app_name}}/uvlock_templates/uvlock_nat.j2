@@ -150,7 +150,7 @@ dev = [
 requires-dist = [
     { name = "anyio", specifier = ">=4.11.0,<4.12.0" },
     { name = "datarobot-drum", specifier = "==1.17.11.post1" },
-    { name = "datarobot-genai", extras = ["nat", "dragent", "auth"], specifier = "==0.15.53" },
+    { name = "datarobot-genai", extras = ["nat", "dragent", "auth"], specifier = "==0.15.56" },
     { name = "datarobot-mlops", specifier = "==11.1.0" },
     { name = "datarobot-moderations", extras = ["all"], specifier = "==11.2.24" },
     { name = "debugpy", marker = "extra == 'dev'", specifier = ">=1.8.20" },
@@ -1030,19 +1030,21 @@ wheels = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.15.53"
+version = "0.15.56"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/c5/46/3170237cde41f4443603758ef402208b3683b54c380e2b702fec86b9e855/datarobot_genai-0.15.53.tar.gz", hash = "sha256:1b0bf18a3c7116dc3cef6971ccc17cdc8168fd6371460bfa212dda3c056cb9b6", size = 314629, upload-time = "2026-05-15T02:42:59.321Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/58/68/8f2028ac60fae7f8a5ac4c7c8050fe5186129341c216200a3eb5ef4f20be/datarobot_genai-0.15.56.tar.gz", hash = "sha256:dab27d2810b145300aab961ecfb8cd8fe05725d7be9761be9ea436fad1a6feec", size = 317698, upload-time = "2026-05-18T13:13:45.41Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b9/c8/c68142b4fc43e35da771dec9735ff0450fefea4334af5b3fdc70e2bff7ea/datarobot_genai-0.15.53-py3-none-any.whl", hash = "sha256:61c1466168807dd3ebd96db3e3fdd00d3cb9b61eeb1769bf99c3ec4ee894d628", size = 438301, upload-time = "2026-05-15T02:42:57.326Z" },
+    { url = "https://files.pythonhosted.org/packages/74/8e/10e4617066b03f9015f3e0a0a0c947a6fa4276ddb7f1282e84afa6c49a79/datarobot_genai-0.15.56-py3-none-any.whl", hash = "sha256:7593acd5f28e88a6032134ca7ccda1fa9d1ffb9138a302e4c7e6bdd092e82d03", size = 440961, upload-time = "2026-05-18T13:13:43.083Z" },
 ]
 
 [package.optional-dependencies]
 auth = [
     { name = "aiohttp", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot", extra = ["auth"], marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "httpx", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "okta-client-python", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pydantic", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "pyjwt", extra = ["crypto"], marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 dragent = [
     { name = "ag-ui-protocol", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
