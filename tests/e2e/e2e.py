@@ -27,7 +27,7 @@ from typing import cast
 import pytest
 from openai.types.chat import ChatCompletion
 
-from datarobot_genai.core.cli import AgentKernel
+from datarobot_genai.core.cli import AgentEnvironment
 
 from .helpers import (
     ALL_FRAMEWORKS,
@@ -64,7 +64,9 @@ def _execute_custom_model(
     fprint("Running custom model agent execution")
     fprint("====================================")
 
-    kernel = AgentKernel(api_token=datarobot_api_token, base_url=datarobot_endpoint)
+    kernel = AgentEnvironment(
+        api_token=datarobot_api_token, base_url=datarobot_endpoint
+    ).interface
     response_text = kernel.custom_model(
         custom_model_id=custom_model_id, user_prompt=user_prompt
     )
@@ -99,7 +101,9 @@ def _execute_deployment(
     fprint("Running deployed agent execution")
     fprint("================================")
 
-    kernel = AgentKernel(api_token=datarobot_api_token, base_url=datarobot_endpoint)
+    kernel = AgentEnvironment(
+        api_token=datarobot_api_token, base_url=datarobot_endpoint
+    ).interface
     completion = cast(
         ChatCompletion,
         kernel.deployment(deployment_id=deployment_id, user_prompt=user_prompt),
