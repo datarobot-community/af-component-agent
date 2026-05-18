@@ -23,6 +23,7 @@ import os
 from pathlib import Path
 
 import pytest
+from openai.types.chat import ChatCompletion
 
 from ._process import fprint, is_truthy, response_snippet, run_cmd, task_cmd
 
@@ -50,7 +51,6 @@ def render_project(*, repo_root: Path, agent_framework: str) -> tuple[Path, Path
     agent_dir = rendered_dir / "agent" / "agent"
     if not agent_dir.exists():
         pytest.fail(f"Rendered agent dir missing: {agent_dir}")
-
 
     return rendered_dir, infra_dir
 
@@ -86,7 +86,9 @@ def pulumi_stack_output_value(
         pytest.fail(f"Failed to parse `pulumi stack output --json`: {e}\n{raw}")
 
     if not isinstance(outputs, dict):
-        pytest.fail(f"Unexpected `pulumi stack output --json` shape.\nType: {type(outputs)}\n{raw}")
+        pytest.fail(
+            f"Unexpected `pulumi stack output --json` shape.\nType: {type(outputs)}\n{raw}"
+        )
 
     matches = [k for k in outputs.keys() if contains in k]
     if not matches:
@@ -100,37 +102,9 @@ def pulumi_stack_output_value(
     return val.strip()
 
 
-def extract_cli_response_after_wait(output: str) -> str:
-    """
-    Best-effort extraction of the "response" from the CLI output for custom-model execution.
-
-    Supports both variants:
-    - "Execution result:" JSON block
-    - Text response after the last "Please wait" line
-    """
-    text = (output or "").strip()
-    if not text:
-        return ""
-
-    if "Execution result:" in text:
-        candidate = text.split("Execution result:", 1)[1]
-    else:
-        lines = text.splitlines()
-        wait_idxs = [i for i, line in enumerate(lines) if "Please wait" in line]
-        start = wait_idxs[-1] + 1 if wait_idxs else 0
-        candidate = "\n".join(lines[start:])
-
-    # Trim trailing footer lines commonly printed by the CLI wrappers.
-    trimmed: list[str] = []
-    for line in candidate.splitlines():
-        if line.strip().startswith("CLI exited with"):
-            break
-        trimmed.append(line)
-
-    return "\n".join(trimmed).strip()
-
-
-def assert_response_text_ok(*, response_text: str, agent_framework: str, context: str) -> None:
+def assert_response_text_ok(
+    *, response_text: str, agent_framework: str, context: str
+) -> None:
     prefix = f"{context} [{agent_framework}]"
 
     text = (response_text or "").strip()
@@ -138,33 +112,21 @@ def assert_response_text_ok(*, response_text: str, agent_framework: str, context
         pytest.fail(f"{prefix}: response too short: {text!r}")
 
     lowered = text.lower()
-    if lowered.startswith("error:") or "failed to obtain agent chat response" in lowered:
+    if (
+        lowered.startswith("error:")
+        or "failed to obtain agent chat response" in lowered
+    ):
         pytest.fail(f"{prefix}: agent execution returned an error:\n{text}")
 
 
-def verify_openai_response(cli_output: str) -> None:
-    """Verify the CLI output contains a JSON OpenAI-like response with message content."""
-    marker = "Execution result:"
-    if marker not in cli_output:
-        pytest.fail(
-            f"Expected CLI output to contain {marker!r} but it was missing.\n{cli_output}"
-        )
-    json_result = cli_output.split(marker, 1)[1]
-    if "CLI exited with" in json_result:
-        json_result = json_result.split("CLI exited with")[0]
-
+def verify_openai_response(completion: ChatCompletion) -> None:
+    """Verify a ChatCompletion has at least one choice with non-empty string content."""
     try:
-        local_result = json.loads(json_result.strip())
-    except json.JSONDecodeError as e:
-        pytest.fail(f"Failed to parse CLI output as JSON: {e}\nOutput:\n{cli_output}")
-
-    try:
-        message_content = local_result["choices"][0]["message"]["content"]
-    except (KeyError, IndexError, TypeError) as e:
+        message_content = completion.choices[0].message.content
+    except (AttributeError, IndexError) as e:
         pytest.fail(
-            "Response JSON did not include choices[0].message.content.\n"
-            f"Error: {e}\n"
-            f"Top-level keys: {list(local_result.keys()) if isinstance(local_result, dict) else type(local_result)}"
+            f"ChatCompletion did not include choices[0].message.content: {e}\n"
+            f"Completion: {completion!r}"
         )
 
     if not isinstance(message_content, str) or len(message_content.strip()) <= 5:

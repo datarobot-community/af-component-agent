@@ -14,6 +14,10 @@ dev = [
     "pytest>=7.4.0",
     "ruff>=0.3.0",
     "mypy>=1.8.0",
+    "backoff>=2.0.0",
+    "openai>=1.0.0",
+    "requests>=2.31.0",
+    "datarobot-genai==0.15.56", # to use agent kernel from datarobot-genai
 ]
 
 [tool.uv]

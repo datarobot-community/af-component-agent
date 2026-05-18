@@ -22,13 +22,16 @@ import os
 import time
 import uuid
 from pathlib import Path
+from typing import cast
 
 import pytest
+from openai.types.chat import ChatCompletion
+
+from datarobot_genai.core.cli import AgentKernel
 
 from .helpers import (
     ALL_FRAMEWORKS,
     assert_response_text_ok,
-    extract_cli_response_after_wait,
     extract_id_from_url,
     pulumi_stack_output_value,
     render_project,
@@ -52,35 +55,25 @@ RESPONSE_SNIPPET_CHARS = 50
 
 def _execute_custom_model(
     *,
-    rendered_dir: Path,
     agent_framework: str,
     user_prompt: str,
     custom_model_id: str,
+    datarobot_endpoint: str,
+    datarobot_api_token: str,
 ) -> None:
     fprint("Running custom model agent execution")
     fprint("====================================")
 
-    result = run_cmd(
-        task_cmd(
-            "agent:cli",
-            "--",
-            "execute-custom-model",
-            "--user_prompt",
-            user_prompt,
-            "--custom_model_id",
-            custom_model_id,
-        ),
-        cwd=rendered_dir,
-        capture=True,
+    kernel = AgentKernel(api_token=datarobot_api_token, base_url=datarobot_endpoint)
+    response_text = kernel.custom_model(
+        custom_model_id=custom_model_id, user_prompt=user_prompt
     )
 
-    response_text = extract_cli_response_after_wait(result)
     if not response_text.strip():
-        pytest.fail(
-            "Custom model execution: could not extract response text from CLI output.\n"
-            f"{result}"
-        )
+        pytest.fail("Custom model execution returned an empty response.")
 
+    # Agent-side errors come back as "Error: ..." strings (legacy AgentKernel behavior).
+    # `assert_response_text_ok` calls pytest.fail on those, which is NOT caught by retry().
     assert_response_text_ok(
         response_text=response_text,
         agent_framework=agent_framework,
@@ -93,34 +86,26 @@ def _execute_custom_model(
         f"{response_snippet(response_text, max_chars=RESPONSE_SNIPPET_CHARS)!r}"
     )
     if is_truthy(os.environ.get("E2E_DEBUG")):
-        fprint(f"CLI output:\n{result}")
+        fprint(f"Full response:\n{response_text}")
 
 
 def _execute_deployment(
     *,
-    rendered_dir: Path,
     user_prompt: str,
     deployment_id: str,
+    datarobot_endpoint: str,
+    datarobot_api_token: str,
 ) -> None:
     fprint("Running deployed agent execution")
     fprint("================================")
 
-    result = run_cmd(
-        task_cmd(
-            "agent:cli",
-            "--",
-            "execute-deployment",
-            "--user_prompt",
-            user_prompt,
-            "--deployment_id",
-            deployment_id,
-            "--show_output",
-        ),
-        cwd=rendered_dir,
-        capture=True,
+    kernel = AgentKernel(api_token=datarobot_api_token, base_url=datarobot_endpoint)
+    completion = cast(
+        ChatCompletion,
+        kernel.deployment(deployment_id=deployment_id, user_prompt=user_prompt),
     )
 
-    verify_openai_response(result)
+    verify_openai_response(completion)
 
 
 def _cleanup_e2e(
@@ -192,7 +177,9 @@ def run_agent_e2e(
 
     repo_root = repo_root or Path(__file__).resolve().parents[2]
     skip_cleanup = (
-        is_truthy(os.environ.get("SKIP_CLEANUP")) if skip_cleanup is None else skip_cleanup
+        is_truthy(os.environ.get("SKIP_CLEANUP"))
+        if skip_cleanup is None
+        else skip_cleanup
     )
 
     # Step 0: Select prompt + allocate a unique Pulumi stack for this run.
@@ -210,7 +197,9 @@ def run_agent_e2e(
     fprint("==================================================")
 
     # Step 1: Render the template for the selected agent framework.
-    rendered_dir, infra_dir = render_project(repo_root=repo_root, agent_framework=agent_framework)
+    rendered_dir, infra_dir = render_project(
+        repo_root=repo_root, agent_framework=agent_framework
+    )
 
     # Step 2: Prepare E2E-specific runtime env (written into rendered project's `.env`).
     extra_env: dict[str, str] = {"USE_DATAROBOT_LLM_GATEWAY": "1"}
@@ -268,10 +257,11 @@ def run_agent_e2e(
         # Step 9: Execute the Custom Model and validate the response.
         retry(
             lambda: _execute_custom_model(
-                rendered_dir=rendered_dir,
                 agent_framework=agent_framework,
                 user_prompt=user_prompt,
                 custom_model_id=custom_model_id,
+                datarobot_endpoint=datarobot_endpoint,
+                datarobot_api_token=datarobot_api_token,
             ),
             max_retries=3,
             delay_seconds=60,
@@ -293,15 +283,18 @@ def run_agent_e2e(
                 pulumi_home=pulumi_home,
                 contains="Deployment Chat Endpoint",
             )
-            deployment_id = extract_id_from_url(deployment_chat_endpoint, marker="deployments")
+            deployment_id = extract_id_from_url(
+                deployment_chat_endpoint, marker="deployments"
+            )
             fprint(f"Deployment ID: {deployment_id}")
 
             # Step 12: Execute the Deployment and validate OpenAI response shape.
             retry(
                 lambda: _execute_deployment(
-                    rendered_dir=rendered_dir,
                     user_prompt=user_prompt,
                     deployment_id=deployment_id,
+                    datarobot_endpoint=datarobot_endpoint,
+                    datarobot_api_token=datarobot_api_token,
                 ),
                 max_retries=3,
                 delay_seconds=30,
@@ -319,6 +312,7 @@ def run_agent_e2e(
             env_file=env_file,
             skip_cleanup=skip_cleanup,
         )
+
 
 __all__ = [
     "ALL_FRAMEWORKS",
