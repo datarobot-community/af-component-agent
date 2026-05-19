@@ -24,9 +24,7 @@ Each tool name must also appear under ``functions`` in ``workflow.yaml`` and in
 ``workflow.tool_names``. See ``docs/agent/frameworks/nat.md``.
 
 Framework-specific NAT plugins are loaded from datarobot-genai and NAT
-entrypoints. When Mem0 is enabled, memory registration lives in
-``agent.register_memory`` so it can be shared by every workflow template.
+entrypoints. When Mem0 is enabled, ``dr_mem0_memory`` comes from
+``datarobot_genai.nat.datarobot_mem0_memory`` via NAT's ``nat.plugins``
+entry-point discovery — no local registration module is needed.
 """
-{% if use_agent_memory == 'mem0' %}
-from agent import register_memory as _register_memory  # noqa: F401
-{% endif -%}

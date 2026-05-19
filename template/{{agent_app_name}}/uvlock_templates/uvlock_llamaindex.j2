@@ -150,9 +150,9 @@ dev = [
 requires-dist = [
     { name = "anyio", specifier = ">=4.11.0,<4.12.0" },
     { name = "datarobot-drum", specifier = "==1.17.11.post1" },
-    { name = "datarobot-genai", extras = ["llamaindex", "dragent", "auth"], specifier = "==0.15.56" },
+    { name = "datarobot-genai", extras = ["llamaindex", "dragent", "auth"], specifier = "==0.15.60" },
     { name = "datarobot-mlops", specifier = "==11.1.0" },
-    { name = "datarobot-moderations", extras = ["all"], specifier = "==11.2.24" },
+    { name = "datarobot-moderations", extras = ["all"], specifier = "==11.2.29" },
     { name = "debugpy", marker = "extra == 'dev'", specifier = ">=1.8.20" },
     { name = "ecs-logging", marker = "extra == 'agentic-playground'", specifier = ">=2.2.0" },
     { name = "fastapi", extras = ["all"], marker = "extra == 'agentic-playground'", specifier = "==0.118.2" },
@@ -1058,11 +1058,11 @@ wheels = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.15.56"
+version = "0.15.60"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/58/68/8f2028ac60fae7f8a5ac4c7c8050fe5186129341c216200a3eb5ef4f20be/datarobot_genai-0.15.56.tar.gz", hash = "sha256:dab27d2810b145300aab961ecfb8cd8fe05725d7be9761be9ea436fad1a6feec", size = 317698, upload-time = "2026-05-18T13:13:45.41Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/02/66/29d339ad22881b9316e8b6e31c375d418b9a1918177886f098a8b9b50663/datarobot_genai-0.15.60.tar.gz", hash = "sha256:1550e0684cd8b1f61167e2a5038f52322b7b2c1746c9ac7150f4f33d54fb8ac3", size = 320075, upload-time = "2026-05-19T16:27:11.191Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/74/8e/10e4617066b03f9015f3e0a0a0c947a6fa4276ddb7f1282e84afa6c49a79/datarobot_genai-0.15.56-py3-none-any.whl", hash = "sha256:7593acd5f28e88a6032134ca7ccda1fa9d1ffb9138a302e4c7e6bdd092e82d03", size = 440961, upload-time = "2026-05-18T13:13:43.083Z" },
+    { url = "https://files.pythonhosted.org/packages/61/87/640cf2215626696376b01ca1a32d434067f7f7e734045f4234bed5801006/datarobot_genai-0.15.60-py3-none-any.whl", hash = "sha256:2a07ee083c44af2b9559fa1c0cde407695ade8023dee5a89936c2ee8ef6d1dfa", size = 443629, upload-time = "2026-05-19T16:27:08.909Z" },
 ]
 
 [package.optional-dependencies]
@@ -1080,7 +1080,7 @@ dragent = [
     { name = "colorama", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-early-access", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "datarobot-moderations", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "datarobot-moderations", extra = ["all"], marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-predict", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "fastapi", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "litellm", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1106,6 +1106,7 @@ llamaindex = [
     { name = "colorama", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-early-access", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "datarobot-moderations", extra = ["all"], marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-predict", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "litellm", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "llama-index", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1146,13 +1147,14 @@ wheels = [
 
 [[package]]
 name = "datarobot-moderations"
-version = "11.2.24"
+version = "11.2.29"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "backoff", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "numpy", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opentelemetry-api", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "opentelemetry-exporter-otlp-proto-http", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opentelemetry-instrumentation", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "opentelemetry-sdk", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "pandas", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1161,10 +1163,9 @@ dependencies = [
     { name = "ragas", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "rouge-score", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "tiktoken", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "trafaret", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/20/1c/7166a4f0a8e6065b976cac3f69d23e037fe88c57cbe15979c118bad8df9c/datarobot_moderations-11.2.24-py3-none-any.whl", hash = "sha256:f839897beb7e4c11e80b3624e4012935affd38d10e32aaddaf06d89471d971c2", size = 97487, upload-time = "2026-04-08T21:20:28.764Z" },
+    { url = "https://files.pythonhosted.org/packages/b5/2d/892f2be271027dba8ec550e8d2db78bc43b7fe5c531c8851d0e5fe72990e/datarobot_moderations-11.2.29-py3-none-any.whl", hash = "sha256:f49dd5651b73684d80809916ee7f0eafe5d342ccb5494f3c59f0129adbf225d6", size = 113903, upload-time = "2026-05-11T13:05:11.248Z" },
 ]
 
 [package.optional-dependencies]
@@ -1174,6 +1175,7 @@ all = [
     { name = "deepeval", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "google-cloud-aiplatform", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "langchain", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "langchain-core", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "langchain-nvidia-ai-endpoints", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "langchain-openai", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "llama-index", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -3136,15 +3138,15 @@ wheels = [
 
 [[package]]
 name = "llama-index-llms-langchain"
-version = "0.7.2"
+version = "0.8.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "langchain", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "llama-index-core", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0b/b9/87b76f270a424d07ed8e9524576136b9de675ad50f9da3c29708e5fbfbb2/llama_index_llms_langchain-0.7.2.tar.gz", hash = "sha256:86f2e5654c22d63dfaa94772569401d6148ef146bc04c427a5673503f23db00f", size = 6067, upload-time = "2026-02-19T21:53:44.951Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/63/59/73ebaeafff73af902b821150fd4693515095bf0587fd9491dec91328253c/llama_index_llms_langchain-0.8.0.tar.gz", hash = "sha256:3642cb7ae840fdf6d440002df2d34064520b8ca030f26409610dd43fd435a450", size = 6064, upload-time = "2026-03-12T20:25:10.64Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/58/fd/bdd96add193bd8b7604edbedd94fd9c71e0ab66f70a85e7405f70d2138d7/llama_index_llms_langchain-0.7.2-py3-none-any.whl", hash = "sha256:4c8af654237b3a03f886b8effec2126d66d2b06c0352f6805ee6193d51c16aa3", size = 6116, upload-time = "2026-02-19T21:53:43.985Z" },
+    { url = "https://files.pythonhosted.org/packages/33/34/d6579b5a3535d02276a3e5bff976fb586592076a6d9ab718baa15af0ecc1/llama_index_llms_langchain-0.8.0-py3-none-any.whl", hash = "sha256:a36d09193a720689143e91f0875e9ece81975d653b4d2036a00b34688b82b702", size = 6113, upload-time = "2026-03-12T20:25:11.216Z" },
 ]
 
 [[package]]
