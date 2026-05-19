@@ -1,7 +1,7 @@
 # Agent Development Instructions
 
 {% if agent_template_framework == "nat" %}
-> **Framework (NAT):** See [docs/agent/frameworks/nat.md](../docs/agent/frameworks/nat.md), the [custom-tool checklist](../docs/agent/frameworks/nat.md#checklist-every-custom-nat_tool-must-appear-in-functions-do-not-skip), and [NAT `workflow.yaml` requirements](../docs/agent/frameworks/nat.md#nat-workflowyaml-requirements-read-this-first). Each `nat_tool` needs a matching `functions` entry in `workflow.yaml` and its name in `workflow.tool_names`. Built-in NAT tool-calling is emitted only when `nat_builtin_workflow_tools` in Copier answers is non-empty (default: planner, writer, MCP); set `nat_builtin_workflow_tools: []` for a tool-less `chat_completion` workflow—see [NAT agent](../docs/agent/frameworks/nat.md). The template imports `agent.register` from `myagent.py` so new `nat_tool` registrations run at import time; you can move that import to `agent/__init__.py` if you prefer.
+> **Framework (NAT):** See [docs/agent/frameworks/nat.md](../docs/agent/frameworks/nat.md), the [custom-tool checklist](../docs/agent/frameworks/nat.md#checklist-every-custom-nat_tool-must-appear-in-functions-do-not-skip), and [NAT `workflow.yaml` requirements](../docs/agent/frameworks/nat.md#nat-workflowyaml-requirements-read-this-first). Each `nat_tool` needs a matching `functions` entry in `workflow.yaml` and its name in `workflow.tool_names`. The template imports `agent.register` from `myagent.py` so new `nat_tool` registrations run at import time; you can move that import to `agent/__init__.py` if you prefer.
 
 {% endif %}
 ## Dependencies Installation
