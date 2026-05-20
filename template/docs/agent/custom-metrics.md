@@ -1,17 +1,17 @@
 # Custom metrics
 
-This template covers topics on custom metrics in DataRobot deployment: 
+This template covers topics on custom metrics in DataRobot deployment:
 you create a custom metric on a deployment, then push values with explicit timestamps or as a single “now” sample.
 
 ---
 
 ## Prerequisites
 
-[DataRobot Python API Client](https://pypi.org/project/datarobot/) installed, 
+[DataRobot Python API Client](https://pypi.org/project/datarobot/) installed,
 and DataRobot API endpoint & API token configured.
 
 ## Steps to work with custom metrics
-  
+
 
 ### 1. Create and retrieve a custom metric
 
@@ -47,7 +47,7 @@ custom_metrics = CustomMetric.list(deployment_id="<deployment_id>")
 
 ### 2. Submit value
 
-Once a custom metric is created, you can submit values multiple times. 
+Once a custom metric is created, you can submit values multiple times.
 You do not need to create a new metric for each value that you want to track.
 
 For deployment-specific metrics:

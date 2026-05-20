@@ -65,4 +65,3 @@ guards:
       conditions:
         - comparator: lessThan
           comparand: 0.5
-
