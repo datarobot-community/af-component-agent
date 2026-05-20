@@ -24,7 +24,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "backoff", marker = "extra == 'dev'", specifier = ">=2.0.0" },
-    { name = "datarobot-genai", marker = "extra == 'dev'", specifier = "==0.15.56" },
+    { name = "datarobot-genai", marker = "extra == 'dev'", specifier = "==0.15.61.dev1360", index = "https://test.pypi.org/simple/" },
     { name = "jinja-cli", specifier = ">=1.2.2" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "openai", marker = "extra == 'dev'", specifier = ">=1.0.0" },
@@ -183,11 +183,11 @@ wheels = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.15.56"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/58/68/8f2028ac60fae7f8a5ac4c7c8050fe5186129341c216200a3eb5ef4f20be/datarobot_genai-0.15.56.tar.gz", hash = "sha256:dab27d2810b145300aab961ecfb8cd8fe05725d7be9761be9ea436fad1a6feec", size = 317698, upload-time = "2026-05-18T13:13:45.41Z" }
+version = "0.15.61.dev1360"
+source = { registry = "https://test.pypi.org/simple/" }
+sdist = { url = "https://test-files.pythonhosted.org/packages/aa/43/35f759059a40b1c2a81b03e6dc715468014ec6575c476de786b9d3e3d3f1/datarobot_genai-0.15.61.dev1360.tar.gz", hash = "sha256:e44af2d51a1b9148db9d845a292d561231dea8f953a52e5b658c3356e9508378", size = 323115, upload-time = "2026-05-20T11:20:50.278Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/74/8e/10e4617066b03f9015f3e0a0a0c947a6fa4276ddb7f1282e84afa6c49a79/datarobot_genai-0.15.56-py3-none-any.whl", hash = "sha256:7593acd5f28e88a6032134ca7ccda1fa9d1ffb9138a302e4c7e6bdd092e82d03", size = 440961, upload-time = "2026-05-18T13:13:43.083Z" },
+    { url = "https://test-files.pythonhosted.org/packages/03/7d/c382bdd17c07c66be050a2b0bdabc5415eafcfd2a92e171b6eb1e46edff4/datarobot_genai-0.15.61.dev1360-py3-none-any.whl", hash = "sha256:603ac7933fd139d907f3c175cfd8cade6afd8179eba0807fe6825e4b0e7e7263", size = 447580, upload-time = "2026-05-20T11:20:47.346Z" },
 ]
 
 [[package]]
