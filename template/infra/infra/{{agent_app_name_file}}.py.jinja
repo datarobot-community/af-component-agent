@@ -152,7 +152,9 @@ def _check_okta_xaa_credentials_needed() -> bool:
     ):
         return True
 
-    a2a = ((workflow_config.get("general") or {}).get("front_end") or {}).get("a2a") or {}
+    a2a = ((workflow_config.get("general") or {}).get("front_end") or {}).get(
+        "a2a"
+    ) or {}
     return bool(a2a.get("cross_application_access"))
 
 
