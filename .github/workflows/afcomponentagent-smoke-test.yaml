@@ -2,6 +2,16 @@
 name: af-component-agent Smoke Tests
 on:
   workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "template/*/agent/**"
+      - ".github/workflows/afcomponentagent-smoke-test.yaml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "template/*/agent/**"
+      - ".github/workflows/afcomponentagent-smoke-test.yaml"
 
 jobs:
   smoke-test:
