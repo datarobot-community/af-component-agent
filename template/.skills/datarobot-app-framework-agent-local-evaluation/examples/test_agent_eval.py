@@ -128,5 +128,3 @@ def test_pipeline_catches_hallucination(pipeline):
         retrieved_contexts=["Returns are accepted within 30 days of purchase."],
     )
     assert result.blocked, "The evaluation pipeline should have caught the hallucination."
-
-
