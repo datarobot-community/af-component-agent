@@ -35,7 +35,7 @@ jobs:
             use_memory: "mem0"
           - name: base
             agent_name: agent_with_datarobot_memory_space
-            use_memory: "datarobot-memory-space"
+            use_memory: "datarobot_memory_service"
           - name: crewai
             agent_name: agent_crewai
             use_memory: "none"
