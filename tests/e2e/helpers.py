@@ -118,6 +118,9 @@ def assert_response_text_ok(
     ):
         pytest.fail(f"{prefix}: agent execution returned an error:\n{text}")
 
+    if "Traceback (most recent call last):" in text:
+        pytest.fail(f"{prefix}: response leaked a Python traceback:\n{text}")
+
 
 def verify_openai_response(completion: ChatCompletion) -> None:
     """Verify a ChatCompletion has at least one choice with non-empty string content."""
@@ -131,6 +134,9 @@ def verify_openai_response(completion: ChatCompletion) -> None:
 
     if not isinstance(message_content, str) or len(message_content.strip()) <= 5:
         pytest.fail(f"Message content too short: {message_content!r}")
+
+    if "Traceback (most recent call last):" in message_content:
+        pytest.fail(f"Response leaked a Python traceback:\n{message_content}")
 
     fprint("Valid agent response")
     fprint(
