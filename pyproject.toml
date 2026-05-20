@@ -17,7 +17,7 @@ dev = [
     "backoff>=2.0.0",
     "openai>=1.0.0",
     "requests>=2.31.0",
-    "datarobot-genai==0.15.56", # to use agent kernel from datarobot-genai
+    "datarobot-genai==0.15.61.dev1360", # to use agent kernel from datarobot-genai
 ]
 
 [tool.uv]
@@ -80,3 +80,12 @@ docstring-code-format = false
 # This only has an effect when the `docstring-code-format` setting is
 # enabled.
 docstring-code-line-length = "dynamic"
+
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+explicit = true
+
+[tool.uv.sources]
+datarobot-genai = { index = "testpypi" }
