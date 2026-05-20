@@ -164,6 +164,16 @@ tasks:
           SKIP_LINT: "{{.SKIP_LINT| default 0}}"
           SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
 
+  test-datarobot-memory:
+    desc: "Run tests for base agent with DataRobot memory enabled"
+    cmds:
+      - task: test-agent
+        vars:
+          AGENT: base_memory
+          USE_MEMORY: datarobot_memory_service
+          SKIP_LINT: "{{.SKIP_LINT| default 0}}"
+          SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
+
   test-nat:
     desc: "Run tests for nat agent"
     cmds:
