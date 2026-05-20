@@ -64,9 +64,7 @@ def pulumi_mocks(monkeypatch, tmp_path):
     monkeypatch.setattr(
         "pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs", MagicMock()
     )
-{%- if use_agent_memory == 'datarobot_memory_service' %}
     monkeypatch.setattr("pulumi_datarobot.MemorySpace", MagicMock())
-{%- endif %}
     # Mock CustomModelRuntimeParameterValueArgs to return simple namedtuple objects
     # Namedtuples are YAML-safe and have the attributes we need
     RuntimeParam = namedtuple(
@@ -117,13 +115,7 @@ def pulumi_mocks(monkeypatch, tmp_path):
     class MockOutput(MagicMock):
         def __new__(cls, val=None, *args, **kwargs):
             m = super().__new__(cls)
-            # Use object.__setattr__ — assigning on MagicMock instances can raise
-            # AttributeError: _mock_methods on Python 3.13+ when Pulumi constructs Outputs.
-            object.__setattr__(
-                m,
-                "apply",
-                MagicMock(side_effect=lambda fn: fn(val)),
-            )
+            m.apply = MagicMock(side_effect=lambda fn: fn(val))
             return m
 
         @classmethod
