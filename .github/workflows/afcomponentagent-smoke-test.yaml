@@ -12,15 +12,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        framework: [base, crewai, langgraph, llamaindex, nat]
+        framework: [crewai, langgraph, llamaindex]
         model:
           - label: gpt
-            id: "datarobot/azure/gpt-5-mini-2025-08-07"
-          # Add more providers below once tokens are available in GitHub secrets:
-          # - label: sonnet
-          #   id: "datarobot/anthropic/claude-sonnet-..."
-          # - label: gemini
-          #   id: "datarobot/google/gemini-..."
+            id: "datarobot/azure/gpt-5-1-2025-11-13"
+          - label: sonnet
+            id: "datarobot/anthropic/claude-sonnet-4-5-20250929"
+          - label: gemini
+            id: "datarobot/vertex_ai/gemini-3.1-pro-preview"
     steps:
       - name: Checkout
         uses: "actions/checkout@v6"
