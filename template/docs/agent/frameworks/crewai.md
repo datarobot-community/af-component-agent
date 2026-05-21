@@ -271,3 +271,7 @@ For more on CrewAI prompt engineering, see the [CrewAI Agents](https://docs.crew
 ## Streaming
 
 All streaming levels (chunk, step, event) require custom implementation. In DRAgent mode, `register.py` sets `crew.stream = True` automatically.
+
+## Tracing
+
+`agent/custom.py` (DRUM path) and `agent/register.py` (DRAgent path, `ENABLE_DRAGENT_SERVER=true`) each begin with an OpenTelemetry setup prelude. Do not remove those preludes&mdash;removing them disables monitoring, tracing, and telemetry for the affected path. See [Tracing and telemetry](../debugging.md#tracing-and-telemetry) for details.

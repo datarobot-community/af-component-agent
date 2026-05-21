@@ -258,3 +258,7 @@ For more on LangGraph prompt patterns, see the [LangGraph documentation](https:/
 ## Streaming
 
 The base `LangGraphAgent` class enables chunk-level streaming when you pass `stream=True`.
+
+## Tracing
+
+`agent/custom.py` (DRUM path) and `agent/register.py` (DRAgent path, `ENABLE_DRAGENT_SERVER=true`) each begin with an OpenTelemetry setup prelude. Do not remove those preludes&mdash;removing them disables monitoring, tracing, and telemetry for the affected path. See [Tracing and telemetry](../debugging.md#tracing-and-telemetry) for details.

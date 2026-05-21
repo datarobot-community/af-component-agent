@@ -248,3 +248,7 @@ For more on LlamaIndex agent prompts, see the [LlamaIndex agents documentation](
 ## Streaming
 
 All streaming levels (chunk, step, event) require custom implementation. The framework executes agents incrementally, which facilitates step streaming with custom code.
+
+## Tracing
+
+`agent/custom.py` (DRUM path) and `agent/register.py` (DRAgent path, `ENABLE_DRAGENT_SERVER=true`) each begin with an OpenTelemetry setup prelude. Do not remove those preludes&mdash;removing them disables monitoring, tracing, and telemetry for the affected path. See [Tracing and telemetry](../debugging.md#tracing-and-telemetry) for details.

@@ -174,6 +174,25 @@ dr task run agent:dev
 
 Supported values: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. Defaults to `INFO` if not set.
 
+## Tracing and telemetry
+
+OpenTelemetry tracing is set up automatically for both the DRUM and DRAgent execution paths. The instrumentation is initialized by short preludes at the top of generated source files; do not remove those preludes&mdash;removing them disables monitoring, tracing, and telemetry for the affected path.
+
+### Where tracing lives
+
+| Execution path | Triggered by | Prelude location |
+|---|---|---|
+| DRUM | `task agent:dev` (default), deployed agents | `agent/custom.py` |
+| DRAgent | `ENABLE_DRAGENT_SERVER=true`, `nat dragent serve` | `agent/register.py` |
+
+Each prelude calls `datarobot_genai.core.telemetry_agent.instrument(...)` to wire up the HTTP/threading/OpenAI/framework instrumentors, and the DRAgent prelude additionally calls `FastAPIInstrumentor().instrument()` so that NAT's `dragent_fastapi` front end is auto-instrumented before the app is built. `instrument()` is idempotent, so the two preludes coexist safely when both paths import the same modules.
+
+### What gets instrumented
+
+Out of the box: `requests`, `aiohttp`, `httpx`, `threading`, OpenAI, plus the LLM-framework instrumentor that matches your agent's framework (CrewAI, LangGraph, or LlamaIndex). The DRAgent path also instruments FastAPI. Mem0 instrumentation is not yet available upstream.
+
+For more on deployed-agent observability, see the [DataRobot tracing documentation](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-tracing-code.html).
+
 ## Common issues
 
 ### Development server not starting

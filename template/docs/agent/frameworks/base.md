@@ -154,3 +154,7 @@ class MyAgent(BaseAgent[None]):
 1. **Add an LLM**&mdash;use `get_llm()` from `datarobot_genai.langgraph.llm` (or any other provider) and call it inside `invoke()`.
 2. **Add tools**&mdash;implement tool calls within `invoke()` using any library you prefer.
 3. **Enable DRAgent tools**&mdash;uncomment the `builder.get_llm()` and `builder.get_tools()` lines in `register.py` and add the appropriate `framework_wrappers`.
+
+## Tracing
+
+`agent/custom.py` (DRUM path) and `agent/register.py` (DRAgent path, `ENABLE_DRAGENT_SERVER=true`) each begin with an OpenTelemetry setup prelude. Do not remove those preludes&mdash;removing them disables monitoring, tracing, and telemetry for the affected path. See [Tracing and telemetry](../debugging.md#tracing-and-telemetry) for details.
