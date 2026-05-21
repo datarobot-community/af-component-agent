@@ -49,8 +49,8 @@ Use this when calling an agent protected by Okta's federated identity model. The
 
 | Variable | Description |
 |----------|-------------|
-| `IDP_AGENT_ID` | Okta AI agent principal ID (used as `iss`/`sub` in JWT client assertions). |
-| `IDP_AGENT_PRIVATE_KEY_JWK` | Base64-encoded or raw-JSON private JWK (signs JWT client assertions). |
+| `IDP_AGENT_ID` | Okta AI agent principal ID used in the XAA token exchange flow (as `iss`/`sub` in JWT client assertions). Also used by the API gateway to enforce audience matching when an external IDP is configured. |
+| `IDP_AGENT_PRIVATE_KEY_JWK` | Base64-encoded or raw-JSON private JWK. Required for the XAA token exchange flow — the agent uses it to sign JWT client assertions for authentication and grant generation. |
 
 Both are loaded automatically from env vars, `.env`, or DataRobot Runtime Parameters when you do not set `principal_id` or `private_jwk` on the `okta_cross_app_access` block.
 
@@ -108,12 +108,7 @@ function_groups:
 
 ### Infrastructure: automatic runtime parameter provisioning
 
-When the infra module detects XAA usage in `workflow.yaml`, it provisions `IDP_AGENT_ID` and `IDP_AGENT_PRIVATE_KEY_JWK` runtime parameters on deployment. That happens if **either** of the following is true:
-
-- **Client:** `authentication` includes a provider with `_type: okta_cross_app_access` (for example uncommented `okta_auth`).
-- **Server:** `general.front_end.a2a.cross_application_access` is set (non-empty) so this agent advertises XAA on its A2A agent card.
-
-In both cases, values are taken from the **`IDP_AGENT_ID`** and **`IDP_AGENT_PRIVATE_KEY_JWK`** environment variables at `dr run deploy` time:
+The infra module provisions `IDP_AGENT_ID` and `IDP_AGENT_PRIVATE_KEY_JWK` as runtime parameters automatically whenever the corresponding environment variables are set at `dr run deploy` time:
 
 - `IDP_AGENT_ID` — Injected as a plain string runtime parameter from the `IDP_AGENT_ID` environment variable.
 - `IDP_AGENT_PRIVATE_KEY_JWK` — Stored securely as a DataRobot credential (`ApiTokenCredential`) and injected as a `credential`-type runtime parameter from the `IDP_AGENT_PRIVATE_KEY_JWK` environment variable.
@@ -167,4 +162,4 @@ authentication:
 | `ValueError: Could not parse private_jwk` | `IDP_AGENT_PRIVATE_KEY_JWK` is neither valid base64-encoded JSON nor raw JSON. | Verify your JWK — try `echo $IDP_AGENT_PRIVATE_KEY_JWK | base64 -d | python -m json.tool`. |
 | `ValueError: Agent card ... missing required fields` | Remote agent card doesn't have the XAA extension. | Verify the remote agent has `cross_application_access` configured in its `workflow.yaml`. |
 | `RuntimeError: Failed to fetch agent card` | Network/auth issue reaching the agent card URL. | Check the `url` in your `function_groups` config and network connectivity. |
-| `IDP_AGENT_PRIVATE_KEY_JWK` not provisioned to runtime | Neither client nor server XAA config was present in `workflow.yaml` at deploy time, or `cross_application_access` under `a2a` was empty. | Uncomment `okta_auth` with `_type: okta_cross_app_access` under `authentication`, **or** uncomment/configure `cross_application_access` under `general.front_end.a2a`, then redeploy. |
+| `IDP_AGENT_PRIVATE_KEY_JWK` not provisioned to runtime | The variable was not set in `.env` at deploy time. | Set `IDP_AGENT_PRIVATE_KEY_JWK` in your `.env` file and redeploy. |
