@@ -115,6 +115,10 @@ general:
         url: "https://my-agent-id.example.com/a2a/"
 ```
 
+> [!WARNING]
+> `external.id` and `external.url` are not validated by DataRobot. Incorrect values may result in a wrong entry-point URL or duplicate agent card registrations — for example, multiple cards sharing the same `external_id` if separate agents are deployed with identical identifiers. Use `AGENT_CARD_REGISTRY_ON_DUPLICATE` to control resolution behaviour when duplicates occur. See [Registry environment variables](#registry-environment-variables) for details.
+
+
 ## A2A agents hosted outside of DataRobot
 
 For A2A agents hosted outside of DataRobot:
