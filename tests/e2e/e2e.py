@@ -68,7 +68,7 @@ def _execute_custom_model(
         api_token=datarobot_api_token, base_url=datarobot_endpoint
     ).interface
     response_text = kernel.custom_model(
-        custom_model_id=custom_model_id, user_prompt=user_prompt
+        custom_model_id=custom_model_id, user_prompt=user_prompt, timeout=600
     )
 
     if not response_text.strip():
