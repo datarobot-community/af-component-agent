@@ -11,6 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ------------------------------------------------------------------------------
+# THIS SECTION OF CODE IS REQUIRED TO SETUP TRACING AND TELEMETRY FOR THE
+# DRAGENT EXECUTION PATH (ENABLE_DRAGENT_SERVER=true). NAT LOADS THIS MODULE
+# VIA THE `nat.plugins` ENTRY POINT BEFORE THE FASTAPI APP IS BUILT.
+# REMOVING THIS CODE WILL DISABLE ALL MONITORING, TRACING AND TELEMETRY ON
+# THE DRAGENT PATH.
+# isort: off
+from datarobot_genai.core.telemetry_agent import instrument
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+
+instrument(framework="crewai")
+FastAPIInstrumentor().instrument()
+
+# ruff: noqa: E402
+# isort: on
+# ------------------------------------------------------------------------------
 from collections.abc import AsyncGenerator
 from typing import Annotated, Any
 

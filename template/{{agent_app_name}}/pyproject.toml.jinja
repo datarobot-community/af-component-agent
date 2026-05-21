@@ -12,6 +12,7 @@ dependencies = [
     "langchain-litellm>=0.2.3",
     "opentelemetry-api>=1.33.0,<2.0.0",
     "opentelemetry-sdk>=1.33.0,<2.0.0",
+    "opentelemetry-instrumentation-fastapi>=0.60b1,<1.0.0",
     "anyio>=4.11.0,<4.12.0", # Fix: ImportError: `set_current_async_library`
     "packaging>=25.0,<26.0",
 ]
@@ -186,6 +187,7 @@ override-dependencies = [
     "opentelemetry-exporter-otlp-proto-http>=1.39.0,<2.0.0",
     "opentelemetry-exporter-otlp-proto-common>=1.39.0,<2.0.0",
     "opentelemetry-exporter-otlp-proto-grpc>=1.39.0,<2.0.0",
+    "opentelemetry-instrumentation-fastapi>=0.60b1,<1.0.0",
     # nvidia-nat-crewai==1.4.1 pins crewai<1.0.0 but datarobot-genai requires crewai>=1.1.0.
     # Override until nvidia-nat-crewai ships a fix upstream (BUZZOK-29844).
     # Upstream issue: https://github.com/NVIDIA/NeMo-Agent-Toolkit/issues/1802

@@ -265,3 +265,15 @@ For more on NAT prompt configuration, see the [NVIDIA NeMo Agent Toolkit documen
 ## Streaming
 
 All streaming levels (chunk, step, event) require custom implementation.
+
+## Tracing and telemetry (dragent path)
+
+When `ENABLE_DRAGENT_SERVER=true`, the agent is served by `nat dragent serve`,
+which loads `agent.register` through the `nat.plugins` entry point before
+building the FastAPI app. The tracing prelude at the top of `agent/register.py`
+wires up OpenTelemetry for `requests`, `aiohttp`, `httpx`, `threading`,
+OpenAI, FastAPI, and the framework instrumentors for CrewAI, LangGraph,
+LlamaIndex, and NAT.
+
+Do not remove that prelude. Removing it disables observability on the dragent
+path. The DRUM path is unchanged; its tracing is set up in `custom.py`.
