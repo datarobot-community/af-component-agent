@@ -280,13 +280,13 @@ workflow:
 
 The default `agent/workflow.yaml` uses a `per_user_tool_calling_agent` with `planner`, `writer`, and `mcp_tools`. **NAT rejects an empty `tool_names` list on tool-calling workflows** — if you do not need built-in or MCP tools, replace that layout with a root `chat_completion` workflow (edit `workflow.yaml` directly; do not leave `tool_names: []` on a tool-calling type).
 
-**YAML:** Whenever you generate or change `agent/workflow.yaml`, write **syntactically valid YAML** only: double-quote strings that contain special characters (`?`, `:`, `#`, commas); prefer block lists (`- item`) over inline `[...]` sequences; keep indentation consistent. After editing, re-read the full file and confirm it would parse as YAML with no syntax errors before running the agent. NAT workflow schema rules are in [NAT `workflow.yaml` requirements](../docs/agent/frameworks/nat.md#nat-workflowyaml-requirements-read-this-first).
+**YAML:** Whenever you generate or change `agent/workflow.yaml`, write **syntactically valid YAML** only: double-quote strings that contain special characters (`?`, `:`, `#`, commas); prefer block lists (`- item`) over inline `[...]` sequences; keep indentation consistent. If `agent_spec.md` defines `examples`, copy them into `general.front_end.a2a.skills[].examples` as that same block-list shape — never as one inline `[...]` line. After editing, re-read the full file and confirm it would parse as YAML with no syntax errors before `dr run dev`. NAT workflow schema rules are in [NAT `workflow.yaml` requirements](../docs/agent/frameworks/nat.md#nat-workflowyaml-requirements-read-this-first).
 
 **Steps (no mem0):**
 
 1. Remove the entire `functions:` block (`planner`, `writer`, and any `nat_agent` entry).
 2. Remove `function_groups:` (including `mcp_tools` and `datarobot_mcp_auth` if unused).
-3. Keep `authentication.datarobot_auth`, `llms`, and `general` as needed.
+3. Keep `authentication.datarobot_auth`, `llms`, and `general`; set `workflow.system_prompt` and A2A name/description/skills/`examples` from `agent_spec.md` (block-list `examples`, same as the spec file).
 4. Replace the `workflow:` section with:
 
 ```yaml
@@ -326,7 +326,7 @@ workflow:
 The inner `nat_agent` must be a non-per-user `chat_completion` function so `auto_memory_agent` can resolve it at workflow build time (same constraint as the default mem0 blog orchestrator).
 {% endif %}
 
-Update `general.front_end.a2a` name, description, and skills if the agent is no longer a blog writer (apply the YAML rules above).
+When updating `general.front_end.a2a`, copy `agent_spec.md` `examples` into `skills[].examples` as a block list (see **YAML** above). Re-read `agent/workflow.yaml` for parse errors before `dr run dev`.
 
 ### 4. Custom Tools
 
