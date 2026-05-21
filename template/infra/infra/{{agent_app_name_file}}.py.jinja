@@ -533,6 +533,22 @@ if mem0_api_key := os.environ.get(MEM0_API_KEY):
     )
 {% endif %}
 
+{%- if use_agent_memory == 'datarobot_memory_service' %}
+# Create the memory space
+{{agent_app_name}}_memory_space = pulumi_datarobot.MemorySpace({{agent_app_name}}_asset_name + " Memory Space")
+agent_runtime_parameter_values.append(
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+        key="MEMORY_SPACE_ID",
+        type="string",
+        value={{agent_app_name}}_memory_space.id,
+    )
+)
+{{agent_app_name}}_memory_space.id.apply(lambda id: pulumi.info(f"Memory space configured: {id}"))
+pulumi.export(
+    "Agent Memory Space ID " + {{agent_app_name}}_asset_name,
+    {{agent_app_name}}_memory_space.id,
+)
+{% endif %}
 
 IDP_AGENT_ID_PARAM: Final[str] = "IDP_AGENT_ID"
 idp_agent_id = os.environ.get(IDP_AGENT_ID_PARAM, "")
