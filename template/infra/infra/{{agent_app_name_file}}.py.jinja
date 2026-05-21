@@ -562,6 +562,7 @@ if idp_agent_id:
     )
     pulumi.info(f"Configured with IDP_AGENT_ID: {idp_agent_id}")
 
+
 PRIVATE_JWK_PARAM: Final[str] = "IDP_AGENT_PRIVATE_KEY_JWK"
 private_jwk = os.environ.get(PRIVATE_JWK_PARAM)
 if private_jwk:
