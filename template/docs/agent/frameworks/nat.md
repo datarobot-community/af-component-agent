@@ -16,7 +16,7 @@ The NAT (NVIDIA NeMo Agent Toolkit) agent uses a YAML-first configuration to def
 
 5. **`register.py` must be imported at startup** when it contains `nat_tool(...)` calls. The `nat_tool` helper registers your tool with NeMo’s workflow registry when the module **loads**. Generated NAT projects ship a stub `register.py` and `import agent.register  # noqa: F401` in `myagent.py` so adding `nat_tool` later does not require wiring a new import. If you remove that import, add it back (or import `register` at the top of `agent/__init__.py` *before* `from agent.myagent import ...`) before relying on custom tools; otherwise the runtime can fail when resolving tool implementations.
 
-6. **NAT rejects an empty `tool_names` on tool-calling workflows.** The NAT workflow template uses built-in tools only when `nat_builtin_workflow_tools` (Copier answers) is non-empty; it defaults to `planner`, `writer`, and `mcp_tools`. Set `nat_builtin_workflow_tools: []` in `.datarobot/answers/agent-<app>.yml` before copy/update to emit a root `chat_completion` workflow instead (no tool-calling).
+6. **NAT rejects an empty `tool_names` on tool-calling workflows.** The generated template defaults to `planner`, `writer`, and `mcp_tools` under a `per_user_tool_calling_agent`. For a tool-less assistant, edit `workflow.yaml` to use a root `chat_completion` workflow — see [Tool-less `chat_completion` workflow](../../../{{agent_app_name}}/AGENTS.md#tool-less-chat_completion-workflow) in the project `AGENTS.md`.
 
 ## Checklist: every custom nat_tool must appear in functions (do not skip)
 
