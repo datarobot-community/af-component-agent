@@ -67,6 +67,9 @@ function_groups:
     auth_provider: okta_auth
 ```
 
+> [!WARNING]
+> `external.id` is not validated or enforced for uniqueness by DataRobot — multiple agents can be registered under the same external ID. Use `AGENT_CARD_REGISTRY_ON_DUPLICATE` to control how the registry resolves such conflicts.
+
 #### Registry environment variables
 
 | Variable | Required | Description |
@@ -75,7 +78,7 @@ function_groups:
 | `DATAROBOT_ENDPOINT` | Yes | DataRobot API base URL, e.g. `https://app.datarobot.com/api/v2`. |
 | `AGENT_CARD_REGISTRY_CACHE_TTL` | No | Cache TTL in seconds. Default `86400` (24 h). Set to `0` to disable caching. |
 | `AGENT_CARD_REGISTRY_TIMEOUT` | No | HTTP timeout in seconds for registry requests. Default `30`. |
-| `AGENT_CARD_REGISTRY_ON_DUPLICATE` | No | Strategy when multiple cards share the same external ID: `first`, `last`, or `error`. Default: `first`. |
+| `AGENT_CARD_REGISTRY_ON_DUPLICATE` | No | Resolution strategy when multiple cards share the same external ID: `first` (default) keeps the earliest registered card, `last` keeps the most recently registered card, `error` raises an exception. `first` is recommended for stability — `last` and `error` may alter agent behaviour if a duplicate is introduced later. |
 
 ## Configuration reference
 
@@ -116,7 +119,7 @@ general:
 ```
 
 > [!WARNING]
-> `external.id` and `external.url` are not validated by DataRobot. Incorrect values may result in a wrong entry-point URL or duplicate agent card registrations — for example, multiple cards sharing the same `external_id` if separate agents are deployed with identical identifiers. Use `AGENT_CARD_REGISTRY_ON_DUPLICATE` to control resolution behaviour when duplicates occur. See [Registry environment variables](#registry-environment-variables) for details.
+> `external.id` and `external.url` are not validated by DataRobot. Incorrect values may result in a wrong entry-point URL or duplicate registrations — for example, if two agents are deployed with the same identifier. Use `AGENT_CARD_REGISTRY_ON_DUPLICATE` to control resolution behaviour. See [Registry environment variables](#registry-environment-variables) for details.
 
 
 ## A2A agents hosted outside of DataRobot
