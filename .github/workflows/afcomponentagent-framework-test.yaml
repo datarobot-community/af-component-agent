@@ -33,6 +33,9 @@ jobs:
           - name: base
             agent_name: agent_with_memory
             use_memory: "mem0"
+          - name: base
+            agent_name: agent_with_dr_memory
+            use_memory: "datarobot_memory_service"
           - name: crewai
             agent_name: agent_crewai
             use_memory: "none"
