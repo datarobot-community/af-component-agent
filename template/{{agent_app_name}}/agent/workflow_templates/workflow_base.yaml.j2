@@ -43,6 +43,15 @@ general:
       # external:
       #   id: "my-agent-id"
       #   url: "https://my-agent-id.example.com/a2a/"
+  telemetry:
+    tracing:
+      otelcollector:
+        _type: otelcollector
+        # Endpoint is injected by the DataRobot deployment runtime as
+        # OTEL_EXPORTER_OTLP_ENDPOINT. The localhost default supports local
+        # development when an OTel collector is reachable.
+        endpoint: "${OTEL_EXPORTER_OTLP_ENDPOINT:-http://localhost:4318/v1/traces}"
+        project: "{{ agent_app_name }}"
 # To connect this agent to a remote A2A agent, uncomment the block below and add the
 # function group name to the workflow's tool_names list.
 # For Okta XAA auth, use auth_provider: okta_auth instead of datarobot_auth.
