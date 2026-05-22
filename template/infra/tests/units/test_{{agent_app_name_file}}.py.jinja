@@ -64,7 +64,7 @@ def pulumi_mocks(monkeypatch, tmp_path):
     monkeypatch.setattr(
         "pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs", MagicMock()
     )
-
+    monkeypatch.setattr("pulumi_datarobot.MemorySpace", MagicMock())
     # Mock CustomModelRuntimeParameterValueArgs to return simple namedtuple objects
     # Namedtuples are YAML-safe and have the attributes we need
     RuntimeParam = namedtuple(
@@ -471,8 +471,8 @@ def test_custom_model_created(monkeypatch):
     # Should have 8 params: 1 SESSION_SECRET_KEY + 5 DRUM params + memory TTL + mem0 api key
     assert len(runtime_parameter_values) == 8
 {% elif use_agent_memory in ['datarobot_memory_service'] %}
-    # Should have 7 params: 1 SESSION_SECRET_KEY + 5 DRUM params + memory TTL
-    assert len(runtime_parameter_values) == 7
+    # Should have 8 params: 1 SESSION_SECRET_KEY + 5 DRUM params + memory TTL + memory space ID
+    assert len(runtime_parameter_values) == 8
 {% else %}
     # Should have 6 params: 1 SESSION_SECRET_KEY + 5 DRUM params
     assert len(runtime_parameter_values) == 6
@@ -492,6 +492,15 @@ def test_custom_model_created(monkeypatch):
     assert mem0_param is not None
     assert mem0_param.type == "credential"
     assert mem0_param.value is not None
+{%- endif %}
+{%- if use_agent_memory == 'datarobot_memory_service' %}
+
+    memory_space_param = next(
+        (p for p in runtime_parameter_values if p.key == "MEMORY_SPACE_ID"), None
+    )
+    assert memory_space_param is not None
+    assert memory_space_param.type == "string"
+    assert memory_space_param.value is not None
 {%- endif %}
 {% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
     memory_ttl_param = next(
