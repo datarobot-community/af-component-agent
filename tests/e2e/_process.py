@@ -20,12 +20,50 @@ from __future__ import annotations
 
 import os
 import subprocess
-import time
 from pathlib import Path
 from typing import Any, Callable
 
+import backoff
 import pytest
-from _pytest.outcomes import Failed
+import requests
+from openai import (
+    APIConnectionError,
+    APIStatusError,
+    APITimeoutError,
+    RateLimitError,
+)
+
+# HTTP status codes we consider transient infra failures worth retrying.
+# Everything else (4xx, plain 500 with an agent error body) propagates so
+# real bugs aren't masked.
+_RETRYABLE_STATUS_CODES = frozenset({429, 502, 503, 504})
+
+# Exception types that are always transient (no status code involved).
+_ALWAYS_TRANSIENT: tuple[type[BaseException], ...] = (
+    requests.ConnectionError,
+    requests.Timeout,
+    APITimeoutError,
+    APIConnectionError,
+    RateLimitError,
+)
+
+
+def _is_transient(exc: BaseException) -> bool:
+    """Decide whether `exc` is a retryable infra failure.
+
+    The library (datarobot-genai AgentKernel) raises underlying `requests` /
+    `openai` exception types verbatim; this helper applies the retry policy.
+    """
+    if isinstance(exc, _ALWAYS_TRANSIENT):
+        return True
+    if isinstance(exc, requests.HTTPError):
+        response = getattr(exc, "response", None)
+        status = getattr(response, "status_code", None)
+        return status in _RETRYABLE_STATUS_CODES
+    if isinstance(exc, APIStatusError):
+        return exc.status_code in _RETRYABLE_STATUS_CODES
+    return False
+
 
 DEFAULT_CMD_TIMEOUT_SECONDS = 20 * 60
 
@@ -64,7 +102,9 @@ def run_cmd(
 
     fprint(f"$ {' '.join(cmd)}  (cwd={cwd})")
 
-    timeout = DEFAULT_CMD_TIMEOUT_SECONDS if timeout_seconds is None else timeout_seconds
+    timeout = (
+        DEFAULT_CMD_TIMEOUT_SECONDS if timeout_seconds is None else timeout_seconds
+    )
     try:
         if capture:
             proc = subprocess.run(
@@ -135,19 +175,30 @@ def retry(
     delay_seconds: int,
     label: str,
 ) -> Any:
-    last_exc: BaseException | None = None
-    for attempt in range(max_retries + 1):
-        try:
-            if attempt > 0:
-                fprint(
-                    f"Retrying {label} (attempt {attempt + 1}/{max_retries + 1})..."
-                )
-            return func()
-        except (Failed, Exception) as e:
-            last_exc = e
-            if attempt >= max_retries:
-                raise
-            fprint(f"{label} failed: {e}")
-            fprint(f"Waiting {delay_seconds}s before retry...")
-            time.sleep(delay_seconds)
-    raise last_exc or RuntimeError(f"{label} failed")
+    """Retry `func` only on transient infra failures (see `_is_transient`).
+
+    Application errors (agent bugs, 4xx responses, assertion failures, etc.)
+    propagate immediately so real failures aren't masked. Uses
+    `backoff.constant` to sleep `delay_seconds` between attempts.
+    """
+
+    def _on_backoff(details: dict[str, Any]) -> None:
+        fprint(
+            f"{label} failed with transient API error "
+            f"(attempt {details['tries']}/{max_retries + 1}): {details['exception']}"
+        )
+        fprint(f"Waiting {details['wait']:.0f}s before retry...")
+
+    @backoff.on_exception(
+        backoff.constant,
+        Exception,
+        max_tries=max_retries + 1,
+        interval=delay_seconds,
+        jitter=None,
+        giveup=lambda exc: not _is_transient(exc),
+        on_backoff=_on_backoff,  # type: ignore[arg-type]
+    )
+    def _run() -> Any:
+        return func()
+
+    return _run()
