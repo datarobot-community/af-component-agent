@@ -101,7 +101,7 @@ async def crewai_agent(
                 forwarded_headers=forwarded_headers,
                 tools=tools,
             )
-            agent.crew.stream = False  # TODO: BUZZOK-30894 Streaming for CrewAI is broken with OpenAI family of models.
+            agent.crew.stream = True
 
             async for event, pipeline_interactions, usage_metrics in agent.invoke(
                 input_message
