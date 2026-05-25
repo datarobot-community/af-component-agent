@@ -169,3 +169,48 @@ _migrations:
         PY
         done
     when: "{{ _stage == 'before' and _copier_operation == 'update' }}"
+  # Move workflow.yaml from agent/ to the app root (DRAgent default config path).
+  #
+  # Why 2 steps?
+  # - On update, the template stops rendering agent/workflow.yaml.
+  # - We snapshot the legacy file in "before", then restore it at the new path
+  #   in "after" so user customizations are preserved.
+  #
+  # Only runs for projects that still have agent/workflow.yaml and do not yet
+  # have workflow.yaml at the app root before the update starts.
+  - version: "11.9.10"
+    command:
+      - bash
+      - -lc
+      - |
+        set -euo pipefail
+        for SRC in */agent/workflow.yaml; do
+          [ -f "$SRC" ] || continue
+          APP="${SRC%%/agent/workflow.yaml}"
+          DST="$APP/workflow.yaml"
+          TMP_DIR="$APP/.copier_migration_tmp_workflow"
+          TMP_FILE="$TMP_DIR/workflow.yaml"
+
+          if [ ! -f "$DST" ]; then
+            mkdir -p "$TMP_DIR"
+            cp "$SRC" "$TMP_FILE"
+          fi
+        done
+    when: "{{ _stage == 'before' and _copier_operation == 'update' }}"
+  - version: "11.9.10"
+    command:
+      - bash
+      - -lc
+      - |
+        set -euo pipefail
+        for TMP_FILE in */.copier_migration_tmp_workflow/workflow.yaml; do
+          [ -f "$TMP_FILE" ] || continue
+          APP="${TMP_FILE%%/.copier_migration_tmp_workflow/workflow.yaml}"
+          DST="$APP/workflow.yaml"
+          SRC="$APP/agent/workflow.yaml"
+
+          cp "$TMP_FILE" "$DST"
+          rm -f "$SRC" "$TMP_FILE"
+          rm -rf "$APP/.copier_migration_tmp_workflow"
+        done
+    when: "{{ _stage == 'after' and _copier_operation == 'update' }}"
