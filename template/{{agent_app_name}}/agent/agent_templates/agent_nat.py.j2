@@ -55,7 +55,7 @@ class MyAgent(NatAgent):
     def __init__(
         self,
         *args: Any,
-        workflow_path: Path = Path(__file__).parent / "workflow.yaml",
+        workflow_path: Path = Path(__file__).parent.parent / "workflow.yaml",
         **kwargs: Any,
     ) -> None:
         super().__init__(
