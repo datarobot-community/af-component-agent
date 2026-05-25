@@ -282,9 +282,9 @@ The default `agent/workflow.yaml` uses a `per_user_tool_calling_agent` with `pla
 
 **YAML:** Whenever you generate or change `agent/workflow.yaml`, write **syntactically valid YAML** only: double-quote strings that contain special characters (`?`, `:`, `#`, commas); prefer block lists (`- item`) over inline `[...]` sequences; keep indentation consistent. Do not add `examples` from `agent_spec.md` — omit `skills[].examples` and any other example blocks. After editing, re-read the full file and confirm it would parse as YAML with no syntax errors before `dr run dev`. NAT workflow schema rules are in [NAT `workflow.yaml` requirements](../docs/agent/frameworks/nat.md#nat-workflowyaml-requirements-read-this-first).
 
-**Steps (no mem0):**
+**Steps:**
 
-1. Remove the entire `functions:` block (`planner`, `writer`, and any `nat_agent` entry).
+1. Remove the entire `functions:` block (`planner`, `writer`, and any other function entries).
 2. Remove `function_groups:` (including `mcp_tools` and `datarobot_mcp_auth` if unused).
 3. Keep `authentication.datarobot_auth`, `llms`, and `general`; set `workflow.system_prompt` and A2A name/description/skills from `agent_spec.md`. Omit `examples` — do not add `skills[].examples` or other example blocks.
 4. Replace the `workflow:` section with:
@@ -296,35 +296,6 @@ workflow:
   system_prompt: |
     You are a helpful assistant. Answer clearly and concisely. Use markdown when it improves readability.
 ```
-
-{% if use_agent_memory == 'mem0' %}
-**Steps (with mem0 memory):**
-
-1. Remove `functions.planner`, `functions.writer`, and the `functions.nat_agent` tool-calling entry.
-2. Remove `function_groups:` and unused MCP authentication.
-3. Replace `memory` + `workflow` with:
-
-```yaml
-functions:
-  nat_agent:
-    _type: chat_completion
-    llm_name: datarobot_llm
-    system_prompt: |
-      You are a helpful assistant. Answer clearly and concisely. Use markdown when it improves readability.
-memory:
-  mem0_memory:
-    _type: dr_mem0_memory
-
-workflow:
-  _type: auto_memory_agent
-  inner_agent_name: nat_agent
-  memory_name: mem0_memory
-  llm_name: datarobot_llm
-  description: "Chat assistant with automatic memory capture and retrieval."
-```
-
-The inner `nat_agent` must be a non-per-user `chat_completion` function so `auto_memory_agent` can resolve it at workflow build time (same constraint as the default mem0 blog orchestrator).
-{% endif %}
 
 When updating `general.front_end.a2a`, set name, description, and skills from `agent_spec.md` but omit `examples` — do not add `skills[].examples` or other example blocks (see **YAML** above). Re-read `agent/workflow.yaml` for parse errors before `dr run dev`.
 
