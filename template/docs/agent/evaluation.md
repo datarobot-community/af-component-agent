@@ -357,4 +357,3 @@ cd agent && uv run pytest tests/ -m "not eval"  # Only unit tests (no credential
 | [Implement tracing](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-tracing-code.html) | Add OpenTelemetry spans for observability in deployed agents. |
 | [Agentic Playground](https://docs.datarobot.com/en/docs/agentic-ai/agentic-evaluate/agentic-playground.html) | UI-based evaluation environment for deployed agents with built-in metrics. |
 | [AG-UI protocol](./ag-ui.md) | Event types emitted during agent execution. |
-
