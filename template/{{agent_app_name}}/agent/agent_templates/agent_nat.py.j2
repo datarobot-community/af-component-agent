@@ -56,6 +56,7 @@ class MyAgent(NatAgent):
             **kwargs,
         )
 
+
 async def custompy_adaptor(
     completion_create_params: CompletionCreateParams,
 ) -> InvokeReturn | tuple[str, Optional["MultiTurnSample"], UsageMetrics]:
