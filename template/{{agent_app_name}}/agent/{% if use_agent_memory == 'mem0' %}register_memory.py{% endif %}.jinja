@@ -14,7 +14,7 @@
 """Shared NAT memory plugin registrations.
 
 When mem0 memory is enabled, this module wires DataRobot's Mem0Client (from
-datarobot-genai) into NAT's MemoryEditor interface so ``auto_memory_agent`` can
+datarobot-genai) into NAT's MemoryEditor interface so ``streaming_memory_agent`` can
 store and retrieve long-term memory without depending on the upstream
 ``nvidia-nat-mem0ai`` package (which pins an older mem0ai SDK that conflicts
 with ``datarobot-genai[memory]``).
