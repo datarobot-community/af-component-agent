@@ -32,7 +32,6 @@ dev = [
 ]
 # Additional dependencies required to run the agent in DataRobot Agentic playground
 agentic_playground = [
-    "fastapi[All]==0.118.2",
     "psutil==5.9.8",
     "ipykernel<6.29.0",
     "jupyter-client>=8.6.3",
@@ -174,10 +173,6 @@ follow_imports = "skip"
 [tool.uv]
 required-version = ">=0.7.0"
 override-dependencies = [
-    # Compatibility
-    "fastapi>=0.118.2,<0.133.0",  # NAT 1.6.0 uses add_event_handler removed in starlette 1.0 (https://github.com/NVIDIA/NeMo-Agent-Toolkit/issues/1882)
-    "starlette>=0.49.1,<1.0.0",  # constrained by fastapi<0.133.0 (https://github.com/NVIDIA/NeMo-Agent-Toolkit/issues/1882)
-    "pyarrow==21.0.0",
     # crewai and drum pin otel to 1.34.x but datarobot-moderations needs 0.60b1
     # instrumentation which requires otel 1.39.x. Override the entire otel family
     # to stay version-synchronized at 1.39.x / 0.60b1.
@@ -186,14 +181,6 @@ override-dependencies = [
     "opentelemetry-exporter-otlp-proto-http>=1.39.0,<2.0.0",
     "opentelemetry-exporter-otlp-proto-common>=1.39.0,<2.0.0",
     "opentelemetry-exporter-otlp-proto-grpc>=1.39.0,<2.0.0",
-    # nvidia-nat-crewai==1.4.1 pins crewai<1.0.0 but datarobot-genai requires crewai>=1.1.0.
-    # Override until nvidia-nat-crewai ships a fix upstream (BUZZOK-29844).
-    # Upstream issue: https://github.com/NVIDIA/NeMo-Agent-Toolkit/issues/1802
-    "crewai[litellm]>=1.11.0,<2.0.0",
-
-    # Unlock latest langgraph
-    "langgraph>=1.1.0,<2.0.0",
-    "langgraph-prebuilt>=1.0.0,<2.0.0",
 
     # Keep this in sync with the ag-ui-protocol version in fastapi_server/pyproject.toml of the
     # recipe-datarobot-agent-application.
