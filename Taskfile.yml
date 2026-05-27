@@ -242,6 +242,7 @@ tasks:
       - task: validate-windows-compatibility
       - task: test-base
       - task: test-memory
+      - task: test-datarobot-memory
       - task: test-crewai
       - task: test-langgraph
       - task: test-llamaindex

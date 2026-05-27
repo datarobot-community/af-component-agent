@@ -28,21 +28,21 @@ general:
           description: "Runs the base agent."
           tags: []
           examples: []
-      # Optional: Okta cross-application access (XAA) authentication for this agent's A2A endpoints.
-      # Uncomment to advertise XAA requirements on the agent card. See docs/agent/agent2agent-auth.md.
-      # cross_application_access:
-      #   token_exchange:
-      #     trusted_issuer: "https://your-org.okta.com"
-      #     audience: "https://your-org.okta.com/oauth2/ausXXXXXXXXXXXXXXX"
-      #   token_request:
-      #     token_url: "https://your-org.okta.com/oauth2/ausXXXXXXXXXXXXXXX/v1/token"
-      #     audience: "https://example.com/agents/my-agent-id"
-      #     scopes:
-      #       - "dr.impersonation"
-      # Optional: external identity and URL overrides published on the agent card.
-      # external:
-      #   id: "my-agent-id"
-      #   url: "https://my-agent-id.example.com/a2a/"
+          # Optional: Okta cross-application access (XAA) authentication for this agent's A2A endpoints.
+          # Uncomment to advertise XAA requirements on the agent card. See docs/agent/agent2agent-auth.md.
+          # cross_application_access:
+          #   token_exchange:
+          #     trusted_issuer: "https://your-org.okta.com"
+          #     audience: "https://your-org.okta.com/oauth2/ausXXXXXXXXXXXXXXX"
+          #   token_request:
+          #     token_url: "https://your-org.okta.com/oauth2/ausXXXXXXXXXXXXXXX/v1/token"
+          #     audience: "https://example.com/agents/my-agent-id"
+          #     scopes:
+          #       - "dr.impersonation"
+          # Optional: external identity and URL overrides published on the agent card.
+          # external:
+          #   id: "my-agent-id"
+          #   url: "https://my-agent-id.example.com/a2a/"
 # To connect this agent to a remote A2A agent, uncomment the block below and add the
 # function group name to the workflow's tool_names list.
 # For Okta XAA auth, use auth_provider: okta_auth instead of datarobot_auth.
@@ -63,16 +63,16 @@ functions:
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
-  # To enable LLM provider fallback/failover, remove the datarobot_llm block above and uncomment the following:
-  # datarobot_llm:
-  #   _type: datarobot-llm-router
-  #   primary:
-  #     use_datarobot_llm_gateway: true
-  #     llm_default_model: azure/gpt-5-mini-2025-08-07
-  #   fallbacks:
-  #     - use_datarobot_llm_gateway: true
-  #       llm_default_model: anthropic/claude-opus-4-20250514
-  #   num_retries: 1
+    # To enable LLM provider fallback/failover, remove the datarobot_llm block above and uncomment the following:
+    # datarobot_llm:
+    #   _type: datarobot-llm-router
+    #   primary:
+    #     use_datarobot_llm_gateway: true
+    #     llm_default_model: azure/gpt-5-mini-2025-08-07
+    #   fallbacks:
+    #     - use_datarobot_llm_gateway: true
+    #       llm_default_model: anthropic/claude-opus-4-20250514
+    #   num_retries: 1
 
 {% if use_agent_memory == 'mem0' %}
 memory:
@@ -80,7 +80,7 @@ memory:
     _type: dr_mem0_memory
 
 workflow:
-  _type: auto_memory_agent
+  _type: streaming_memory_agent
   inner_agent_name: base_agent
   memory_name: mem0_memory
   llm_name: datarobot_llm

@@ -19,9 +19,6 @@ from datarobot_genai.core.agents import InvokeReturn, make_system_prompt
 from datarobot_genai.core.agents.base import UsageMetrics
 from datarobot_genai.core.chat import agent_chat_completion_wrapper
 from datarobot_genai.core.mcp import MCPConfig
-{%- if use_agent_memory == 'mem0' %}
-from datarobot_genai.core.memory.mem0client import Mem0Client
-{%- endif %}
 from datarobot_genai.langgraph.agent import datarobot_agent_class_from_langgraph
 from datarobot_genai.langgraph.llm import get_llm
 from datarobot_genai.langgraph.mcp import mcp_tools_context
@@ -32,10 +29,6 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.tools import BaseTool
 from langgraph.graph import END, START, MessagesState, StateGraph
 from openai.types.chat import CompletionCreateParams
-{%- if use_agent_memory == 'mem0' %}
-
-from agent.config import Config
-{%- endif %}
 
 if TYPE_CHECKING:
     from ragas import MultiTurnSample
@@ -51,12 +44,7 @@ prompt_template = ChatPromptTemplate.from_messages(
             "system",
             "You are a helpful assistant that plans and writes content based on the "
             "user's topic. Chat history is provided via {chat_history} (it may be empty). "
-{%- if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
-            "Use it when helpful to stay consistent across turns. Memory is provided via {memory} "
-            "(it may be empty).",
-{%- else %}
             "Use it when helpful to stay consistent across turns.",
-{%- endif %}
         ),
         (
             "user",
@@ -146,9 +134,6 @@ async def custompy_adaptor(
     )
     mcp_tools_factory = lambda: mcp_tools_context(mcp_config)  # noqa: E731
     model_name = completion_create_params.get("model")
-{%- if use_agent_memory == 'mem0' %}
-    config = Config()
-{%- endif %}
     agent = MyAgent(
         llm=get_llm(
             model_name=model_name if model_name not in _PLACEHOLDER_MODELS else None
@@ -156,11 +141,6 @@ async def custompy_adaptor(
         verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
         timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
         forwarded_headers=forwarded_headers,  # type: ignore[arg-type]
-{%- if use_agent_memory == 'mem0' %}
-        memory_client=Mem0Client(api_key=config.mem0_api_key)
-        if config.mem0_api_key
-        else None,
-{%- endif %}
     )
     return await agent_chat_completion_wrapper(
         agent, completion_create_params, mcp_tools_factory
