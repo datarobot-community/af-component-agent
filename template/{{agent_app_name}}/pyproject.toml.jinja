@@ -5,7 +5,7 @@ description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
 {% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% else %}requires-python = ">=3.11, <3.14"{% endif %}
 dependencies = [
-    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, nat, auth{% elif agent_template_framework == 'crewai' %}[crewai, dragent, auth{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent, auth{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent, auth{% elif agent_template_framework == 'base' %}[dragent, auth{% elif agent_template_framework == 'nat' %}[nat, dragent, auth{% else %}[core, auth{% endif %}{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}, memory]{% else %}]{% endif %}==0.15.72",
+    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, nat, auth{% elif agent_template_framework == 'crewai' %}[crewai, dragent, auth{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent, auth{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent, auth{% elif agent_template_framework == 'base' %}[dragent, auth{% elif agent_template_framework == 'nat' %}[nat, dragent, auth{% else %}[core, auth{% endif %}{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}, memory]{% else %}]{% endif %}==0.15.78",
     "datarobot-moderations[all]==11.2.30",
     "datarobot-drum==1.17.11.post1",  # Lift upper limit after asyncio migration finished
     "datarobot-mlops==11.1.0",
@@ -191,16 +191,11 @@ override-dependencies = [
     # Upstream issue: https://github.com/NVIDIA/NeMo-Agent-Toolkit/issues/1802
     "crewai[litellm]>=1.11.0,<2.0.0",
 
-    # Unlock latest langgraph
-    "langgraph>=1.1.0,<2.0.0",
-    "langgraph-prebuilt>=1.0.0,<2.0.0",
-
     # Keep this in sync with the ag-ui-protocol version in fastapi_server/pyproject.toml of the
     # recipe-datarobot-agent-application.
     "ag-ui-protocol==0.1.15",
 
     # CVE fixes
-    "langgraph-checkpoint>=3.0.0",
     "litellm>=1.83.7,<2.0.0",
     "nltk>=3.9.4",
     "openai>=2.30.0",  # litellm >= 1.83.7 pins openai at 2.24, causing dependency rollback and re-introducing CVEs.
