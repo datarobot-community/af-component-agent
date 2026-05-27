@@ -1,7 +1,7 @@
 # Agent Development Instructions
 
 {% if agent_template_framework == "nat" %}
-> **Framework (NAT):** See [docs/agent/frameworks/nat.md](../docs/agent/frameworks/nat.md), the [custom-tool checklist](../docs/agent/frameworks/nat.md#checklist-every-custom-nat_tool-must-appear-in-functions-do-not-skip), and [NAT `workflow.yaml` requirements](../docs/agent/frameworks/nat.md#nat-workflowyaml-requirements-read-this-first). Each `nat_tool` needs a matching `functions` entry in `workflow.yaml` and its name in `workflow.tool_names`. The template imports `agent.register` from `myagent.py` so new `nat_tool` registrations run at import time; you can move that import to `agent/__init__.py` if you prefer.
+> **Framework (NAT):** See [docs/agent/frameworks/nat.md](../docs/agent/frameworks/nat.md), the [custom-tool checklist](../docs/agent/frameworks/nat.md#checklist-every-custom-nat_tool-must-appear-in-functions-do-not-skip), and [NAT `workflow.yaml` requirements](../docs/agent/frameworks/nat.md#nat-workflowyaml-requirements-read-this-first). Each `nat_tool` needs a matching `functions` entry in `workflow.yaml` and its name in `workflow.tool_names`. The generated template ships a blog tool-calling workflow (`planner`, `writer`, `mcp_tools`); for a tool-less assistant, follow [Tool-less `chat_completion` workflow](#tool-less-chat_completion-workflow) below. When implementing from `agent_spec.md`, every `workflow.yaml` edit must be **syntactically valid YAML** (see §3). The template imports `agent.register` from `myagent.py` so new `nat_tool` registrations run at import time; you can move that import to `agent/__init__.py` if you prefer.
 
 {% endif %}
 ## Dependencies Installation
@@ -276,9 +276,32 @@ workflow:
     You are a blog content orchestrator...
 ```
 
-### 3. Custom Tools
+### 3. Tool-less `chat_completion` workflow
 
-Register custom Python tools by calling **`nat_tool(fn, tool_name, ...)`** from `datarobot_genai.nat.tool` at module level in `register.py` (not `@nat_tool()` with no arguments). For **each** tool name, add a matching `functions.<name>` entry in `workflow.yaml` with `_type: <name>` and a `description`, include the name in `workflow.tool_names`, and ensure `register.py` is imported (see class definition above). See the [checklist](../docs/agent/frameworks/nat.md#checklist-every-custom-nat_tool-must-appear-in-functions-do-not-skip) and [Custom local tools](../docs/agent/frameworks/nat.md#custom-local-tools) in [docs/agent/frameworks/nat.md](../docs/agent/frameworks/nat.md).
+The default `agent/workflow.yaml` uses a `per_user_tool_calling_agent` with `planner`, `writer`, and `mcp_tools`. **NAT rejects an empty `tool_names` list on tool-calling workflows** — if you do not need built-in or MCP tools, replace that layout with a root `chat_completion` workflow (edit `workflow.yaml` directly; do not leave `tool_names: []` on a tool-calling type).
+
+**YAML:** Whenever you generate or change `agent/workflow.yaml`, write **syntactically valid YAML** only: double-quote strings that contain special characters (`?`, `:`, `#`, commas); prefer block lists (`- item`) over inline `[...]` sequences; keep indentation consistent. Do not add `examples` from `agent_spec.md` — omit `skills[].examples` and any other example blocks. After editing, re-read the full file and confirm it would parse as YAML with no syntax errors before `dr run dev`. NAT workflow schema rules are in [NAT `workflow.yaml` requirements](../docs/agent/frameworks/nat.md#nat-workflowyaml-requirements-read-this-first).
+
+**Steps:**
+
+1. Remove the entire `functions:` block (`planner`, `writer`, and any other function entries).
+2. Remove `function_groups:` (including `mcp_tools` and `datarobot_mcp_auth` if unused).
+3. Keep `authentication.datarobot_auth`, `llms`, and `general`; set `workflow.system_prompt` and A2A name/description/skills from `agent_spec.md`. Omit `examples` — do not add `skills[].examples` or other example blocks.
+4. Replace the `workflow:` section with:
+
+```yaml
+workflow:
+  _type: chat_completion
+  llm_name: datarobot_llm
+  system_prompt: |
+    You are a helpful assistant. Answer clearly and concisely. Use markdown when it improves readability.
+```
+
+When updating `general.front_end.a2a`, set name, description, and skills from `agent_spec.md` but omit `examples` — do not add `skills[].examples` or other example blocks (see **YAML** above). Re-read `agent/workflow.yaml` for parse errors before `dr run dev`.
+
+### 4. Custom Tools
+
+Register custom Python tools by calling **`nat_tool(fn, tool_name, ...)`** from `datarobot_genai.nat.tool` at module level in `register.py` (not `@nat_tool()` with no arguments). For **each** tool name, add a matching `functions.<name>` entry in `workflow.yaml` with `_type: <name>` and a `description`, include the name in `workflow.tool_names`, and ensure `register.py` is imported (see class definition above). In `agent/tools.py`, avoid `from __future__ import annotations` together with `dict[str, Any]` return types on multi-parameter tools — NAT fails at runtime with `NameError: name 'Any' is not defined` (see [NAT workflow.yaml requirements](../docs/agent/frameworks/nat.md#nat-workflowyaml-requirements-read-this-first)). See the [checklist](../docs/agent/frameworks/nat.md#checklist-every-custom-nat_tool-must-appear-in-functions-do-not-skip) and [Custom local tools](../docs/agent/frameworks/nat.md#custom-local-tools) in [docs/agent/frameworks/nat.md](../docs/agent/frameworks/nat.md).
 
 For detailed NAT documentation, see [docs/agent/frameworks/nat.md](../docs/agent/frameworks/nat.md).
 

@@ -106,7 +106,7 @@ tasks:
       - |
         # DRAgent mode: forward cli.py commands to nat dragent and exit.
         if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-          export DRAGENT_CONFIG_FILE="${DRAGENT_CONFIG_FILE:-agent/workflow.yaml}"
+          export DRAGENT_CONFIG_FILE="${DRAGENT_CONFIG_FILE:-workflow.yaml}"
           set -- {% raw %}{{.CLI_ARGS}}{% endraw %}
           if [ $# -eq 0 ]; then
             echo "Usage: task {{ agent_app_name }}:cli -- <execute|execute-deployment> [flags]"; exit 1
@@ -183,7 +183,7 @@ tasks:
     cmds:
       - |
         if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
-          {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent serve --config_file agent/workflow.yaml --reload true --port {% raw %}{{.AGENT_PORT}}{% endraw %}
+          {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent serve --config_file workflow.yaml --reload true --port {% raw %}{{.AGENT_PORT}}{% endraw %}
         else
           {% raw %}{{.UV_CMD}}{% endraw %} run python dev.py --autoreload
         fi

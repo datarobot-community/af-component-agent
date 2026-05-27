@@ -519,7 +519,6 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
 MEM0_API_KEY: Final[str] = "MEM0_API_KEY"
 
 if mem0_api_key := os.environ.get(MEM0_API_KEY):
-    pulumi.export(MEM0_API_KEY, mem0_api_key)
     mem0_api_key_cred = pulumi_datarobot.ApiTokenCredential(
         {{agent_app_name}}_asset_name + " Mem0 API Key",
         args=pulumi_datarobot.ApiTokenCredentialArgs(api_token=str(mem0_api_key)),
