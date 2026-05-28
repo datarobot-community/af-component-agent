@@ -16,20 +16,12 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
-{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}from ag_ui.core import RunAgentInput
-{% endif %}from datarobot_genai.core.agents import InvokeReturn
+from datarobot_genai.core.agents import InvokeReturn
 from datarobot_genai.core.agents.base import UsageMetrics
 from datarobot_genai.core.chat import agent_chat_completion_wrapper
 from datarobot_genai.core.mcp import MCPConfig
-{%- if use_agent_memory == 'mem0' %}
-from datarobot_genai.core.memory.mem0client import Mem0Client
-{%- endif %}
 from datarobot_genai.nat.agent import NatAgent
 from openai.types.chat import CompletionCreateParams
-{%- if use_agent_memory == 'mem0' %}
-
-from agent.config import Config
-{%- endif %}
 
 import agent.register  # noqa: F401 - load nat_tool side effects when added in register.py
 
@@ -63,20 +55,7 @@ class MyAgent(NatAgent):
             workflow_path=workflow_path,  # type: ignore[misc]
             **kwargs,
         )
-{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
-    def make_user_prompt(self, run_agent_input: RunAgentInput) -> str:
-        """Create the user prompt text. Override to customize formatting.
 
-        Chat history is automatically appended by `invoke` when
-        max_history_messages > 0 (controlled via DATAROBOT_GENAI_MAX_HISTORY_MESSAGES env var).
-        Include a `{memory}` placeholder in the returned prompt to opt into
-        automatic long-term memory retrieval and storage for the run.
-
-        Default implementation returns the raw user message content.
-        """
-        user_prompt_content = super().make_user_prompt(run_agent_input)
-        return user_prompt_content + "\n{memory}"
-{% endif %}
 
 async def custompy_adaptor(
     completion_create_params: CompletionCreateParams,
@@ -93,18 +72,10 @@ async def custompy_adaptor(
     headers = server_config["headers"] if server_config else {}
     forwarded_headers.update(headers)
     mcp_tools_factory = lambda: noop_mcp_tools_context(mcp_config)  # noqa: E731
-{%- if use_agent_memory == 'mem0' %}
-    config = Config()
-{%- endif %}
     agent = MyAgent(
         verbose=completion_create_params.get("verbose", True),
         timeout=completion_create_params.get("timeout", 90),
         forwarded_headers=forwarded_headers,
-{%- if use_agent_memory == 'mem0' %}
-        memory_client=Mem0Client(api_key=config.mem0_api_key)
-        if config.mem0_api_key
-        else None,
-{%- endif %}
     )
     return await agent_chat_completion_wrapper(
         agent, completion_create_params, mcp_tools_factory
