@@ -23,9 +23,7 @@ overrides = [
     { name = "ag-ui-protocol", specifier = "==0.1.15" },
     { name = "annoy", marker = "sys_platform == 'never'" },
     { name = "build", marker = "sys_platform == 'never'" },
-    { name = "crewai", extras = ["litellm"], specifier = ">=1.11.0,<2.0.0" },
     { name = "diskcache", marker = "sys_platform == 'never'" },
-    { name = "fastapi", specifier = ">=0.118.2,<0.133.0" },
     { name = "fastembed", marker = "sys_platform == 'never'" },
     { name = "gevent", marker = "sys_platform == 'never'" },
     { name = "kubernetes", marker = "sys_platform == 'never'" },
@@ -33,7 +31,6 @@ overrides = [
     { name = "langchain-milvus", marker = "sys_platform == 'never'" },
     { name = "litellm", specifier = ">=1.83.7,<2.0.0" },
     { name = "llama-index-cli", marker = "sys_platform == 'never'" },
-    { name = "mako", specifier = ">=1.3.12" },
     { name = "nltk", specifier = ">=3.9.4" },
     { name = "onnxruntime", marker = "sys_platform == 'never'" },
     { name = "openai", specifier = ">=2.30.0" },
@@ -44,7 +41,6 @@ overrides = [
     { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.39.0,<2.0.0" },
     { name = "opentelemetry-sdk", specifier = ">=1.39.0,<2.0.0" },
     { name = "pdfminer-six", specifier = ">=20251230" },
-    { name = "pyarrow", specifier = "==21.0.0" },
     { name = "pyfiglet", marker = "sys_platform == 'never'" },
     { name = "pymilvus", marker = "sys_platform == 'never'" },
     { name = "python-docx", marker = "sys_platform == 'never'" },
@@ -53,7 +49,6 @@ overrides = [
     { name = "scikit-network", marker = "sys_platform == 'never'" },
     { name = "shellingham", marker = "sys_platform == 'never'" },
     { name = "stagehand", marker = "sys_platform == 'never'" },
-    { name = "starlette", specifier = ">=0.49.1,<1.0.0" },
     { name = "typer", marker = "sys_platform == 'never'" },
     { name = "uv", marker = "sys_platform == 'never'" },
     { name = "watchdog", marker = "sys_platform == 'never'" },
@@ -124,7 +119,6 @@ dependencies = [
 [package.optional-dependencies]
 agentic-playground = [
     { name = "ecs-logging", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "fastapi", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "ipykernel", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "jupyter-client", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "jupyter-core", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -154,7 +148,6 @@ requires-dist = [
     { name = "datarobot-moderations", extras = ["all"], specifier = "==11.2.30" },
     { name = "debugpy", marker = "extra == 'dev'", specifier = ">=1.8.20" },
     { name = "ecs-logging", marker = "extra == 'agentic-playground'", specifier = ">=2.2.0" },
-    { name = "fastapi", extras = ["all"], marker = "extra == 'agentic-playground'", specifier = "==0.118.2" },
     { name = "ipykernel", marker = "extra == 'agentic-playground'", specifier = "<6.29.0" },
     { name = "jupyter-client", marker = "extra == 'agentic-playground'", specifier = ">=8.6.3" },
     { name = "jupyter-core", marker = "extra == 'agentic-playground'", specifier = ">=5.8.1" },
@@ -1374,7 +1367,7 @@ wheels = [
 
 [[package]]
 name = "fastapi"
-version = "0.132.1"
+version = "0.136.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-doc", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1383,9 +1376,9 @@ dependencies = [
     { name = "typing-extensions", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "typing-inspection", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/36/1a/9c69b39a6c4d9b7f024e7761bb06bd7a4cc81f0e7bd717a5c1e66ccc9df4/fastapi-0.132.1.tar.gz", hash = "sha256:e5b224024e20ac2aa0141f1ca2c6014cf88b87dc447e31b4c8527c5cf403ce30", size = 373491, upload-time = "2026-02-24T09:34:07.741Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/81/2d/ff8d91d7b564d464629a0fd50a4489c97fcb836ac230bf3a7269232a9b1f/fastapi-0.136.3.tar.gz", hash = "sha256:e487fae93ad408e6f47641ee4dfe389864fd7bec92e547ea8498fc13f43e83ab", size = 396410, upload-time = "2026-05-23T18:53:15.192Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/01/88/f872fd6220c5d3f0c5fd0b4746f84135e474e627329863dc1466559de5e2/fastapi-0.132.1-py3-none-any.whl", hash = "sha256:0f50df9aed7cfa379b0f4a7dbe798d3dfc2c6bfb05362fe5c7cc4795fa6d1b7a", size = 104789, upload-time = "2026-02-24T09:34:09.252Z" },
+    { url = "https://files.pythonhosted.org/packages/e0/82/45359b62a067409bd929ae8a56b8ed13e5a8c8a61194b3c236920999ab83/fastapi-0.136.3-py3-none-any.whl", hash = "sha256:3d2a69bdf04b7e9f3afa292c3bc7a98816bbfafa10bc9b45f3f3700d2f761620", size = 117481, upload-time = "2026-05-23T18:53:16.924Z" },
 ]
 
 [[package]]
@@ -5634,15 +5627,15 @@ wheels = [
 
 [[package]]
 name = "starlette"
-version = "0.52.1"
+version = "1.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "anyio", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "typing-extensions", marker = "(python_full_version < '3.13' and sys_platform == 'darwin') or (python_full_version < '3.13' and sys_platform == 'linux') or (python_full_version < '3.13' and sys_platform == 'win32')" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c4/68/79977123bb7be889ad680d79a40f339082c1978b5cfcf62c2d8d196873ac/starlette-0.52.1.tar.gz", hash = "sha256:834edd1b0a23167694292e94f597773bc3f89f362be6effee198165a35d62933", size = 2653702, upload-time = "2026-01-18T13:34:11.062Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/95/66/4d20cdf39a8d6a51e663b7038e3b828ff211d3891a43a713fe7e4643f3a8/starlette-1.1.0.tar.gz", hash = "sha256:e83c7fe0ddecd8719c5b840080325aec0260acec86e9832899e377b91d65e90f", size = 2660060, upload-time = "2026-05-23T16:55:41.376Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/81/0d/13d1d239a25cbfb19e740db83143e95c772a1fe10202dda4b76792b114dd/starlette-0.52.1-py3-none-any.whl", hash = "sha256:0029d43eb3d273bc4f83a08720b4912ea4b071087a3b48db01b7c839f7954d74", size = 74272, upload-time = "2026-01-18T13:34:09.188Z" },
+    { url = "https://files.pythonhosted.org/packages/93/79/920b8e0a8b20f793e8d64855095cb8febabf6175b8550b6f7a547d813891/starlette-1.1.0-py3-none-any.whl", hash = "sha256:7f0dfd38e428aad5cb6f9f667f0ca1d2d8ca3f3385dccac8305f79ec98458382", size = 72899, upload-time = "2026-05-23T16:55:39.201Z" },
 ]
 
 [[package]]
