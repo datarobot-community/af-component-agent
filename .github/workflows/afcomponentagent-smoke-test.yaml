@@ -1,0 +1,95 @@
+---
+name: af-component-agent Smoke Tests
+on:
+  workflow_dispatch:
+  push:
+    branches: ["main"]
+    paths:
+      - "template/*/agent/**"
+      - ".github/workflows/afcomponentagent-smoke-test.yaml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "template/*/agent/**"
+      - ".github/workflows/afcomponentagent-smoke-test.yaml"
+
+jobs:
+  smoke-test:
+    name: "Smoke / ${{ matrix.framework }} / ${{ matrix.model.label }}"
+    runs-on: "ubuntu-latest"
+    container:
+      image: ghcr.io/astral-sh/uv:python3.11-bookworm
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: [crewai, langgraph, llamaindex]
+        model:
+          - label: gpt
+            id: "datarobot/azure/gpt-5-1-2025-11-13"
+          - label: sonnet
+            id: "datarobot/anthropic/claude-sonnet-4-5-20250929"
+          - label: gemini
+            id: "datarobot/vertex_ai/gemini-3.1-pro-preview"
+    steps:
+      - name: Checkout
+        uses: "actions/checkout@v6"
+      - name: Setup caching
+        uses: ./.github/actions/setup-caching
+        with:
+          python-version: python3.11
+          cache-key-suffix: smoke-${{ matrix.framework }}-${{ matrix.model.label }}
+      - name: Render template
+        uses: ./.github/actions/render-copier-instance
+        with:
+          copier-args: "--defaults --data agent_template_framework=${{ matrix.framework }}"
+      - name: Install agent dependencies
+        shell: sh
+        working-directory: ./rendered
+        run: uvx --from go-task-bin task agent:install
+        env:
+          UV_CACHE_DIR: /.uv_cache
+      - name: Write credentials
+        shell: sh
+        working-directory: ./rendered
+        run: |
+          printf 'DATAROBOT_API_TOKEN=%s\n' "$DATAROBOT_API_TOKEN" > .env
+          printf 'DATAROBOT_ENDPOINT=%s\n' "$DATAROBOT_ENDPOINT" >> .env
+          if [ "$FRAMEWORK" = "crewai" ]; then
+            echo "CREWAI_TESTING=true" >> .env
+          fi
+        env:
+          DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
+          DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
+          FRAMEWORK: ${{ matrix.framework }}
+      - name: Run smoke test
+        shell: sh
+        working-directory: ./rendered
+        run: |
+          uvx --from go-task-bin task agent:cli START_DEV=1 -- \
+            execute \
+            --show_output \
+            --user_prompt "Reply with one word: OK." \
+            > ./agent/output.log 2>&1
+          cat ./agent/output.log
+        env:
+          UV_CACHE_DIR: /.uv_cache
+          LLM_DEFAULT_MODEL: ${{ matrix.model.id }}
+      - name: Validate response
+        shell: sh
+        working-directory: ./rendered
+        run: |
+          if grep -qi "^error:" ./agent/output.log || grep -q "failed to obtain agent chat response" ./agent/output.log; then
+            echo "FAIL: agent returned an error response"
+            exit 1
+          fi
+          if ! grep -q "Execution result:" ./agent/output.log; then
+            echo "FAIL: no execution result found in output"
+            exit 1
+          fi
+          echo "PASS: smoke test succeeded"
+      - name: Upload logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-logs-${{ matrix.framework }}-${{ matrix.model.label }}
+          path: ./rendered/agent/output.log
