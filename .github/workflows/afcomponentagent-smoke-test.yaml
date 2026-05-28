@@ -17,6 +17,7 @@ jobs:
   smoke-test:
     name: "Smoke / ${{ matrix.framework }} / ${{ matrix.model.label }}"
     runs-on: "ubuntu-latest"
+    environment: integration
     container:
       image: ghcr.io/astral-sh/uv:python3.11-bookworm
     strategy:
