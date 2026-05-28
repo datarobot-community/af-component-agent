@@ -90,7 +90,28 @@ workflow:
   _type: base_agent
   llm_name: datarobot_llm
   description: Base agent example
+  middleware:
+    - datarobot_moderation
 {% endif %}
+
+middleware:
+  datarobot_moderation:
+    _type: datarobot_moderation
+  # Uncomment and modify to configure guards. datarobot_moderation is a no-op if not configured.
+  # moderation:
+  #   guards:
+  #   - description: Track the number of tokens associated with the input to the LLM,
+  #       and/or retrieved text from the vector database.
+  #     name: Prompt Tokens
+  #     ootb_type: token_count
+  #     stage: prompt
+  #     type: ootb
+  #   - description: Track the number of tokens associated with the output from the
+  #       LLM, and/or retrieved text from the vector database.
+  #     name: Response Tokens
+  #     ootb_type: token_count
+  #     stage: response
+  #     type: ootb
 
 authentication:
   datarobot_auth:

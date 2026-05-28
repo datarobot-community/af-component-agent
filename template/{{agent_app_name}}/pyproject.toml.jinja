@@ -5,7 +5,7 @@ description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
 {% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% else %}requires-python = ">=3.11, <3.14"{% endif %}
 dependencies = [
-    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, nat, auth{% elif agent_template_framework == 'crewai' %}[crewai, dragent, auth{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent, auth{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent, auth{% elif agent_template_framework == 'base' %}[dragent, auth{% elif agent_template_framework == 'nat' %}[nat, dragent, auth{% else %}[core, auth{% endif %}{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}, memory]{% else %}]{% endif %}==0.15.78",
+    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, nat, auth{% elif agent_template_framework == 'crewai' %}[crewai, dragent, auth{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent, auth{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent, auth{% elif agent_template_framework == 'base' %}[dragent, auth{% elif agent_template_framework == 'nat' %}[nat, dragent, auth{% else %}[core, auth{% endif %}{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}, memory]{% else %}]{% endif %}==0.15.80",
     "datarobot-moderations[all]==11.2.30",
     "datarobot-drum==1.17.11.post1",  # Lift upper limit after asyncio migration finished
     "datarobot-mlops==11.1.0",
