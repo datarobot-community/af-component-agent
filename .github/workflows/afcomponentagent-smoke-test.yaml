@@ -16,6 +16,10 @@ on:
 jobs:
   smoke-test:
     name: "Smoke / ${{ matrix.framework }} / ${{ matrix.model.label }}"
+    # Skip on fork PRs so the integration secrets are never reachable from
+    # attacker-controlled code. Same-repo branches, pushes to main, and
+    # workflow_dispatch still run normally.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
     runs-on: "ubuntu-latest"
     environment: integration
     container:
