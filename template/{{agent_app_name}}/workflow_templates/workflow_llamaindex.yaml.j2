@@ -94,9 +94,30 @@ workflow:
   _type: llamaindex_agent
   llm_name: datarobot_llm
   description: LlamaIndex planner/writer agent
+  middleware:
+    - datarobot_moderation
   # tool_names:
   #   - remote_agent
 {% endif %}
+
+middleware:
+  datarobot_moderation:
+    _type: datarobot_moderation
+  # Uncomment and modify to configure guards. datarobot_moderation is a no-op if not configured.
+  # moderation:
+  #   guards:
+  #   - description: Track the number of tokens associated with the input to the LLM,
+  #       and/or retrieved text from the vector database.
+  #     name: Prompt Tokens
+  #     ootb_type: token_count
+  #     stage: prompt
+  #     type: ootb
+  #   - description: Track the number of tokens associated with the output from the
+  #       LLM, and/or retrieved text from the vector database.
+  #     name: Response Tokens
+  #     ootb_type: token_count
+  #     stage: response
+  #     type: ootb
 
 authentication:
   datarobot_auth:

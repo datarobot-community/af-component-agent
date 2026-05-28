@@ -141,4 +141,26 @@ workflow:
     2. Call writer with the content plan as input to produce the final blog post.
     You also have access to additional tools (e.g. MCP tools) — use them when they are relevant to fulfilling the request.
     Return only the final blog post output from the writer.
+# Uncomment to use moderations when dragent is enabled
+# middleware:
+# - datarobot_moderation
 {%- endif %}
+
+middleware:
+  datarobot_moderation:
+    _type: datarobot_moderation
+  # Uncomment and modify to configure guards. datarobot_moderation is a no-op if not configured.
+  # moderation:
+  #   guards:
+  #   - description: Track the number of tokens associated with the input to the LLM,
+  #       and/or retrieved text from the vector database.
+  #     name: Prompt Tokens
+  #     ootb_type: token_count
+  #     stage: prompt
+  #     type: ootb
+  #   - description: Track the number of tokens associated with the output from the
+  #       LLM, and/or retrieved text from the vector database.
+  #     name: Response Tokens
+  #     ootb_type: token_count
+  #     stage: response
+  #     type: ootb
