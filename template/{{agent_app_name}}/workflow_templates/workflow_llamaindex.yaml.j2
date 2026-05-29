@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 general:
+  telemetry:
+    tracing:
+      otelcollector:
+        _type: datarobot_otelcollector
+        project: "agent"
   front_end:
     _type: dragent_fastapi
     # Step adaptor is not necessary for custom agents
