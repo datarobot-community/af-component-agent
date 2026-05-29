@@ -76,20 +76,25 @@ functions:
     description: A tool that writes the content for the requested topic.
 {%- if use_agent_memory == 'mem0' %}
   nat_agent:
-    # Use the non-per-user variant so the streaming_memory_agent wrapper (which resolves
-    # `inner_agent_name` via builder.get_function() at workflow build time) can find it.
-    # Per-user functions / function groups (e.g. mcp_tools) are built lazily and are
-    # not visible to workflow-time wrappers, so they cannot be referenced here.
-    _type: tool_calling_agent
+    # `streaming_memory_agent` is itself per-user (registered via `register_per_user_function`),
+    # so it builds lazily inside the per-user builder and `builder.get_function(inner_agent_name)`
+    # can resolve per-user inner agents from the per-user cache. That means we can use
+    # `per_user_tool_calling_agent` here and reference per-user function groups (e.g. `mcp_tools`)
+    # in `tool_names` below.
+    _type: per_user_tool_calling_agent
     llm_name: datarobot_llm
     description: "Blog content orchestrator that plans and writes a blog post."
     tool_names:
       - planner
       - writer
+      - mcp_tools
+      # Uncomment to inject A2A remote agent tools (must also uncomment function_groups.remote_agent below):
+      # - remote_agent
     system_prompt: |
       You are a blog content orchestrator. For every user request, you MUST follow these steps in order:
       1. Call planner to get a content plan.
       2. Call writer with the content plan as input to produce the final blog post.
+      You also have access to additional tools (e.g. MCP tools) — use them when they are relevant to fulfilling the request.
       Return only the final blog post output from the writer.
 {%- endif %}
 function_groups:
