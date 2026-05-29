@@ -11,6 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# ------------------------------------------------------------------------------
+# THIS SECTION OF CODE IS REQUIRED TO SETUP TRACING AND TELEMETRY FOR THE AGENTS.
+# REMOVING THIS CODE WILL DISABLE ALL MONITORING, TRACING AND TELEMETRY.
+# isort: off
+from datarobot_genai.core.telemetry_agent import instrument
+
+instrument(framework="langgraph")
+
+# ruff: noqa: E402
+# isort: on
+# ------------------------------------------------------------------------------
 from collections.abc import AsyncGenerator
 from typing import Annotated, Any
 
