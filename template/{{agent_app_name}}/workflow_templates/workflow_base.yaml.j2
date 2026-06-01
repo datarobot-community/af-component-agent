@@ -52,7 +52,7 @@ general:
 #     url: "https://app.datarobot.com/api/v2/deployments/<deployment-id>/directAccess/a2a/"
 #     auth_provider: datarobot_auth
 
-{% if use_agent_memory == 'mem0' %}
+{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
 functions:
   base_agent:
     _type: base_agent
@@ -74,7 +74,7 @@ llms:
     #       llm_default_model: anthropic/claude-opus-4-20250514
     #   num_retries: 1
 
-{% if use_agent_memory == 'mem0' %}
+{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
 memory:
   mem0_memory:
     _type: dr_mem0_memory
