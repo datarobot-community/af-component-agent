@@ -74,7 +74,7 @@ functions:
 
       Write in markdown format, ready for publication.
     description: A tool that writes the content for the requested topic.
-{%- if use_agent_memory == 'mem0' %}
+{%- if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
   nat_agent:
     # `streaming_memory_agent` is itself per-user (registered via `register_per_user_function`),
     # so it builds lazily inside the per-user builder and `builder.get_function(inner_agent_name)`
@@ -119,7 +119,7 @@ llms:
   datarobot_llm:
     _type: datarobot-llm-component
 
-{%- if use_agent_memory == 'mem0' %}
+{%- if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
 memory:
   mem0_memory:
     _type: dr_mem0_memory
