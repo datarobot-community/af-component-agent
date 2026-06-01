@@ -2,7 +2,7 @@
 
 > **Also known as:** OpenTelemetry, OTel, observability, instrumentation, spans, monitoring, telemetry, trace export
 
-Agents that use the **DRAgent** front server are instrumented for distributed tracing out of the box. Each agent run emits OpenTelemetry spans for LLM calls, tool invocations, HTTP requests, and framework-level steps, and exports them to DataRobot for monitoring on the deployment's **Service health** tab. This is powered by [OpenTelemetry](https://opentelemetry.io/) and the `datarobot-genai` `dragent` extra — no extra setup is required in a generated agent.
+Agents that use the **DRAgent** front server are instrumented for distributed tracing out of the box. Each agent run emits OpenTelemetry spans for LLM calls, tool invocations, HTTP requests, and framework-level steps, and exports them to DataRobot for monitoring on the deployment's **Monitoring > Data exploration** tab. This is powered by [OpenTelemetry](https://opentelemetry.io/) and the `datarobot-genai` `dragent` extra — no extra setup is required in a generated agent.
 
 Tracing is wired up by two pieces that the template generates automatically:
 
@@ -90,7 +90,7 @@ The DataRobot exporter only activates when the DataRobot deployment environment 
 
 ## Viewing traces
 
-For a deployed agent, open the deployment's **Service health** tab and click **Show tracing** to see end-to-end request traces, including LLM calls, tool invocations, and agent actions. See [Debugging deployed agents](./debugging.md#debugging-deployed-agents) and the [DataRobot tracing documentation](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-tracing-code.html).
+For a deployed agent, open the deployment's **Monitoring > Data exploration** tab to see end-to-end request traces, including LLM calls, tool invocations, and agent actions. See [Debugging deployed agents](./debugging.md#debugging-deployed-agents) and the [DataRobot tracing documentation](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-tracing-code.html).
 
 ## Disabling tracing
 
