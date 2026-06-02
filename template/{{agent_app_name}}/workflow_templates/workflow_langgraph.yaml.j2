@@ -107,22 +107,11 @@ workflow:
 
 middleware:
   datarobot_moderation:
+    # Guards can be configured inline by adding the moderation field here.
+    # See the Guardrails Configuration Guide at https://pypi.org/project/datarobot-moderations/
+    # If there is no inline configuration then moderation_config.yaml will be loaded, if present.
+    # If no guards are configured then the middleware is a no-op.
     _type: datarobot_moderation
-  # Uncomment and modify to configure guards. datarobot_moderation is a no-op if not configured.
-  # moderation:
-  #   guards:
-  #   - description: Track the number of tokens associated with the input to the LLM,
-  #       and/or retrieved text from the vector database.
-  #     name: Prompt Tokens
-  #     ootb_type: token_count
-  #     stage: prompt
-  #     type: ootb
-  #   - description: Track the number of tokens associated with the output from the
-  #       LLM, and/or retrieved text from the vector database.
-  #     name: Response Tokens
-  #     ootb_type: token_count
-  #     stage: response
-  #     type: ootb
 
 authentication:
   datarobot_auth:
