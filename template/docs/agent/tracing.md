@@ -13,29 +13,24 @@ Tracing is wired up by two pieces that the template generates automatically:
 
 Both are present by default. You do not need to add them — this doc explains what they are so you know not to remove them and how to recognize them.
 
-> **Note:** Tracing as described here applies to the **DRAgent** front server (`_type: dragent_fastapi`). For DRUM-based agents, see [Implement tracing](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-tracing-code.html).
+> [!NOTE]
+> Tracing as described here applies to the **DRAgent** front server (`_type: dragent_fastapi`). For DRUM-based agents, see [Implement tracing](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-tracing-code.html).
 
 ---
 
 ## Instrumentation (`agent/register.py`)
 
-The top of `agent/register.py` calls `instrument()` from `datarobot_genai.core.telemetry_agent` before any other imports:
+Near the top of `agent/register.py`, `instrument()` from `datarobot_genai.core.telemetry_agent` is called right after the module imports:
 
 ```python
-# ------------------------------------------------------------------------------
-# THIS SECTION OF CODE IS REQUIRED TO SETUP TRACING AND TELEMETRY FOR THE AGENTS.
-# REMOVING THIS CODE WILL DISABLE ALL MONITORING, TRACING AND TELEMETRY.
-# isort: off
 from datarobot_genai.core.telemetry_agent import instrument
+# ... other module imports ...
 
+# INSTRUMENTATION CALL IS REQUIRED TO SETUP TRACING AND TELEMETRY FOR AGENTS
 instrument(framework="langgraph")
-
-# ruff: noqa: E402
-# isort: on
-# ------------------------------------------------------------------------------
 ```
 
-The call must run **first**, before the framework is imported — OpenTelemetry instrumentors patch a library at import time, so instrumenting after the import would miss spans. The `# isort: off` / `# ruff: noqa: E402` markers keep the linters from reordering or flagging it.
+The call runs as the module loads, before the agent handles any requests, so the framework, HTTP clients, and the OpenAI SDK are instrumented and emit spans.
 
 ### The `framework` argument
 
@@ -55,10 +50,10 @@ The call must run **first**, before the framework is imported — OpenTelemetry 
 Regardless of framework, `instrument()` always:
 
 - Patches HTTP clients — `requests`, `aiohttp`, and `httpx` — so outbound calls are traced.
-- Patches the **OpenAI SDK** so LLM requests/responses become spans.
+- Patches the OpenAI SDK so LLM requests/responses become spans.
 - Instruments `threading` so spans propagate across threads.
 - Installs a global OpenTelemetry `TracerProvider` pointed at the DataRobot OTel ingest, so spans actually reach DataRobot.
-- Opts out of unrelated third-party telemetry (e.g. sets `RAGAS_DO_NOT_TRACK`, `DEEPEVAL_TELEMETRY_OPT_OUT`).
+- Opts out of unrelated third-party telemetry (e.g., sets `RAGAS_DO_NOT_TRACK`, `DEEPEVAL_TELEMETRY_OPT_OUT`).
 
 The call is **idempotent** — calling it more than once is safe; each client and framework is instrumented at most once.
 
