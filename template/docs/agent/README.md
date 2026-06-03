@@ -17,6 +17,7 @@ For the official DataRobot documentation on agent components, see [Agent compone
 | [Debugging](./debugging.md) | Debug agents locally using the CLI, VS Code, and PyCharm. |
 | [Tracing and telemetry](./tracing.md) | OpenTelemetry tracing for DRAgent agents: how `register.py` and `workflow.yaml` are instrumented to export spans to DataRobot. |
 | [Local evaluation](./evaluation.md) | Evaluate agentic workflows locally with Pytest and integrate tests into CI/CD pipelines. |
+| [Thinking models](./thinking-models.md) | Enable extended thinking (reasoning) on thinking-capable models. |
 | [Further reading](#further-reading) | Links to official DataRobot docs for troubleshooting, tracing, global tools, and more. |
 
 ## Features
@@ -176,10 +177,12 @@ Agent configuration is managed by the `Config` class in `agent/config.py`, which
 | `MCP_DEPLOYMENT_ID` | Deployed MCP server ID. | `None` |
 | `EXTERNAL_MCP_URL` | External MCP server URL. | `None` |
 | `AGENT_PORT` | Local agent server port. | `8842` |
+| `ENABLE_THINKING` | Enable extended thinking on thinking-capable models. | `false` |
+| `THINKING_BUDGET_TOKENS` | Max tokens for model thinking when `ENABLE_THINKING` is on. | `1024` |
 
 Values set to `SET_VIA_PULUMI_OR_MANUALLY` are automatically replaced with field defaults at startup.
 
-For LLM configuration details, see [LLM component](../llm.md). To configure primary and fallback LLM providers, see [LLM provider fallback](./llm-fallback.md).
+For LLM configuration details, see [LLM component](../llm.md). To configure primary and fallback LLM providers, see [LLM provider fallback](./llm-fallback.md). To enable extended thinking / reasoning models, see [Thinking models](./thinking-models.md).
 
 ## Front servers
 
