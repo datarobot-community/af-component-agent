@@ -584,7 +584,12 @@ if idp_agent_id:
 # operator sets the env vars at deploy time, so deployments using non-thinking models are
 # unaffected. datarobot-genai reads ENABLE_THINKING / THINKING_BUDGET_TOKENS from these.
 ENABLE_THINKING_PARAM: Final[str] = "ENABLE_THINKING"
-if os.environ.get(ENABLE_THINKING_PARAM, "").strip().lower() in ("1", "true", "yes", "on"):
+if os.environ.get(ENABLE_THINKING_PARAM, "").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+):
     agent_runtime_parameter_values.append(
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
             key=ENABLE_THINKING_PARAM,
@@ -597,14 +602,24 @@ if os.environ.get(ENABLE_THINKING_PARAM, "").strip().lower() in ("1", "true", "y
 THINKING_BUDGET_TOKENS_PARAM: Final[str] = "THINKING_BUDGET_TOKENS"
 thinking_budget_tokens = os.environ.get(THINKING_BUDGET_TOKENS_PARAM, "").strip()
 if thinking_budget_tokens:
-    agent_runtime_parameter_values.append(
-        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-            key=THINKING_BUDGET_TOKENS_PARAM,
-            type="numeric",
-            value=thinking_budget_tokens,
-        ),
-    )
-    pulumi.info(f"Configured with THINKING_BUDGET_TOKENS: {thinking_budget_tokens}")
+    try:
+        thinking_budget_value = int(thinking_budget_tokens)
+    except ValueError:
+        thinking_budget_value = 0
+    if thinking_budget_value >= 1:
+        agent_runtime_parameter_values.append(
+            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+                key=THINKING_BUDGET_TOKENS_PARAM,
+                type="numeric",
+                value=str(thinking_budget_value),
+            ),
+        )
+        pulumi.info(f"Configured with THINKING_BUDGET_TOKENS: {thinking_budget_value}")
+    else:
+        pulumi.warn(
+            f"Ignoring {THINKING_BUDGET_TOKENS_PARAM}={thinking_budget_tokens!r}: "
+            "must be an integer >= 1."
+        )
 
 
 PRIVATE_JWK_PARAM: Final[str] = "IDP_AGENT_PRIVATE_KEY_JWK"
