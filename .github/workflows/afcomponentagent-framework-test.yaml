@@ -6,12 +6,14 @@ on:
     paths:
       - "fixtures/**"
       - "template/**"
+      - ".github/actions/copier-template-validator/**"
       - ".github/workflows/afcomponentagent-framework-test.yaml"
   pull_request:
     branches: ["main"]
     paths:
       - "fixtures/**"
       - "template/**"
+      - ".github/actions/copier-template-validator/**"
       - ".github/workflows/afcomponentagent-framework-test.yaml"
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -52,7 +54,7 @@ jobs:
       - name: Checkout
         uses: "actions/checkout@v6"
       - name: Render template
-        uses: datarobot-oss/copier-template-validator@main
+        uses: ./.github/actions/copier-template-validator
         with:
           working-directory: .
           rendered-dir: ./rendered

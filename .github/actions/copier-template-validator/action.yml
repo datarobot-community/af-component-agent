@@ -1,0 +1,36 @@
+name: 'Copier Template Validator'
+description: 'Renders a Copier template with automatic dependency resolution from copier-module.yaml'
+branding:
+  icon: check-circle
+  color: blue
+
+inputs:
+  working-directory:
+    description: 'Path to the template repo to validate (must contain copier.yml)'
+    required: false
+    default: '.'
+  copier-args:
+    description: 'Extra arguments passed to copier (e.g. "--data agent_template_framework=base")'
+    required: false
+    default: ''
+  rendered-dir:
+    description: 'Directory where the rendered template output will be written'
+    required: false
+    default: './rendered'
+
+runs:
+  using: composite
+  steps:
+    - name: Install system dependencies
+      shell: bash
+      run: |
+        apt-get update --allow-releaseinfo-change && apt-get install -y git g++ --no-install-recommends
+        git config --global safe.directory '*'
+
+    - name: Resolve dependencies and render template
+      shell: bash
+      run: |
+        uv run --with pyyaml "${GITHUB_ACTION_PATH}/scripts/resolve_deps.py" \
+          --template-dir "${{ inputs.working-directory }}" \
+          --rendered-dir "${{ inputs.rendered-dir }}" \
+          --copier-args "${{ inputs.copier-args }}"
