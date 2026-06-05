@@ -51,7 +51,7 @@ agent/
 
 ### Example configuration
 
-Replace `<YOUR_JUDGE_LLM_DEPLOYMENT_ID>` with a real 24-character DataRobot deployment ID. Use a judge model that is **different from the model your agent uses** for more objective scoring.
+LLM-as-a-judge guards route through the DataRobot LLM Gateway via `llm_type: llmGateway` and `llm_gateway_model_id`&mdash;no separate judge deployment is required. Use a judge model that is **different from the model your agent uses** for more objective scoring.
 
 ```yaml
 # moderation_config.yaml
@@ -77,8 +77,8 @@ guards:
     ootb_type: agent_goal_accuracy
     stage: response
     is_agentic: true
-    llm_type: datarobot
-    deployment_id: "<YOUR_JUDGE_LLM_DEPLOYMENT_ID>"
+    llm_type: llmGateway
+    llm_gateway_model_id: "anthropic/claude-opus-4-20250514"
     intervention:
       action: block
       message: "Agent failed to achieve the user's goal."
@@ -87,14 +87,18 @@ guards:
           comparand: 0.7
 ```
 
+### LLM judge backends
+
+Guards that call an LLM to score text (`faithfulness`, `task_adherence`, `agent_goal_accuracy`, and others) require an `llm_type`. This template's examples use **`llmGateway`**, which routes through the DataRobot LLM Gateway using `llm_gateway_model_id`&mdash;no judge deployment required. Alternatively, set `llm_type: datarobot` with a 24-character `deployment_id` to use a dedicated DataRobot LLM deployment as the judge.
+
 ### Common guard types
 
 | Guard (`ootb_type` or `type`) | Stage | Use case |
 |---|---|---|
 | `token_count` | `prompt` or `response` | Enforce length limits |
-| `agent_goal_accuracy` | `response` | Agentic workflows; set `is_agentic: true` |
-| `faithfulness` | `response` | RAG agents; set `copy_citations: true` |
-| `task_adherence` | `response` | Instruction-following agents |
+| `agent_goal_accuracy` | `response` | Agentic workflows; set `is_agentic: true` and `llm_type: llmGateway` |
+| `faithfulness` | `response` | RAG agents; set `copy_citations: true` and `llm_type: llmGateway` |
+| `task_adherence` | `response` | Instruction-following agents; set `llm_type: llmGateway` |
 | `model` | `prompt` or `response` | Custom DataRobot classifier or text-generation deployment |
 | `nemo_guardrails` | `prompt` or `response` | Colang-based NeMo Guardrails flows |
 
@@ -140,7 +144,7 @@ If a guard blocks the request, the response contains the guard's `intervention.m
 
 When deployed as a DataRobot custom model, DRUM loads `moderation_config.yaml` from the model artifact. Redeploy after changing guard configuration so the new file is included in the deployment package.
 
-`DATAROBOT_ENDPOINT` and `DATAROBOT_API_TOKEN` must be available in the deployment environment for guards that call DataRobot LLM or model deployments.
+`DATAROBOT_ENDPOINT` and `DATAROBOT_API_TOKEN` must be available in the deployment environment for guards that call the DataRobot LLM Gateway or model deployments.
 
 ## DRAgent
 
@@ -232,8 +236,8 @@ middleware:
           ootb_type: agent_goal_accuracy
           stage: response
           is_agentic: true
-          llm_type: datarobot
-          deployment_id: "<YOUR_JUDGE_LLM_DEPLOYMENT_ID>"
+          llm_type: llmGateway
+          llm_gateway_model_id: "anthropic/claude-opus-4-20250514"
           intervention:
             action: block
             message: "Agent failed to achieve the user's goal."
@@ -264,8 +268,8 @@ Blocked responses surface as content-filter events in the streaming path or as t
 
 | Variable | Required | Description |
 |---|---|---|
-| `DATAROBOT_ENDPOINT` | Yes (for DataRobot-backed guards) | DataRobot instance URL (e.g., `https://app.datarobot.com/api/v2`). Set in `.env` by `dr start`. |
-| `DATAROBOT_API_TOKEN` | Yes (for DataRobot-backed guards) | DataRobot API token. Set in `.env` by `dr start`. |
+| `DATAROBOT_ENDPOINT` | Yes (for LLM Gateway and DataRobot model guards) | DataRobot instance URL (e.g., `https://app.datarobot.com/api/v2`). Set in `.env` by `dr start`. |
+| `DATAROBOT_API_TOKEN` | Yes (for LLM Gateway and DataRobot model guards) | DataRobot API token. Set in `.env` by `dr start`. |
 | `TARGET_NAME` | DRUM local dev / standalone Python | Response field name for post-score guards. DRUM sets this to `response` in `dev.py`. In deployed DRUM environments, the deployment `target_name` takes precedence. |
 | `DISABLE_MODERATION` | No | Set to `true` to disable all guards at runtime without removing configuration. |
 | `ENABLE_DRAGENT_SERVER` | DRAgent only | Set to `true` to use the DRAgent front server instead of DRUM. |
