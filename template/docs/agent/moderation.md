@@ -104,6 +104,13 @@ Guards that call an LLM to score text (`faithfulness`, `task_adherence`, `agent_
 
 For the complete list of guard types, LLM backends, intervention actions, and comparators, see the [Guardrails Configuration Guide](https://pypi.org/project/datarobot-moderations/) on PyPI.
 
+### Streaming performance
+
+> [!WARNING]
+> Guards that call an external model or LLM&mdash;such as `llm_type: llmGateway`, `llm_type: datarobot`, or `type: model`&mdash;can be **slow in streaming mode**. Post-score guards may run on **each streamed chunk** rather than only on the final response, so every chunk can trigger a separate judge or model invocation. This applies to both DRUM and DRAgent streaming paths.
+>
+> For streaming workloads, prefer lightweight local guards (for example `token_count`) or reserve LLM-as-a-judge and model guards for non-streaming requests. If guards time out during streaming, increase `timeout_sec` or set `timeout_action: score` while tuning thresholds.
+
 ## DRUM
 
 **DRUM** (DataRobot User Model) is the default front server. When `moderation_config.yaml` is present in the agent directory, DRUM applies guards automatically around the `chat()` hook in `custom.py`. No changes to `custom.py` or `myagent.py` are required.
