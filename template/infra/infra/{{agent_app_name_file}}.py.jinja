@@ -52,6 +52,7 @@ DEFAULT_DRUM_WORKER_CONNECTIONS: Final[str] = "1"
 DEFAULT_DRUM_CLIENT_REQUEST_TIMEOUT: Final[str] = "300"
 {% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
 # Agent memory runtime parameters
+AGENT_MEMORY_SPACE_ID: Final[str] = "AGENT_MEMORY_SPACE_ID"
 AGENT_MEMORY_TTL_SECONDS: Final[str] = "AGENT_MEMORY_TTL_SECONDS"
 CONFIGURED_AGENT_MEMORY_TTL_SECONDS: Final[str] = os.environ.get(
     AGENT_MEMORY_TTL_SECONDS, "2592000"
@@ -555,7 +556,7 @@ if mem0_api_key := os.environ.get(MEM0_API_KEY):
 {{agent_app_name}}_memory_space = pulumi_datarobot.MemorySpace({{agent_app_name}}_asset_name + " Memory Space")
 agent_runtime_parameter_values.append(
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        key="MEMORY_SPACE_ID",
+        key=AGENT_MEMORY_SPACE_ID,
         type="string",
         value={{agent_app_name}}_memory_space.id,
     )
