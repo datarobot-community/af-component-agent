@@ -509,7 +509,7 @@ agent_runtime_parameter_values.extend(
 agent_runtime_parameter_values.append(
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
         key=AGENT_MEMORY_TTL_SECONDS,
-        type="numeric",
+        type="string",  # numeric is not compatible with DataRobotAppFrameworkBaseSettings
         value=CONFIGURED_AGENT_MEMORY_TTL_SECONDS,
     )
 )
