@@ -30,7 +30,7 @@ This template supports two front servers. Both use the same guard YAML, but the 
 | **DRAgent** | `datarobot_moderation` middleware in `workflow.yaml` | Inline `moderation` field or `moderation_config.yaml` | `ENABLE_DRAGENT_SERVER=true` |
 
 > [!NOTE]
-> Runtime moderations (this guide) enforce guardrails on live traffic. For **offline quality gates** in Pytest&mdash;scoring agent outputs in CI without deploying&mdash;see [Local evaluation](./agent/evaluation.md).
+> Runtime moderations (this guide) enforce guardrails on live traffic. For **offline quality gates** in Pytest&mdash;scoring agent outputs in CI without deploying&mdash;see [Local evaluation](./evaluation.md).
 
 ## Guard configuration file
 
@@ -147,7 +147,7 @@ When deployed as a DataRobot custom model, DRUM loads `moderation_config.yaml` f
 **DRAgent** is the next-generation front server built on NAT (NeMo Agent Toolkit). Moderations are applied through the `datarobot_moderation` middleware declared in `workflow.yaml`.
 
 > [!IMPORTANT]
-> DRAgent is experimental. Enable it by setting `ENABLE_DRAGENT_SERVER=true` in your `.env` file. When DRAgent is enabled, the agent CLI is unavailable; use `task agent:cli` or `nat dragent` commands instead. See [Front servers](./agent/README.md#front-servers) for details.
+> DRAgent is experimental. Enable it by setting `ENABLE_DRAGENT_SERVER=true` in your `.env` file. When DRAgent is enabled, the agent CLI is unavailable; use `task agent:cli` or `nat dragent` commands instead. See [Front servers](./README.md#front-servers) for details.
 
 ### Enable DRAgent
 
@@ -284,7 +284,7 @@ Or add `DISABLE_MODERATION=true` to `.env`. Guards resume when the variable is u
 
 Runtime moderations (this guide) enforce guardrails on live agent traffic through DRUM or DRAgent.
 
-For **offline evaluation**&mdash;running the same guard metrics in Pytest to gate CI/CD pipelines&mdash;use a separate `moderation.yaml` file and the `ModerationPipeline` API. That workflow is documented in [Local evaluation for agentic workflows](./agent/evaluation.md).
+For **offline evaluation**&mdash;running the same guard metrics in Pytest to gate CI/CD pipelines&mdash;use a separate `moderation.yaml` file and the `ModerationPipeline` API. That workflow is documented in [Local evaluation for agentic workflows](./evaluation.md).
 
 | File | Purpose | Used by |
 |---|---|---|
@@ -298,7 +298,7 @@ Both files use the same guard schema. You can maintain one file and symlink or c
 | Topic | Link |
 |---|---|
 | Guard types, LLM backends, and full YAML reference | [datarobot-moderations on PyPI](https://pypi.org/project/datarobot-moderations/) |
-| Local evaluation with Pytest | [Local evaluation](./agent/evaluation.md) |
-| DRUM vs DRAgent front servers | [Agent: Front servers](./agent/README.md#front-servers) |
-| DRAgent debugging and CLI | [Debugging](./agent/debugging.md) |
+| Local evaluation with Pytest | [Local evaluation](./evaluation.md) |
+| DRUM vs DRAgent front servers | [Front servers](./README.md#front-servers) |
+| DRAgent debugging and CLI | [Debugging](./debugging.md) |
 | `dr-moderation` CLI (evaluate configs without deploying) | [datarobot-moderations CLI docs](https://pypi.org/project/datarobot-moderations/) |
