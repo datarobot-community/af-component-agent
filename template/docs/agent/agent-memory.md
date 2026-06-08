@@ -2,7 +2,10 @@
 
 > **Also known as:** persistent memory, long-term memory, user memory, mem0, DataRobot memory service, conversation memory
 
-The agent template can wire in **persistent, per-user memory** so the agent recalls facts across conversations. Memory is configured at project generation time with the Copier variable `use_agent_memory` and implemented declaratively in `workflow.yaml` when using the **DRAgent** front server.
+The agent template can wire in **persistent, per-user memory** so the agent recalls facts across conversations. Memory is configured at project generation time with the Copier variable `use_agent_memory` and implemented declaratively in `workflow.yaml`.
+
+> [!IMPORTANT]
+> **DRAgent is required.** Memory integration only works with the DRAgent front server (`ENABLE_DRAGENT_SERVER=true` locally, or the `ENABLE_DRAGENT_SERVER` runtime parameter in deployed environments). The DRUM path (`custom.py` / `chat()`) does not load the memory wrapper. See [DRAgent front server](./README.md#dragent) for setup.
 
 Memory is **not** implemented in `myagent.py` or `custom.py`. The template wraps your framework agent in a `streaming_memory_agent` workflow that automatically retrieves relevant memories before each turn and captures new ones after.
 
