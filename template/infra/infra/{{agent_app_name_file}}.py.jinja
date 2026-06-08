@@ -562,6 +562,7 @@ agent_runtime_parameter_values.append(
     )
 )
 {{agent_app_name}}_memory_space.id.apply(lambda id: pulumi.info(f"Memory space configured: {id}"))
+export(AGENT_MEMORY_SPACE_ID, {{agent_app_name}}_memory_space.id)
 pulumi.export(
     "Agent Memory Space ID " + {{agent_app_name}}_asset_name,
     {{agent_app_name}}_memory_space.id,
