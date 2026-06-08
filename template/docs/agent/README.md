@@ -17,6 +17,7 @@ For the official DataRobot documentation on agent components, see [Agent compone
 | [Debugging](./debugging.md) | Debug agents locally using the CLI, VS Code, and PyCharm. |
 | [Tracing and telemetry](./tracing.md) | OpenTelemetry tracing for DRAgent agents: how `register.py` and `workflow.yaml` are instrumented to export spans to DataRobot. |
 | [Moderation and guardrails](./moderation.md) | Configure runtime guardrails with DRUM and DRAgent. |
+| [Agent memory](./agent-memory.md) | Persistent per-user memory via `use_agent_memory`: `streaming_memory_agent`, `dr_mem0_memory`, and provider configuration. |
 | [Local evaluation](./evaluation.md) | Evaluate agentic workflows locally with Pytest and integrate tests into CI/CD pipelines. |
 | [Further reading](#further-reading) | Links to official DataRobot docs for troubleshooting, tracing, global tools, and more. |
 
@@ -180,7 +181,7 @@ Agent configuration is managed by the `Config` class in `agent/config.py`, which
 
 Values set to `SET_VIA_PULUMI_OR_MANUALLY` are automatically replaced with field defaults at startup.
 
-For LLM configuration details, see [LLM component](../llm.md). To configure primary and fallback LLM providers, see [LLM provider fallback](./llm-fallback.md).
+For LLM configuration details, see [LLM component](../llm.md). To configure primary and fallback LLM providers, see [LLM provider fallback](./llm-fallback.md). To enable persistent per-user memory across conversations, see [Agent memory](./agent-memory.md).
 
 ## Front servers
 
