@@ -131,7 +131,7 @@ Defined in each `agent_templates/agent_<framework>.py.j2`. Receives the enriched
 **Default frameworks** (base, crewai, langgraph, llamaindex):
 
 ```
-forwarded_headers ─► MCPConfig ─► mcp_tools_factory (= mcp_tools_context)
+forwarded_headers ─► MCPConfig ─► mcp_tools_factory (= lambda: mcp_tools_context(mcp_config))
                                          │
 MyAgent(forwarded_headers=...) ◄─────────┘ via agent_chat_completion_wrapper
                                          (supplies tools via tools= or set_tools())
@@ -142,7 +142,7 @@ The default pattern constructs `MyAgent` without tools, then passes an `mcp_tool
 **DRAgent path** (in `register.py` instead of `custompy_adaptor`):
 
 ```
-forwarded_headers ─► MCPConfig ─► async with mcp_tools_context() ─► mcp_tools
+forwarded_headers ─► MCPConfig ─► async with mcp_tools_context(mcp_config) ─► mcp_tools
 workflow_tools ────────────────────────────────────────────────────┘
                                          │
                                          └─► MyAgent(tools=workflow_tools + mcp_tools)
