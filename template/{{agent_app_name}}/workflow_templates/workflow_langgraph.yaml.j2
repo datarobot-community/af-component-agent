@@ -86,6 +86,10 @@ memory:
     _type: dr_mem0_memory
 
 workflow:
+  # When memory is not configured streaming_memory_agent is a passthrough so it is safe to use
+  # unconditionally. To configure memory choose agent memory provider "Mem0" and set MEM0_API_KEY
+  # in .env or choose agent memory provider "Datarobot Memory Service" and AGENT_MEMORY_SPACE_ID
+  # will be created during `task deploy-dev`.
   _type: streaming_memory_agent
   inner_agent_name: langgraph_agent
   memory_name: mem0_memory
