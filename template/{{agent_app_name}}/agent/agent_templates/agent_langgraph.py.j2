@@ -105,7 +105,8 @@ def graph_factory(
             "3. Sections/Subtitles are properly named in an engaging manner.\n"
             "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
             "\n"
-            "Write in markdown format, ready for publication.",
+            "Write in markdown format, ready for publication. Call count_words with the writer_node output to verify the word count",
+
         ),
         name="writer_agent",
         debug=verbose,
@@ -117,14 +118,22 @@ def graph_factory(
             return {"messages": [HumanMessage(content=last.content)]}
         return {"messages": []}
 
+    def count_words(state: MessagesState) -> MessagesState:
+        last = state["messages"][-1]
+        text = last.content if isinstance(last, AIMessage) else ""
+        result = word_counter.invoke({"text": text})
+        return {"messages": [AIMessage(content=f"{text}\n\n---\n{result}")]}    
+
     langgraph_workflow = StateGraph(MessagesState)
     langgraph_workflow.add_node("planner_node", agent_planner)
     langgraph_workflow.add_node("planner_to_writer_relay", planner_to_writer_relay)
     langgraph_workflow.add_node("writer_node", agent_writer)
+    langgraph_workflow.add_node("count_words", count_words)
     langgraph_workflow.add_edge(START, "planner_node")
     langgraph_workflow.add_edge("planner_node", "planner_to_writer_relay")
     langgraph_workflow.add_edge("planner_to_writer_relay", "writer_node")
-    langgraph_workflow.add_edge("writer_node", END)
+    langgraph_workflow.add_edge("writer_node", "count_words")
+    langgraph_workflow.add_edge("count_words", END)
     return langgraph_workflow
 
 

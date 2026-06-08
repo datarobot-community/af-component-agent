@@ -175,6 +175,26 @@ def graph_factory(llm, tools, verbose=False):
     # ... graph construction ...
 ```
 
+Define the step in graph node
+
+```python
+ def count_words(state: MessagesState) -> MessagesState:
+        last = state["messages"][-1]
+        text = last.content if isinstance(last, AIMessage) else ""
+        result = word_counter.invoke({"text": text})
+        return {"messages": [AIMessage(content=f"{text}\n\n---\n{result}")]}
+
+```
+
+And then add node and edge to inject the tool into graph
+
+```python
+# ... graph nodes ...
+langgraph_workflow.add_node("writer_node", agent_writer)
+langgraph_workflow.add_node("count_words", count_words)
+# ... graph edges ...
+langgraph_workflow.add_edge("count_words", END)
+
 The `tools` parameter in `graph_factory` contains all MCP and workflow tools. Prepend your custom tools to it so each node has access to both custom and runtime-injected tools.
 
 You can also use LangChain's `BaseTool` class for tools with more complex input schemas:
