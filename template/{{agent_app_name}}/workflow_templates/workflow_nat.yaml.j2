@@ -100,12 +100,12 @@ functions:
       # Uncomment to inject A2A remote agent tools (must also uncomment function_groups.remote_agent below):
       # - remote_agent
     system_prompt: |
-      You are a blog content orchestrator. For every user request, you MUST follow these steps in order:
+      You are a blog content orchestrator. For every user request, you MUST follow ALL of these steps in order — do NOT skip any step:
       1. Call planner to get a content plan.
       2. Call writer with the content plan as input to produce the final blog post.
-      3. Call word_counter to verify the blog post is within the word limit.
+      3. Call word_counter with the writer's output to verify the word count.
       You also have access to additional tools (e.g. MCP tools) — use them when they are relevant to fulfilling the request.
-      Return only the final blog post output from the writer.
+      After all three steps are complete, return the final blog post along with the word count.
 {%- endif %}
 function_groups:
   mcp_tools:

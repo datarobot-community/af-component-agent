@@ -11,13 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import Annotated
+
 from datarobot_genai.nat.tool import nat_tool
 
 
-def word_counter(text: str) -> str:
+def word_counter(
+    text: Annotated[str, "The full text content to count words in."],
+) -> str:
     """Count words in the given text."""
     count = len(text.split())
     return f"Tool: word counter. Word count: {count}."
 
 
-nat_tool(word_counter, "word_counter")
+nat_tool(word_counter, "word_counter", description="Count words in a given text.")
