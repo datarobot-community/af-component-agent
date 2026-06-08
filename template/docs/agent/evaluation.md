@@ -128,7 +128,7 @@ Invoke your agent via `custompy_adaptor` and pass the response text to `Moderati
 import pytest
 from datarobot_dome.api import ModerationPipeline
 
-from agent.myagent import custompy_adaptor
+from agent import custompy_adaptor
 
 
 @pytest.fixture(scope="session")

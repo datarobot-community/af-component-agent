@@ -72,7 +72,6 @@ template/{{agent_app_name}}/
 ├── Taskfile.yml.jinja
 ├── cli.py.jinja
 ├── dev.py                          # Local development entry point (static)
-├── public/                         # UI assets (static)
 └── example-*.json                  # Example payloads (static)
 ```
 
@@ -127,17 +126,29 @@ There are two variants:
 
 ### `custompy_adaptor` — framework-specific glue
 
-Defined in each `agent_templates/agent_<framework>.py.j2`. Receives the enriched `completion_create_params` and wires up the agent.
+Defined in each `agent_templates/agent_<framework>.py.j2`. Receives the enriched `completion_create_params` and wires up the agent. **MCP is loaded here, not inside `MyAgent.invoke()`.**
 
 **Default frameworks** (base, crewai, langgraph, llamaindex):
 
 ```
-forwarded_headers ─┬─► MCPConfig ─► mcp_tools_context() ─► MCP tools
-                   │
-                   └─► MyAgent(forwarded_headers=forwarded_headers, tools=mcp_tools)
+forwarded_headers ─► MCPConfig ─► mcp_tools_factory (= mcp_tools_context)
+                                         │
+MyAgent(forwarded_headers=...) ◄─────────┘ via agent_chat_completion_wrapper
+                                         (supplies tools via tools= or set_tools())
 ```
 
-The default pattern passes `forwarded_headers` to both `MCPConfig` and `MyAgent` unchanged, and obtains MCP tools through `mcp_tools_context()`.
+The default pattern constructs `MyAgent` without tools, then passes an `mcp_tools_factory` to `agent_chat_completion_wrapper`. The wrapper calls the factory to obtain MCP tools and provides them to the agent before `invoke()` runs.
+
+**DRAgent path** (in `register.py` instead of `custompy_adaptor`):
+
+```
+forwarded_headers ─► MCPConfig ─► async with mcp_tools_context() ─► mcp_tools
+workflow_tools ────────────────────────────────────────────────────┘
+                                         │
+                                         └─► MyAgent(tools=workflow_tools + mcp_tools)
+```
+
+Tools are merged outside the agent and passed via the `tools` init parameter.
 
 **NAT framework**:
 

@@ -1,5 +1,7 @@
 # Developer Guide
 
+For template architecture (router/partial pattern, `custom.py` → `custompy_adaptor` call chain, NAT vs default MCP wiring), see [DESIGN.md](./DESIGN.md).
+
 ## af-component-agent
 
 To run tests and linters locally on all agent frameworks you can run `task test`. To test an individual
