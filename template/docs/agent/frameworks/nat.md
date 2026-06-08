@@ -132,6 +132,7 @@ function_groups:
 
 ### Custom local tools
 
+The template ships with a `word_counter` tool that counts words in a given text. It is defined in `register.py`, registered via `nat_tool`, and declared in `workflow.yaml`. You can remove it or replace it with your own tools.
 To add a custom tool to a NAT agent, define a plain Python function and register it with **`nat_tool(fn, tool_name, ...)`** from `datarobot_genai.nat.tool` in `register.py` (a **call** at module level after the function exists). Then reference `tool_name` in `workflow.yaml`.
 
 **Do not** use `@nat_tool()` as a decorator with no arguments; `nat_tool` requires the function and name as positional arguments, and bare `@nat_tool()` raises `TypeError: nat_tool() missing 2 required positional arguments: 'fn' and 'name'`.
@@ -169,9 +170,9 @@ The second argument is the name of the tool as it will appear in `workflow.yaml`
 
 ```yaml
 functions:
-  generate_objectid:
-    _type: generate_objectid
-    description: A tool that generates an object ID for a deployment.
+  word_counter:
+    _type: word_counter
+    description: Count words in a given text.
 
 workflow:
   _type: per_user_tool_calling_agent
@@ -180,6 +181,7 @@ workflow:
     - planner
     - writer
     - mcp_tools
+    - word_counter
     - generate_objectid
 ```
 

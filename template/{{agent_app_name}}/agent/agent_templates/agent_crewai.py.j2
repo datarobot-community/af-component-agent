@@ -14,6 +14,7 @@
 from typing import TYPE_CHECKING, Optional
 
 from crewai import Agent, Crew, Process, Task
+from crewai.tools import tool
 from datarobot_genai.core.agents import InvokeReturn, make_system_prompt
 from datarobot_genai.core.agents.base import UsageMetrics
 from datarobot_genai.core.chat import agent_chat_completion_wrapper
@@ -30,6 +31,13 @@ _PLACEHOLDER_MODELS = frozenset({"unknown"})
 
 llm = get_llm()
 
+@tool
+def word_counter(text: str) -> str:
+    """Count words in the given text"""
+    count = len(text.split())
+    return f"Tool: word counter. Word count: {count}."
+
+
 agent_planner = Agent(
     role="Planner",
     goal="Create a simple, focused outline for {topic} with key points and sources.",
@@ -44,6 +52,7 @@ agent_planner = Agent(
     allow_delegation=False,
     verbose=True,
     llm=llm,
+    tools=[word_counter],
 )
 
 agent_writer = Agent(
@@ -60,6 +69,7 @@ agent_writer = Agent(
     allow_delegation=False,
     verbose=True,
     llm=llm,
+    tools=[word_counter],
 )
 
 agents = [agent_planner, agent_writer]

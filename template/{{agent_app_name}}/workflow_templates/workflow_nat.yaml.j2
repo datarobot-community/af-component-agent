@@ -79,6 +79,9 @@ functions:
 
       Write in markdown format, ready for publication.
     description: A tool that writes the content for the requested topic.
+  word_counter:
+    _type: word_counter
+    description: Count words in a given text.
 {%- if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
   nat_agent:
     # `streaming_memory_agent` is itself per-user (registered via `register_per_user_function`),
@@ -92,6 +95,7 @@ functions:
     tool_names:
       - planner
       - writer
+      - word_counter
       - mcp_tools
       # Uncomment to inject A2A remote agent tools (must also uncomment function_groups.remote_agent below):
       # - remote_agent
@@ -99,6 +103,7 @@ functions:
       You are a blog content orchestrator. For every user request, you MUST follow these steps in order:
       1. Call planner to get a content plan.
       2. Call writer with the content plan as input to produce the final blog post.
+      3. Call word_counter to verify the blog post is within the word limit.
       You also have access to additional tools (e.g. MCP tools) — use them when they are relevant to fulfilling the request.
       Return only the final blog post output from the writer.
 {%- endif %}
@@ -142,6 +147,7 @@ workflow:
   tool_names:
     - planner
     - writer
+    - word_counter
     - mcp_tools
     # Uncomment to inject A2A remote agent tools (must also uncomment function_groups.remote_agent above):
     # - remote_agent
@@ -149,6 +155,7 @@ workflow:
     You are a blog content orchestrator. For every user request, you MUST follow these steps in order:
     1. Call planner to get a content plan.
     2. Call writer with the content plan as input to produce the final blog post.
+    3. Call word_counter to verify the blog post is within the word limit.
     You also have access to additional tools (e.g. MCP tools) — use them when they are relevant to fulfilling the request.
     Return only the final blog post output from the writer.
 # Uncomment to use moderations when dragent is enabled
