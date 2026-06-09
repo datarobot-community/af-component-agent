@@ -16,6 +16,7 @@ For the official DataRobot documentation on agent components, see [Agent compone
 | [Agent types](#agent-types) | Supported agent frameworks and links to examples. |
 | [Debugging](./debugging.md) | Debug agents locally using the CLI, VS Code, and PyCharm. |
 | [Tracing and telemetry](./tracing.md) | OpenTelemetry tracing for DRAgent agents: how `register.py` and `workflow.yaml` are instrumented to export spans to DataRobot. |
+| [Moderation and guardrails](./moderation.md) | Configure runtime guardrails with DRUM and DRAgent. |
 | [Local evaluation](./evaluation.md) | Evaluate agentic workflows locally with Pytest and integrate tests into CI/CD pipelines. |
 | [Further reading](#further-reading) | Links to official DataRobot docs for troubleshooting, tracing, global tools, and more. |
 
@@ -194,7 +195,7 @@ The agent component supports two front server implementations that serve the age
 - **Status**&mdash;stable, feature-complete. This is the production-tested path used in DataRobot deployments.
 - **Streaming**&mdash;supported via a sync/async queue bridge that drains async events into a thread-safe queue consumed synchronously.
 
-DRUM serves the agent as a DataRobot custom model, exposing an OpenAI-compatible chat completion API. The `custom.py` hooks (`load_model` and `chat`) follow the DataRobot [structured model hooks](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-overview.html) contract.
+DRUM serves the agent as a DataRobot custom model, exposing an OpenAI-compatible chat completion API. The `custom.py` hooks (`load_model` and `chat`) follow the DataRobot [structured model hooks](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-overview.html) contract. To add runtime guardrails, see [Moderation and guardrails](./moderation.md#drum).
 
 ### DRAgent
 
@@ -213,6 +214,7 @@ DRAgent enables features that are not available with DRUM:
 - **Agent-to-Agent (A2A)**&mdash;expose your agent as an A2A server and connect to remote agents. See [Agent2Agent](./agent2agent.md).
 - **Declarative workflow configuration**&mdash;define LLMs, tools, and agent connections in `workflow.yaml`.
 - **NAT ecosystem**&mdash;access the full NeMo Agent Toolkit including NAT-provided LLM interfaces, function types, and tool integrations.
+- **Runtime guardrails**&mdash;apply moderations via `datarobot_moderation` middleware in `workflow.yaml`. See [Moderation and guardrails](./moderation.md#dragent).
 
 To enable DRAgent, set the following in your `.env` file:
 
