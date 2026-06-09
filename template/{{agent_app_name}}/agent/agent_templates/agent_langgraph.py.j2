@@ -106,7 +106,6 @@ def graph_factory(
             "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
             "\n"
             "Write in markdown format, ready for publication. Call count_words with the writer_node output to verify the word count",
-
         ),
         name="writer_agent",
         debug=verbose,
@@ -122,7 +121,7 @@ def graph_factory(
         last = state["messages"][-1]
         text = last.content if isinstance(last, AIMessage) else ""
         result = word_counter.invoke({"text": text})
-        return {"messages": [AIMessage(content=f"{text}\n\n---\n{result}")]}    
+        return {"messages": [AIMessage(content=f"{text}\n\n---\n{result}")]}
 
     langgraph_workflow = StateGraph(MessagesState)
     langgraph_workflow.add_node("planner_node", agent_planner)
