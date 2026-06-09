@@ -1,0 +1,8 @@
+display_name: "Agent"
+description: "Deploys a DataRobot agent application."
+tags: []
+repeatable: agent_app_name
+dependencies:
+  - base
+  - llm
+  - datarobot-mcp
