@@ -5,4 +5,4 @@ repeatable: agent_app_name
 dependencies:
   - base
   - llm
-  - datarobot-mcp
+  - datarobot_mcp
