@@ -31,6 +31,7 @@ _PLACEHOLDER_MODELS = frozenset({"unknown"})
 
 llm = get_llm()
 
+
 @tool
 def word_counter(text: str) -> str:
     """Count words in the given text"""
