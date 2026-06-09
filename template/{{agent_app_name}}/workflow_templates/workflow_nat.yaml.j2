@@ -137,9 +137,8 @@ workflow:
   memory_name: mem0_memory
   llm_name: datarobot_llm
   description: "Blog content orchestrator with automatic memory capture and retrieval."
-  # Uncomment to use moderations when dragent is enabled
-  # middleware:
-  # - datarobot_moderation
+  middleware:
+  - datarobot_moderation
 
 middleware:
   datarobot_moderation:
