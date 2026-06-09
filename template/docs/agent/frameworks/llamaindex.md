@@ -149,11 +149,6 @@ def word_counter(text: str) -> str:
     """Count words in the given text."""
     count = len(text.split())
     return f"Tool: word counter. Word count: {count}."
-
-word_counter_tool = FunctionTool.from_defaults(
-    fn=word_counter,
-    name="word_counter",
-)
 ```
 
 Add the tool to agents:
@@ -164,7 +159,7 @@ planner = FunctionAgent(
     description="Creates short bullet-point outlines",
     system_prompt=make_system_prompt("You are a content planner. ..."),
     llm=llm,
-    tools=[word_counter_tool],
+    tools=[word_counter],
     can_handoff_to=["writer"],
 )
 ```
