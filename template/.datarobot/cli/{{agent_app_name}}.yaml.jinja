@@ -3,6 +3,14 @@ root:
     type: string
     default: "8842"
     help: "Enter the local port to access the agent. Should be a unique value."
+{% if use_agent_memory == 'mem0' %}
+  - env: MEM0_API_KEY
+    type: secret_string
+    optional: false
+    help: |
+      Enter your Mem0 API key for agent memory.
+      Obtain one from https://app.mem0.ai/
+{% endif %}
   - env: DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT
     type: string
     default: "[DataRobot] Python 3.11 GenAI Agents"
