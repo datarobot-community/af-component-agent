@@ -170,11 +170,10 @@ To add a custom tool, define a plain Python function and wrap it with CrewAI's `
 from crewai.tools import tool
 
 @tool
-def generate_objectid(type: str) -> str:
-    """Generate a unique object ID for a deployment."""
-    if type != "deployment":
-        raise ValueError("Invalid type")
-    return "69cbb73789723b6936c6c9e1"
+def word_counter(text: str) -> str:
+    """Count words in the given text."""
+    count = len(text.split())
+    return f"Tool: word counter. Word count: {count}."
 ```
 
 Add the tool to agents:
@@ -185,7 +184,7 @@ agent_planner = Agent(
     goal="Create a short outline about: {topic}.",
     backstory=make_system_prompt("You are a content planner. ..."),
     llm=llm,
-    tools=[generate_objectid],
+    tools=[word_counter],
 )
 ```
 

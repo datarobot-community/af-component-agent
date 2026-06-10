@@ -2,6 +2,9 @@
 
 This guide covers how to evaluate agentic workflows locally using the `datarobot-moderations` SDK and Pytest. It explains how to configure LLM-as-a-judge metrics, write assertions in test suites, and integrate quality gates into CI/CD pipelines.
 
+> [!NOTE]
+> This guide covers **offline evaluation** in tests. To enforce guardrails on live agent traffic through DRUM or DRAgent, see [Moderation and guardrails](./moderation.md).
+
 | Section | Description |
 |---|---|
 | [Why local evaluation](#why-local-evaluation) | When to use local evaluation vs. the Agentic Playground. |
@@ -353,6 +356,7 @@ cd agent && uv run pytest tests/ -m "not eval"  # Only unit tests (no credential
 
 | Topic | Description |
 |---|---|
+| [Moderation and guardrails](./moderation.md) | Runtime guardrails with DRUM and DRAgent. |
 | [Debugging agents](./debugging.md) | Step through agent code locally in VS Code and PyCharm. |
 | [Implement tracing](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-tracing-code.html) | Add OpenTelemetry spans for observability in deployed agents. |
 | [Agentic Playground](https://docs.datarobot.com/en/docs/agentic-ai/agentic-evaluate/agentic-playground.html) | UI-based evaluation environment for deployed agents with built-in metrics. |

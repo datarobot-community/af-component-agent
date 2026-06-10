@@ -59,7 +59,6 @@ general:
 #     url: "https://app.datarobot.com/api/v2/deployments/<deployment-id>/directAccess/a2a/"
 #     auth_provider: datarobot_auth
 
-{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
 functions:
   langgraph_agent:
     _type: langgraph_agent
@@ -68,7 +67,6 @@ functions:
     # tool_names:
     #   - remote_agent
 
-{% endif %}
 llms:
   datarobot_llm:
     _type: datarobot-llm-component
@@ -83,27 +81,22 @@ llms:
     #       llm_default_model: anthropic/claude-opus-4-20250514
     #   num_retries: 1
 
-{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
 memory:
   mem0_memory:
     _type: dr_mem0_memory
 
 workflow:
+  # When memory is not configured streaming_memory_agent is a passthrough so it is safe to use
+  # unconditionally. To configure memory choose agent memory provider "Mem0" and set MEM0_API_KEY
+  # in .env or choose agent memory provider "Datarobot Memory Service" and AGENT_MEMORY_SPACE_ID
+  # will be created during `task deploy-dev`.
   _type: streaming_memory_agent
   inner_agent_name: langgraph_agent
   memory_name: mem0_memory
   llm_name: datarobot_llm
   description: LangGraph planner/writer agent with automatic memory capture and retrieval
-{% else %}
-workflow:
-  _type: langgraph_agent
-  llm_name: datarobot_llm
-  description: LangGraph planner/writer agent
   middleware:
     - datarobot_moderation
-  # tool_names:
-  #   - remote_agent
-{% endif %}
 
 middleware:
   datarobot_moderation:

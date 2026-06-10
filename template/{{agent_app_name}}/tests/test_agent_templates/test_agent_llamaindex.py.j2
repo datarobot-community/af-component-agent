@@ -23,6 +23,7 @@ from agent.myagent import (
     agent_writer,
     agents,
     extract_response_text,
+    word_counter,
     workflow,
 )
 
@@ -77,6 +78,18 @@ class TestMyAgentLlamaIndex:
         """Test extracting response when both state and events are empty."""
         result = extract_response_text({}, [])
         assert result == ""
+
+    def test_word_counter_tool(self):
+        """Test that word_counter returns a word count string."""
+        result = word_counter("hello world")
+        assert "Word count: 2" in result
+
+    def test_agents_have_word_counter(self):
+        """Test that both agents include the word_counter tool."""
+        writer_tool_names = [
+            getattr(t, "__name__", t.metadata.name) for t in agent_writer.tools
+        ]
+        assert "word_counter" in writer_tool_names
 
     def test_set_tools_propagates_to_agents(self):
         """Test that set_tools propagates tools to all sub-agents."""

@@ -79,7 +79,9 @@ functions:
 
       Write in markdown format, ready for publication.
     description: A tool that writes the content for the requested topic.
-{%- if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
+  word_counter:
+    _type: word_counter
+    description: Count words in a given text.
   nat_agent:
     # `streaming_memory_agent` is itself per-user (registered via `register_per_user_function`),
     # so it builds lazily inside the per-user builder and `builder.get_function(inner_agent_name)`
@@ -92,16 +94,17 @@ functions:
     tool_names:
       - planner
       - writer
+      - word_counter
       - mcp_tools
       # Uncomment to inject A2A remote agent tools (must also uncomment function_groups.remote_agent below):
       # - remote_agent
     system_prompt: |
-      You are a blog content orchestrator. For every user request, you MUST follow these steps in order:
+      You are a blog content orchestrator. For every user request, you MUST follow ALL of these steps in order — do NOT skip any step:
       1. Call planner to get a content plan.
       2. Call writer with the content plan as input to produce the final blog post.
+      3. Call word_counter with the writer's full output as the text argument to get the word count.
       You also have access to additional tools (e.g. MCP tools) — use them when they are relevant to fulfilling the request.
-      Return only the final blog post output from the writer.
-{%- endif %}
+      After all three steps are complete, return the blog post along with the word count.
 function_groups:
   mcp_tools:
     _type: datarobot_mcp_client
@@ -124,37 +127,22 @@ llms:
   datarobot_llm:
     _type: datarobot-llm-component
 
-{%- if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
 memory:
   mem0_memory:
     _type: dr_mem0_memory
 
 workflow:
+  # When memory is not configured streaming_memory_agent is a passthrough so it is safe to use
+  # unconditionally. To configure memory choose agent memory provider "Mem0" and set MEM0_API_KEY
+  # in .env or choose agent memory provider "Datarobot Memory Service" and AGENT_MEMORY_SPACE_ID
+  # will be created during `task deploy-dev`.
   _type: streaming_memory_agent
   inner_agent_name: nat_agent
   memory_name: mem0_memory
   llm_name: datarobot_llm
   description: "Blog content orchestrator with automatic memory capture and retrieval."
-{% else %}
-workflow:
-  _type: per_user_tool_calling_agent
-  llm_name: datarobot_llm
-  tool_names:
-    - planner
-    - writer
-    - mcp_tools
-    # Uncomment to inject A2A remote agent tools (must also uncomment function_groups.remote_agent above):
-    # - remote_agent
-  system_prompt: |
-    You are a blog content orchestrator. For every user request, you MUST follow these steps in order:
-    1. Call planner to get a content plan.
-    2. Call writer with the content plan as input to produce the final blog post.
-    You also have access to additional tools (e.g. MCP tools) — use them when they are relevant to fulfilling the request.
-    Return only the final blog post output from the writer.
-# Uncomment to use moderations when dragent is enabled
-# middleware:
-# - datarobot_moderation
-{%- endif %}
+  middleware:
+  - datarobot_moderation
 
 middleware:
   datarobot_moderation:

@@ -177,11 +177,10 @@ To add a custom tool, define a plain Python function and wrap it with LangChain'
 from langchain_core.tools import tool
 
 @tool
-def generate_objectid(type: str) -> str:
-    """Generate a unique object ID for a deployment."""
-    if type != "deployment":
-        raise ValueError("Invalid type")
-    return "69cbb73789723b6936c6c9e1"
+def word_counter(text: str) -> str:
+    """Count words in the given text."""
+    count = len(text.split())
+    return f"Tool: word counter. Word count: {count}."
 ```
 
 Add the tool to individual agent nodes alongside the injected `tools`:
@@ -190,13 +189,13 @@ Add the tool to individual agent nodes alongside the injected `tools`:
 def graph_factory(llm, tools, verbose=False):
     planner = create_agent(
         llm,
-        tools=[generate_objectid] + tools,
+        tools=[word_counter] + tools,
         system_prompt=make_system_prompt("You are a content planner. ..."),
         name="planner",
     )
     writer = create_agent(
         llm,
-        tools=[generate_objectid] + tools,
+        tools=[word_counter] + tools,
         system_prompt=make_system_prompt("You are a content writer. ..."),
         name="writer",
     )

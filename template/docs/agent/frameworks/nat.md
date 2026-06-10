@@ -159,6 +159,7 @@ function_groups:
 
 ### Custom local tools
 
+The template ships with a `word_counter` tool that counts words in a given text. It is defined in `register.py`, registered via `nat_tool`, and declared in `workflow.yaml`. You can remove it or replace it with your own tools.
 To add a custom tool to a NAT agent, define a plain Python function and register it with **`nat_tool(fn, tool_name, ...)`** from `datarobot_genai.nat.tool` in `register.py` (a **call** at module level after the function exists). Then reference `tool_name` in `workflow.yaml`.
 
 **Do not** use `@nat_tool()` as a decorator with no arguments; `nat_tool` requires the function and name as positional arguments, and bare `@nat_tool()` raises `TypeError: nat_tool() missing 2 required positional arguments: 'fn' and 'name'`.
@@ -168,13 +169,14 @@ To add a custom tool to a NAT agent, define a plain Python function and register
 ```python
 from typing import Annotated
 
-def generate_objectid(
-    type: Annotated[str, "The type of object to generate an ID for. Should be only 'deployment'."],
+
+def word_counter(
+    text: Annotated[str, "The full text content to count words in."],
 ) -> str:
-    """Generate a unique object ID for a deployment."""
-    if type != "deployment":
-        raise ValueError("Invalid type")
-    return "69cbb73789723b6936c6c9e1"
+    """Count words in the given text."""
+    count = len(text.split())
+    return f"Tool: word counter. Word count: {count}."
+
 ```
 
 Use `Annotated` type hints to provide parameter descriptions&mdash;NAT uses these to generate the tool schema for the LLM.
@@ -183,9 +185,9 @@ Use `Annotated` type hints to provide parameter descriptions&mdash;NAT uses thes
 
 ```python
 from datarobot_genai.nat.tool import nat_tool
-from agent.tools import generate_objectid
+from agent.tools import word_counter
 
-nat_tool(generate_objectid, "generate_objectid")
+nat_tool(word_counter, "word_counter", description="Count words in a given text.")
 ```
 
 The second argument is the name of the tool as it will appear in `workflow.yaml`.
@@ -196,9 +198,9 @@ The second argument is the name of the tool as it will appear in `workflow.yaml`
 
 ```yaml
 functions:
-  generate_objectid:
-    _type: generate_objectid
-    description: A tool that generates an object ID for a deployment.
+  word_counter:
+    _type: word_counter
+    description: Count words in a given text.
 
 workflow:
   _type: per_user_tool_calling_agent
@@ -207,7 +209,7 @@ workflow:
     - planner
     - writer
     - mcp_tools
-    - generate_objectid
+    - word_counter
 ```
 
 The `_type` in the `functions` section must match the name passed to `nat_tool()`. The tool then becomes available alongside other functions and MCP tools.
