@@ -52,6 +52,33 @@ class MyAgent(NatAgent):
         super().__init__(*args, workflow_path=workflow_path, **kwargs)
 ```
 
+## `custompy_adaptor`
+
+When using the DRUM front server, `custom.py` delegates to `custompy_adaptor` in `myagent.py`. NAT handles MCP differently from other frameworks: it does not use `mcp_tools_context`. Instead, it merges MCP `server_config` headers into `forwarded_headers` before passing them to `MyAgent`:
+
+```python
+async def custompy_adaptor(completion_create_params):
+    forwarded_headers = completion_create_params.get("forwarded_headers", {})
+    authorization_context = completion_create_params.get("authorization_context", {})
+    mcp_config = MCPConfig(
+        forwarded_headers=forwarded_headers,
+        authorization_context=authorization_context,
+    )
+    server_config = mcp_config.server_config
+    headers = server_config["headers"] if server_config else {}
+    forwarded_headers.update(headers)
+    mcp_tools_factory = lambda: noop_mcp_tools_context(mcp_config)
+    agent = MyAgent(
+        verbose=completion_create_params.get("verbose", True),
+        forwarded_headers=forwarded_headers,
+    )
+    return await agent_chat_completion_wrapper(
+        agent, completion_create_params, mcp_tools_factory
+    )
+```
+
+When no MCP server is configured, `forwarded_headers` may be an empty dict. NAT loads tools declaratively from `workflow.yaml` rather than through the MCP tools context.
+
 The `workflow.yaml` defines everything:
 
 **Functions** (sub-agents)&mdash;defined as `chat_completion` types with system prompts:

@@ -71,12 +71,26 @@ agent/
 
 ## Functions and hooks (`custom.py`)
 
-The `custom.py` file at the root of the `agent/` directory contains the required functions that DataRobot DRUM calls to execute the agent. These hooks connect the DataRobot runtime with the agent's logic.
+The `custom.py` file at the root of the `agent/` directory implements the DataRobot DRUM hooks (`load_model`, `chat`). It handles request-level concerns&mdash;authorization context, header forwarding, and streaming bridging&mdash;then delegates agent execution to `custompy_adaptor` from the `agent` package.
 
 | Hook | Description |
 |---|---|
 | `load_model()` | One-time initialization function called when DataRobot starts the agent. |
 | `chat()` | Main execution function called for each user interaction/chat message. |
+
+### DRUM request flow
+
+```
+custom.py (chat)
+  → resolve authorization context
+  → whitelist x-datarobot-* headers into completion_create_params
+  → custompy_adaptor (agent/myagent.py)
+      → MCPConfig + mcp_tools_factory
+      → MyAgent instantiation
+      → agent_chat_completion_wrapper
+```
+
+`custom.py` does **not** instantiate `MyAgent` directly. All framework-specific MCP wiring and agent construction live in `custompy_adaptor`.
 
 ### `load_model()` hook
 
@@ -123,9 +137,27 @@ Each framework uses a factory helper from `datarobot_genai` to generate `MyAgent
 | NAT | Direct subclass of `NatAgent` | `workflow.yaml` path |
 | Base | Direct subclass of `BaseAgent` | Manual `invoke()` implementation |
 
-The `custompy_adaptor` function in `myagent.py` bridges the `MyAgent` class with DRUM's `chat()` hook by creating an MCP config, resolving the LLM, instantiating the agent, and invoking it via `agent_chat_completion_wrapper`.
+The `custompy_adaptor` function in `myagent.py` (re-exported from the `agent` package) bridges `MyAgent` with DRUM's `chat()` hook. It reads `forwarded_headers` and `authorization_context` from `completion_create_params` (set by `custom.py`), builds an `MCPConfig`, resolves the LLM, instantiates the agent, and invokes it via `agent_chat_completion_wrapper` with an `mcp_tools_factory` callback. MCP tools are loaded inside that wrapper so the MCP context spans the full agent execution, including streaming.
+
+When using the DRAgent front server, MCP and tool wiring happen in `register.py` instead&mdash;see the framework-specific docs for that path.
 
 **Important:** The name `MyAgent` must not be changed&mdash;it is referenced by the framework infrastructure.
+
+### Tools
+
+`MyAgent` accepts a `tools` parameter at initialization. The agent class does **not** load MCP tools inside `invoke()`&mdash;callers obtain tools externally and supply them to the agent:
+
+| Mechanism | When to use |
+|---|---|
+| `tools=` constructor argument | Pass the merged tool list when constructing `MyAgent` (typical DRAgent path in `register.py`). |
+| `set_tools()` | Update tools after initialization; propagates to sub-agents in multi-agent frameworks such as CrewAI and LlamaIndex. |
+
+To access MCP, call `mcp_tools_context()` **outside** the agent class:
+
+- **DRUM**&mdash;in `custompy_adaptor`, build an `MCPConfig` and pass an `mcp_tools_factory` callback to `agent_chat_completion_wrapper`. The wrapper loads MCP tools and provides them to the agent before `invoke()` runs.
+- **DRAgent**&mdash;in `register.py`, use `async with mcp_tools_context(mcp_config) as mcp_tools`, merge with workflow tools, and pass the result to `MyAgent(..., tools=tools)`.
+
+See the framework-specific docs for complete examples of each path.
 
 See the framework-specific documentation for detailed implementation guides:
 
@@ -137,11 +169,18 @@ See the framework-specific documentation for detailed implementation guides:
 
 ## Tool integration
 
-Agents can use tools to extend their capabilities. Tools are injected at runtime from multiple sources. The exact pattern depends on the framework: LangGraph, CrewAI, and LlamaIndex often use in-repo tool functions passed into the graph, crew, or workflow; **NAT** custom tools are registered with `nat_tool` in `register.py`, declared under `functions` in `workflow.yaml`, and rely on importing `agent.register` at startup&mdash;see [NAT custom local tools](./frameworks/nat.md#custom-local-tools).
+Agents can use tools to extend their capabilities. Tools are supplied to `MyAgent` at initialization (via the `tools` parameter) or updated afterward with `set_tools()`. The agent class does not fetch MCP tools internally&mdash;callers load MCP explicitly outside the agent and pass the resulting tool list in. The exact wiring depends on the front server and framework; see [Tools](#tools) under agent class implementation for the DRUM vs DRAgent split.
+
+Agents can combine tools from multiple sources. LangGraph, CrewAI, and LlamaIndex often use in-repo tool functions passed into the graph, crew, or workflow; **NAT** custom tools are registered with `nat_tool` in `register.py`, declared under `functions` in `workflow.yaml`, and rely on importing `agent.register` at startup&mdash;see [NAT custom local tools](./frameworks/nat.md#custom-local-tools).
 
 ### MCP tools
 
-MCP tools are loaded from the MCP server via `mcp_tools_context()`. Each framework has its own MCP adapter in `datarobot_genai` (e.g. `datarobot_genai.langgraph.mcp`, `datarobot_genai.crewai.mcp`). The MCP server provides tools for DataRobot operations and can be extended with custom tools. See [MCP server](../mcp-server.md) for details.
+MCP tools are loaded by calling `mcp_tools_context()` from the framework-specific adapter in `datarobot_genai` (e.g. `datarobot_genai.langgraph.mcp`, `datarobot_genai.crewai.mcp`). This call happens **outside** `MyAgent`, in the execution-flow glue code&mdash;not inside `invoke()`. See [MCP server](../mcp-server.md) for MCP server configuration.
+
+| Front server | Where MCP is wired | How tools reach `MyAgent` |
+|---|---|---|
+| DRUM | `custompy_adaptor` in `myagent.py` | `mcp_tools_factory` passed to `agent_chat_completion_wrapper` loads MCP and supplies tools before `invoke()` |
+| DRAgent | `register.py` | `async with mcp_tools_context(mcp_config) as mcp_tools`, then `MyAgent(..., tools=workflow_tools + mcp_tools)` |
 
 ### Workflow tools (DRAgent only)
 
@@ -245,6 +284,12 @@ The three framework-specific files — `myagent.py`, `register.py`, and `workflo
 All agent types use the same `datarobot_genai` package for LLM configuration, response formatting, and DataRobot service integration. The templates automatically include this package.
 
 ## Migrations
+
+### Custom `custom.py` changes
+
+If you customized an older template where `custom.py` instantiated `MyAgent(**completion_create_params)` directly, move that logic into `custompy_adaptor` in `myagent.py`. The generated `custom.py` now only handles DRUM hooks (authorization context, header forwarding, streaming bridge) and calls `custompy_adaptor` from the `agent` package. MCP wiring belongs in `custompy_adaptor`, not in `custom.py`.
+
+See the framework-specific docs for the `custompy_adaptor` pattern in your chosen framework.
 
 ### 11.8.8 — New agent format
 
