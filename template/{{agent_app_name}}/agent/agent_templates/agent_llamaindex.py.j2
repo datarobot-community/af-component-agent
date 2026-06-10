@@ -55,6 +55,12 @@ async def writer_report_tool(ctx: Context, report_content: str) -> str:
     return "Report written."
 
 
+def word_counter(text: str) -> str:
+    """Count words in the given tex.t"""
+    count = len(text.split())
+    return f"Tool: word counter. Word count: {count}."
+
+
 agent_planner = FunctionAgent(
     name="planner_agent",
     description="Useful for planning content on a given topic and recording notes for the plan.",
@@ -94,10 +100,10 @@ agent_writer = FunctionAgent(
         "3. Sections/Subtitles should be properly named in an engaging manner.\n"
         "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
         "\n"
-        "Write in markdown format. Once complete, use the writer_report_tool to record your report."
+        "Write in markdown format. Once complete, use the writer_report_tool to record your report, and then you must call the word_counter tool to verify the word count."
     ),
     llm=llm,
-    tools=[writer_report_tool],
+    tools=[writer_report_tool, word_counter],
 )
 
 agents: list[BaseWorkflowAgent] = [agent_planner, agent_writer]
