@@ -6,3 +6,8 @@ dependencies:
   - base
   - llm
   - datarobot_mcp
+agent_guidance:
+  summary: >-
+    Core component for every agent project — generates the agent application scaffold.
+    Add this for every agent deployment; all dependencies (base, llm, datarobot_mcp)
+    are resolved and added automatically.

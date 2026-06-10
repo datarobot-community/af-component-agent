@@ -3,6 +3,9 @@ agent_app_name:
   type: str
   default: "agent"
   help: "The name/folder of your Agent Deployment. Must be a Python-friendly name (letters, numbers, underscores only, no spaces)"
+  agent_guidance:
+    ask_user: false
+    reason: "Derive from the working directory name (slugified); only confirm if ambiguous or the user has a specific preference."
   validator: >-
     {% if not agent_app_name %}ERROR: Agent app name cannot be empty
     {% elif ' ' in agent_app_name %}ERROR: Agent app name cannot contain spaces
@@ -18,6 +21,9 @@ use_low_code_interface:
   type: bool
   help: "Do you want to use low-code YAML-based configuration (i.e. NeMo Agent Toolkit) for your agent? (default: no)"
   default: no
+  agent_guidance:
+    ask_user: true
+    reason: "Determines whether the NeMo Agent Toolkit (low-code YAML) path is used; affects the agent_template_framework default. Ask explicitly."
 
 use_agent_memory:
   type: str
@@ -27,6 +33,9 @@ use_agent_memory:
     None: none
     "Datarobot Memory Service": datarobot_memory_service
     Mem0: mem0
+  agent_guidance:
+    ask_user: true
+    reason: "Memory adds infrastructure complexity and cost; the user must decide explicitly which provider (or none) to use."
 
 agent_template_framework:
   type: str
@@ -44,6 +53,9 @@ agent_template_framework:
     LlamaIndex: llamaindex
     "NeMo Agent Toolkit (NAT)": nat
   when: "{{not use_low_code_interface}}"
+  agent_guidance:
+    ask_user: true
+    reason: "Framework choice fundamentally changes the generated code structure; never default without asking the user."
 
 base_answers_file:
   type: str
