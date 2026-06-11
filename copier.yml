@@ -5,7 +5,7 @@ agent_app_name:
   help: "The name/folder of your Agent Deployment. Must be a Python-friendly name (letters, numbers, underscores only, no spaces)"
   agent_guidance:
     ask_user: false
-    reason: "Derive from the working directory name (slugified); only confirm if ambiguous or the user has a specific preference."
+    reason: "Use default; only confirm if ambiguous (more than one agents are added) or the user has a specific preference."
   validator: >-
     {% if not agent_app_name %}ERROR: Agent app name cannot be empty
     {% elif ' ' in agent_app_name %}ERROR: Agent app name cannot contain spaces
@@ -39,12 +39,7 @@ use_agent_memory:
 
 agent_template_framework:
   type: str
-  default: |-
-    {% if use_low_code_interface -%}
-      nat
-    {%- else -%}
-      base
-    {%- endif %}
+  default: base
   help: "Choose the agentic framework template to start with:"
   choices:
     Base: base
