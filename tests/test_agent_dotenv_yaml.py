@@ -35,15 +35,13 @@ def test_agent_dotenv_template_prompts_for_mem0_api_key_when_mem0_selected() -> 
     assert "optional: false" in content
 
 
-def test_copier_prompts_for_mem0_api_key_when_mem0_newly_enabled() -> None:
-    """Copier should ask for Mem0 API key when Mem0 is newly enabled."""
+def test_copier_prompts_for_mem0_api_key_when_mem0_selected_and_not_in_env() -> None:
+    """Copier should ask for Mem0 API key when Mem0 is selected and .env lacks it."""
     content = COPIER_CONFIG.read_text(encoding="utf-8")
 
     assert "mem0_api_key:" in content
     assert "secret: true" in content
-    assert "_copier_operation == 'copy'" in content
-    assert "use_agent_memory == 'mem0'" in content
-    assert "dotenv_has('MEM0_API_KEY')" in content
+    assert "use_agent_memory == 'mem0' and not dotenv_has('MEM0_API_KEY')" in content
     assert "extensions.dotenv_lookup.DotenvLookupExtension" in content
 
 

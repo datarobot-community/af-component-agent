@@ -38,7 +38,7 @@ mem0_api_key:
   help: |
     Enter your Mem0 API key for agent memory.
     Obtain one from https://app.mem0.ai/
-  when: "{{ use_agent_memory == 'mem0' and (_copier_operation == 'copy' or (_copier_answers.use_agent_memory|default('none')) != 'mem0') and not dotenv_has('MEM0_API_KEY') }}"
+  when: "{{ use_agent_memory == 'mem0' and not dotenv_has('MEM0_API_KEY') }}"
 
 agent_template_framework:
   type: str
@@ -100,7 +100,7 @@ _exclude:
     - "*_templates"
 
 # Hybrid Mem0 credential flow:
-# - copier asks mem0_api_key when Mem0 is newly enabled (secret, not stored in answers)
+# - copier asks mem0_api_key when Mem0 is selected and .env lacks MEM0_API_KEY (secret, not stored in answers)
 # - .datarobot/cli/*.yaml keeps MEM0_API_KEY for dr dotenv validate/setup
 _tasks:
   - command:

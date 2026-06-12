@@ -253,7 +253,7 @@ use_agent_memory: datarobot_memory_service
 
 Then re-run `copier update` to regenerate `workflow.yaml`, `pyproject.toml`, `config.py`, and infrastructure with memory support.
 
-When you enable Mem0 for the first time, Copier prompts for your Mem0 API key and writes `MEM0_API_KEY` to `.env`, unless that variable is already set in `.env`. The value is not stored in `.datarobot/answers/agent-*.yml`. The `.datarobot/cli/agent.yaml` entry keeps `MEM0_API_KEY` available to `dr dotenv validate` and `dr dotenv setup`.
+When Mem0 is selected, Copier prompts for your Mem0 API key and writes `MEM0_API_KEY` to `.env`, unless that variable is already set in `.env`. The value is not stored in `.datarobot/answers/agent-*.yml`. The `.datarobot/cli/agent.yaml` entry keeps `MEM0_API_KEY` available to `dr dotenv validate` and `dr dotenv setup`.
 
 If you skip the Copier prompt or update non-interactively without a key in `.env`, run:
 
