@@ -35,7 +35,7 @@ When you generate or update a project with Copier, you are prompted to choose an
 To pass the value non-interactively:
 
 ```sh
-uvx copier copy . ./my-agent --data use_agent_memory=mem0
+uvx --with copier-template-extensions copier copy . ./my-agent --data use_agent_memory=mem0
 ```
 
 Valid values are `none`, `mem0`, and `datarobot_memory_service`.
@@ -160,7 +160,7 @@ Both providers use the same `dr_mem0_memory` workflow type and `streaming_memory
 | **Backend** | Mem0 cloud API | DataRobot Memory Space (provisioned in your tenant) |
 | **Credential** | `MEM0_API_KEY` runtime parameter (API token credential) | None&mdash;uses the deployment's DataRobot API identity |
 | **Space ID** | Managed by Mem0 | `AGENT_MEMORY_SPACE_ID` runtime parameter (string) |
-| **Feature flag** | None | `ENABLE_AGENTIC_MEMORY_API: true` in deployment feature flags |
+| **Feature flag** | None | `ENABLE_AGENTIC_MEMORY_API` enabled on your DataRobot tenant |
 | **Infra action** | Stores Mem0 API key from `MEM0_API_KEY` env at deploy time | Creates a `MemorySpace` Pulumi resource and injects its ID |
 
 Choose **Mem0** when you already use Mem0 or want a third-party memory service. Choose **DataRobot Memory Service** to keep memory entirely within your DataRobot environment with no external API key.
@@ -206,7 +206,7 @@ When memory is enabled, `infra/infra/<agent_app_name>.py` adds runtime parameter
    - **Mem0**&mdash;`MEM0_API_KEY` credential, created when `MEM0_API_KEY` is set in the Pulumi environment.
    - **DataRobot Memory Service**&mdash;`AGENT_MEMORY_SPACE_ID` string, populated from a `pulumi_datarobot.MemorySpace` resource.
 
-For the DataRobot Memory Service provider, the feature flag `ENABLE_AGENTIC_MEMORY_API` is set to `true` in `infra/feature_flags/<agent_app_name>.yaml` so the deployment can call the agentic memory API.
+When Copier runs, it queries your DataRobot tenant (using `DATAROBOT_ENDPOINT` and `DATAROBOT_API_TOKEN` from the environment or project `.env`) to check whether `ENABLE_AGENTIC_MEMORY_API` is enabled. The memory provider question is shown only when that flag is enabled on your account. Selecting **DataRobot Memory Service** adds the flag to `infra/feature_flags/<agent_app_name>.yaml` for Pulumi validation at deploy time.
 
 ---
 

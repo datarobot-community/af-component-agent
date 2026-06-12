@@ -17,6 +17,7 @@ dev = [
     "backoff>=2.0.0",
     "openai>=1.0.0",
     "requests>=2.31.0",
+    "copier-template-extensions>=0.3.0",
     "datarobot-genai==0.15.113", # to use agent kernel from datarobot-genai
 ]
 
@@ -24,6 +25,7 @@ dev = [
 required-version = ">=0.7.0"
 
 [tool.pytest.ini_options]
+pythonpath = ["."]
 markers = [
     "e2e: end-to-end tests that require external services (DataRobot, Pulumi, etc.)",
 ]

@@ -14,6 +14,10 @@ agent_app_name_file:
   default: "{{agent_app_name|lower|replace('-','_')}}"
   when: false
 
+_jinja_extensions:
+  - copier_template_extensions.TemplateExtensionLoader
+  - extensions/datarobot_feature_flags.py:DataRobotFeatureFlagsContext
+
 use_low_code_interface:
   type: bool
   help: "Do you want to use low-code YAML-based configuration (i.e. NeMo Agent Toolkit) for your agent? (default: no)"
@@ -27,6 +31,7 @@ use_agent_memory:
     None: none
     "Datarobot Memory Service": datarobot_memory_service
     Mem0: mem0
+  when: "{{ enable_agentic_memory_api | default(false) }}"
 
 agent_template_framework:
   type: str

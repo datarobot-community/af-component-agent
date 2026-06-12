@@ -66,7 +66,7 @@ dr component add https://github.com/datarobot-community/af-component-agent .
 If you need additional control, you can run this to use copier directly:
 
 ```bash
-uvx copier copy datarobot-community/af-component-agent .
+uvx --with copier-template-extensions copier copy datarobot-community/af-component-agent .
 ```
 
 The wizard prompts you for your agent name, framework choice (`base`, `crewai`, `langgraph`, `llamaindex`, or `nat`), and other configuration options. After the wizard completes, your project directory contains the agent template files ready for customization and deployment.
@@ -134,7 +134,7 @@ dr component update .datarobot/answers/agent-AGENT_APP_NAME.yml
 If you need more fine-grained control and prefer using copier directly, you can run this to have more control over the process:
 
 ```bash
-uvx copier update -a .datarobot/answers/agent-AGENT_APP_NAME.yml -A
+uvx --with copier-template-extensions copier update -a .datarobot/answers/agent-AGENT_APP_NAME.yml -A
 ```
 
 # Deployment
