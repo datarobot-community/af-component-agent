@@ -24,6 +24,7 @@ dev = [
 required-version = ">=0.7.0"
 
 [tool.pytest.ini_options]
+pythonpath = ["."]
 markers = [
     "e2e: end-to-end tests that require external services (DataRobot, Pulumi, etc.)",
 ]

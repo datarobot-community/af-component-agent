@@ -1,3 +1,6 @@
+jinja_extensions:
+  - extensions.dotenv_lookup.DotenvLookupExtension
+
 # questions
 agent_app_name:
   type: str
@@ -35,8 +38,7 @@ mem0_api_key:
   help: |
     Enter your Mem0 API key for agent memory.
     Obtain one from https://app.mem0.ai/
-    Press Enter to skip if MEM0_API_KEY is already set in .env.
-  when: "{{ use_agent_memory == 'mem0' and (_copier_operation == 'copy' or (_copier_answers.use_agent_memory|default('none')) != 'mem0') }}"
+  when: "{{ use_agent_memory == 'mem0' and (_copier_operation == 'copy' or (_copier_answers.use_agent_memory|default('none')) != 'mem0') and not dotenv_has('MEM0_API_KEY') }}"
 
 agent_template_framework:
   type: str

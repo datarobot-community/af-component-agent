@@ -43,6 +43,8 @@ def test_copier_prompts_for_mem0_api_key_when_mem0_newly_enabled() -> None:
     assert "secret: true" in content
     assert "_copier_operation == 'copy'" in content
     assert "use_agent_memory == 'mem0'" in content
+    assert "dotenv_has('MEM0_API_KEY')" in content
+    assert "extensions.dotenv_lookup.DotenvLookupExtension" in content
 
 
 def test_copier_writes_mem0_api_key_to_env_when_provided() -> None:
