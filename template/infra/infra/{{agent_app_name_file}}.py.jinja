@@ -630,6 +630,9 @@ if _is_dragent_server_enabled:
     runtime_parameter_values=agent_runtime_parameter_values,
 )
 
+_dr_url = get_datarobot_url()
+_dr_web_url = _dr_url.removesuffix("/api/v2")
+
 {{agent_app_name}}_custom_model_endpoint = {{agent_app_name}}_custom_model.id.apply(
     lambda id: f"{_dr_url}/genai/agents/fromCustomModel/{id}/chat/"
 )
@@ -652,9 +655,6 @@ if _is_dragent_server_enabled:
     ),
     prompt_type="ONE_TIME_PROMPT",
 )
-
-_dr_url = get_datarobot_url()
-_dr_web_url = _dr_url.removesuffix("/api/v2")
 
 {{agent_app_name}}_playground_url = pulumi.Output.format(
     "{0}/usecases/{1}/agentic-playgrounds/{2}/comparison/chats",
