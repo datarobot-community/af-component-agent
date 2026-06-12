@@ -35,10 +35,20 @@ def test_agent_dotenv_template_prompts_for_mem0_api_key_when_mem0_selected() -> 
     assert "optional: false" in content
 
 
-def test_copier_runs_dotenv_setup_when_mem0_selected() -> None:
-    """Copier should trigger dr dotenv setup after copy/update when Mem0 is enabled."""
+def test_copier_prompts_for_mem0_api_key_when_mem0_newly_enabled() -> None:
+    """Copier should ask for Mem0 API key when Mem0 is newly enabled."""
     content = COPIER_CONFIG.read_text(encoding="utf-8")
 
-    assert "_tasks:" in content
+    assert "mem0_api_key:" in content
+    assert "secret: true" in content
+    assert "_copier_operation == 'copy'" in content
     assert "use_agent_memory == 'mem0'" in content
+
+
+def test_copier_writes_mem0_api_key_to_env_when_provided() -> None:
+    """Copier task should persist a provided Mem0 API key into .env."""
+    content = COPIER_CONFIG.read_text(encoding="utf-8")
+
+    assert "write_mem0_env.py" in content
+    assert "MEM0_API_KEY_VALUE" in content
     assert "dr dotenv setup --if-needed" in content

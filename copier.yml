@@ -28,6 +28,16 @@ use_agent_memory:
     "Datarobot Memory Service": datarobot_memory_service
     Mem0: mem0
 
+mem0_api_key:
+  type: str
+  secret: true
+  default: ""
+  help: |
+    Enter your Mem0 API key for agent memory.
+    Obtain one from https://app.mem0.ai/
+    Press Enter to skip if MEM0_API_KEY is already set in .env.
+  when: "{{ use_agent_memory == 'mem0' and (_copier_operation == 'copy' or (_copier_answers.use_agent_memory|default('none')) != 'mem0') }}"
+
 agent_template_framework:
   type: str
   default: |-
@@ -87,10 +97,18 @@ _exclude:
     - "*.j2"
     - "*_templates"
 
-# When Mem0 is enabled, prompt for MEM0_API_KEY via the dr CLI dotenv wizard.
-# The .datarobot/cli/*.yaml entry alone does not re-prompt after copier update
-# if .env already exists from an earlier dr start.
+# Hybrid Mem0 credential flow:
+# - copier asks mem0_api_key when Mem0 is newly enabled (secret, not stored in answers)
+# - .datarobot/cli/*.yaml keeps MEM0_API_KEY for dr dotenv validate/setup
 _tasks:
+  - command:
+      - bash
+      - -lc
+      - |
+        set -euo pipefail
+        export MEM0_API_KEY_VALUE='{{ mem0_api_key | replace("'", "'\"'\"'") }}'
+        "{{ _copier_python }}" "{{ _copier_conf.src_path }}/scripts/write_mem0_env.py"
+    when: "{{ use_agent_memory == 'mem0' and mem0_api_key }}"
   - command:
       - bash
       - -lc
@@ -99,17 +117,14 @@ _tasks:
         if [ -n "${CI:-}" ]; then
           exit 0
         fi
-        if [ ! -t 0 ] || ! command -v dr >/dev/null 2>&1; then
-          if [ ! -f .env ] || ! grep -q '^MEM0_API_KEY=.' .env 2>/dev/null; then
-            echo ""
-            echo "Mem0 memory is enabled. Configure MEM0_API_KEY by running:"
-            echo "  dr dotenv setup --if-needed"
-            echo ""
-          fi
+        if [ -f .env ] && grep -q '^MEM0_API_KEY=.' .env 2>/dev/null; then
           exit 0
         fi
-        dr dotenv setup --if-needed
-    when: "{{ use_agent_memory == 'mem0' }}"
+        echo ""
+        echo "Mem0 memory is enabled but MEM0_API_KEY is not set. Configure it with:"
+        echo "  dr dotenv setup --if-needed"
+        echo ""
+    when: "{{ use_agent_memory == 'mem0' and not mem0_api_key }}"
 
 _migrations:
   # Migrate legacy agent implementation into the new package layout.
