@@ -87,6 +87,30 @@ _exclude:
     - "*.j2"
     - "*_templates"
 
+# When Mem0 is enabled, prompt for MEM0_API_KEY via the dr CLI dotenv wizard.
+# The .datarobot/cli/*.yaml entry alone does not re-prompt after copier update
+# if .env already exists from an earlier dr start.
+_tasks:
+  - command:
+      - bash
+      - -lc
+      - |
+        set -euo pipefail
+        if [ -n "${CI:-}" ]; then
+          exit 0
+        fi
+        if [ ! -t 0 ] || ! command -v dr >/dev/null 2>&1; then
+          if [ ! -f .env ] || ! grep -q '^MEM0_API_KEY=.' .env 2>/dev/null; then
+            echo ""
+            echo "Mem0 memory is enabled. Configure MEM0_API_KEY by running:"
+            echo "  dr dotenv setup --if-needed"
+            echo ""
+          fi
+          exit 0
+        fi
+        dr dotenv setup --if-needed
+    when: "{{ use_agent_memory == 'mem0' }}"
+
 _migrations:
   # Migrate legacy agent implementation into the new package layout.
   #

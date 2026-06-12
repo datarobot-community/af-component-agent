@@ -14,6 +14,8 @@
 
 from pathlib import Path
 
+COPIER_CONFIG = Path(__file__).resolve().parent.parent / "copier.yml"
+
 AGENT_DOTENV_TEMPLATE = (
     Path(__file__).resolve().parent.parent
     / "template"
@@ -31,3 +33,12 @@ def test_agent_dotenv_template_prompts_for_mem0_api_key_when_mem0_selected() -> 
     assert "MEM0_API_KEY" in content
     assert "secret_string" in content
     assert "optional: false" in content
+
+
+def test_copier_runs_dotenv_setup_when_mem0_selected() -> None:
+    """Copier should trigger dr dotenv setup after copy/update when Mem0 is enabled."""
+    content = COPIER_CONFIG.read_text(encoding="utf-8")
+
+    assert "_tasks:" in content
+    assert "use_agent_memory == 'mem0'" in content
+    assert "dr dotenv setup --if-needed" in content

@@ -253,6 +253,12 @@ use_agent_memory: datarobot_memory_service
 
 Then re-run `copier update` to regenerate `workflow.yaml`, `pyproject.toml`, `config.py`, and infrastructure with memory support.
 
+When you enable Mem0, Copier runs `dr dotenv setup --if-needed` in an interactive terminal to collect `MEM0_API_KEY`. If you update in a non-interactive session (or skip the prompt), run it manually:
+
+```sh
+dr dotenv setup --if-needed
+```
+
 ---
 
 ## Further reading
