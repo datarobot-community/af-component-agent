@@ -570,6 +570,15 @@ pulumi.export(
 )
 {% endif %}
 
+if otel_entity_id := os.environ.get("OTEL_ENTITY_ID"):
+    agent_runtime_parameter_values.append(
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key="OTEL_ENTITY_ID",
+            type="string",
+            value=otel_entity_id,
+        ),
+    )
+
 IDP_AGENT_ID_PARAM: Final[str] = "IDP_AGENT_ID"
 idp_agent_id = os.environ.get(IDP_AGENT_ID_PARAM, "")
 if idp_agent_id:
