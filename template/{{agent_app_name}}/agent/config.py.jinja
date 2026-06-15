@@ -61,9 +61,7 @@ class Config(DataRobotAppFrameworkBaseSettings):  # type: ignore[misc]
         if v:
             return v
         entity_id = (info.data or {}).get("otel_entity_id", "")
-        api_token = (info.data or {}).get("datarobot_api_token", "") or os.environ.get(
-            "DATAROBOT_API_TOKEN", ""
-        )
+        api_token = os.environ.get("DATAROBOT_API_TOKEN", "")
         if entity_id and api_token:
             return f"x-datarobot-entity-id={entity_id},x-datarobot-api-key={api_token}"
         return v
