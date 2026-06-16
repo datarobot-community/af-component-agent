@@ -48,7 +48,12 @@ from datarobot_genai.nat.agent import NatAgent
 import agent.register  # noqa: F401 - load nat_tool(fn, name, ...) registrations from register.py
 
 class MyAgent(NatAgent):
-    def __init__(self, *args, workflow_path=Path(__file__).parent / "workflow.yaml", **kwargs):
+    def __init__(
+        self,
+        *args,
+        workflow_path: Path = Path(__file__).parent.parent / "workflow.yaml",
+        **kwargs,
+    ):
         super().__init__(*args, workflow_path=workflow_path, **kwargs)
 ```
 
@@ -78,6 +83,8 @@ async def custompy_adaptor(completion_create_params):
 ```
 
 When no MCP server is configured, `forwarded_headers` may be an empty dict. NAT loads tools declaratively from `workflow.yaml` rather than through the MCP tools context.
+
+`workflow.yaml` lives at `agent/workflow.yaml` (the agent component root), not beside `myagent.py`. NAT agents load it on **DRUM** and **DRAgent** via `workflow_path`. See [`workflow.yaml` path migration](../migration-workflow-yaml-path.md) when upgrading older projects.
 
 The `workflow.yaml` defines everything:
 
