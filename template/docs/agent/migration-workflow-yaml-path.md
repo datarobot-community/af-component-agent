@@ -11,14 +11,9 @@ This guide covers the breaking layout change introduced in agent component **11.
 | **Before** | `agent/agent/workflow.yaml` |
 | **After** | `agent/workflow.yaml` |
 
-`workflow.yaml` is the top-level NeMo Agent Toolkit (NAT) configuration for an agent. It is **not** only a DRAgent concern.
+`workflow.yaml` is the top-level NeMo Agent Toolkit (NAT) configuration loaded by the [DRAgent front server](./README.md#front-server) to build the FastAPI front server, tools, LLMs, middleware, and workflow graph for every framework.
 
-| Front server | How `workflow.yaml` is used |
-|---|---|
-| **DRAgent** (`ENABLE_DRAGENT_SERVER=true`) | NAT loads `workflow.yaml` to build the FastAPI front server, tools, LLMs, middleware, and workflow graph. |
-| **DRUM** (default) | **NAT framework agents** (`NatAgent` / `per_user_tool_calling_agent`) load `workflow.yaml` through `workflow_path` in `myagent.py` to orchestrate the agent. LangGraph, CrewAI, LlamaIndex, and Base agents use framework code in `myagent.py` on DRUM; `workflow.yaml` is still generated for DRAgent and shared infrastructure (for example, moderation and memory wrappers when enabled). |
-
-If you upgrade a project that still has `agent/agent/workflow.yaml`, DRUM deployments of NAT agents and DRAgent local runs can fail to find the workflow file unless you relocate it and update `workflow_path`.
+If you upgrade a project that still has `agent/agent/workflow.yaml`, DRAgent fails to find the workflow file unless you relocate it.
 
 ## Migration steps
 
@@ -30,7 +25,10 @@ git mv agent/agent/workflow.yaml agent/workflow.yaml
 
 Remove any leftover copy under `agent/agent/` so only one `workflow.yaml` exists.
 
-### 2. Update `workflow_path` in NAT `myagent.py`
+### 2. Update `workflow_path` in NAT `myagent.py` (DRUM fallback only)
+
+> [!NOTE]
+> Only relevant if you use the deprecated [DRUM fallback](./README.md#drum-fallback-deprecated-temporary) with the NAT framework. DRAgent loads `workflow.yaml` directly via `--config_file` and ignores `workflow_path`.
 
 **Before** (file co-located with `myagent.py`):
 

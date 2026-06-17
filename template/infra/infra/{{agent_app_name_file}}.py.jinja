@@ -749,7 +749,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
     {{agent_app_name}}_deployment_endpoint = {{agent_app_name}}_agent_deployment.id.apply(
         lambda id: (
             f"{_dr_url}/deployments/{id}/directAccess"
-            if _is_dragent_server_enabled
+            if ENABLE_DRAGENT_SERVER
             else f"{_dr_url}/deployments/{id}"
         )
     )
