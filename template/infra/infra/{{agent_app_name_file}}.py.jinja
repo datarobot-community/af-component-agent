@@ -38,10 +38,17 @@ from .{{ _external_data.llm.llm_app_name }} import custom_model_runtime_paramete
 
 DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
 
+# Whether to use `dragent` as a frontserver for agent
+ENABLE_DRAGENT_SERVER = os.environ.get("ENABLE_DRAGENT_SERVER", "").strip().lower() == "true"
+
 # Toggle for High Availability (HA) and Load Balancing configuration for agent deployment
 # To enable HA mode: Add ENABLE_AGENT_HA_MODE="true" to your .env file in the project root
+# For `drum` server (legacy):
 # When enabled: workers=5, resource_bundle=cpu.5xlarge, replicas=2, max_computes=4
 # When disabled (default): workers=2, resource_bundle=cpu.3xlarge, replicas=1, max_computes=2
+# For `dragent` server:
+# When enabled: workers=5, resource_bundle=cpu.3xlarge, replicas=2, max_computes=4
+# When disabled (default): workers=2, resource_bundle=cpu.xlarge, replicas=1, max_computes=2
 ENABLE_AGENT_HA_MODE = os.environ.get("ENABLE_AGENT_HA_MODE", "false").lower() == "true"
 
 # Custom Model DRUM runtime parameters (concurrency configuration)
@@ -49,8 +56,23 @@ DEFAULT_CUSTOM_MODEL_WORKERS: Final[str] = "5" if ENABLE_AGENT_HA_MODE else "2"
 DEFAULT_DRUM_SERVER_TYPE: Final[str] = "gunicorn"
 DEFAULT_DRUM_GUNICORN_WORKER_CLASS: Final[str] = "sync"
 DEFAULT_DRUM_WORKER_CONNECTIONS: Final[str] = "1"
+# Custom Model resource bundle configuration
+if ENABLE_DRAGENT_SERVER:
+    DEFAULT_AGENT_RESOURCE_BUNDLE_ID: Final[str] = (
+        "cpu.3xlarge" if ENABLE_AGENT_HA_MODE else "cpu.xlarge"
+    )
+else:
+    DEFAULT_AGENT_RESOURCE_BUNDLE_ID: Final[str] = (
+        "cpu.5xlarge" if ENABLE_AGENT_HA_MODE else "cpu.3xlarge"
+    )
+DEFAULT_AGENT_REPLICAS: Final[int] = 2 if ENABLE_AGENT_HA_MODE else 1
+# Agent deployment configuration (HPA autoscaling)
+DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES: Final[int] = 0
+DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES: Final[int] = 4 if ENABLE_AGENT_HA_MODE else 2
+
 # Default gunicorn timeout in current DRUM is 2 mins
 DEFAULT_DRUM_CLIENT_REQUEST_TIMEOUT: Final[str] = "300"
+
 {% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
 # Agent memory runtime parameters
 AGENT_MEMORY_SPACE_ID: Final[str] = "AGENT_MEMORY_SPACE_ID"
@@ -59,6 +81,7 @@ CONFIGURED_AGENT_MEMORY_TTL_SECONDS: Final[str] = os.environ.get(
     AGENT_MEMORY_TTL_SECONDS, "2592000"
 )
 {% endif %}
+
 # DRUM runtime parameters that are safe to include defaultValue in metadata
 DRUM_PARAMS_WITH_DEFAULTS: Final[set[str]] = {
     "CUSTOM_MODEL_WORKERS",
@@ -67,17 +90,6 @@ DRUM_PARAMS_WITH_DEFAULTS: Final[set[str]] = {
     "DRUM_WORKER_CONNECTIONS",
     "DRUM_CLIENT_REQUEST_TIMEOUT",
 }
-
-# Custom Model resource bundle configuration
-DEFAULT_AGENT_RESOURCE_BUNDLE_ID: Final[str] = (
-    "cpu.5xlarge" if ENABLE_AGENT_HA_MODE else "cpu.3xlarge"
-)
-DEFAULT_AGENT_REPLICAS: Final[int] = 2 if ENABLE_AGENT_HA_MODE else 1
-
-# Agent deployment configuration (HPA autoscaling)
-DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES: Final[int] = 0
-DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES: Final[int] = 4 if ENABLE_AGENT_HA_MODE else 2
-
 
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
@@ -113,10 +125,6 @@ __all__ = [
 {{agent_app_name}}_application_name: str = "{{agent_app_name}}"
 {{agent_app_name}}_asset_name: str = f"[{PROJECT_NAME}] [{{agent_app_name}}]"
 {{agent_app_name}}_application_path = project_dir.parent / "{{agent_app_name}}"
-
-_is_dragent_server_enabled = (
-    os.environ.get("ENABLE_DRAGENT_SERVER", "").strip().lower() == "true"
-)
 
 
 def _find_workflow_yaml() -> Path | None:
@@ -600,7 +608,7 @@ if private_jwk:
     pulumi.info("Configured with IDP_AGENT_PRIVATE_KEY_JWK credential")
 
 
-if _is_dragent_server_enabled:
+if ENABLE_DRAGENT_SERVER:
     enable_dragent_server_runtime_param = (
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
             key="ENABLE_DRAGENT_SERVER",
@@ -773,7 +781,7 @@ if os.environ.get("AGENT_DEPLOY") != "0":
         value={{agent_app_name}}_deployment_endpoint,
     ),
 ]
-if _is_dragent_server_enabled:
+if ENABLE_DRAGENT_SERVER:
     {{agent_app_name}}_app_runtime_parameters.append(
         pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs(
             key="ENABLE_DRAGENT_SERVER",
@@ -794,7 +802,7 @@ if _is_dragent_server_enabled:
         value={{agent_app_name}}_deployment_endpoint,
     ),
 ]
-if _is_dragent_server_enabled and _is_a2a_server_enabled:
+if ENABLE_DRAGENT_SERVER and _is_a2a_server_enabled:
     {{agent_app_name}}_agent_runtime_parameters.append(
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
             key={{agent_app_name}}_application_name.upper() + "_A2A_ENDPOINT",
