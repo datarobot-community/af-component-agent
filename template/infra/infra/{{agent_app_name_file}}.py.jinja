@@ -39,7 +39,9 @@ from .{{ _external_data.llm.llm_app_name }} import custom_model_runtime_paramete
 DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
 
 # Whether to use `dragent` as a frontserver for agent
-ENABLE_DRAGENT_SERVER = os.environ.get("ENABLE_DRAGENT_SERVER", "").strip().lower() == "true"
+ENABLE_DRAGENT_SERVER = (
+    os.environ.get("ENABLE_DRAGENT_SERVER", "").strip().lower() == "true"
+)
 
 # Toggle for High Availability (HA) and Load Balancing configuration for agent deployment
 # To enable HA mode: Add ENABLE_AGENT_HA_MODE="true" to your .env file in the project root
@@ -58,11 +60,11 @@ DEFAULT_DRUM_GUNICORN_WORKER_CLASS: Final[str] = "sync"
 DEFAULT_DRUM_WORKER_CONNECTIONS: Final[str] = "1"
 # Custom Model resource bundle configuration
 if ENABLE_DRAGENT_SERVER:
-    DEFAULT_AGENT_RESOURCE_BUNDLE_ID: Final[str] = (
+    DEFAULT_AGENT_RESOURCE_BUNDLE_ID: str = (
         "cpu.3xlarge" if ENABLE_AGENT_HA_MODE else "cpu.xlarge"
     )
 else:
-    DEFAULT_AGENT_RESOURCE_BUNDLE_ID: Final[str] = (
+    DEFAULT_AGENT_RESOURCE_BUNDLE_ID = (
         "cpu.5xlarge" if ENABLE_AGENT_HA_MODE else "cpu.3xlarge"
     )
 DEFAULT_AGENT_REPLICAS: Final[int] = 2 if ENABLE_AGENT_HA_MODE else 1
@@ -80,7 +82,7 @@ AGENT_MEMORY_TTL_SECONDS: Final[str] = "AGENT_MEMORY_TTL_SECONDS"
 CONFIGURED_AGENT_MEMORY_TTL_SECONDS: Final[str] = os.environ.get(
     AGENT_MEMORY_TTL_SECONDS, "2592000"
 )
-{% endif %}
+{% endif -%}
 
 # DRUM runtime parameters that are safe to include defaultValue in metadata
 DRUM_PARAMS_WITH_DEFAULTS: Final[set[str]] = {
