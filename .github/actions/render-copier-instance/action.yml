@@ -23,7 +23,7 @@ runs:
           mkdir -p ./rendered/.datarobot/answers/
           cp ./fixtures/.datarobot/answers/llm-llm.yml ./rendered/.datarobot/answers/llm-llm.yml
           cp ./fixtures/.datarobot/answers/drmcp-mcp_server.yml ./rendered/.datarobot/answers/drmcp-mcp_server.yml
-          uvx copier copy . ./rendered --trust ${{ inputs.copier-args }}
+          uvx --with copier-templates-extensions copier copy . ./rendered --trust ${{ inputs.copier-args }}
 
           # For infra testing
           cp ./fixtures/Taskfile.yml ./rendered/Taskfile.yml
@@ -41,7 +41,7 @@ runs:
             mkdir -p ./rendered/.datarobot/answers/
             cp ./fixtures/.datarobot/answers/llm-llm.yml ./rendered/.datarobot/answers/llm-llm.yml
             cp ./fixtures/.datarobot/answers/drmcp-mcp_server.yml ./rendered/.datarobot/answers/drmcp-mcp_server.yml
-            uvx copier copy . ./rendered --trust ${{ inputs.copier-args }}
+            uvx --with copier-templates-extensions copier copy . ./rendered --trust ${{ inputs.copier-args }}
 
             # For infra testing
             cp ./fixtures/Taskfile.yml ./rendered/Taskfile.yml

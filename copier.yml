@@ -1,5 +1,6 @@
-jinja_extensions:
-  - extensions.dotenv_lookup.DotenvLookupExtension
+_jinja_extensions:
+  - copier_templates_extensions.TemplateExtensionLoader
+  - extensions/dotenv_lookup.py:DotenvLookupExtension
 
 # questions
 agent_app_name:

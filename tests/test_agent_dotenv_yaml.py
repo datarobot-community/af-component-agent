@@ -42,7 +42,9 @@ def test_copier_prompts_for_mem0_api_key_when_mem0_selected_and_not_in_env() -> 
     assert "mem0_api_key:" in content
     assert "secret: true" in content
     assert "use_agent_memory == 'mem0' and not dotenv_has('MEM0_API_KEY')" in content
-    assert "extensions.dotenv_lookup.DotenvLookupExtension" in content
+    assert "_jinja_extensions:" in content
+    assert "copier_templates_extensions.TemplateExtensionLoader" in content
+    assert "extensions/dotenv_lookup.py:DotenvLookupExtension" in content
 
 
 def test_copier_writes_mem0_api_key_to_env_when_provided() -> None:
