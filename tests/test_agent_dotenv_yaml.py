@@ -52,6 +52,8 @@ def test_copier_writes_mem0_api_key_to_env_when_provided() -> None:
     assert "write_mem0_env.py" in content
     assert "MEM0_API_KEY_VALUE" in content
     assert "dr dotenv setup --if-needed" in content
+    assert "dotenv_has_key.py" in content
+    assert "grep -q '^MEM0_API_KEY=.'" not in content
 
 
 def test_copier_mem0_tasks_treat_whitespace_only_key_as_missing() -> None:

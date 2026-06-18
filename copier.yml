@@ -119,7 +119,8 @@ _tasks:
         if [ -n "${CI:-}" ]; then
           exit 0
         fi
-        if [ -f .env ] && grep -q '^MEM0_API_KEY=.' .env 2>/dev/null; then
+        if PYTHONPATH="{{ _copier_conf.src_path }}" "{{ _copier_python }}" \
+          "{{ _copier_conf.src_path }}/scripts/dotenv_has_key.py" MEM0_API_KEY; then
           exit 0
         fi
         echo ""

@@ -36,6 +36,14 @@ def test_dotenv_value_returns_none_when_key_empty(tmp_path: Path) -> None:
     assert _dotenv_value(env_path, "MEM0_API_KEY") is None
 
 
+def test_dotenv_value_returns_none_when_key_quoted_empty(tmp_path: Path) -> None:
+    env_path = tmp_path / ".env"
+    env_path.write_text('MEM0_API_KEY=""\n', encoding="utf-8")
+
+    assert _dotenv_value(env_path, "MEM0_API_KEY") is None
+    assert dotenv_has({"_copier_dst_path": tmp_path}, "MEM0_API_KEY") is False
+
+
 def test_dotenv_value_reads_quoted_and_unquoted_values(tmp_path: Path) -> None:
     env_path = tmp_path / ".env"
     env_path.write_text(
