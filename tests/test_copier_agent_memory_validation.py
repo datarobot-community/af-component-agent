@@ -24,3 +24,5 @@ def test_copier_rejects_mem0_api_key_when_datarobot_memory_service_selected():
     assert "MEM0_API_KEY" in content
     assert "datarobot_memory_service" in content
     assert "post_copy_validate_agent_memory.sh" not in content
+    assert "agent-agent.yml" not in content
+    assert "{{ _copier_conf.answers_file }}" in content
