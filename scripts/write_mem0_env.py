@@ -19,6 +19,12 @@ import os
 import sys
 from pathlib import Path
 
+_ROOT = Path(__file__).resolve().parent.parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
+from extensions.dotenv_lookup import format_dotenv_assignment
+
 
 def main() -> int:
     key = os.environ.get("MEM0_API_KEY_VALUE", "").strip()
@@ -31,14 +37,14 @@ def main() -> int:
     updated = False
     for line in lines:
         if line.startswith("MEM0_API_KEY="):
-            new_lines.append(f"MEM0_API_KEY={key}")
+            new_lines.append(format_dotenv_assignment("MEM0_API_KEY", key))
             updated = True
         else:
             new_lines.append(line)
     if not updated:
         if new_lines and new_lines[-1] != "":
             new_lines.append("")
-        new_lines.append(f"MEM0_API_KEY={key}")
+        new_lines.append(format_dotenv_assignment("MEM0_API_KEY", key))
     env_path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
     return 0
 

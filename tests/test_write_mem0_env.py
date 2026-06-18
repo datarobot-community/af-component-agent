@@ -17,6 +17,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from extensions.dotenv_lookup import _dotenv_value, format_dotenv_assignment
+
 SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "write_mem0_env.py"
 
 
@@ -76,3 +78,23 @@ def test_write_mem0_env_noop_when_value_whitespace_only(tmp_path: Path) -> None:
     )
 
     assert env_path.read_text(encoding="utf-8") == "EXISTING=value\n"
+
+
+def test_write_mem0_env_quotes_values_with_special_characters(tmp_path: Path) -> None:
+    env_path = tmp_path / ".env"
+    secret = "secret with # hash"
+    env_path.write_text("DATAROBOT_API_TOKEN=test\n", encoding="utf-8")
+
+    subprocess.run(
+        [sys.executable, str(SCRIPT)],
+        cwd=tmp_path,
+        env={**os.environ, "MEM0_API_KEY_VALUE": secret},
+        check=True,
+    )
+
+    assert env_path.read_text(encoding="utf-8") == (
+        "DATAROBOT_API_TOKEN=test\n\n"
+        + format_dotenv_assignment("MEM0_API_KEY", secret)
+        + "\n"
+    )
+    assert _dotenv_value(env_path, "MEM0_API_KEY") == secret

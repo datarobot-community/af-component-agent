@@ -15,7 +15,12 @@
 from pathlib import Path
 from types import SimpleNamespace
 
-from extensions.dotenv_lookup import _dotenv_value, dotenv_has
+from extensions.dotenv_lookup import (
+    _dotenv_value,
+    dotenv_has,
+    format_dotenv_assignment,
+    format_dotenv_value,
+)
 
 
 def test_dotenv_value_returns_none_when_file_missing(tmp_path: Path) -> None:
@@ -59,3 +64,30 @@ def test_dotenv_has_uses_destination_env_file(tmp_path: Path) -> None:
     context = {"_copier_conf": SimpleNamespace(dst_path=tmp_path)}
 
     assert dotenv_has(context, "MEM0_API_KEY") is True
+
+
+def test_format_dotenv_value_leaves_simple_tokens_unquoted() -> None:
+    assert format_dotenv_value("mem0-secret") == "mem0-secret"
+
+
+def test_format_dotenv_value_quotes_values_with_special_characters() -> None:
+    assert format_dotenv_value("secret with spaces") == "'secret with spaces'"
+    assert format_dotenv_value("secret#fragment") == "'secret#fragment'"
+
+
+def test_format_dotenv_value_double_quotes_when_single_quotes_present() -> None:
+    assert format_dotenv_value("it's-a-secret") == '"it\'s-a-secret"'
+    assert format_dotenv_value('say "hello"') == "'say \"hello\"'"
+    assert format_dotenv_value('it"s') == "'it\"s'"
+    assert format_dotenv_value('it\'s "quoted"') == '"it\'s \\"quoted\\""'
+
+
+def test_dotenv_value_round_trips_formatted_assignments(tmp_path: Path) -> None:
+    for secret in ("mem0-secret", "secret with spaces", "secret#fragment", 'it"s'):
+        env_path = tmp_path / f".env-{hash(secret)}"
+        env_path.write_text(
+            format_dotenv_assignment("MEM0_API_KEY", secret) + "\n",
+            encoding="utf-8",
+        )
+
+        assert _dotenv_value(env_path, "MEM0_API_KEY") == secret

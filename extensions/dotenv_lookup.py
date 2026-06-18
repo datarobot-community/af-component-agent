@@ -15,16 +15,66 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 from jinja2 import pass_context
 from jinja2.ext import Extension
 
+_UNQUOTED_DOTENV_VALUE = re.compile(r"[\w.-]+")
 
-def _strip_quotes(value: str) -> str:
-    if len(value) >= 2 and value[0] == value[-1] and value[0] in {"'", '"'}:
-        return value[1:-1]
-    return value
+
+def _parse_dotenv_value(raw: str) -> str:
+    raw = raw.strip()
+    if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in {"'", '"'}:
+        quote = raw[0]
+        inner = raw[1:-1]
+        if quote == "'":
+            return inner
+        chars: list[str] = []
+        index = 0
+        while index < len(inner):
+            if inner[index] == "\\" and index + 1 < len(inner):
+                next_char = inner[index + 1]
+                if next_char == "n":
+                    chars.append("\n")
+                elif next_char == "r":
+                    chars.append("\r")
+                elif next_char == "t":
+                    chars.append("\t")
+                elif next_char in {'"', "\\"}:
+                    chars.append(next_char)
+                else:
+                    chars.append(inner[index])
+                    index += 1
+                    continue
+                index += 2
+            else:
+                chars.append(inner[index])
+                index += 1
+        return "".join(chars)
+    return raw
+
+
+def format_dotenv_value(value: str) -> str:
+    """Format a value for a ``KEY=value`` line in a ``.env`` file."""
+    if _UNQUOTED_DOTENV_VALUE.fullmatch(value):
+        return value
+    if "'" not in value:
+        return f"'{value}'"
+    escaped = (
+        value.replace("\\", "\\\\")
+        .replace('"', '\\"')
+        .replace("\n", "\\n")
+        .replace("\r", "\\r")
+        .replace("\t", "\\t")
+    )
+    return f'"{escaped}"'
+
+
+def format_dotenv_assignment(key: str, value: str) -> str:
+    """Format a complete ``KEY=value`` line for a ``.env`` file."""
+    return f"{key}={format_dotenv_value(value)}"
 
 
 def _dotenv_value(env_path: Path, key: str) -> str | None:
@@ -37,7 +87,7 @@ def _dotenv_value(env_path: Path, key: str) -> str | None:
             continue
         if not stripped.startswith(f"{key}="):
             continue
-        value = _strip_quotes(stripped.split("=", 1)[1].strip())
+        value = _parse_dotenv_value(stripped.split("=", 1)[1])
         return value or None
     return None
 
