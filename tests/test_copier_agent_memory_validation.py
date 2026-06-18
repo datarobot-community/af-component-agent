@@ -12,50 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import importlib.util
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-COPIER_YML = REPO_ROOT / "copier.yml"
-VALIDATE_SCRIPT = (
-    REPO_ROOT / "template/infra/dev_tools/validate_agent_memory_config.py"
-)
-POST_COPY_SCRIPT = (
-    REPO_ROOT / "template/infra/copier/post_copy_validate_agent_memory.sh"
-)
+COPIER_YML = Path(__file__).resolve().parent.parent / "copier.yml"
 
 
-def _load_validate_module():
-    spec = importlib.util.spec_from_file_location(
-        "validate_agent_memory_config", VALIDATE_SCRIPT
-    )
-    assert spec and spec.loader
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
-
-
-def test_copier_runs_memory_validation_when_datarobot_memory_service_selected():
+def test_copier_rejects_mem0_api_key_when_datarobot_memory_service_selected():
     content = COPIER_YML.read_text(encoding="utf-8")
 
-    assert "_tasks:" in content
-    assert "post_copy_validate_agent_memory.sh" in content
     assert "use_agent_memory == 'datarobot_memory_service'" in content
-
-
-def test_template_includes_copier_post_copy_validation_script():
-    content = POST_COPY_SCRIPT.read_text(encoding="utf-8")
-
-    assert "validate_agent_memory_config" in content
-    assert "set -euo pipefail" in content
-
-
-def test_validate_agent_memory_config_rejects_conflicting_mem0_key():
-    module = _load_validate_module()
-
-    errors = module.validate_agent_memory_config(
-        use_agent_memory="datarobot_memory_service",
-        mem0_api_key="secret",
-    )
-    assert len(errors) == 1
-    assert "MEM0_API_KEY" in errors[0]
+    assert "MEM0_API_KEY" in content
+    assert "datarobot_memory_service" in content
+    assert "post_copy_validate_agent_memory.sh" not in content
