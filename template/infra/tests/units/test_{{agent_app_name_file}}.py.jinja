@@ -92,6 +92,21 @@ def pulumi_mocks(monkeypatch, tmp_path):
     monkeypatch.setattr("pulumi.warn", MagicMock())
     monkeypatch.setattr("pulumi.log.error", MagicMock())
 
+    # get_datarobot_url() calls the DataRobot /clientConfig/ API when a client is
+    # available, which makes URL resolution non-deterministic across tests. Mirror
+    # the env-var fallback path only so DATAROBOT_ENDPOINT is respected.
+    def mock_get_datarobot_url():
+        if url := os.getenv("DATAROBOT_WEB_SERVER_URL"):
+            url = url.rstrip("/")
+            return url if url.endswith("/api/v2") else f"{url}/api/v2"
+        return os.getenv(
+            "DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2"
+        ).rstrip("/")
+
+    monkeypatch.setattr(
+        "datarobot_pulumi_utils.common.get_datarobot_url", mock_get_datarobot_url
+    )
+
     # Mock CustomModelDeployment
     monkeypatch.setattr(
         "datarobot_pulumi_utils.pulumi.custom_model_deployment.CustomModelDeployment",
