@@ -108,9 +108,9 @@ _tasks:
       - -lc
       - |
         set -euo pipefail
-        export MEM0_API_KEY_VALUE='{{ mem0_api_key | replace("'", "'\"'\"'") }}'
+        export MEM0_API_KEY_VALUE='{{ mem0_api_key | trim | replace("'", "'\"'\"'") }}'
         "{{ _copier_python }}" "{{ _copier_conf.src_path }}/scripts/write_mem0_env.py"
-    when: "{{ use_agent_memory == 'mem0' and mem0_api_key }}"
+    when: "{{ use_agent_memory == 'mem0' and (mem0_api_key | trim) }}"
   - command:
       - bash
       - -lc
@@ -126,7 +126,7 @@ _tasks:
         echo "Mem0 memory is enabled but MEM0_API_KEY is not set. Configure it with:"
         echo "  dr dotenv setup --if-needed"
         echo ""
-    when: "{{ use_agent_memory == 'mem0' and not mem0_api_key }}"
+    when: "{{ use_agent_memory == 'mem0' and not (mem0_api_key | trim) }}"
 
 _migrations:
   # Migrate legacy agent implementation into the new package layout.

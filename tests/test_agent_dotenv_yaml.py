@@ -52,3 +52,12 @@ def test_copier_writes_mem0_api_key_to_env_when_provided() -> None:
     assert "write_mem0_env.py" in content
     assert "MEM0_API_KEY_VALUE" in content
     assert "dr dotenv setup --if-needed" in content
+
+
+def test_copier_mem0_tasks_treat_whitespace_only_key_as_missing() -> None:
+    """Whitespace-only Mem0 keys should skip write and run the setup reminder."""
+    content = COPIER_CONFIG.read_text(encoding="utf-8")
+
+    assert "mem0_api_key | trim" in content
+    assert "use_agent_memory == 'mem0' and (mem0_api_key | trim)" in content
+    assert "use_agent_memory == 'mem0' and not (mem0_api_key | trim)" in content

@@ -62,3 +62,17 @@ def test_write_mem0_env_noop_when_value_empty(tmp_path: Path) -> None:
     )
 
     assert env_path.read_text(encoding="utf-8") == "EXISTING=value\n"
+
+
+def test_write_mem0_env_noop_when_value_whitespace_only(tmp_path: Path) -> None:
+    env_path = tmp_path / ".env"
+    env_path.write_text("EXISTING=value\n", encoding="utf-8")
+
+    subprocess.run(
+        [sys.executable, str(SCRIPT)],
+        cwd=tmp_path,
+        env={**os.environ, "MEM0_API_KEY_VALUE": "   "},
+        check=True,
+    )
+
+    assert env_path.read_text(encoding="utf-8") == "EXISTING=value\n"
