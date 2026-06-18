@@ -150,7 +150,7 @@ class TestMyAgentCrewAI:
             ),
         )
         mock_crew = Mock()
-        mock_crew.kickoff_async = AsyncMock(return_value=crew_output)
+        mock_crew.akickoff = AsyncMock(return_value=crew_output)
         mock_crew_prop.return_value = mock_crew
 
         events = [
