@@ -23,6 +23,9 @@ from pathlib import Path
 
 import yaml
 
+# This template uses local Jinja extensions (see copier.yml _jinja_extensions).
+COPIER_CMD = ["uvx", "--with", "copier-templates-extensions", "copier"]
+
 
 def run(cmd: list[str], cwd: Path | None = None) -> None:
     print(f"+ {' '.join(cmd)}", flush=True)
@@ -116,7 +119,7 @@ def main() -> None:
     if not module_yaml_path.exists():
         print("No copier-module.yaml found, rendering directly.")
         rendered_dir.mkdir(parents=True, exist_ok=True)
-        run(["uvx", "copier", "copy", str(template_dir), str(rendered_dir), "--overwrite"] + extra_copier_args)
+        run(COPIER_CMD + ["copy", str(template_dir), str(rendered_dir), "--overwrite"] + extra_copier_args)
         return
 
     module = read_yaml(module_yaml_path)
@@ -125,7 +128,7 @@ def main() -> None:
     if not deps:
         print("No dependencies found in copier-module.yaml, rendering directly.")
         rendered_dir.mkdir(parents=True, exist_ok=True)
-        run(["uvx", "copier", "copy", str(template_dir), str(rendered_dir), "--overwrite"] + extra_copier_args)
+        run(COPIER_CMD + ["copy", str(template_dir), str(rendered_dir), "--overwrite"] + extra_copier_args)
         return
 
     copier_yml = read_yaml(copier_yml_path) if copier_yml_path.exists() else {}
@@ -189,7 +192,7 @@ def main() -> None:
 
             # Render the dep
             run(
-                ["uvx", "copier", "copy", str(clone_dir), str(dep_rendered_dir), "--overwrite"]
+                COPIER_CMD + ["copy", str(clone_dir), str(dep_rendered_dir), "--overwrite"]
                 + extra_copier_args
             )
 
@@ -235,7 +238,7 @@ def main() -> None:
         # Final render of the main template
         print(f"\n── Rendering main template: {template_dir}")
         run(
-            ["uvx", "copier", "copy", str(template_dir), str(rendered_dir), "--overwrite"]
+            COPIER_CMD + ["copy", str(template_dir), str(rendered_dir), "--overwrite"]
             + extra_copier_args
         )
 
