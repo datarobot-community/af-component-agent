@@ -4,14 +4,18 @@ on:
   push:
     branches: ["main"]
     paths:
+      - "copier.yml"
       - "fixtures/**"
+      - "Taskfile.yml"
       - "template/**"
       - ".github/actions/copier-template-validator/**"
       - ".github/workflows/afcomponentagent-framework-test.yaml"
   pull_request:
     branches: ["main"]
     paths:
+      - "copier.yml"
       - "fixtures/**"
+      - "Taskfile.yml"
       - "template/**"
       - ".github/actions/copier-template-validator/**"
       - ".github/workflows/afcomponentagent-framework-test.yaml"
@@ -19,6 +23,17 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
+  test-mem0-memory-conflict:
+    name: "Test datarobot_memory_service + MEM0_API_KEY conflict"
+    runs-on: "ubuntu-latest"
+    container:
+      image: ghcr.io/astral-sh/uv:python3.11-bookworm
+    steps:
+      - name: Checkout
+        uses: "actions/checkout@v6"
+      - name: Run memory config conflict test
+        run: uvx --from go-task-bin task test-datarobot-memory-mem0-conflict
+
   test-frameworks:
     name: "Test ${{ matrix.framework.agent_name }} (${{ matrix.python }})"
     runs-on: "ubuntu-latest"
