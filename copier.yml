@@ -87,6 +87,10 @@ _exclude:
     - "*.j2"
     - "*_templates"
 
+_tasks:
+  - command: [bash, infra/copier/post_copy_validate_agent_memory.sh]
+    when: "{{ use_agent_memory == 'datarobot_memory_service' }}"
+
 _migrations:
   # Migrate legacy agent implementation into the new package layout.
   #
