@@ -174,6 +174,37 @@ tasks:
           SKIP_LINT: "{{.SKIP_LINT| default 0}}"
           SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
 
+  test-datarobot-memory-mem0-conflict:
+    desc: "Render with datarobot_memory_service and MEM0_API_KEY set fails with expected error"
+    silent: true
+    cmds:
+      - |
+          set -uo pipefail
+          expected='ERROR: Agent memory provider is DataRobot Memory Service (datarobot_memory_service), but MEM0_API_KEY is also set'
+          dest="./$RENDER_DIR/test_mem0_conflict"
+          rm -rf "$dest"
+          mkdir -p "$dest/.datarobot/answers"
+          cp ./fixtures/.datarobot/answers/llm-llm.yml "$dest/.datarobot/answers/llm-llm.yml"
+          cp ./fixtures/.datarobot/answers/drmcp-mcp_server.yml "$dest/.datarobot/answers/drmcp-mcp_server.yml"
+          output="$(
+            MEM0_API_KEY=test-key uvx copier copy . "$dest" \
+              --trust --defaults \
+              --data agent_template_framework=base \
+              --data use_agent_memory=datarobot_memory_service \
+              --vcs-ref=HEAD 2>&1
+          )" && rc=0 || rc=$?
+          rm -rf "$dest"
+          if [ "$rc" -eq 0 ]; then
+            echo "FAIL: expected render to fail when MEM0_API_KEY is set with datarobot_memory_service" >&2
+            exit 1
+          fi
+          if ! echo "$output" | grep -q "$expected"; then
+            echo "FAIL: expected error message not found. Render output:" >&2
+            echo "$output" >&2
+            exit 1
+          fi
+          echo "PASS: datarobot_memory_service + MEM0_API_KEY correctly rejected during render"
+
   test-nat:
     desc: "Run tests for nat agent"
     cmds:
@@ -243,6 +274,7 @@ tasks:
       - task: test-base
       - task: test-memory
       - task: test-datarobot-memory
+      - task: test-datarobot-memory-mem0-conflict
       - task: test-crewai
       - task: test-langgraph
       - task: test-llamaindex
