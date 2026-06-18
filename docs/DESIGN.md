@@ -199,7 +199,7 @@ See `docs/development.md` for full instructions. The short loop:
 3. Fix failures and re-run until green.
 4. Commit.
 
-The test task renders the template with `uvx copier copy`, installs dependencies, runs linting + type checking, and executes pytest with coverage.
+The test task renders the template with `uvx --with copier-templates-extensions copier copy`, installs dependencies, runs linting + type checking, and executes pytest with coverage.
 
 ## Adding a new framework
 

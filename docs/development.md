@@ -15,6 +15,18 @@ and usage, you should additionally open a branch in [recipe-datarobot-agent-temp
 > This is required to properly work with the `uvx copier` command and to ensure that the changes are reflected in the
 > downstream repositories.
 
+## Copier and local Jinja extensions
+
+Template rendering uses Copier with local Jinja extensions under `extensions/` (for example, `dotenv_has` to read `.env` during Mem0 setup). When you run Copier directly with `uvx`, pass the template extension loader:
+
+```bash
+uvx --with copier-templates-extensions copier copy . ./rendered --defaults --trust
+```
+
+The root `Taskfile.yml` and CI render action already include this flag. If you see `'dotenv_has' is undefined`, the loader package is missing from your `uvx copier` invocation.
+
+Prefer `dr component add` / `dr component update` for end-user workflows; those commands do not require you to remember the extra flag.
+
 ## Updating dependencies
 
 Template `uv.lock` output is assembled by `uv.lock.jinja`, which includes the correct partial from `template/{{agent_app_name}}/uvlock_templates/uvlock_<framework>.j2` depending on `agent_template_framework`.

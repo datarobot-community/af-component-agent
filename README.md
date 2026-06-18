@@ -66,8 +66,10 @@ dr component add https://github.com/datarobot-community/af-component-agent .
 If you need additional control, you can run this to use copier directly:
 
 ```bash
-uvx copier copy datarobot-community/af-component-agent .
+uvx --with copier-templates-extensions copier copy datarobot-community/af-component-agent .
 ```
+
+This template ships local Jinja extensions (for example, to detect whether `MEM0_API_KEY` is already in `.env` when Mem0 memory is selected). The `--with copier-templates-extensions` flag installs the loader Copier needs to run them when you invoke `uvx copier` directly.
 
 The wizard prompts you for your agent name, framework choice (`base`, `crewai`, `langgraph`, `llamaindex`, or `nat`), and other configuration options. After the wizard completes, your project directory contains the agent template files ready for customization and deployment.
 
@@ -134,7 +136,7 @@ dr component update .datarobot/answers/agent-AGENT_APP_NAME.yml
 If you need more fine-grained control and prefer using copier directly, you can run this to have more control over the process:
 
 ```bash
-uvx copier update -a .datarobot/answers/agent-AGENT_APP_NAME.yml -A
+uvx --with copier-templates-extensions copier update -a .datarobot/answers/agent-AGENT_APP_NAME.yml -A
 ```
 
 # Deployment
@@ -157,6 +159,7 @@ Notes:
 
 If the component fails to apply or your agent does not start, check the following common issues first.
 
+- **`'dotenv_has' is undefined` when running Copier**&mdash;include `--with copier-templates-extensions` on `uvx copier copy` and `uvx copier update`. This template uses local Jinja extensions that require that package when Copier is invoked via `uvx` (the `dr component` commands handle this for you).
 - **`uvx` or `dr` command not found**&mdash;ensure both tools are installed and on your `PATH`. Run `uv --version` and `dr --version` to confirm.
 - **Authentication errors at startup**&mdash;verify that `DATAROBOT_ENDPOINT` and `DATAROBOT_API_TOKEN` are set correctly and that the token has the required permissions.
 - **Framework import errors**&mdash;some frameworks have optional heavy dependencies. Run `task test-AGENT_FRAMEWORK` to isolate the failing framework and check its dependency group in `pyproject.toml`.

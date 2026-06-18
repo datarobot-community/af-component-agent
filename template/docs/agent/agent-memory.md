@@ -35,8 +35,10 @@ When you generate or update a project with Copier, you are prompted to choose an
 To pass the value non-interactively:
 
 ```sh
-uvx copier copy . ./my-agent --data use_agent_memory=mem0
+uvx --with copier-templates-extensions copier copy . ./my-agent --data use_agent_memory=mem0
 ```
+
+When using `uvx copier` directly, include `--with copier-templates-extensions` so Copier can load this template's local Jinja extensions (needed for Mem0 credential detection from `.env`).
 
 Valid values are `none`, `mem0`, and `datarobot_memory_service`.
 
@@ -251,7 +253,7 @@ use_agent_memory: mem0
 use_agent_memory: datarobot_memory_service
 ```
 
-Then re-run `copier update` to regenerate `workflow.yaml`, `pyproject.toml`, `config.py`, and infrastructure with memory support.
+Then re-run `copier update` (with `uvx --with copier-templates-extensions copier update` if you invoke Copier via `uvx`) to regenerate `workflow.yaml`, `pyproject.toml`, `config.py`, and infrastructure with memory support.
 
 When Mem0 is selected, Copier prompts for your Mem0 API key and writes `MEM0_API_KEY` to `.env`, unless that variable is already set in `.env`. The value is not stored in `.datarobot/answers/agent-*.yml`. The `.datarobot/cli/agent.yaml` entry keeps `MEM0_API_KEY` available to `dr dotenv validate` and `dr dotenv setup`.
 
