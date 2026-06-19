@@ -98,9 +98,10 @@ agent_writer = FunctionAgent(
         "1. Use the planner notes to craft a compelling blog post.\n"
         "2. Structure with an engaging introduction, insightful body, and summarizing conclusion.\n"
         "3. Sections/Subtitles should be properly named in an engaging manner.\n"
-        "4. CRITICAL: Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
+        "4. Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
         "\n"
-        "Write in markdown format. Once complete, use the writer_report_tool to record your report, and then you must call the word_counter tool to verify the word count."
+        "Match the length and format the user asked for - for a short request like a single tweet (under 280 characters), output only that single item, nothing else (no alternatives or commentary). "
+        "Write in markdown, ready for publication. Call word_counter once to check the length, then return - do not loop, rewrite, or include the count. Once complete, use the writer_report_tool to record your report."
     ),
     llm=llm,
     tools=[writer_report_tool, word_counter],

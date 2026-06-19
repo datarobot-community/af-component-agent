@@ -58,7 +58,7 @@ agent_planner = Agent(
 
 agent_writer = Agent(
     role="Writer",
-    goal="Write a concise, insightful opinion piece about {topic}. Maximum 500 words. Use word_counter tool in the end to verify the word count.",
+    goal="Write a concise, insightful opinion piece about {topic}. Keep it under 500 words. Output only the single item the user asked for, nothing else — no alternatives or commentary.",
     backstory=make_system_prompt(
         "You write opinion pieces based on the planner's outline and context. "
         "You provide objective and impartial insights backed by the planner's information. "
@@ -91,17 +91,15 @@ task_plan = Task(
 
 task_write = Task(
     description=(
-        "Follow these steps IN ORDER — do NOT skip any step:\n"
         "1. Use the content plan to craft a compelling blog post on {topic}.\n"
         "2. Structure with an engaging introduction, insightful body, and summarizing conclusion.\n"
         "3. Sections/Subtitles are properly named in an engaging manner.\n"
         "4. Keep the total output under 500 words. Each section should have 1-2 brief paragraphs.\n"
-        "5. MANDATORY FINAL STEP: After writing the blog post, you MUST call the word_counter tool "
-        "with the full blog post text as the 'text' argument. Do NOT skip this step. "
-        "Your task is NOT complete until word_counter has been called.\n"
+        "Output only the single item the user asked for, nothing else — no alternatives or commentary. "
+        "Call word_counter once to check length, then return — do not loop, rewrite, or include the count.\n"
         "{chat_history}"
     ),
-    expected_output="A well-written blog post in markdown format followed by the word count from the word_counter tool.",
+    expected_output="Exactly the single deliverable the user asked for, in the requested format and length.",
     agent=agent_writer,
 )
 
