@@ -49,6 +49,7 @@ DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
 
 {%- if use_agent_memory == 'datarobot_memory_service' %}
 
+
 def _build_configure_memory_space_command(space_id: str, llm_model_name: str) -> str:
     configure_snippet = (
         "import datarobot; "
@@ -60,7 +61,9 @@ def _build_configure_memory_space_command(space_id: str, llm_model_name: str) ->
         f"uv run --directory {shlex.quote(str(project_dir))} "
         f"python -c {shlex.quote(configure_snippet)}"
     )
+
 {%- endif %}
+
 
 # Whether to use `dragent` as a frontserver for agent
 ENABLE_DRAGENT_SERVER = (
@@ -595,7 +598,7 @@ if mem0_api_key := os.environ.get(MEM0_API_KEY):
         space_id, {{agent_app_name}}_memory_llm_model_name
     )
 )
-command.local.Command(
+{{agent_app_name}}_memory_space_configure_llm = command.local.Command(
     {{agent_app_name}}_asset_name + " Configure Memory Space LLM",
     create={{agent_app_name}}_memory_space_configure_command,
     update={{agent_app_name}}_memory_space_configure_command,
@@ -675,6 +678,11 @@ if ENABLE_DRAGENT_SERVER:
     use_case_ids=[use_case.id],
     files={{agent_app_name}}_custom_model_files,
     runtime_parameter_values=agent_runtime_parameter_values,
+{%- if use_agent_memory == 'datarobot_memory_service' %}
+    opts=pulumi.ResourceOptions(
+        depends_on=[{{agent_app_name}}_memory_space_configure_llm],
+    ),
+{%- endif %}
 )
 
 _dr_url = get_datarobot_url()

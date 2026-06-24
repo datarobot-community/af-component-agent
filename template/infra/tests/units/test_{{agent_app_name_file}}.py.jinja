@@ -69,6 +69,12 @@ def pulumi_mocks(monkeypatch, tmp_path):
     )
     monkeypatch.setattr("pulumi_datarobot.MemorySpace", MagicMock())
 {%- if use_agent_memory == 'datarobot_memory_service' %}
+
+    class MockResourceOptions:
+        def __init__(self, **kwargs):
+            self.__dict__.update(kwargs)
+
+    monkeypatch.setattr("pulumi.ResourceOptions", MockResourceOptions)
     monkeypatch.setattr("pulumi_command.local.Command", MagicMock())
 {%- endif %}
     # Mock CustomModelRuntimeParameterValueArgs to return simple namedtuple objects
@@ -507,6 +513,10 @@ def test_custom_model_created(monkeypatch):
     assert memory_space_param is not None
     assert memory_space_param.type == "string"
     assert memory_space_param.value is not None
+
+    configure_llm = agent_infra.{{agent_app_name}}_memory_space_configure_llm
+    assert configure_llm is not None
+    assert kwargs["opts"].depends_on == [configure_llm]
 {%- endif %}
 {% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
     memory_ttl_param = next(
