@@ -68,15 +68,6 @@ def pulumi_mocks(monkeypatch, tmp_path):
         "pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs", MagicMock()
     )
     monkeypatch.setattr("pulumi_datarobot.MemorySpace", MagicMock())
-{%- if use_agent_memory == 'datarobot_memory_service' %}
-
-    class MockResourceOptions:
-        def __init__(self, **kwargs):
-            self.__dict__.update(kwargs)
-
-    monkeypatch.setattr("pulumi.ResourceOptions", MockResourceOptions)
-    monkeypatch.setattr("pulumi_command.local.Command", MagicMock())
-{%- endif %}
     # Mock CustomModelRuntimeParameterValueArgs to return simple namedtuple objects
     # Namedtuples are YAML-safe and have the attributes we need
     RuntimeParam = namedtuple(
@@ -512,11 +503,7 @@ def test_custom_model_created(monkeypatch):
     )
     assert memory_space_param is not None
     assert memory_space_param.type == "string"
-    assert memory_space_param.value is not None
-
-    configure_llm = agent_infra.{{agent_app_name}}_memory_space_configure_llm
-    assert configure_llm is not None
-    assert kwargs["opts"].depends_on == [configure_llm]
+    assert memory_space_param.value is agent_infra.{{agent_app_name}}_memory_space_ready
 {%- endif %}
 {% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
     memory_ttl_param = next(
@@ -619,6 +606,7 @@ def test_agentic_playground_and_blueprint_created(monkeypatch):
     agent_infra.pulumi_datarobot.Playground.reset_mock()
     agent_infra.pulumi_datarobot.LlmBlueprint.reset_mock()
     agent_infra.pulumi.export.reset_mock()
+    agent_infra.pulumi.Output.format.reset_mock()
     importlib.reload(agent_infra)
 
     # Check that Agentic Playground was created
@@ -647,9 +635,13 @@ def test_agentic_playground_and_blueprint_created(monkeypatch):
     assert "Agent Playground URL " + agent_infra.{{agent_app_name}}_asset_name in export_names  # fmt: skip
 
     # Check the format of the URL
-    agent_infra.pulumi.Output.format.assert_any_call(
+    from datarobot_pulumi_utils.common import get_datarobot_url
+
+    expected_web_url = get_datarobot_url().removesuffix("/api/v2")
+    agent_infra.pulumi.Output.format.assert_called_once()
+    assert agent_infra.pulumi.Output.format.call_args.args == (
         "{0}/usecases/{1}/agentic-playgrounds/{2}/comparison/chats",
-        "https://example.datarobot.com",
+        expected_web_url,
         "mock-use-case-id",
         agent_infra.{{agent_app_name}}_playground.id,
     )
@@ -882,6 +874,45 @@ class TestUpdateDeploymentPredictionsSettings:
         assert result == "test-deployment-id"
 
 
+{% if use_agent_memory == 'datarobot_memory_service' -%}
+class TestConfigureMemorySpaceLlm:
+    """Tests for the _configure_memory_space_llm workaround."""
+
+    def test_updates_llm_when_model_differs(self, monkeypatch):
+        import infra.{{agent_app_name}} as agent_infra
+
+        mock_space = MagicMock()
+        mock_space.llm_model_name = "old-model"
+        mock_get = MagicMock(return_value=mock_space)
+        monkeypatch.setattr("datarobot.MemorySpace.get", mock_get)
+
+        result = agent_infra._configure_memory_space_llm(
+            space_id="test-space-id",
+            llm_model_name="new-model",
+        )
+
+        mock_get.assert_called_once_with("test-space-id")
+        mock_space.update.assert_called_once_with(llm_model_name="new-model")
+        assert result == "test-space-id"
+
+    def test_skips_update_when_model_matches(self, monkeypatch):
+        import infra.{{agent_app_name}} as agent_infra
+
+        mock_space = MagicMock()
+        mock_space.llm_model_name = "same-model"
+        mock_get = MagicMock(return_value=mock_space)
+        monkeypatch.setattr("datarobot.MemorySpace.get", mock_get)
+
+        result = agent_infra._configure_memory_space_llm(
+            space_id="test-space-id",
+            llm_model_name="same-model",
+        )
+
+        mock_get.assert_called_once_with("test-space-id")
+        mock_space.update.assert_not_called()
+        assert result == "test-space-id"
+
+{% endif %}
 class TestEnableAgentHAMode:
     def test_ha_mode_disabled_by_default(self, monkeypatch):
         """Test that HA mode is disabled by default."""
