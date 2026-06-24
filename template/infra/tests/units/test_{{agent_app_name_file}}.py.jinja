@@ -39,6 +39,9 @@ def pulumi_mocks(monkeypatch, tmp_path):
     # interface required for this module.
     mock_llm_module = MagicMock()
     mock_llm_module.custom_model_runtime_parameters = []
+{%- if use_agent_memory == 'datarobot_memory_service' %}
+    mock_llm_module.default_model = "datarobot/azure/gpt-5-mini-2025-08-07"
+{%- endif %}
     monkeypatch.setitem(sys.modules, "infra.{{ _external_data.llm.llm_app_name }}", mock_llm_module)
     # Mock out the MCP Server and just expose the runtime parameters as it is the only public
     # interface required for this module.
@@ -65,6 +68,9 @@ def pulumi_mocks(monkeypatch, tmp_path):
         "pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs", MagicMock()
     )
     monkeypatch.setattr("pulumi_datarobot.MemorySpace", MagicMock())
+{%- if use_agent_memory == 'datarobot_memory_service' %}
+    monkeypatch.setattr("infra.memory_space_config.configure_memory_space_llm", MagicMock())
+{%- endif %}
     # Mock CustomModelRuntimeParameterValueArgs to return simple namedtuple objects
     # Namedtuples are YAML-safe and have the attributes we need
     RuntimeParam = namedtuple(

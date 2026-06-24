@@ -35,6 +35,10 @@ from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 from . import project_dir, use_case
 
 from .{{ _external_data.llm.llm_app_name }} import custom_model_runtime_parameters as llm_custom_model_runtime_parameters
+{%- if use_agent_memory == 'datarobot_memory_service' %}
+from .{{ _external_data.llm.llm_app_name }} import default_model
+from .memory_space_config import configure_memory_space_llm, memory_space_llm_model_name
+{%- endif %}
 
 DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
 
@@ -565,6 +569,11 @@ if mem0_api_key := os.environ.get(MEM0_API_KEY):
 {%- if use_agent_memory == 'datarobot_memory_service' %}
 # Create the memory space
 {{agent_app_name}}_memory_space = pulumi_datarobot.MemorySpace({{agent_app_name}}_asset_name + " Memory Space")
+configure_memory_space_llm(
+    {{agent_app_name}}_asset_name + " Configure Memory Space LLM",
+    {{agent_app_name}}_memory_space,
+    memory_space_llm_model_name(default_model),
+)
 agent_runtime_parameter_values.append(
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
         key=AGENT_MEMORY_SPACE_ID,

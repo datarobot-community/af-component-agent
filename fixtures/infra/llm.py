@@ -3,6 +3,8 @@
 # Matches the configuration used in recipe-datarobot-agent-templates.
 import pulumi_datarobot
 
+default_model: str = "datarobot/azure/gpt-5-mini-2025-08-07"
+
 custom_model_runtime_parameters: list[
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs
 ] = [
