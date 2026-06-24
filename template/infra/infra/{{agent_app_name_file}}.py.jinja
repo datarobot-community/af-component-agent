@@ -15,12 +15,18 @@ import os
 from pathlib import Path
 import re
 import shutil
+{%- if use_agent_memory == 'datarobot_memory_service' %}
+import shlex
+{%- endif %}
 from typing import cast, Final, Optional, Any, Sequence
 import yaml  # type: ignore[import-untyped]
 
 import datarobot as dr
 import pulumi
 import pulumi_datarobot
+{%- if use_agent_memory == 'datarobot_memory_service' %}
+import pulumi_command as command
+{%- endif %}
 from datarobot_pulumi_utils.common import get_datarobot_url
 from datarobot_pulumi_utils.pulumi import export, resolve_execution_environment_version
 from datarobot_pulumi_utils.pulumi.custom_model_deployment import CustomModelDeployment
@@ -37,10 +43,24 @@ from . import project_dir, use_case
 from .{{ _external_data.llm.llm_app_name }} import custom_model_runtime_parameters as llm_custom_model_runtime_parameters
 {%- if use_agent_memory == 'datarobot_memory_service' %}
 from .{{ _external_data.llm.llm_app_name }} import default_model
-from .memory_space_config import configure_memory_space_llm, memory_space_llm_model_name
 {%- endif %}
 
 DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
+
+{%- if use_agent_memory == 'datarobot_memory_service' %}
+
+def _build_configure_memory_space_command(space_id: str, llm_model_name: str) -> str:
+    configure_snippet = (
+        "import datarobot; "
+        f"space = datarobot.MemorySpace.get({space_id!r}); "
+        f"space.update(llm_model_name={llm_model_name!r}) "
+        f"if space.llm_model_name != {llm_model_name!r} else None"
+    )
+    return (
+        f"uv run --directory {shlex.quote(str(project_dir))} "
+        f"python -c {shlex.quote(configure_snippet)}"
+    )
+{%- endif %}
 
 # Whether to use `dragent` as a frontserver for agent
 ENABLE_DRAGENT_SERVER = (
@@ -569,10 +589,18 @@ if mem0_api_key := os.environ.get(MEM0_API_KEY):
 {%- if use_agent_memory == 'datarobot_memory_service' %}
 # Create the memory space
 {{agent_app_name}}_memory_space = pulumi_datarobot.MemorySpace({{agent_app_name}}_asset_name + " Memory Space")
-configure_memory_space_llm(
+{{agent_app_name}}_memory_llm_model_name = default_model.removeprefix("datarobot/")
+{{agent_app_name}}_memory_space_configure_command = {{agent_app_name}}_memory_space.id.apply(
+    lambda space_id: _build_configure_memory_space_command(
+        space_id, {{agent_app_name}}_memory_llm_model_name
+    )
+)
+command.local.Command(
     {{agent_app_name}}_asset_name + " Configure Memory Space LLM",
-    {{agent_app_name}}_memory_space,
-    memory_space_llm_model_name(default_model),
+    create={{agent_app_name}}_memory_space_configure_command,
+    update={{agent_app_name}}_memory_space_configure_command,
+    triggers=[{{agent_app_name}}_memory_llm_model_name],
+    opts=pulumi.ResourceOptions(depends_on=[{{agent_app_name}}_memory_space]),
 )
 agent_runtime_parameter_values.append(
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs(

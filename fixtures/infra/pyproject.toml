@@ -7,7 +7,6 @@ This is a template for DataRobot Agents.
 requires-python = ">=3.11"
 
 dependencies = [
-    "datarobot>=3.8.2",
     "datarobot-pulumi-utils>=0.1.6",
     "pulumi>=3.175.0",
     "pulumi-datarobot>=0.10.27",

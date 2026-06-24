@@ -69,7 +69,7 @@ def pulumi_mocks(monkeypatch, tmp_path):
     )
     monkeypatch.setattr("pulumi_datarobot.MemorySpace", MagicMock())
 {%- if use_agent_memory == 'datarobot_memory_service' %}
-    monkeypatch.setattr("infra.memory_space_config.configure_memory_space_llm", MagicMock())
+    monkeypatch.setattr("pulumi_command.local.Command", MagicMock())
 {%- endif %}
     # Mock CustomModelRuntimeParameterValueArgs to return simple namedtuple objects
     # Namedtuples are YAML-safe and have the attributes we need
