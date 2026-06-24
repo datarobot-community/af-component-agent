@@ -912,7 +912,8 @@ class TestConfigureMemorySpaceLlm:
         mock_space.update.assert_not_called()
         assert result == "test-space-id"
 
-{% endif %}
+
+{% endif -%}
 class TestEnableAgentHAMode:
     def test_ha_mode_disabled_by_default(self, monkeypatch):
         """Test that HA mode is disabled by default."""
