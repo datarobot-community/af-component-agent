@@ -665,18 +665,23 @@ _memory_llm_deployment = _normalize_optional_env(
 _agent_llm_deployment = _llm_component_config_value("{{ _external_data.llm.llm_app_name|upper }}_DEPLOYMENT_ID")
 if not isinstance(_agent_llm_deployment, pulumi.Output):
     _agent_llm_deployment = pulumi.Output.from_input(_agent_llm_deployment or "")
-{{agent_app_name}}_memory_space_ready = pulumi.Output.all(
-    {{agent_app_name}}_memory_space.id,
-    _agent_llm_deployment,
-).apply(
-    lambda args: _configure_memory_space_llm_routing(
-        args[0],
+
+
+def _apply_memory_space_llm_config(resolved: tuple[str, str]) -> str:
+    space_id, agent_deployment_id = resolved
+    return _configure_memory_space_llm_routing(
+        space_id,
         agent_default_model=default_model,
-        agent_deployment_id=args[1] or None,
+        agent_deployment_id=agent_deployment_id or None,
         override_model_name=_memory_llm_model,
         override_deployment_id=_memory_llm_deployment,
     )
-)
+
+
+{{agent_app_name}}_memory_space_ready = pulumi.Output.all(
+    {{agent_app_name}}_memory_space.id,
+    _agent_llm_deployment,
+).apply(_apply_memory_space_llm_config)
 agent_runtime_parameter_values.append(
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
         key=AGENT_MEMORY_SPACE_ID,
