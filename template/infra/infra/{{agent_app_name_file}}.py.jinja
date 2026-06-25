@@ -49,7 +49,10 @@ def _llm_component_config_value(key: str) -> Any | None:
     for param in llm_custom_model_runtime_parameters:
         param_key = param.key
         if isinstance(param_key, str) and param_key == key:
-            return param.value
+            value = param.value
+            if isinstance(value, str) and not value:
+                return None
+            return value
     return None
 
 
@@ -620,7 +623,7 @@ if mem0_api_key := os.environ.get(MEM0_API_KEY):
 {{agent_app_name}}_memory_space = pulumi_datarobot.MemorySpace({{agent_app_name}}_asset_name + " Memory Space")
 {{agent_app_name}}_memory_llm_model_name = default_model.removeprefix("datarobot/")
 _llm_deployment_id = _llm_component_config_value("{{ _external_data.llm.llm_app_name|upper }}_DEPLOYMENT_ID")
-if _llm_deployment_id is not None:
+if _llm_deployment_id:
     {{agent_app_name}}_memory_space_ready = pulumi.Output.all(
         {{agent_app_name}}_memory_space.id,
         _llm_deployment_id,
