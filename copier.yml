@@ -28,45 +28,6 @@ use_agent_memory:
     "Datarobot Memory Service": datarobot_memory_service
     Mem0: mem0
 
-agent_llm_integration:
-  type: str
-  help: >-
-    How is your agent LLM component configured? Must match the LLM component's
-    INFRA_ENABLE_LLM setting. When you use LLM Gateway or a deployed LLM, the memory
-    space defaults to the agent LLM. Other integrations require a separate memory-space LLM.
-  default: gateway
-  choices:
-    "LLM Gateway (gateway_direct.py)": gateway
-    "Deployed LLM (deployed_llm.py / nim_deployed_llm.py)": deployed
-    "Other (external credentials, blueprint, registered model, etc.)": other
-  when: "{{ use_agent_memory == 'datarobot_memory_service' }}"
-
-agent_memory_llm_routing:
-  type: str
-  help: "Choose an LLM routing mode for the DataRobot Memory Service memory space."
-  default: gateway
-  choices:
-    "LLM Gateway": gateway
-    "Deployed LLM": deployed
-  when: "{{ use_agent_memory == 'datarobot_memory_service' and agent_llm_integration == 'other' }}"
-
-agent_memory_llm_model_name:
-  type: str
-  help: "LLM Gateway model for the memory space (for example azure/gpt-5-mini-2025-08-07)."
-  default: "azure/gpt-5-mini-2025-08-07"
-  when: "{{ use_agent_memory == 'datarobot_memory_service' and agent_llm_integration == 'other' and agent_memory_llm_routing == 'gateway' }}"
-  validator: >-
-    {% if not agent_memory_llm_model_name %}ERROR: Memory space LLM Gateway model name is required
-    {% endif %}
-
-agent_memory_llm_deployment_id:
-  type: str
-  help: "Deployment ID for the memory space deployed LLM."
-  when: "{{ use_agent_memory == 'datarobot_memory_service' and agent_llm_integration == 'other' and agent_memory_llm_routing == 'deployed' }}"
-  validator: >-
-    {% if not agent_memory_llm_deployment_id %}ERROR: Memory space deployment ID is required
-    {% endif %}
-
 agent_template_framework:
   type: str
   default: |-

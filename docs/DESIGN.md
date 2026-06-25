@@ -16,7 +16,6 @@ Defined in `copier.yml`:
 | `agent_template_framework` | Framework flavour: `base`, `crewai`, `langgraph`, `llamaindex`, or `nat`. |
 | `use_low_code_interface` | When `true`, forces `agent_template_framework=nat`. |
 | `use_agent_memory` | Agent memory provider choice: `none`, `mem0`, or `datarobot_memory_service`. |
-| `agent_llm_integration`, `agent_memory_llm_routing`, `agent_memory_llm_model_name`, `agent_memory_llm_deployment_id` | Copier prompts for DataRobot Memory Service when the agent LLM is not LLM Gateway or a deployed LLM. |
 | `base_answers_file`, `llm_answers_file`, `mcp_answers_file` | Paths to DataRobot component answer files consumed via `_external_data`. |
 
 The `_exclude` directive in `copier.yml` ensures that `*.j2` partials and `*_templates/` directories are never copied into the rendered output — they exist only as include sources.
