@@ -44,6 +44,15 @@ DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
 {%- if use_agent_memory == 'datarobot_memory_service' %}
 
 
+def _llm_component_config_value(key: str) -> Any | None:
+    """Read a value from the LLM component's configuration export."""
+    for param in llm_custom_model_runtime_parameters:
+        param_key = param.key
+        if isinstance(param_key, str) and param_key == key:
+            return param.value
+    return None
+
+
 def _deployment_llm_base_url(deployment_id: str) -> str:
     return (
         f"{get_datarobot_url().rstrip('/')}/deployments/"
@@ -600,7 +609,7 @@ if mem0_api_key := os.environ.get(MEM0_API_KEY):
 # Create the memory space
 {{agent_app_name}}_memory_space = pulumi_datarobot.MemorySpace({{agent_app_name}}_asset_name + " Memory Space")
 {{agent_app_name}}_memory_llm_model_name = default_model.removeprefix("datarobot/")
-_llm_deployment_id = maybe_import_from_module("{{ _external_data.llm.llm_app_name }}", "llm_deployment_id")
+_llm_deployment_id = _llm_component_config_value("{{ _external_data.llm.llm_app_name|upper }}_DEPLOYMENT_ID")
 if _llm_deployment_id is not None:
     {{agent_app_name}}_memory_space_ready = pulumi.Output.all(
         {{agent_app_name}}_memory_space.id,

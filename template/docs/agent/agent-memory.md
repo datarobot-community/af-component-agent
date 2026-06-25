@@ -204,12 +204,12 @@ The DataRobot Memory Service uses the **same LLM as your agent** for memory extr
 | **LLM Gateway** (default) | `llm_model_name` is set from your LLM component's `default_model` (with the `datarobot/` prefix stripped). |
 | **Deployed LLM** | `llm_base_url` is set to the deployment chat completions endpoint (`/api/v2/deployments/{id}/chat/completions`), and `llm_model_name` is aligned with the agent's `default_model`. |
 
-The agent template enables LLM Gateway by default via the LLM component's `gateway_direct` configuration. When the LLM component exports `llm_deployment_id` (for example `deployed_llm.py`), Pulumi configures the memory space to call that deployment endpoint directly.
+The agent template enables LLM Gateway by default via the LLM component's `gateway_direct` configuration. When the LLM component is configured with a deployment (for example `deployed_llm.py`), Pulumi configures the memory space to call that deployment endpoint directly.
 
 | Requirement | How to satisfy |
 |---|---|
 | LLM Gateway | Enabled by default. Keep the LLM component on `gateway_direct`, or ensure `USE_DATAROBOT_LLM_GATEWAY=1` (runtime parameter or `.env`) and `use_datarobot_llm_gateway: true` on your `datarobot-llm-component` / `datarobot-llm-router` if you customize routing. |
-| Deployed LLM | Choose a deployed-LLM configuration in the LLM component (for example `deployed_llm.py`). The LLM component exports `llm_deployment_id`, and the agent template sets `llm_base_url` on the memory space automatically. |
+| Deployed LLM | Choose a deployed-LLM configuration in the LLM component (for example `deployed_llm.py`). The memory space reads the same `LLM_DEPLOYMENT_ID` from the LLM component configuration as the agent. |
 | Model alignment | Use the same `LLM_DEFAULT_MODEL` for the agent and memory space. The template handles this automatically. |
 
 If you switch the LLM component to external provider credentials without a DataRobot deployment, use **Mem0** instead.
