@@ -208,6 +208,15 @@ Each memory space uses **one** LLM routing mode. Pulumi sets either `llm_model_n
 
 The template reads the same LLM component configuration as the agent (`default_model` and `custom_model_runtime_parameters`). When `LLM_DEPLOYMENT_ID` is present (for example `deployed_llm.py`), the memory space is configured with `llm_base_url` only. Otherwise the space is configured with `llm_model_name` for LLM Gateway.
 
+To use a different LLM for memory than the agent, set one of these environment variables before `task deploy-dev` or a full deployment:
+
+| Env variable | Routing | Description |
+|---|---|---|
+| `AGENT_MEMORY_LLM_DEPLOYMENT_ID` | Deployed LLM | DataRobot deployment ID for memory extraction. Takes precedence over `AGENT_MEMORY_LLM_MODEL_NAME`. |
+| `AGENT_MEMORY_LLM_MODEL_NAME` | LLM Gateway | Gateway model name for memory extraction (for example `azure/gpt-5-mini-2025-08-07` or `datarobot/azure/gpt-5-mini-2025-08-07`). |
+
+When neither override is set, memory inherits the agent LLM component configuration shown in the table above.
+
 | Requirement | How to satisfy |
 |---|---|
 | LLM Gateway | Enabled by default via the LLM component's `gateway_direct` configuration (`USE_DATAROBOT_LLM_GATEWAY=1`). |
@@ -246,6 +255,15 @@ For the DataRobot Memory Service provider, the feature flag `ENABLE_AGENTIC_MEMO
    Optionally override TTL in `.env`:
    ```sh
    AGENT_MEMORY_TTL_SECONDS=86400
+   ```
+
+   Optionally use a different LLM for memory than the agent:
+   ```sh
+   # LLM Gateway model override
+   AGENT_MEMORY_LLM_MODEL_NAME=anthropic/claude-opus-4-20250514
+
+   # or deployed LLM override (takes precedence over model name)
+   AGENT_MEMORY_LLM_DEPLOYMENT_ID=your-deployment-id
    ```
 
 2. **Start the agent:**

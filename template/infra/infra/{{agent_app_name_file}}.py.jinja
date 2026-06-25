@@ -63,6 +63,39 @@ def _deployment_llm_base_url(deployment_id: str) -> str:
     )
 
 
+def _normalize_optional_env(value: str | None) -> str | None:
+    """Return stripped env value, or None when unset or blank."""
+    if value is None:
+        return None
+    stripped = value.strip()
+    return stripped or None
+
+
+def _gateway_model_name(model: str) -> str:
+    return model.removeprefix("datarobot/")
+
+
+def _resolve_memory_space_llm_routing(
+    *,
+    agent_default_model: str,
+    agent_deployment_id: str | None = None,
+    override_model_name: str | None = None,
+    override_deployment_id: str | None = None,
+) -> tuple[str | None, str | None]:
+    """Return ``(llm_model_name, llm_base_url)`` for memory space configuration.
+
+    Exactly one of the returned values is non-None. Deployment override wins over
+    model-name override, which wins over the agent LLM component defaults.
+    """
+    if override_deployment_id:
+        return None, _deployment_llm_base_url(override_deployment_id)
+    if override_model_name:
+        return _gateway_model_name(override_model_name), None
+    if agent_deployment_id:
+        return None, _deployment_llm_base_url(agent_deployment_id)
+    return _gateway_model_name(agent_default_model), None
+
+
 def _configure_memory_space_llm(
     space_id: str,
     *,
@@ -620,13 +653,40 @@ if mem0_api_key := os.environ.get(MEM0_API_KEY):
 
 {%- if use_agent_memory == 'datarobot_memory_service' %}
 # Create the memory space
+AGENT_MEMORY_LLM_MODEL_NAME: Final[str] = "AGENT_MEMORY_LLM_MODEL_NAME"
+AGENT_MEMORY_LLM_DEPLOYMENT_ID: Final[str] = "AGENT_MEMORY_LLM_DEPLOYMENT_ID"
 {{agent_app_name}}_memory_space = pulumi_datarobot.MemorySpace({{agent_app_name}}_asset_name + " Memory Space")
-{{agent_app_name}}_memory_llm_model_name = default_model.removeprefix("datarobot/")
-_llm_deployment_id = _llm_component_config_value("{{ _external_data.llm.llm_app_name|upper }}_DEPLOYMENT_ID")
-if _llm_deployment_id:
+_memory_llm_model_override = _normalize_optional_env(
+    os.environ.get(AGENT_MEMORY_LLM_MODEL_NAME)
+)
+_memory_llm_deployment_override = _normalize_optional_env(
+    os.environ.get(AGENT_MEMORY_LLM_DEPLOYMENT_ID)
+)
+_agent_llm_deployment_id = _llm_component_config_value("{{ _external_data.llm.llm_app_name|upper }}_DEPLOYMENT_ID")
+if _memory_llm_deployment_override or _memory_llm_model_override:
+    _memory_llm_model_name, _memory_llm_base_url = _resolve_memory_space_llm_routing(
+        agent_default_model=default_model,
+        override_model_name=_memory_llm_model_override,
+        override_deployment_id=_memory_llm_deployment_override,
+    )
+    if _memory_llm_base_url:
+        {{agent_app_name}}_memory_space_ready = {{agent_app_name}}_memory_space.id.apply(
+            lambda space_id: _configure_memory_space_llm(
+                space_id,
+                llm_base_url=_memory_llm_base_url,
+            )
+        )
+    else:
+        {{agent_app_name}}_memory_space_ready = {{agent_app_name}}_memory_space.id.apply(
+            lambda space_id: _configure_memory_space_llm(
+                space_id,
+                llm_model_name=_memory_llm_model_name,
+            )
+        )
+elif _agent_llm_deployment_id:
     {{agent_app_name}}_memory_space_ready = pulumi.Output.all(
         {{agent_app_name}}_memory_space.id,
-        _llm_deployment_id,
+        _agent_llm_deployment_id,
     ).apply(
         lambda args: _configure_memory_space_llm(
             args[0],
@@ -634,10 +694,13 @@ if _llm_deployment_id:
         )
     )
 else:
+    _memory_llm_model_name, _ = _resolve_memory_space_llm_routing(
+        agent_default_model=default_model,
+    )
     {{agent_app_name}}_memory_space_ready = {{agent_app_name}}_memory_space.id.apply(
         lambda space_id: _configure_memory_space_llm(
             space_id,
-            llm_model_name={{agent_app_name}}_memory_llm_model_name,
+            llm_model_name=_memory_llm_model_name,
         )
     )
 agent_runtime_parameter_values.append(

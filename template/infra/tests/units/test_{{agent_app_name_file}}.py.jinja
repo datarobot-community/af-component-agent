@@ -1046,6 +1046,77 @@ class TestMemorySpaceLlmRouting:
             == "https://app.datarobot.com/api/v2/deployments/deployment-123/chat/completions"
         )
 
+    def test_resolve_memory_space_llm_routing_defaults_to_gateway(self, monkeypatch):
+        import infra.{{agent_app_name}} as agent_infra
+
+        model_name, base_url = agent_infra._resolve_memory_space_llm_routing(
+            agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
+        )
+
+        assert model_name == "azure/gpt-5-mini-2025-08-07"
+        assert base_url is None
+
+    def test_resolve_memory_space_llm_routing_uses_agent_deployment(self, monkeypatch):
+        import infra.{{agent_app_name}} as agent_infra
+
+        monkeypatch.setattr(
+            "datarobot_pulumi_utils.common.get_datarobot_url",
+            lambda: "https://app.datarobot.com/api/v2",
+        )
+
+        model_name, base_url = agent_infra._resolve_memory_space_llm_routing(
+            agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
+            agent_deployment_id="deployment-123",
+        )
+
+        assert model_name is None
+        assert (
+            base_url
+            == "https://app.datarobot.com/api/v2/deployments/deployment-123/chat/completions"
+        )
+
+    def test_resolve_memory_space_llm_routing_override_model_name(self, monkeypatch):
+        import infra.{{agent_app_name}} as agent_infra
+
+        model_name, base_url = agent_infra._resolve_memory_space_llm_routing(
+            agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
+            agent_deployment_id="deployment-123",
+            override_model_name="datarobot/anthropic/claude-opus-4-20250514",
+        )
+
+        assert model_name == "anthropic/claude-opus-4-20250514"
+        assert base_url is None
+
+    def test_resolve_memory_space_llm_routing_override_deployment_id(self, monkeypatch):
+        import infra.{{agent_app_name}} as agent_infra
+
+        monkeypatch.setattr(
+            "datarobot_pulumi_utils.common.get_datarobot_url",
+            lambda: "https://app.datarobot.com/api/v2",
+        )
+
+        model_name, base_url = agent_infra._resolve_memory_space_llm_routing(
+            agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
+            override_model_name="anthropic/claude-opus-4-20250514",
+            override_deployment_id="memory-deployment-456",
+        )
+
+        assert model_name is None
+        assert (
+            base_url
+            == "https://app.datarobot.com/api/v2/deployments/memory-deployment-456/chat/completions"
+        )
+
+    def test_normalize_optional_env_treats_blank_as_unset(self):
+        import infra.{{agent_app_name}} as agent_infra
+
+        assert agent_infra._normalize_optional_env(None) is None
+        assert agent_infra._normalize_optional_env("") is None
+        assert agent_infra._normalize_optional_env("   ") is None
+        assert (
+            agent_infra._normalize_optional_env(" deployment-123 ") == "deployment-123"
+        )
+
 
 {% endif -%}
 class TestEnableAgentHAMode:
