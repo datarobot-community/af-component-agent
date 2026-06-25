@@ -30,7 +30,7 @@ When you generate or update a project with Copier, you are prompted to choose an
 |---|---|---|
 | **None** | `none` | Default. No memory dependency or workflow changes. |
 | **Mem0** | `mem0` | External [Mem0](https://mem0.ai/) service. Requires a Mem0 API key. |
-| **Datarobot Memory Service** | `datarobot_memory_service` | DataRobot-managed memory space provisioned by Pulumi. Uses the same LLM as the agent via LLM Gateway (enabled by default; see [LLM gateway requirement](#llm-gateway-requirement-datarobot-memory-service)). |
+| **Datarobot Memory Service** | `datarobot_memory_service` | DataRobot-managed memory space provisioned by Pulumi. Uses the same LLM as the agent (LLM Gateway or deployed LLM; see [LLM configuration](#llm-configuration-datarobot-memory-service)). |
 
 To pass the value non-interactively:
 
@@ -160,14 +160,14 @@ Both providers use the same `dr_mem0_memory` workflow type and `streaming_memory
 | **Backend** | Mem0 cloud API | DataRobot Memory Space (provisioned in your tenant) |
 | **Credential** | `MEM0_API_KEY` runtime parameter (API token credential) | None&mdash;uses the deployment's DataRobot API identity |
 | **Space ID** | Managed by Mem0 | `AGENT_MEMORY_SPACE_ID` runtime parameter (string) |
-| **LLM for extraction** | Managed by Mem0 | Same model as the agent (see [LLM gateway requirement](#llm-gateway-requirement-datarobot-memory-service)) |
+| **LLM for extraction** | Managed by Mem0 | Same LLM as the agent (see [LLM configuration](#llm-configuration-datarobot-memory-service)) |
 | **Feature flag** | None | `ENABLE_AGENTIC_MEMORY_API: true` in deployment feature flags |
-| **Infra action** | Stores Mem0 API key from `MEM0_API_KEY` env at deploy time | Creates a `MemorySpace` Pulumi resource, configures its LLM model, and injects its ID |
+| **Infra action** | Stores Mem0 API key from `MEM0_API_KEY` env at deploy time | Creates a `MemorySpace` Pulumi resource, configures its LLM routing, and injects its ID |
 
-Choose **Mem0** when you already use Mem0 or want a third-party memory service. Choose **DataRobot Memory Service** to keep memory entirely within your DataRobot environment with no external API key.
+Choose **Mem0** when you already use Mem0 or want a third-party memory service. Choose **DataRobot Memory Service** to keep memory entirely within your DataRobot environment with no external API key. This provider supports both **LLM Gateway** and **deployed LLM** routing&mdash;the same options as the agent's [LLM component](../llm.md).
 
-> [!IMPORTANT]
-> **DataRobot Memory Service only supports LLM Gateway models.** The memory space uses the same LLM as your agent for extraction and retrieval. LLM Gateway is **enabled by default** through the [LLM component](../llm.md) (`USE_DATAROBOT_LLM_GATEWAY=1` from the default `gateway_direct` configuration). Agents that call a deployed LLM directly or use external provider credentials without the gateway cannot use this provider.
+> [!NOTE]
+> External provider credentials without a DataRobot LLM deployment (for example a blueprint wired to Azure OpenAI credentials) are not supported by the DataRobot Memory Service. Use **Mem0** for those setups.
 
 ---
 
@@ -197,25 +197,24 @@ The constant `AGENT_MEMORY_TTL_SECONDS` in `config.py` mirrors the default (`2_5
 
 #### LLM configuration (DataRobot Memory Service)
 
-The DataRobot Memory Service uses the **same LLM as your agent** for memory extraction and retrieval&mdash;the model configured on your LLM component (`LLM_DEFAULT_MODEL` / `llm_default_model`). During `task deploy-dev` (or a full deployment), infrastructure creates the memory space and configures its LLM settings so the service is ready before you run the agent locally with `task dev`.
+The DataRobot Memory Service uses the **same LLM as your agent** for memory extraction and retrieval&mdash;the model and routing configured on your LLM component (`LLM_DEFAULT_MODEL` / `llm_default_model`, LLM Gateway, or deployment). During `task deploy-dev` (or a full deployment), infrastructure creates the memory space and configures its LLM routing so the service is ready before you run the agent locally with `task dev`.
 
-| Agent LLM routing | Memory space configuration |
-|---|---|
-| **LLM Gateway** (default) | `llm_model_name` is set from your LLM component's `default_model` (with the `datarobot/` prefix stripped). |
-| **Deployed LLM** | `llm_base_url` is set to the deployment chat completions endpoint (`/api/v2/deployments/{id}/chat/completions`), and `llm_model_name` is aligned with the agent's `default_model`. |
+Each memory space uses **one** LLM routing mode. Pulumi sets either `llm_model_name` or `llm_base_url` on the space, never both:
 
-The agent template enables LLM Gateway by default via the LLM component's `gateway_direct` configuration. When the LLM component is configured with a deployment (for example `deployed_llm.py`), Pulumi configures the memory space to call that deployment endpoint directly.
+| Agent LLM routing | Memory space field | Value |
+|---|---|---|
+| **LLM Gateway** (default) | `llm_model_name` | Your LLM component's `default_model` with the `datarobot/` prefix stripped. |
+| **Deployed LLM** | `llm_base_url` | The deployment chat completions endpoint (`/api/v2/deployments/{id}/chat/completions`). |
+
+The template reads the same LLM component configuration as the agent (`default_model` and `custom_model_runtime_parameters`). When `LLM_DEPLOYMENT_ID` is present (for example `deployed_llm.py`), the memory space is configured with `llm_base_url` only. Otherwise the space is configured with `llm_model_name` for LLM Gateway.
 
 | Requirement | How to satisfy |
 |---|---|
-| LLM Gateway | Enabled by default. Keep the LLM component on `gateway_direct`, or ensure `USE_DATAROBOT_LLM_GATEWAY=1` (runtime parameter or `.env`) and `use_datarobot_llm_gateway: true` on your `datarobot-llm-component` / `datarobot-llm-router` if you customize routing. |
-| Deployed LLM | Choose a deployed-LLM configuration in the LLM component (for example `deployed_llm.py`). The memory space reads the same `LLM_DEPLOYMENT_ID` from the LLM component configuration as the agent. |
-| Model alignment | Use the same `LLM_DEFAULT_MODEL` for the agent and memory space. The template handles this automatically. |
-
-If you switch the LLM component to external provider credentials without a DataRobot deployment, use **Mem0** instead.
+| LLM Gateway | Enabled by default via the LLM component's `gateway_direct` configuration (`USE_DATAROBOT_LLM_GATEWAY=1`). |
+| Deployed LLM | Choose a deployed-LLM configuration in the LLM component (for example `deployed_llm.py`). The memory space reads the same `LLM_DEPLOYMENT_ID` as the agent. |
 
 > [!IMPORTANT]
-> For the DataRobot Memory Service provider, do not create the memory space manually unless you are overriding infrastructure defaults. Pulumi creates the space, configures its LLM settings from your LLM component, and wires the ID into the agent deployment.
+> For the DataRobot Memory Service provider, do not create the memory space manually unless you are overriding infrastructure defaults. Pulumi creates the space, configures its LLM routing from your LLM component, and wires the ID into the agent deployment.
 
 ---
 
@@ -227,7 +226,7 @@ When memory is enabled, `infra/infra/<agent_app_name>.py` adds runtime parameter
 
 2. **Provider-specific parameter:**
    - **Mem0**&mdash;`MEM0_API_KEY` credential, created when `MEM0_API_KEY` is set in the Pulumi environment.
-   - **DataRobot Memory Service**&mdash;`AGENT_MEMORY_SPACE_ID` string, populated from a `pulumi_datarobot.MemorySpace` resource. Pulumi also configures the memory space LLM settings to match the agent's LLM component: `llm_model_name` when using LLM Gateway, or `llm_base_url` (deployment chat completions endpoint) when using a deployed LLM. See [LLM configuration](#llm-configuration-datarobot-memory-service).
+   - **DataRobot Memory Service**&mdash;`AGENT_MEMORY_SPACE_ID` string, populated from a `pulumi_datarobot.MemorySpace` resource. Pulumi also configures the memory space LLM routing to match the agent's LLM component: `llm_model_name` for LLM Gateway, or `llm_base_url` for a deployed LLM (never both). See [LLM configuration](#llm-configuration-datarobot-memory-service).
 
 For the DataRobot Memory Service provider, the feature flag `ENABLE_AGENTIC_MEMORY_API` is set to `true` in `infra/feature_flags/<agent_app_name>.yaml` so the deployment can call the agentic memory API.
 
