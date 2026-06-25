@@ -124,6 +124,28 @@ def _configure_memory_space_llm(
     pulumi.info(f"Memory space configured: {space_id}")
     return space_id
 
+
+def _configure_memory_space_llm_routing(
+    space_id: str,
+    *,
+    agent_default_model: str,
+    agent_deployment_id: str | None = None,
+    override_model_name: str | None = None,
+    override_deployment_id: str | None = None,
+) -> str:
+    """Resolve memory-space LLM routing and apply it to the given space."""
+    llm_model_name, llm_base_url = _resolve_memory_space_llm_routing(
+        agent_default_model=agent_default_model,
+        agent_deployment_id=agent_deployment_id,
+        override_model_name=override_model_name,
+        override_deployment_id=override_deployment_id,
+    )
+    return _configure_memory_space_llm(
+        space_id,
+        llm_model_name=llm_model_name,
+        llm_base_url=llm_base_url,
+    )
+
 {%- endif %}
 
 
@@ -663,44 +685,32 @@ _memory_llm_deployment_override = _normalize_optional_env(
     os.environ.get(AGENT_MEMORY_LLM_DEPLOYMENT_ID)
 )
 _agent_llm_deployment_id = _llm_component_config_value("{{ _external_data.llm.llm_app_name|upper }}_DEPLOYMENT_ID")
-if _memory_llm_deployment_override or _memory_llm_model_override:
-    _memory_llm_model_name, _memory_llm_base_url = _resolve_memory_space_llm_routing(
-        agent_default_model=default_model,
-        override_model_name=_memory_llm_model_override,
-        override_deployment_id=_memory_llm_deployment_override,
-    )
-    if _memory_llm_base_url:
-        {{agent_app_name}}_memory_space_ready = {{agent_app_name}}_memory_space.id.apply(
-            lambda space_id: _configure_memory_space_llm(
-                space_id,
-                llm_base_url=_memory_llm_base_url,
-            )
-        )
-    else:
-        {{agent_app_name}}_memory_space_ready = {{agent_app_name}}_memory_space.id.apply(
-            lambda space_id: _configure_memory_space_llm(
-                space_id,
-                llm_model_name=_memory_llm_model_name,
-            )
-        )
-elif isinstance(_agent_llm_deployment_id, pulumi.Output) or _agent_llm_deployment_id:
+if isinstance(_agent_llm_deployment_id, pulumi.Output) and not (
+    _memory_llm_deployment_override or _memory_llm_model_override
+):
     {{agent_app_name}}_memory_space_ready = pulumi.Output.all(
         {{agent_app_name}}_memory_space.id,
         _agent_llm_deployment_id,
     ).apply(
-        lambda args: _configure_memory_space_llm(
+        lambda args: _configure_memory_space_llm_routing(
             args[0],
-            llm_base_url=_deployment_llm_base_url(args[1]),
+            agent_default_model=default_model,
+            agent_deployment_id=args[1],
+            override_model_name=_memory_llm_model_override,
+            override_deployment_id=_memory_llm_deployment_override,
         )
     )
 else:
-    _memory_llm_model_name, _ = _resolve_memory_space_llm_routing(
-        agent_default_model=default_model,
+    _sync_agent_deployment_id = (
+        _agent_llm_deployment_id if isinstance(_agent_llm_deployment_id, str) else None
     )
     {{agent_app_name}}_memory_space_ready = {{agent_app_name}}_memory_space.id.apply(
-        lambda space_id: _configure_memory_space_llm(
+        lambda space_id: _configure_memory_space_llm_routing(
             space_id,
-            llm_model_name=_memory_llm_model_name,
+            agent_default_model=default_model,
+            agent_deployment_id=_sync_agent_deployment_id,
+            override_model_name=_memory_llm_model_override,
+            override_deployment_id=_memory_llm_deployment_override,
         )
     )
 agent_runtime_parameter_values.append(
