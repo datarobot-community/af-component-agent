@@ -683,7 +683,7 @@ if _memory_llm_deployment_override or _memory_llm_model_override:
                 llm_model_name=_memory_llm_model_name,
             )
         )
-elif _agent_llm_deployment_id:
+elif isinstance(_agent_llm_deployment_id, pulumi.Output) or _agent_llm_deployment_id:
     {{agent_app_name}}_memory_space_ready = pulumi.Output.all(
         {{agent_app_name}}_memory_space.id,
         _agent_llm_deployment_id,
