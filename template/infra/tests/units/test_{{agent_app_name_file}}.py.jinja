@@ -114,30 +114,45 @@ def pulumi_mocks(monkeypatch, tmp_path):
         MagicMock(return_value=_default_ee_version),
     )
 
-    # Mock Output to behave like a Pulumi Output with .apply(), support subscript notation, and from_input
-    class MockOutput(MagicMock):
-        def __new__(cls, val=None, *args, **kwargs):
-            m = super().__new__(cls)
-            m.apply = MagicMock(side_effect=lambda fn: fn(val))
-            return m
+    # Mock Output to behave like a Pulumi Output with .apply(), from_input, and all.
+    _mock_output_format = MagicMock()
+
+    class MockOutput:
+        def __init__(self, val=None):
+            self._val = val
+
+        def apply(self, fn):
+            if isinstance(self._val, list):
+                return MockOutput(fn(self._val))
+            return MockOutput(fn(self._val))
+
+        @classmethod
+        def from_input(cls, val):
+            return cls(val or "")
+
+        @classmethod
+        def all(cls, *outputs):
+            combined = cls(None)
+
+            def lazy_apply(fn):
+                return cls("output-all-applied")
+
+            combined.apply = lazy_apply  # type: ignore[method-assign]
+            return combined
+
+        format = _mock_output_format
 
         @classmethod
         def __class_getitem__(cls, item):
             return cls
 
-    # Set from_input() and format() as class methods that can be tracked
-    MockOutput.from_input = MagicMock()
-    MockOutput.format = MagicMock()
     monkeypatch.setattr("pulumi.Output", MockOutput)
 
     # Mock ApiTokenCredential to return a mock with .id as a pulumi.Output
     # This prevents MagicMock objects from being serialized to YAML
     def create_api_token_credential(*args, **kwargs):
         credential = MagicMock()
-        # Create a mock that will be recognized as pulumi.Output by isinstance check
-        output_mock = MagicMock(spec=MockOutput)
-        output_mock.__class__ = MockOutput
-        credential.id = output_mock
+        credential.id = MockOutput("mock-credential-id")
         return credential
 
     monkeypatch.setattr(
@@ -1064,66 +1079,94 @@ class TestMemorySpaceLlmRouting:
             == "https://app.datarobot.com/api/v2/deployments/deployment-123/chat/completions"
         )
 
-    def test_resolve_memory_space_llm_routing_defaults_to_gateway(self, monkeypatch):
+    def test_configure_memory_space_llm_routing_defaults_to_gateway(self, monkeypatch):
         import infra.{{agent_app_name}} as agent_infra
 
-        model_name, base_url = agent_infra._resolve_memory_space_llm_routing(
+        captured: dict[str, str | None] = {}
+
+        def _capture(space_id: str, **kwargs: str | None) -> str:
+            captured.update(kwargs)
+            return space_id
+
+        monkeypatch.setattr(agent_infra, "_configure_memory_space_llm", _capture)
+        agent_infra._configure_memory_space_llm_routing(
+            "test-space-id",
             agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
         )
 
-        assert model_name == "azure/gpt-5-mini-2025-08-07"
-        assert base_url is None
+        assert captured == {"llm_model_name": "azure/gpt-5-mini-2025-08-07"}
 
-    def test_resolve_memory_space_llm_routing_uses_agent_deployment(self, monkeypatch):
+    def test_configure_memory_space_llm_routing_uses_agent_deployment(
+        self, monkeypatch
+    ):
         import infra.{{agent_app_name}} as agent_infra
 
+        captured: dict[str, str | None] = {}
+
+        def _capture(space_id: str, **kwargs: str | None) -> str:
+            captured.update(kwargs)
+            return space_id
+
+        monkeypatch.setattr(agent_infra, "_configure_memory_space_llm", _capture)
         monkeypatch.setattr(
             "datarobot_pulumi_utils.common.get_datarobot_url",
             lambda: "https://app.datarobot.com/api/v2",
         )
-
-        model_name, base_url = agent_infra._resolve_memory_space_llm_routing(
+        agent_infra._configure_memory_space_llm_routing(
+            "test-space-id",
             agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
             agent_deployment_id="deployment-123",
         )
 
-        assert model_name is None
-        assert (
-            base_url
-            == "https://app.datarobot.com/api/v2/deployments/deployment-123/chat/completions"
-        )
+        assert captured == {
+            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/deployment-123/chat/completions"
+        }
 
-    def test_resolve_memory_space_llm_routing_override_model_name(self, monkeypatch):
+    def test_configure_memory_space_llm_routing_override_model_name(self, monkeypatch):
         import infra.{{agent_app_name}} as agent_infra
 
-        model_name, base_url = agent_infra._resolve_memory_space_llm_routing(
+        captured: dict[str, str | None] = {}
+
+        def _capture(space_id: str, **kwargs: str | None) -> str:
+            captured.update(kwargs)
+            return space_id
+
+        monkeypatch.setattr(agent_infra, "_configure_memory_space_llm", _capture)
+        agent_infra._configure_memory_space_llm_routing(
+            "test-space-id",
             agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
             agent_deployment_id="deployment-123",
             override_model_name="datarobot/anthropic/claude-opus-4-20250514",
         )
 
-        assert model_name == "anthropic/claude-opus-4-20250514"
-        assert base_url is None
+        assert captured == {"llm_model_name": "anthropic/claude-opus-4-20250514"}
 
-    def test_resolve_memory_space_llm_routing_override_deployment_id(self, monkeypatch):
+    def test_configure_memory_space_llm_routing_override_deployment_id(
+        self, monkeypatch
+    ):
         import infra.{{agent_app_name}} as agent_infra
 
+        captured: dict[str, str | None] = {}
+
+        def _capture(space_id: str, **kwargs: str | None) -> str:
+            captured.update(kwargs)
+            return space_id
+
+        monkeypatch.setattr(agent_infra, "_configure_memory_space_llm", _capture)
         monkeypatch.setattr(
             "datarobot_pulumi_utils.common.get_datarobot_url",
             lambda: "https://app.datarobot.com/api/v2",
         )
-
-        model_name, base_url = agent_infra._resolve_memory_space_llm_routing(
+        agent_infra._configure_memory_space_llm_routing(
+            "test-space-id",
             agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
             override_model_name="anthropic/claude-opus-4-20250514",
             override_deployment_id="memory-deployment-456",
         )
 
-        assert model_name is None
-        assert (
-            base_url
-            == "https://app.datarobot.com/api/v2/deployments/memory-deployment-456/chat/completions"
-        )
+        assert captured == {
+            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/memory-deployment-456/chat/completions"
+        }
 
     def test_normalize_optional_env_treats_blank_as_unset(self):
         import infra.{{agent_app_name}} as agent_infra
