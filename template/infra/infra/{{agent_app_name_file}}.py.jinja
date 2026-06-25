@@ -667,7 +667,7 @@ if not isinstance(_agent_llm_deployment, pulumi.Output):
     _agent_llm_deployment = pulumi.Output.from_input(_agent_llm_deployment or "")
 
 
-def _apply_memory_space_llm_config(resolved: tuple[str, str]) -> str:
+def _apply_memory_space_llm_config(resolved: list[Any]) -> str:
     space_id, agent_deployment_id = resolved
     return _configure_memory_space_llm_routing(
         space_id,

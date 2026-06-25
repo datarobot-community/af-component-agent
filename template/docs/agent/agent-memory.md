@@ -30,7 +30,9 @@ When you generate or update a project with Copier, you are prompted to choose an
 |---|---|---|
 | **None** | `none` | Default. No memory dependency or workflow changes. |
 | **Mem0** | `mem0` | External [Mem0](https://mem0.ai/) service. Requires a Mem0 API key. |
-| **Datarobot Memory Service** | `datarobot_memory_service` | DataRobot-managed memory space provisioned by Pulumi with its own LLM routing (defaults to the agent LLM component; see [LLM configuration](#llm-configuration)). |
+| **Datarobot Memory Service** | `datarobot_memory_service` | DataRobot-managed memory space provisioned by Pulumi with its own LLM routing (defaults to the agent LLM component when it uses LLM Gateway or a deployed LLM; see [LLM configuration](#llm-configuration)). |
+
+When you choose **Datarobot Memory Service**, Copier also asks how your agent LLM component is configured (`agent_llm_integration`). If you use LLM Gateway (`gateway_direct.py`) or a deployed LLM (`deployed_llm.py` / `nim_deployed_llm.py`), the memory space reuses that LLM automatically. For other LLM integrations (external credentials, blueprint, registered model, and so on), Copier prompts for a dedicated memory-space LLM (LLM Gateway model or deployment ID). Those values are written to `.env` during `dr start` / `dr dotenv setup` via the agent CLI configuration.
 
 To pass the value non-interactively:
 
@@ -167,7 +169,7 @@ Both providers use the same `dr_mem0_memory` workflow type and `streaming_memory
 Choose **Mem0** when you already use Mem0 or want a third-party memory service. Choose **DataRobot Memory Service** to keep memory entirely within your DataRobot environment with no external API key. This provider supports both **LLM Gateway** and **deployed LLM** routing&mdash;the same options as the agent's [LLM component](../llm.md).
 
 > [!NOTE]
-> External provider credentials without a DataRobot LLM deployment (for example a blueprint wired to Azure OpenAI credentials) are not supported by the DataRobot Memory Service. Use **Mem0** for those setups.
+> External provider credentials without a DataRobot LLM deployment (for example a blueprint wired to Azure OpenAI credentials) are not supported by the DataRobot Memory Service as the default memory-space LLM. Use **Mem0** for those setups, or choose **Other** for `agent_llm_integration` at generation time and configure a dedicated gateway or deployed LLM for the memory space.
 
 ---
 

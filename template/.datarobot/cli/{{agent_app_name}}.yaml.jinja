@@ -10,6 +10,19 @@ root:
     help: |
       Enter your Mem0 API key for agent memory.
       Obtain one from https://app.mem0.ai/
+{% elif use_agent_memory == 'datarobot_memory_service' and agent_llm_integration == 'other' %}
+  - env: AGENT_MEMORY_LLM_ROUTING
+    type: string
+    help: >
+      The agent LLM integration is not compatible with the DataRobot Memory Service
+      memory space as-is. Choose a dedicated LLM for memory indexing.
+    options:
+      - name: "LLM Gateway"
+        value: "gateway"
+        requires: agent_memory_llm_gateway
+      - name: "Deployed LLM"
+        value: "deployed"
+        requires: agent_memory_llm_deployed
 {% endif %}
   - env: DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT
     type: string
@@ -26,3 +39,19 @@ root:
     default: "true"
     optional: true
     help: "Whether to use the `dragent` as frontserver for your agent"
+{% if use_agent_memory == 'datarobot_memory_service' and agent_llm_integration == 'other' %}
+
+agent_memory_llm_gateway:
+  - env: AGENT_MEMORY_LLM_MODEL_NAME
+    type: llmgw_catalog
+    optional: false
+    default: "{{ agent_memory_llm_model_name }}"
+    help: "Choose the LLM Gateway model for the DataRobot Memory Service memory space."
+
+agent_memory_llm_deployed:
+  - env: AGENT_MEMORY_LLM_DEPLOYMENT_ID
+    type: string
+    optional: false
+    default: "{{ agent_memory_llm_deployment_id }}"
+    help: "Enter the deployment ID for the memory space deployed LLM."
+{% endif %}
