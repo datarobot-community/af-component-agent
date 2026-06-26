@@ -190,7 +190,7 @@ tasks:
       - |
         (cd .. && DR_SKIP_PLUGIN_UPDATE_CHECK=true dr xp --plain-output) &
         DR_XP_PID=$!
-        trap "kill $DR_XP_PID 2>/dev/null || true" 0
+        trap "kill $DR_XP_PID 2>/dev/null || true" EXIT
         if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
           {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent serve --config_file workflow.yaml --reload true --port {% raw %}{{.AGENT_PORT}}{% endraw %}
         else
