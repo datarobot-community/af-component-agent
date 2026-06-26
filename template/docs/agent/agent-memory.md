@@ -30,7 +30,7 @@ When you generate or update a project with Copier, you are prompted to choose an
 |---|---|---|
 | **None** | `none` | Default. No memory dependency or workflow changes. |
 | **Mem0** | `mem0` | External [Mem0](https://mem0.ai/) service. Requires a Mem0 API key. |
-| **Datarobot Memory Service** | `datarobot_memory_service` | DataRobot-managed memory space provisioned by Pulumi with its own LLM routing (defaults to the agent LLM component when it uses LLM Gateway or a deployed LLM; see [Memory space LLM (DataRobot Memory Service)](#llm-configuration)). |
+| **Datarobot Memory Service** | `datarobot_memory_service` | DataRobot-managed memory space provisioned by Pulumi with its own LLM routing (defaults to the agent LLM component when it uses LLM Gateway or a deployed LLM; see [Memory space LLM (DataRobot Memory Service)](#memory-space-llm-datarobot-memory-service)). |
 
 When the agent LLM uses LLM Gateway or a deployed LLM, the memory space reuses that configuration automatically&mdash;no extra prompts. When the LLM component uses **External LLM** (`blueprint_with_external_llm.py`), `dr start` / `dr dotenv setup` asks for a dedicated memory-space LLM (gateway model or deployment ID). You can also set `AGENT_MEMORY_LLM_MODEL_NAME` or `AGENT_MEMORY_LLM_DEPLOYMENT_ID` in `.env` at any time to override memory-space routing.
 
@@ -162,7 +162,7 @@ Both providers use the same `dr_mem0_memory` workflow type and `streaming_memory
 | **Backend** | Mem0 cloud API | DataRobot Memory Space (provisioned in your tenant) |
 | **Credential** | `MEM0_API_KEY` runtime parameter (API token credential) | None&mdash;uses the deployment's DataRobot API identity |
 | **Space ID** | Managed by Mem0 | `AGENT_MEMORY_SPACE_ID` runtime parameter (string) |
-| **Backend LLM** | Managed by Mem0 | Memory space LLM&mdash;defaults to the agent LLM component, configurable independently (see [Memory space LLM (DataRobot Memory Service)](#llm-configuration)) |
+| **Backend LLM** | Managed by Mem0 | Memory space LLM&mdash;defaults to the agent LLM component, configurable independently (see [Memory space LLM (DataRobot Memory Service)](#memory-space-llm-datarobot-memory-service)) |
 | **Feature flag** | None | `ENABLE_AGENTIC_MEMORY_API: true` in deployment feature flags |
 | **Infra action** | Stores Mem0 API key from `MEM0_API_KEY` env at deploy time | Creates a `MemorySpace` Pulumi resource, configures its LLM routing, and injects its ID |
 
