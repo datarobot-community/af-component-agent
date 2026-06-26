@@ -19,6 +19,8 @@ vars:
       else
         echo "uv"
       fi
+  # Run the DataRobot experimentation plugin
+  XP_CMD: DR_SKIP_PLUGIN_UPDATE_CHECK=true dr xp --plain-output
   AGENT_PORT:
     sh: |
       if [ -n "${{ agent_app_name | upper }}_PORT" ]; then
@@ -188,7 +190,7 @@ tasks:
       - auth-check
     cmds:
       - |
-        (cd .. && DR_SKIP_PLUGIN_UPDATE_CHECK=true dr xp --plain-output) &
+        (cd .. && {{.XP_CMD}}) &
         DR_XP_PID=$!
         trap "kill $DR_XP_PID 2>/dev/null || true" EXIT
         if [ "${ENABLE_DRAGENT_SERVER:-false}" = "true" ]; then
