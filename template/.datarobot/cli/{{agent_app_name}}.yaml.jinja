@@ -31,6 +31,7 @@ root:
 # Shown only when the LLM component's External LLM option is selected (external_llm section).
 external_llm:
   - key: agent_memory_llm_routing
+    optional: true
     help: >
       Your agent LLM uses external provider credentials, which cannot back the DataRobot
       Memory Service memory space directly. Choose a dedicated LLM for memory indexing.
