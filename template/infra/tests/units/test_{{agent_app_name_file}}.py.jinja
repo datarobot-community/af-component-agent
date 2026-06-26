@@ -39,6 +39,9 @@ def pulumi_mocks(monkeypatch, tmp_path):
     # interface required for this module.
     mock_llm_module = MagicMock()
     mock_llm_module.custom_model_runtime_parameters = []
+{%- if use_agent_memory == 'datarobot_memory_service' %}
+    mock_llm_module.default_model = "datarobot/azure/gpt-5-mini-2025-08-07"
+{%- endif %}
     monkeypatch.setitem(sys.modules, "infra.{{ _external_data.llm.llm_app_name }}", mock_llm_module)
     # Mock out the MCP Server and just expose the runtime parameters as it is the only public
     # interface required for this module.
@@ -111,30 +114,45 @@ def pulumi_mocks(monkeypatch, tmp_path):
         MagicMock(return_value=_default_ee_version),
     )
 
-    # Mock Output to behave like a Pulumi Output with .apply(), support subscript notation, and from_input
-    class MockOutput(MagicMock):
-        def __new__(cls, val=None, *args, **kwargs):
-            m = super().__new__(cls)
-            m.apply = MagicMock(side_effect=lambda fn: fn(val))
-            return m
+    # Mock Output to behave like a Pulumi Output with .apply(), from_input, and all.
+    _mock_output_format = MagicMock()
+
+    class MockOutput:
+        def __init__(self, val=None):
+            self._val = val
+
+        def apply(self, fn):
+            if isinstance(self._val, list):
+                return MockOutput(fn(self._val))
+            return MockOutput(fn(self._val))
+
+        @classmethod
+        def from_input(cls, val):
+            return cls(val or "")
+
+        @classmethod
+        def all(cls, *outputs):
+            combined = cls(None)
+
+            def lazy_apply(fn):
+                return cls("output-all-applied")
+
+            combined.apply = lazy_apply  # type: ignore[method-assign]
+            return combined
+
+        format = _mock_output_format
 
         @classmethod
         def __class_getitem__(cls, item):
             return cls
 
-    # Set from_input() and format() as class methods that can be tracked
-    MockOutput.from_input = MagicMock()
-    MockOutput.format = MagicMock()
     monkeypatch.setattr("pulumi.Output", MockOutput)
 
     # Mock ApiTokenCredential to return a mock with .id as a pulumi.Output
     # This prevents MagicMock objects from being serialized to YAML
     def create_api_token_credential(*args, **kwargs):
         credential = MagicMock()
-        # Create a mock that will be recognized as pulumi.Output by isinstance check
-        output_mock = MagicMock(spec=MockOutput)
-        output_mock.__class__ = MockOutput
-        credential.id = output_mock
+        credential.id = MockOutput("mock-credential-id")
         return credential
 
     monkeypatch.setattr(
@@ -500,7 +518,7 @@ def test_custom_model_created(monkeypatch):
     )
     assert memory_space_param is not None
     assert memory_space_param.type == "string"
-    assert memory_space_param.value is not None
+    assert memory_space_param.value is agent_infra.{{agent_app_name}}_memory_space_ready
 {%- endif %}
 {% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
     memory_ttl_param = next(
@@ -603,6 +621,7 @@ def test_agentic_playground_and_blueprint_created(monkeypatch):
     agent_infra.pulumi_datarobot.Playground.reset_mock()
     agent_infra.pulumi_datarobot.LlmBlueprint.reset_mock()
     agent_infra.pulumi.export.reset_mock()
+    agent_infra.pulumi.Output.format.reset_mock()
     importlib.reload(agent_infra)
 
     # Check that Agentic Playground was created
@@ -631,9 +650,13 @@ def test_agentic_playground_and_blueprint_created(monkeypatch):
     assert "Agent Playground URL " + agent_infra.{{agent_app_name}}_asset_name in export_names  # fmt: skip
 
     # Check the format of the URL
-    agent_infra.pulumi.Output.format.assert_any_call(
+    from datarobot_pulumi_utils.common import get_datarobot_url
+
+    expected_web_url = get_datarobot_url().removesuffix("/api/v2")
+    agent_infra.pulumi.Output.format.assert_called_once()
+    assert agent_infra.pulumi.Output.format.call_args.args == (
         "{0}/usecases/{1}/agentic-playgrounds/{2}/comparison/chats",
-        "https://example.datarobot.com",
+        expected_web_url,
         "mock-use-case-id",
         agent_infra.{{agent_app_name}}_playground.id,
     )
@@ -866,6 +889,297 @@ class TestUpdateDeploymentPredictionsSettings:
         assert result == "test-deployment-id"
 
 
+{% if use_agent_memory == 'datarobot_memory_service' -%}
+class TestConfigureMemorySpaceLlm:
+    """Tests for the _configure_memory_space_llm workaround."""
+
+    def test_updates_llm_when_model_differs(self, monkeypatch):
+        import infra.{{agent_app_name}} as agent_infra
+
+        mock_space = MagicMock()
+        mock_space.llm_model_name = "old-model"
+        mock_space.llm_base_url = None
+        mock_get = MagicMock(return_value=mock_space)
+        monkeypatch.setattr("datarobot.MemorySpace.get", mock_get)
+
+        result = agent_infra._configure_memory_space_llm(
+            space_id="test-space-id",
+            llm_model_name="new-model",
+        )
+
+        mock_get.assert_called_once_with("test-space-id")
+        mock_space.update.assert_called_once_with(llm_model_name="new-model")
+        assert result == "test-space-id"
+
+    def test_skips_update_when_model_matches(self, monkeypatch):
+        import infra.{{agent_app_name}} as agent_infra
+
+        mock_space = MagicMock()
+        mock_space.llm_model_name = "same-model"
+        mock_space.llm_base_url = None
+        mock_get = MagicMock(return_value=mock_space)
+        monkeypatch.setattr("datarobot.MemorySpace.get", mock_get)
+
+        result = agent_infra._configure_memory_space_llm(
+            space_id="test-space-id",
+            llm_model_name="same-model",
+        )
+
+        mock_get.assert_called_once_with("test-space-id")
+        mock_space.update.assert_not_called()
+        assert result == "test-space-id"
+
+    def test_clears_llm_base_url_when_switching_to_gateway(self, monkeypatch):
+        import infra.{{agent_app_name}} as agent_infra
+
+        deployment_url = (
+            "https://app.datarobot.com/api/v2/deployments/abc123/chat/completions"
+        )
+        mock_space = MagicMock()
+        mock_space.llm_model_name = "same-model"
+        mock_space.llm_base_url = deployment_url
+        mock_get = MagicMock(return_value=mock_space)
+        monkeypatch.setattr("datarobot.MemorySpace.get", mock_get)
+
+        result = agent_infra._configure_memory_space_llm(
+            space_id="test-space-id",
+            llm_model_name="same-model",
+        )
+
+        mock_get.assert_called_once_with("test-space-id")
+        mock_space.update.assert_called_once_with(llm_base_url=None)
+        assert result == "test-space-id"
+
+    def test_updates_llm_base_url_for_deployed_llm(self, monkeypatch):
+        import infra.{{agent_app_name}} as agent_infra
+
+        mock_space = MagicMock()
+        mock_space.llm_model_name = None
+        mock_space.llm_base_url = None
+        mock_get = MagicMock(return_value=mock_space)
+        monkeypatch.setattr("datarobot.MemorySpace.get", mock_get)
+
+        deployment_url = (
+            "https://app.datarobot.com/api/v2/deployments/abc123/chat/completions"
+        )
+        result = agent_infra._configure_memory_space_llm(
+            space_id="test-space-id",
+            llm_base_url=deployment_url,
+        )
+
+        mock_get.assert_called_once_with("test-space-id")
+        mock_space.update.assert_called_once_with(llm_base_url=deployment_url)
+        assert result == "test-space-id"
+
+    def test_skips_update_when_llm_base_url_matches(self, monkeypatch):
+        import infra.{{agent_app_name}} as agent_infra
+
+        deployment_url = (
+            "https://app.datarobot.com/api/v2/deployments/abc123/chat/completions"
+        )
+        mock_space = MagicMock()
+        mock_space.llm_model_name = None
+        mock_space.llm_base_url = deployment_url
+        mock_get = MagicMock(return_value=mock_space)
+        monkeypatch.setattr("datarobot.MemorySpace.get", mock_get)
+
+        result = agent_infra._configure_memory_space_llm(
+            space_id="test-space-id",
+            llm_base_url=deployment_url,
+        )
+
+        mock_get.assert_called_once_with("test-space-id")
+        mock_space.update.assert_not_called()
+        assert result == "test-space-id"
+
+    def test_clears_llm_model_name_when_switching_to_deployment(self, monkeypatch):
+        import infra.{{agent_app_name}} as agent_infra
+
+        deployment_url = (
+            "https://app.datarobot.com/api/v2/deployments/abc123/chat/completions"
+        )
+        mock_space = MagicMock()
+        mock_space.llm_model_name = "old-gateway-model"
+        mock_space.llm_base_url = deployment_url
+        mock_get = MagicMock(return_value=mock_space)
+        monkeypatch.setattr("datarobot.MemorySpace.get", mock_get)
+
+        result = agent_infra._configure_memory_space_llm(
+            space_id="test-space-id",
+            llm_base_url=deployment_url,
+        )
+
+        mock_get.assert_called_once_with("test-space-id")
+        mock_space.update.assert_called_once_with(llm_model_name=None)
+        assert result == "test-space-id"
+
+
+class TestMemorySpaceLlmRouting:
+    """Tests for gateway vs deployed LLM memory space configuration."""
+
+    def test_llm_component_config_value_reads_llm_exports(self):
+        import infra.{{agent_app_name}} as agent_infra
+
+        RuntimeParam = namedtuple("RuntimeParam", ["key", "type", "value"])
+        agent_infra.llm_custom_model_runtime_parameters = [
+            RuntimeParam(
+                key="{{ _external_data.llm.llm_app_name|upper }}_DEPLOYMENT_ID",
+                type="string",
+                value="deployment-123",
+            )
+        ]
+
+        assert (
+            agent_infra._llm_component_config_value("{{ _external_data.llm.llm_app_name|upper }}_DEPLOYMENT_ID")
+            == "deployment-123"
+        )
+
+    def test_empty_deployment_id_routes_to_gateway(self):
+        import infra.{{agent_app_name}} as agent_infra
+
+        RuntimeParam = namedtuple("RuntimeParam", ["key", "type", "value"])
+        agent_infra.llm_custom_model_runtime_parameters = [
+            RuntimeParam(
+                key="{{ _external_data.llm.llm_app_name|upper }}_DEPLOYMENT_ID",
+                type="string",
+                value="",
+            )
+        ]
+
+        assert agent_infra._llm_component_config_value("{{ _external_data.llm.llm_app_name|upper }}_DEPLOYMENT_ID") is None
+
+    def test_deployment_id_output_detected_without_boolean_coercion(self):
+        import infra.{{agent_app_name}} as agent_infra
+
+        deployment_output = MagicMock()
+        deployment_output.__class__ = agent_infra.pulumi.Output
+        RuntimeParam = namedtuple("RuntimeParam", ["key", "type", "value"])
+        agent_infra.llm_custom_model_runtime_parameters = [
+            RuntimeParam(
+                key="{{ _external_data.llm.llm_app_name|upper }}_DEPLOYMENT_ID",
+                type="string",
+                value=deployment_output,
+            )
+        ]
+
+        value = agent_infra._llm_component_config_value("{{ _external_data.llm.llm_app_name|upper }}_DEPLOYMENT_ID")
+        assert value is deployment_output
+        assert isinstance(value, agent_infra.pulumi.Output) or value
+
+    def test_deployment_llm_base_url_uses_chat_completions_endpoint(self, monkeypatch):
+        import infra.{{agent_app_name}} as agent_infra
+
+        monkeypatch.setattr(
+            "datarobot_pulumi_utils.common.get_datarobot_url",
+            lambda: "https://app.datarobot.com/api/v2",
+        )
+
+        assert (
+            agent_infra._deployment_llm_base_url("deployment-123")
+            == "https://app.datarobot.com/api/v2/deployments/deployment-123/chat/completions"
+        )
+
+    def test_configure_memory_space_llm_routing_defaults_to_gateway(self, monkeypatch):
+        import infra.{{agent_app_name}} as agent_infra
+
+        captured: dict[str, str | None] = {}
+
+        def _capture(space_id: str, **kwargs: str | None) -> str:
+            captured.update(kwargs)
+            return space_id
+
+        monkeypatch.setattr(agent_infra, "_configure_memory_space_llm", _capture)
+        agent_infra._configure_memory_space_llm_routing(
+            "test-space-id",
+            agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
+        )
+
+        assert captured == {"llm_model_name": "azure/gpt-5-mini-2025-08-07"}
+
+    def test_configure_memory_space_llm_routing_uses_agent_deployment(
+        self, monkeypatch
+    ):
+        import infra.{{agent_app_name}} as agent_infra
+
+        captured: dict[str, str | None] = {}
+
+        def _capture(space_id: str, **kwargs: str | None) -> str:
+            captured.update(kwargs)
+            return space_id
+
+        monkeypatch.setattr(agent_infra, "_configure_memory_space_llm", _capture)
+        monkeypatch.setattr(
+            "datarobot_pulumi_utils.common.get_datarobot_url",
+            lambda: "https://app.datarobot.com/api/v2",
+        )
+        agent_infra._configure_memory_space_llm_routing(
+            "test-space-id",
+            agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
+            agent_deployment_id="deployment-123",
+        )
+
+        assert captured == {
+            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/deployment-123/chat/completions"
+        }
+
+    def test_configure_memory_space_llm_routing_override_model_name(self, monkeypatch):
+        import infra.{{agent_app_name}} as agent_infra
+
+        captured: dict[str, str | None] = {}
+
+        def _capture(space_id: str, **kwargs: str | None) -> str:
+            captured.update(kwargs)
+            return space_id
+
+        monkeypatch.setattr(agent_infra, "_configure_memory_space_llm", _capture)
+        agent_infra._configure_memory_space_llm_routing(
+            "test-space-id",
+            agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
+            agent_deployment_id="deployment-123",
+            override_model_name="datarobot/anthropic/claude-opus-4-20250514",
+        )
+
+        assert captured == {"llm_model_name": "anthropic/claude-opus-4-20250514"}
+
+    def test_configure_memory_space_llm_routing_override_deployment_id(
+        self, monkeypatch
+    ):
+        import infra.{{agent_app_name}} as agent_infra
+
+        captured: dict[str, str | None] = {}
+
+        def _capture(space_id: str, **kwargs: str | None) -> str:
+            captured.update(kwargs)
+            return space_id
+
+        monkeypatch.setattr(agent_infra, "_configure_memory_space_llm", _capture)
+        monkeypatch.setattr(
+            "datarobot_pulumi_utils.common.get_datarobot_url",
+            lambda: "https://app.datarobot.com/api/v2",
+        )
+        agent_infra._configure_memory_space_llm_routing(
+            "test-space-id",
+            agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
+            override_model_name="anthropic/claude-opus-4-20250514",
+            override_deployment_id="memory-deployment-456",
+        )
+
+        assert captured == {
+            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/memory-deployment-456/chat/completions"
+        }
+
+    def test_normalize_optional_env_treats_blank_as_unset(self):
+        import infra.{{agent_app_name}} as agent_infra
+
+        assert agent_infra._normalize_optional_env(None) is None
+        assert agent_infra._normalize_optional_env("") is None
+        assert agent_infra._normalize_optional_env("   ") is None
+        assert (
+            agent_infra._normalize_optional_env(" deployment-123 ") == "deployment-123"
+        )
+
+
+{% endif -%}
 class TestEnableAgentHAMode:
     def test_ha_mode_disabled_by_default(self, monkeypatch):
         """Test that HA mode is disabled by default."""

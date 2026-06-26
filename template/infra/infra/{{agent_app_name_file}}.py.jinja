@@ -35,8 +35,99 @@ from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 from . import project_dir, use_case
 
 from .{{ _external_data.llm.llm_app_name }} import custom_model_runtime_parameters as llm_custom_model_runtime_parameters
+{%- if use_agent_memory == 'datarobot_memory_service' %}
+from .{{ _external_data.llm.llm_app_name }} import default_model
+{%- endif %}
 
 DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
+
+{%- if use_agent_memory == 'datarobot_memory_service' %}
+
+
+def _llm_component_config_value(key: str) -> Any | None:
+    """Read a value from the LLM component's configuration export."""
+    for param in llm_custom_model_runtime_parameters:
+        param_key = param.key
+        if isinstance(param_key, str) and param_key == key:
+            value = param.value
+            if isinstance(value, str) and not value:
+                return None
+            return value
+    return None
+
+
+def _deployment_llm_base_url(deployment_id: str) -> str:
+    return (
+        f"{get_datarobot_url().rstrip('/')}/deployments/"
+        f"{deployment_id}/chat/completions"
+    )
+
+
+def _normalize_optional_env(value: str | None) -> str | None:
+    """Return stripped env value, or None when unset or blank."""
+    if value is None:
+        return None
+    stripped = value.strip()
+    return stripped or None
+
+
+def _gateway_model_name(model: str) -> str:
+    return model.removeprefix("datarobot/")
+
+
+def _configure_memory_space_llm(
+    space_id: str,
+    *,
+    llm_model_name: str | None = None,
+    llm_base_url: str | None = None,
+) -> str:
+    """Configure the memory space LLM settings via the DataRobot SDK.
+
+    Set ``llm_model_name`` for LLM Gateway routing or ``llm_base_url`` for a
+    deployed LLM endpoint&mdash;not both.
+    """
+    space = dr.MemorySpace.get(space_id)
+    update_kwargs: dict[str, str | None] = {}
+    if llm_model_name is not None:
+        if space.llm_model_name != llm_model_name:
+            update_kwargs["llm_model_name"] = llm_model_name
+        if space.llm_base_url is not None:
+            update_kwargs["llm_base_url"] = None
+    elif llm_base_url is not None:
+        if space.llm_base_url != llm_base_url:
+            update_kwargs["llm_base_url"] = llm_base_url
+        if space.llm_model_name is not None:
+            update_kwargs["llm_model_name"] = None
+    if update_kwargs:
+        space.update(**update_kwargs)
+    pulumi.info(f"Memory space configured: {space_id}")
+    return space_id
+
+
+def _configure_memory_space_llm_routing(
+    space_id: str,
+    *,
+    agent_default_model: str,
+    agent_deployment_id: str | None = None,
+    override_model_name: str | None = None,
+    override_deployment_id: str | None = None,
+) -> str:
+    """Configure memory-space LLM routing from env overrides or agent LLM defaults."""
+    deployment_id = override_deployment_id or (
+        None if override_model_name else agent_deployment_id
+    )
+    if deployment_id:
+        return _configure_memory_space_llm(
+            space_id,
+            llm_base_url=_deployment_llm_base_url(deployment_id),
+        )
+    return _configure_memory_space_llm(
+        space_id,
+        llm_model_name=_gateway_model_name(override_model_name or agent_default_model),
+    )
+
+{%- endif %}
+
 
 # Whether to use `dragent` as a frontserver for agent
 ENABLE_DRAGENT_SERVER = (
@@ -564,19 +655,44 @@ if mem0_api_key := os.environ.get(MEM0_API_KEY):
 
 {%- if use_agent_memory == 'datarobot_memory_service' %}
 # Create the memory space
+AGENT_MEMORY_LLM_MODEL_NAME: Final[str] = "AGENT_MEMORY_LLM_MODEL_NAME"
+AGENT_MEMORY_LLM_DEPLOYMENT_ID: Final[str] = "AGENT_MEMORY_LLM_DEPLOYMENT_ID"
 {{agent_app_name}}_memory_space = pulumi_datarobot.MemorySpace({{agent_app_name}}_asset_name + " Memory Space")
+_memory_llm_model = _normalize_optional_env(os.environ.get(AGENT_MEMORY_LLM_MODEL_NAME))
+_memory_llm_deployment = _normalize_optional_env(
+    os.environ.get(AGENT_MEMORY_LLM_DEPLOYMENT_ID)
+)
+_agent_llm_deployment = _llm_component_config_value("{{ _external_data.llm.llm_app_name|upper }}_DEPLOYMENT_ID")
+if not isinstance(_agent_llm_deployment, pulumi.Output):
+    _agent_llm_deployment = pulumi.Output.from_input(_agent_llm_deployment or "")
+
+
+def _apply_memory_space_llm_config(resolved: list[Any]) -> str:
+    space_id, agent_deployment_id = resolved
+    return _configure_memory_space_llm_routing(
+        space_id,
+        agent_default_model=default_model,
+        agent_deployment_id=agent_deployment_id or None,
+        override_model_name=_memory_llm_model,
+        override_deployment_id=_memory_llm_deployment,
+    )
+
+
+{{agent_app_name}}_memory_space_ready = pulumi.Output.all(
+    {{agent_app_name}}_memory_space.id,
+    _agent_llm_deployment,
+).apply(_apply_memory_space_llm_config)
 agent_runtime_parameter_values.append(
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
         key=AGENT_MEMORY_SPACE_ID,
         type="string",
-        value={{agent_app_name}}_memory_space.id,
+        value={{agent_app_name}}_memory_space_ready,
     )
 )
-{{agent_app_name}}_memory_space.id.apply(lambda id: pulumi.info(f"Memory space configured: {id}"))
-export(AGENT_MEMORY_SPACE_ID, {{agent_app_name}}_memory_space.id)
+export(AGENT_MEMORY_SPACE_ID, {{agent_app_name}}_memory_space_ready)
 pulumi.export(
     "Agent Memory Space ID " + {{agent_app_name}}_asset_name,
-    {{agent_app_name}}_memory_space.id,
+    {{agent_app_name}}_memory_space_ready,
 )
 {% endif %}
 
