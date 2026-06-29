@@ -27,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: [python3.11, python3.12, python3.13]
+        python: [python3.12, python3.13]
         framework:
           - name: base
             agent_name: agent_generic_base
@@ -76,7 +76,7 @@ jobs:
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: License Header Check
-        if: matrix.python == 'python3.11'
+        if: matrix.python == 'python3.12'
         uses: apache/skywalking-eyes/header@main
         with:
           config: .github/.licenserc.yaml
