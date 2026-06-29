@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from pathlib import Path
+import re
 
 AGENT_DOTENV_TEMPLATE = (
     Path(__file__).resolve().parent.parent
@@ -58,3 +59,38 @@ def test_copier_does_not_prompt_for_agent_llm_integration() -> None:
     assert "agent_memory_llm_routing:" not in content
     assert "agent_memory_llm_model_name:" not in content
     assert "agent_memory_llm_deployment_id:" not in content
+
+
+def _memory_llm_help_lines(content: str) -> list[str]:
+    """Extract non-empty help lines from the memory LLM dotenv prompts."""
+    memory_section = content.split("use_agent_memory == 'datarobot_memory_service'")[1]
+    lines: list[str] = []
+    in_help = False
+    for raw_line in memory_section.splitlines():
+        if re.match(r"\s*help:\s*\|", raw_line):
+            in_help = True
+            continue
+        if re.match(r'\s*help:\s*"', raw_line):
+            match = re.search(r'help:\s*"(.*)"', raw_line)
+            if match:
+                lines.append(match.group(1))
+            continue
+        if in_help:
+            if raw_line and not raw_line[0].isspace():
+                in_help = False
+                continue
+            stripped = raw_line.strip()
+            if stripped:
+                lines.append(stripped)
+    return lines
+
+
+def test_agent_memory_llm_help_fits_standard_terminal() -> None:
+    """Help text should wrap to fit an 80-column terminal window."""
+    content = AGENT_DOTENV_TEMPLATE.read_text(encoding="utf-8")
+    max_width = 78
+
+    for line in _memory_llm_help_lines(content):
+        assert len(line) <= max_width, (
+            f"Help line exceeds {max_width} columns ({len(line)}): {line!r}"
+        )
