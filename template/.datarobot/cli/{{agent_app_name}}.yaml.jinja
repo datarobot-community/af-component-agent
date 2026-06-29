@@ -31,6 +31,7 @@ root:
 # Shown only when the LLM component's External LLM option is selected (external_llm section).
 external_llm:
   - key: agent_memory_llm_routing
+    optional: true
     help: >
       Your agent LLM uses external provider credentials, which cannot back the DataRobot
       Memory Service memory space directly. Choose a dedicated LLM for memory indexing.
@@ -48,7 +49,6 @@ agent_memory_llm_gateway:
   - env: AGENT_MEMORY_LLM_MODEL_NAME
     type: llmgw_catalog
     optional: false
-    default: "azure/gpt-5-mini-2025-08-07"
     help: "Choose the LLM Gateway model for the DataRobot Memory Service memory space."
 
 agent_memory_llm_deployed:
