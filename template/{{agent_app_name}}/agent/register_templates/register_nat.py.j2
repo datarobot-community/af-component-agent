@@ -13,7 +13,10 @@
 # limitations under the License.
 from typing import Annotated
 
+from datarobot_genai.core.telemetry.agent import instrument
 from datarobot_genai.nat.tool import nat_tool
+
+instrument(framework="nat")
 
 
 def word_counter(
