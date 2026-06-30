@@ -20,7 +20,9 @@ root:
     type: string
     default: "6a3919cb62ca0dc60197d473"
     optional: true
-    help: "Enter the default execution environment version ID for the agent's custom model."
+    help: |
+      Enter the default execution environment version ID for the agent's
+      custom model.
   - env: ENABLE_DRAGENT_SERVER
     type: string
     default: "true"
@@ -32,11 +34,12 @@ root:
 external_llm:
   - key: agent_memory_llm_routing
     optional: true
-    help: >
-      Your agent LLM uses external provider credentials, which cannot back the DataRobot
-      Memory Service memory space directly. Choose a dedicated LLM for memory indexing.
-      You can also set AGENT_MEMORY_LLM_MODEL_NAME or AGENT_MEMORY_LLM_DEPLOYMENT_ID
-      in .env manually to override memory-space routing.
+    help: |
+      Your agent LLM uses external provider credentials, which cannot
+      back the DataRobot Memory Service memory space directly. Choose a
+      dedicated LLM for memory indexing.
+      You can also set AGENT_MEMORY_LLM_MODEL_NAME or
+      AGENT_MEMORY_LLM_DEPLOYMENT_ID in .env to override routing.
     options:
       - name: "LLM Gateway"
         value: "gateway"
@@ -49,11 +52,13 @@ agent_memory_llm_gateway:
   - env: AGENT_MEMORY_LLM_MODEL_NAME
     type: llmgw_catalog
     optional: false
-    help: "Choose the LLM Gateway model for the DataRobot Memory Service memory space."
+    help: |
+      Choose an LLM Gateway model for the DataRobot Memory Service
+      memory space.
 
 agent_memory_llm_deployed:
   - env: AGENT_MEMORY_LLM_DEPLOYMENT_ID
     type: string
     optional: false
-    help: "Enter the deployment ID for the memory space deployed LLM."
+    help: "Enter the deployment ID for the memory space LLM."
 {% endif %}
