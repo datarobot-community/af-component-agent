@@ -133,7 +133,11 @@ line_length = 120
 
 [tool.mypy]
 strict = true
-python_version = "3.11"
+# Intentionally no `python_version` pin: the CI matrix runs mypy under
+# 3.11/3.12/3.13 and, unset, mypy targets the running interpreter so each leg
+# type-checks against its own version. Pinning to 3.11 would make every leg
+# parse against 3.11 semantics, which rejects the PEP 695 `type` statement in
+# numpy 2.5.x's stubs (installed only on 3.12+).
 plugins = "pydantic.mypy"
 exclude = """(?x)(
     output/ # exclude files starting with "output"
@@ -168,12 +172,6 @@ warn_unused_ignores = true
 [[tool.mypy.overrides]]
 module = "datarobot.*"
 implicit_reexport = true
-follow_imports = "skip"
-
-[[tool.mypy.overrides]]
-# numpy's stubs use PEP 695 `type` alias syntax, which mypy rejects
-# when python_version is set below 3.12.
-module = "numpy.*"
 follow_imports = "skip"
 
 [tool.uv]
