@@ -107,7 +107,7 @@ source = { editable = "." }
 dependencies = [
     { name = "anyio", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-drum", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-    { name = "datarobot-genai", extra = ["auth", "dragent", "memory"], marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "datarobot-genai", extra = ["auth", "dragent"], marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-mlops", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-moderations", extra = ["all"], marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "langchain-litellm", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -143,7 +143,7 @@ dev = [
 requires-dist = [
     { name = "anyio", specifier = ">=4.11.0,<4.12.0" },
     { name = "datarobot-drum", specifier = "==1.17.17" },
-    { name = "datarobot-genai", extras = ["dragent", "auth", "memory"], specifier = "==0.20.0" },
+    { name = "datarobot-genai", extras = ["dragent", "auth", "memory"], specifier = "==0.21.1" },
     { name = "datarobot-mlops", specifier = "==11.1.28" },
     { name = "datarobot-moderations", extras = ["all"], specifier = "==11.2.33" },
     { name = "debugpy", marker = "extra == 'dev'", specifier = ">=1.8.20" },
@@ -1015,11 +1015,11 @@ wheels = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.20.0"
+version = "0.21.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/40/ae/6cbe1e0aa7166719c9425e5fc71d8c55acf015d17ac64399f315c4d43aad/datarobot_genai-0.20.0.tar.gz", hash = "sha256:95f9d851afc873e11819da4eb0750edc94afd9d9d95dec5b6a5486ca44bcd453", size = 460893, upload-time = "2026-06-30T11:13:36.673Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ee/39/329dc990d517cea27777cbff557808cc130fefdc388332eae45bf2ed34b8/datarobot_genai-0.21.1.tar.gz", hash = "sha256:67e48cc713a2d1dd63bbff96c4243a75658bd3a0a8580045abd3b28c1e7ad7c7", size = 461505, upload-time = "2026-06-30T20:37:36.06Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a7/2e/8ead19ec8a2cd153f79dee14d88b4ca21a029bb11ee3097bdd2781a21b93/datarobot_genai-0.20.0-py3-none-any.whl", hash = "sha256:0807857c7ba24727ccd8b363c1734522de258e2027bc7c64a0a87e3e77423c9b", size = 667284, upload-time = "2026-06-30T11:13:34.776Z" },
+    { url = "https://files.pythonhosted.org/packages/e0/23/832a827548ae36fd61c8ef6f168f0b9fe15273902449b2712e18fb01fa6e/datarobot_genai-0.21.1-py3-none-any.whl", hash = "sha256:43531625a28eb8c9e232bcd65103a924da3efdb8113371a1dbb34492a5ef29db", size = 668077, upload-time = "2026-06-30T20:37:34.052Z" },
 ]
 
 [package.optional-dependencies]
@@ -1039,6 +1039,7 @@ dragent = [
     { name = "datarobot-early-access", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-moderations", extra = ["all"], marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-predict", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "mem0ai", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "nvidia-nat", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "nvidia-nat-a2a", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "nvidia-nat-langchain", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1056,9 +1057,6 @@ dragent = [
     { name = "ragas", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "requests", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "starlette", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
-]
-memory = [
-    { name = "mem0ai", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
 
 [[package]]
