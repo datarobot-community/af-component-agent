@@ -69,3 +69,41 @@ jobs:
           fi
           echo "Resolved matrix: $MATRIX"
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+  e2e:
+    name: "E2E / ${{ matrix.framework }}"
+    needs: setup
+    # Skip on fork PRs so integration secrets are never reachable from
+    # attacker-controlled code. Same-repo branches, pushes to main, and
+    # workflow_dispatch still run normally.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+    runs-on: "ubuntu-latest"
+    environment: integration
+    container:
+      image: ghcr.io/astral-sh/uv:python3.11-bookworm
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: ${{ fromJSON(needs.setup.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: "actions/checkout@v6"
+      - name: Setup caching
+        uses: ./.github/actions/setup-caching
+        with:
+          python-version: python3.11
+          cache-key-suffix: e2e-${{ matrix.framework }}
+      - name: Run E2E
+        shell: bash
+        env:
+          UV_CACHE_DIR: /.uv_cache
+          RUN_E2E: "1"
+          E2E_AGENT_FRAMEWORKS: ${{ matrix.framework }}
+          RUN_AGENT_DEPLOYMENT_TESTS: ${{ github.event.inputs.run_deployment_tests || '1' }}
+          ENABLE_DRAGENT_SERVER: "true"
+          LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"
+          E2E_PULUMI_STACK: af-component-agent-e2e-${{ matrix.framework }}-${{ github.run_id }}-${{ github.run_attempt }}
+          DATAROBOT_ENDPOINT: ${{ github.event.inputs.datarobot_endpoint || secrets.DATAROBOT_ENDPOINT }}
+          DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
+        run: |
+          uv run --all-extras pytest --import-mode=importlib -vv -s ./tests/e2e/test_agent_e2e.py
