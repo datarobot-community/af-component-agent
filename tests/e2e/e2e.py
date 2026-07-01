@@ -91,6 +91,64 @@ def _execute_custom_model(
         fprint(f"Full response:\n{response_text}")
 
 
+def _verify_playground_traces(
+    *,
+    playground_id: str,
+    user_prompt: str,
+    datarobot_endpoint: str,
+    datarobot_api_token: str,
+    timeout_s: int = 60,
+    poll_s: int = 10,
+) -> None:
+    """Assert an agentic-playground run surfaces a trace in the playground trace view.
+
+    Drives the agent through the playground the way the UI does (LLM blueprint ->
+    ComparisonPrompt), then reads back via the same API the playground trace view
+    calls (``GET /api/v2/genai/playgrounds/{id}/trace/``). The direct custom-model
+    chat endpoint does NOT populate this view, so a comparison prompt is required.
+    """
+    import datarobot as dr
+    from datarobot.models.genai.comparison_chat import ComparisonChat
+    from datarobot.models.genai.comparison_prompt import ComparisonPrompt
+    from datarobot.models.genai.llm_blueprint import LLMBlueprint
+    from datarobot.models.genai.prompt_trace import PromptTrace
+
+    dr.Client(endpoint=datarobot_endpoint, token=datarobot_api_token)
+
+    fprint("Verifying agentic-playground traces")
+    fprint("===================================")
+    blueprints = LLMBlueprint.list(playground=playground_id)
+    if not blueprints:
+        pytest.fail(f"No LLM blueprint found in playground {playground_id}.")
+
+    chat = ComparisonChat.create(
+        name="e2e trace verification", playground=playground_id
+    )
+    # Runs the agent (codespace-backed) and blocks until the run completes.
+    ComparisonPrompt.create(
+        llm_blueprints=[blueprints[0].id],
+        text=user_prompt,
+        comparison_chat=chat.id,
+        wait_for_completion=True,
+    )
+
+    deadline = time.time() + timeout_s
+    total = 0
+    while True:
+        total = len(PromptTrace.list(playground=playground_id))
+        fprint(f"Playground traces: {total}")
+        if total:
+            fprint("Playground trace verification passed")
+            return
+        if time.time() >= deadline:
+            break
+        time.sleep(poll_s)
+    pytest.fail(
+        f"No traces in the agentic-playground trace view for playground {playground_id} "
+        f"after the comparison prompt completed (PromptTrace.list -> {total})."
+    )
+
+
 def _execute_deployment(
     *,
     user_prompt: str,
@@ -270,6 +328,25 @@ def run_agent_e2e(
             max_retries=3,
             delay_seconds=60,
             label="Custom model execution",
+        )
+
+        # Step 9b: Verify tracing via the agentic playground (codespace-backed runs) —
+        # the build creates the playground + LLM blueprint bound to the custom model.
+        playground_url = pulumi_stack_output_value(
+            infra_dir=infra_dir,
+            pulumi_stack=pulumi_stack,
+            pulumi_home=pulumi_home,
+            contains="Agent Playground URL",
+        )
+        playground_id = extract_id_from_url(
+            playground_url, marker="agentic-playgrounds"
+        )
+        fprint(f"Playground ID: {playground_id}")
+        _verify_playground_traces(
+            playground_id=playground_id,
+            user_prompt=user_prompt,
+            datarobot_endpoint=datarobot_endpoint,
+            datarobot_api_token=datarobot_api_token,
         )
 
         if run_deployment_tests:

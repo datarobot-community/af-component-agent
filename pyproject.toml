@@ -18,6 +18,7 @@ dev = [
     "openai>=1.0.0",
     "requests>=2.31.0",
     "datarobot-genai==0.16.17", # to use agent kernel from datarobot-genai
+    "datarobot>=3.10.0,<4.0.0", # playground trace verification (ComparisonPrompt/PromptTrace)
 ]
 
 [tool.uv]
