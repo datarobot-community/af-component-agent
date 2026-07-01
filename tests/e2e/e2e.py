@@ -70,12 +70,18 @@ def _verify_deployment_traces(
     """Assert the deployed agent's spans reached the deployment Tracing table.
 
     Queries the same endpoint the Console "Data exploration" view calls
-    (``GET /api/v2/otel/deployment/{id}/traces/``), so ``datarobot_endpoint`` must
-    include the ``/api/v2`` suffix. Traces export asynchronously, so poll until they
-    appear, then assert the traces actually carry spans rather than merely existing.
+    (``GET /api/v2/otel/deployment/{id}/traces/``), reusing the DataRobot SDK's REST
+    client so auth/endpoint match the playground check. Traces export asynchronously,
+    so poll until they appear, then assert the traces actually carry spans rather than
+    merely existing.
     """
-    url = f"{datarobot_endpoint.rstrip('/')}/otel/deployment/{deployment_id}/traces/"
-    headers = {"Authorization": f"Bearer {datarobot_api_token}"}
+    import datarobot as dr
+
+    # RESTClientObject is a requests.Session subclass: this gives us the SDK's
+    # Token auth, endpoint (incl. /api/v2), and retry, while raising the same
+    # ``requests`` exception types the poll loop below already handles.
+    client = dr.Client(endpoint=datarobot_endpoint, token=datarobot_api_token)
+    path = f"otel/deployment/{deployment_id}/traces/"
     # A freshly created deployment has no prior traces, so a wide lookback window can
     # only widen the async-export margin, never pull in traces from another run.
     start_time = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=2)).strftime(
@@ -89,9 +95,8 @@ def _verify_deployment_traces(
     while True:
         end_time = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         try:
-            resp = requests.get(
-                url,
-                headers=headers,
+            resp = client.get(
+                path,
                 params={
                     "startTime": start_time,
                     "endTime": end_time,
