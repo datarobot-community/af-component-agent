@@ -107,3 +107,42 @@ jobs:
           DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
         run: |
           uv run --all-extras pytest --import-mode=importlib -vv -s ./tests/e2e/test_agent_e2e.py
+      - name: Best-effort teardown of leftover Pulumi stack
+        if: always()
+        shell: bash
+        env:
+          DATAROBOT_ENDPOINT: ${{ github.event.inputs.datarobot_endpoint || secrets.DATAROBOT_ENDPOINT }}
+          DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
+        run: |
+          # The test's own `finally` normally tears everything down. This net
+          # only matters when cancel-in-progress kills the job mid-run; the
+          # Harness `cleanup_leftovers` pipeline remains the ultimate backstop.
+          set -x
+          stack="af-component-agent-e2e-${{ matrix.framework }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          rendered="./.rendered/agent_${{ matrix.framework }}"
+          infra="${rendered}/infra"
+          if [ ! -d "$infra" ]; then
+            echo "No rendered infra dir for ${stack}; nothing to clean."
+            exit 0
+          fi
+          export PULUMI_CONFIG_PASSPHRASE=123
+          export PULUMI_HOME="${rendered}/.pulumi_home"
+          # Re-materialize creds in case the test's finally already removed .env.
+          {
+            echo "DATAROBOT_ENDPOINT=${DATAROBOT_ENDPOINT}"
+            echo "DATAROBOT_API_TOKEN=${DATAROBOT_API_TOKEN}"
+            echo "PULUMI_STACK=${stack}"
+            echo "PULUMI_CONFIG_PASSPHRASE=123"
+            echo "PULUMI_HOME=${PULUMI_HOME}"
+          } > "${rendered}/.env"
+          (cd "$infra" && uv run pulumi cancel --yes --stack "$stack") || true
+          (cd "$rendered" && uvx --from go-task-bin task destroy -- --yes --skip-preview) || true
+          (cd "$infra" && uv run pulumi stack rm -f -y "$stack") || true
+      - name: Upload E2E logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-logs-${{ matrix.framework }}-${{ github.run_id }}
+          path: |
+            ./.rendered/agent_${{ matrix.framework }}/**/*.log
+          if-no-files-found: ignore
