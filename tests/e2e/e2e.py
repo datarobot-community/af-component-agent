@@ -190,19 +190,49 @@ def _verify_playground_traces(
     )
 
     deadline = time.time() + timeout_s
-    total = 0
+    traces: list = []
     while True:
-        total = len(PromptTrace.list(playground=playground_id))
-        fprint(f"Playground traces: {total}")
-        if total:
-            fprint("Playground trace verification passed")
-            return
-        if time.time() >= deadline:
+        traces = PromptTrace.list(playground=playground_id)
+        fprint(f"Playground traces: {len(traces)}")
+        if traces:
             break
+        if time.time() >= deadline:
+            pytest.fail(
+                f"No traces in the agentic-playground trace view for playground "
+                f"{playground_id} after the comparison prompt completed."
+            )
         time.sleep(poll_s)
-    pytest.fail(
-        f"No traces in the agentic-playground trace view for playground {playground_id} "
-        f"after the comparison prompt completed (PromptTrace.list -> {total})."
+
+    # A trace existing is necessary but not sufficient: assert the run behind it
+    # actually succeeded with real output, not an error/empty trace. Pick the
+    # trace for the prompt we submitted (fall back to the most recent).
+    trace = next(
+        (t for t in traces if getattr(t, "text", None) == user_prompt),
+        max(traces, key=lambda t: getattr(t, "timestamp", "") or ""),
+    )
+    status = getattr(trace, "execution_status", None)
+    result_text = getattr(trace, "result_text", None)
+    metadata = getattr(trace, "result_metadata", None)
+    if isinstance(metadata, dict):
+        error_message = metadata.get("error_message") or metadata.get("errorMessage")
+    else:
+        error_message = getattr(metadata, "error_message", None)
+
+    problems = []
+    if status != "COMPLETED":
+        problems.append(f"execution_status={status!r} (expected 'COMPLETED')")
+    if not (result_text and result_text.strip()):
+        problems.append("result_text is empty")
+    if error_message:
+        problems.append(f"error_message={error_message!r}")
+    if problems:
+        pytest.fail(
+            f"Agentic-playground trace for playground {playground_id} is present "
+            f"but unhealthy: {'; '.join(problems)}"
+        )
+    fprint(
+        "Playground trace verification passed "
+        f"(execution_status={status}, result_text_chars={len(result_text)})"
     )
 
 
