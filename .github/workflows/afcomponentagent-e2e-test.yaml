@@ -1,0 +1,204 @@
+---
+name: af-component-agent E2E
+on:
+  workflow_dispatch:
+    inputs:
+      frameworks:
+        description: "Comma-separated frameworks to run (empty = all: base,crewai,langgraph,llamaindex,nat)"
+        required: false
+        default: ""
+      run_deployment_tests:
+        description: "Run the deploy phase (1) or custom-model only (0)"
+        required: false
+        default: "1"
+        type: choice
+        options: ["1", "0"]
+      datarobot_endpoint:
+        description: "Override DataRobot endpoint (empty = use integration secret)"
+        required: false
+        default: ""
+  push:
+    branches: ["main"]
+    paths:
+      - "template/**"
+      - "fixtures/**"
+      - "tests/e2e/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/afcomponentagent-e2e-test.yaml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "template/**"
+      - "fixtures/**"
+      - "tests/e2e/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/afcomponentagent-e2e-test.yaml"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  # Cancel superseded runs on PRs only. On push-to-main and workflow_dispatch,
+  # let runs finish so a live deploy is never killed mid-run (which maximizes
+  # the chance of orphaned DataRobot resources).
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+permissions:
+  contents: read
+jobs:
+  setup:
+    name: "Resolve framework matrix"
+    runs-on: "ubuntu-latest"
+    outputs:
+      matrix: ${{ steps.resolve.outputs.matrix }}
+    steps:
+      - name: Resolve matrix
+        id: resolve
+        shell: bash
+        env:
+          FRAMEWORKS: ${{ github.event.inputs.frameworks }}
+        run: |
+          set -euo pipefail
+          ALL='["base","crewai","langgraph","llamaindex","nat"]'
+          if [ -z "${FRAMEWORKS:-}" ]; then
+            MATRIX="$ALL"
+          else
+            # Parse, trim, drop empties, then dedupe preserving first-seen
+            # order. Duplicate names would otherwise spawn matrix jobs sharing
+            # one E2E_PULUMI_STACK (run_id/run_attempt are constant per run),
+            # which race on the same stack.
+            MATRIX=$(printf '%s' "$FRAMEWORKS" \
+              | jq -Rc 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length>0))
+                        | reduce .[] as $f ([]; if any(.[]; . == $f) then . else . + [$f] end)')
+            # A non-empty input that trims to nothing (e.g. "," or "   ") yields
+            # []; reject it here with a clear error rather than letting the e2e
+            # matrix fail opaquely ("matrix must have at least one value").
+            if [ "$MATRIX" = "[]" ]; then
+              echo "::error::No frameworks parsed from input '$FRAMEWORKS'. Valid: $ALL"
+              exit 1
+            fi
+            INVALID=$(printf '%s' "$MATRIX" \
+              | jq -c --argjson all "$ALL" 'map(select(. as $f | $all | index($f) | not))')
+            if [ "$INVALID" != "[]" ]; then
+              echo "::error::Unknown framework(s): $INVALID. Valid: $ALL"
+              exit 1
+            fi
+          fi
+          echo "Resolved matrix: $MATRIX"
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
+  e2e:
+    name: "E2E / ${{ matrix.framework }}"
+    needs: setup
+    # Skip on fork PRs so integration secrets are never reachable from
+    # attacker-controlled code. Same-repo branches, pushes to main, and
+    # workflow_dispatch still run normally.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+    runs-on: "ubuntu-latest"
+    environment: integration
+    # Single source of truth for the stack name so the Run E2E step and the
+    # teardown net can never drift apart and orphan a stack.
+    env:
+      E2E_PULUMI_STACK: af-component-agent-e2e-${{ matrix.framework }}-${{ github.run_id }}-${{ github.run_attempt }}
+    container:
+      image: ghcr.io/astral-sh/uv:python3.11-bookworm
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: ${{ fromJSON(needs.setup.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: "actions/checkout@v6"
+      - name: Setup caching
+        uses: ./.github/actions/setup-caching
+        with:
+          python-version: python3.11
+          cache-key-suffix: e2e-${{ matrix.framework }}
+      # The uv base image ships uv + Python but not the Pulumi CLI (a native
+      # binary, not a uv/pip package). The self-rendering E2E drives Pulumi via
+      # `uv run pulumi`, which only resolves when the binary is on PATH. Pinned
+      # to a specific release and SHA-256-verified (stronger than the sibling
+      # infra-test's `curl … | sh`, since this job holds live DataRobot creds).
+      - name: Install pulumi
+        shell: bash
+        env:
+          PULUMI_VERSION: "3.249.0"
+          PULUMI_SHA256: "0c4acfac957f578e406a3ae9f7042c57f05c4ad9e4b1c83ba0fcf3395e2a0b74"
+        run: |
+          set -euo pipefail
+          workdir="$(mktemp -d)"
+          tarball="pulumi-v${PULUMI_VERSION}-linux-x64.tar.gz"
+          curl -fsSL -o "${workdir}/${tarball}" \
+            "https://github.com/pulumi/pulumi/releases/download/v${PULUMI_VERSION}/${tarball}"
+          echo "${PULUMI_SHA256}  ${workdir}/${tarball}" | sha256sum -c -
+          tar -xzf "${workdir}/${tarball}" -C "${workdir}"
+          echo "${workdir}/pulumi" >> "$GITHUB_PATH"
+      - name: Run E2E
+        shell: bash
+        env:
+          UV_CACHE_DIR: /.uv_cache
+          RUN_E2E: "1"
+          E2E_AGENT_FRAMEWORKS: ${{ matrix.framework }}
+          # Full build+deploy on workflow_dispatch (per input) and push-to-main;
+          # PRs run custom-model-only (deploy phase off) to cut per-PR cost/time.
+          RUN_AGENT_DEPLOYMENT_TESTS: ${{ github.event.inputs.run_deployment_tests || (github.event_name == 'pull_request' && '0' || '1') }}
+          ENABLE_DRAGENT_SERVER: "true"
+          LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"
+          DATAROBOT_ENDPOINT: ${{ github.event.inputs.datarobot_endpoint || secrets.DATAROBOT_ENDPOINT }}
+          DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
+        run: |
+          # Capture console output (nothing else writes log files) so the
+          # failure artifact carries real triage data. `shell: bash` runs with
+          # -o pipefail, so a pytest failure still fails the step despite tee.
+          uv run --all-extras pytest --import-mode=importlib -vv -s \
+            ./tests/e2e/test_agent_e2e.py 2>&1 | tee "e2e-${{ matrix.framework }}.log"
+      - name: Tear down E2E resources
+        if: always()
+        shell: bash
+        env:
+          DATAROBOT_ENDPOINT: ${{ github.event.inputs.datarobot_endpoint || secrets.DATAROBOT_ENDPOINT }}
+          DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
+        run: |
+          # Always destroy this run's DataRobot resources — on success, failure,
+          # or cancellation. The test's own `finally` also tears down on a normal
+          # exit; this net additionally covers the cancelled/killed case, and the
+          # Harness `cleanup_leftovers` pipeline is the final backstop.
+          stack="${E2E_PULUMI_STACK}"
+          rendered="./.rendered/agent_${{ matrix.framework }}"
+          infra="${rendered}/infra"
+          if [ ! -d "$infra" ]; then
+            echo "No rendered infra dir for ${stack}; nothing to clean."
+            exit 0
+          fi
+          export PULUMI_CONFIG_PASSPHRASE=123
+          export PULUMI_HOME="${rendered}/.pulumi_home"
+          mkdir -p "$PULUMI_HOME"
+          # Re-materialize creds in case the test's finally already removed .env.
+          {
+            echo "DATAROBOT_ENDPOINT=${DATAROBOT_ENDPOINT}"
+            echo "DATAROBOT_API_TOKEN=${DATAROBOT_API_TOKEN}"
+            echo "PULUMI_STACK=${stack}"
+            echo "PULUMI_CONFIG_PASSPHRASE=123"
+            echo "PULUMI_HOME=${PULUMI_HOME}"
+          } > "${rendered}/.env"
+          # Trace teardown commands only — kept below the cred-file write so the
+          # token and (unmasked) endpoint are never echoed into the step log.
+          set -x
+          # Point Pulumi at the same local (file) backend the test used. Without
+          # this, `pulumi` defaults to Pulumi Cloud and fails with
+          # "PULUMI_ACCESS_TOKEN must be set", making this net a silent no-op on
+          # cancellation — exactly the case it exists to cover. `task destroy`
+          # inherits the login via PULUMI_HOME.
+          (cd "$infra" && uv run pulumi login --local) || true
+          (cd "$infra" && uv run pulumi cancel --yes --stack "$stack") || true
+          (cd "$rendered" && uvx --from go-task-bin task destroy -- --yes --skip-preview) || true
+          (cd "$infra" && uv run pulumi stack rm -f -y "$stack") || true
+      - name: Upload E2E logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-logs-${{ matrix.framework }}-${{ github.run_id }}
+          path: |
+            e2e-${{ matrix.framework }}.log
+            ./.rendered/agent_${{ matrix.framework }}/**/*.log
+          # The tee'd console log is always written on failure, so a missing
+          # file here signals something went wrong with capture — warn, not ignore.
+          if-no-files-found: warn
