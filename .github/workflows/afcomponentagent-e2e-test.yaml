@@ -117,7 +117,6 @@ jobs:
           # The test's own `finally` normally tears everything down. This net
           # only matters when cancel-in-progress kills the job mid-run; the
           # Harness `cleanup_leftovers` pipeline remains the ultimate backstop.
-          set -x
           stack="af-component-agent-e2e-${{ matrix.framework }}-${{ github.run_id }}-${{ github.run_attempt }}"
           rendered="./.rendered/agent_${{ matrix.framework }}"
           infra="${rendered}/infra"
@@ -135,6 +134,9 @@ jobs:
             echo "PULUMI_CONFIG_PASSPHRASE=123"
             echo "PULUMI_HOME=${PULUMI_HOME}"
           } > "${rendered}/.env"
+          # Trace teardown commands only — kept below the cred-file write so the
+          # token and (unmasked) endpoint are never echoed into the step log.
+          set -x
           (cd "$infra" && uv run pulumi cancel --yes --stack "$stack") || true
           (cd "$rendered" && uvx --from go-task-bin task destroy -- --yes --skip-preview) || true
           (cd "$infra" && uv run pulumi stack rm -f -y "$stack") || true
