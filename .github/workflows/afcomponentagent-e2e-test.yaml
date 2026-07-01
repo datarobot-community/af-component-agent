@@ -1,0 +1,71 @@
+---
+name: af-component-agent E2E
+on:
+  workflow_dispatch:
+    inputs:
+      frameworks:
+        description: "Comma-separated frameworks to run (empty = all: base,crewai,langgraph,llamaindex,nat)"
+        required: false
+        default: ""
+      run_deployment_tests:
+        description: "Run the deploy phase (1) or custom-model only (0)"
+        required: false
+        default: "1"
+        type: choice
+        options: ["1", "0"]
+      datarobot_endpoint:
+        description: "Override DataRobot endpoint (empty = use integration secret)"
+        required: false
+        default: ""
+  push:
+    branches: ["main"]
+    paths:
+      - "template/**"
+      - "fixtures/**"
+      - "tests/e2e/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/afcomponentagent-e2e-test.yaml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "template/**"
+      - "fixtures/**"
+      - "tests/e2e/**"
+      - "pyproject.toml"
+      - "uv.lock"
+      - ".github/workflows/afcomponentagent-e2e-test.yaml"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  setup:
+    name: "Resolve framework matrix"
+    runs-on: "ubuntu-latest"
+    outputs:
+      matrix: ${{ steps.resolve.outputs.matrix }}
+    steps:
+      - name: Resolve matrix
+        id: resolve
+        shell: bash
+        env:
+          FRAMEWORKS: ${{ github.event.inputs.frameworks }}
+        run: |
+          set -euo pipefail
+          ALL='["base","crewai","langgraph","llamaindex","nat"]'
+          if [ -z "${FRAMEWORKS:-}" ]; then
+            MATRIX="$ALL"
+          else
+            MATRIX=$(printf '%s' "$FRAMEWORKS" \
+              | jq -Rc 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length>0))')
+            INVALID=$(printf '%s' "$MATRIX" \
+              | jq -c --argjson all "$ALL" 'map(select(. as $f | $all | index($f) | not))')
+            if [ "$INVALID" != "[]" ]; then
+              echo "::error::Unknown framework(s): $INVALID. Valid: $ALL"
+              exit 1
+            fi
+          fi
+          echo "Resolved matrix: $MATRIX"
+          echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
