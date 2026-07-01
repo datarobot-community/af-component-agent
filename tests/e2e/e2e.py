@@ -18,6 +18,7 @@ E2E for af-component-agent.
 
 from __future__ import annotations
 
+import datetime as dt
 import os
 import time
 import uuid
@@ -25,6 +26,7 @@ from pathlib import Path
 from typing import cast
 
 import pytest
+import requests
 from openai.types.chat import ChatCompletion
 
 from datarobot_genai.core.cli import AgentEnvironment
@@ -51,6 +53,110 @@ from ._process import (
 )
 
 RESPONSE_SNIPPET_CHARS = 50
+
+
+# HTTP status codes worth retrying on a single trace-poll iteration (transient infra).
+_RETRYABLE_TRACE_STATUS = frozenset({429, 502, 503, 504})
+
+
+def _verify_deployment_traces(
+    *,
+    deployment_id: str,
+    datarobot_endpoint: str,
+    datarobot_api_token: str,
+    timeout_s: int = 180,
+    poll_s: int = 15,
+) -> None:
+    """Assert the deployed agent's spans reached the deployment Tracing table.
+
+    Queries the same endpoint the Console "Data exploration" view calls
+    (``GET /api/v2/otel/deployment/{id}/traces/``), reusing the DataRobot SDK's REST
+    client so auth/endpoint match the playground check. Traces export asynchronously,
+    so poll until they appear, then assert the traces actually carry spans rather than
+    merely existing.
+    """
+    import datarobot as dr
+
+    # RESTClientObject is a requests.Session subclass: this gives us the SDK's
+    # Token auth, endpoint (incl. /api/v2), and retry, while raising the same
+    # ``requests`` exception types the poll loop below already handles.
+    client = dr.Client(endpoint=datarobot_endpoint, token=datarobot_api_token)
+    path = f"otel/deployment/{deployment_id}/traces/"
+    # A freshly created deployment has no prior traces, so a wide lookback window can
+    # only widen the async-export margin, never pull in traces from another run.
+    start_time = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=2)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+
+    fprint("Verifying deployment traces")
+    fprint("===========================")
+    deadline = time.time() + timeout_s
+    payload: dict = {}
+    while True:
+        end_time = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        try:
+            resp = client.get(
+                path,
+                params={
+                    "startTime": start_time,
+                    "endTime": end_time,
+                    "sortBy": "timestamp",
+                    "sortDirection": "desc",
+                },
+                timeout=30,
+            )
+            resp.raise_for_status()
+            payload = resp.json()
+        except requests.HTTPError as e:
+            status = getattr(e.response, "status_code", None)
+            if status not in _RETRYABLE_TRACE_STATUS:
+                body = e.response.text if e.response is not None else str(e)
+                pytest.fail(
+                    f"Deployment trace query failed for {deployment_id}: "
+                    f"HTTP {status}: {body}"
+                )
+            fprint(f"Deployment trace poll: transient HTTP {status}, retrying")
+            payload = {}
+        except requests.RequestException as e:
+            # Connection/timeout blips shouldn't abort the (retry-wrapped) deploy phase.
+            fprint(f"Deployment trace poll: transient request error, retrying: {e}")
+            payload = {}
+
+        total = payload.get("totalCount", 0)
+        fprint(f"Deployment traces totalCount={total}")
+        if total:
+            break
+        if time.time() >= deadline:
+            pytest.fail(
+                f"No traces in the deployment Tracing table for {deployment_id} after "
+                f"{timeout_s}s (GET /otel/deployment/{{id}}/traces/ -> totalCount={total})."
+            )
+        time.sleep(poll_s)
+
+    # A trace row existing isn't enough: assert the traces carry real spans and
+    # aren't wholly errored.
+    traces = payload.get("data", [])
+    total_spans = sum(int(t.get("spansCount") or 0) for t in traces)
+    error_spans = sum(int(t.get("errorSpansCount") or 0) for t in traces)
+
+    problems: list[str] = []
+    if not traces:
+        problems.append("totalCount>0 but no trace rows returned")
+    if total_spans <= 0:
+        problems.append(f"no spans in returned traces (spansCount sum={total_spans})")
+    if total_spans and error_spans >= total_spans:
+        problems.append(
+            f"every span errored (errorSpansCount={error_spans}/{total_spans})"
+        )
+    if problems:
+        pytest.fail(
+            f"Deployment traces for {deployment_id} present but unhealthy: "
+            f"{'; '.join(problems)}"
+        )
+    fprint(
+        f"Deployment trace verification passed (traces={len(traces)}, "
+        f"spans={total_spans}, error_spans={error_spans})"
+    )
 
 
 def _execute_custom_model(
@@ -91,6 +197,126 @@ def _execute_custom_model(
         fprint(f"Full response:\n{response_text}")
 
 
+def _prompt_trace_key(trace: object) -> tuple:
+    """Return a stable identity for a PromptTrace, used to spot newly created ones."""
+    return (
+        getattr(trace, "comparison_prompt_id", None),
+        getattr(trace, "chat_prompt_id", None),
+        getattr(trace, "timestamp", None),
+    )
+
+
+def _verify_playground_traces(
+    *,
+    playground_id: str,
+    user_prompt: str,
+    datarobot_endpoint: str,
+    datarobot_api_token: str,
+    timeout_s: int = 60,
+    poll_s: int = 10,
+) -> None:
+    """Assert an agentic-playground run surfaces a trace in the playground trace view.
+
+    Drives the agent through the playground the way the UI does (LLM blueprint ->
+    ComparisonPrompt), then reads back via the same API the playground trace view
+    calls (``GET /api/v2/genai/playgrounds/{id}/trace/``). The direct custom-model
+    chat endpoint does NOT populate this view, so a comparison prompt is required.
+    """
+    import datarobot as dr
+    from datarobot.models.genai.comparison_chat import ComparisonChat
+    from datarobot.models.genai.comparison_prompt import ComparisonPrompt
+    from datarobot.models.genai.llm_blueprint import LLMBlueprint
+    from datarobot.models.genai.prompt_trace import PromptTrace
+    from trafaret import DataError
+
+    dr.Client(endpoint=datarobot_endpoint, token=datarobot_api_token)
+
+    fprint("Verifying agentic-playground traces")
+    fprint("===================================")
+    blueprints = LLMBlueprint.list(playground=playground_id)
+    if len(blueprints) != 1:
+        pytest.fail(
+            f"Expected exactly one LLM blueprint in playground {playground_id}, "
+            f"found {len(blueprints)}."
+        )
+
+    # Snapshot existing traces so we can pick out the one our prompt creates, rather
+    # than matching on prompt text (which isn't unique if the playground is reused).
+    before = {_prompt_trace_key(t) for t in PromptTrace.list(playground=playground_id)}
+
+    chat = ComparisonChat.create(
+        name="e2e trace verification", playground=playground_id
+    )
+    try:
+        # Runs the agent (codespace-backed) and blocks until the run completes.
+        # ``create`` finishes by parsing the completed prompt through a strict SDK
+        # schema; for some frameworks a *healthy* response omits fields the schema
+        # requires, raising ``trafaret.DataError`` after the run already executed.
+        # The trace still lands, so treat that parse failure as non-fatal and verify
+        # via the trace view below.
+        try:
+            ComparisonPrompt.create(
+                llm_blueprints=[blueprints[0].id],
+                text=user_prompt,
+                comparison_chat=chat.id,
+                wait_for_completion=True,
+            )
+        except DataError as e:
+            fprint(
+                "ComparisonPrompt response failed strict SDK parsing "
+                f"(run still executed, verifying via trace view): {e}"
+            )
+
+        deadline = time.time() + timeout_s
+        new_traces: list = []
+        while True:
+            new_traces = [
+                t
+                for t in PromptTrace.list(playground=playground_id)
+                if _prompt_trace_key(t) not in before
+            ]
+            fprint(f"New playground traces: {len(new_traces)}")
+            if new_traces:
+                break
+            if time.time() >= deadline:
+                pytest.fail(
+                    f"No new trace in the agentic-playground trace view for playground "
+                    f"{playground_id} after the comparison prompt completed."
+                )
+            time.sleep(poll_s)
+
+        # A trace existing is necessary but not sufficient: assert the run behind it
+        # actually succeeded with real output, not an error/empty trace.
+        trace = max(new_traces, key=lambda t: getattr(t, "timestamp", "") or "")
+        status = getattr(trace, "execution_status", None)
+        result_text = getattr(trace, "result_text", None)
+        # PromptTrace stores result_metadata as a snake_cased dict (or None).
+        metadata = getattr(trace, "result_metadata", None) or {}
+        error_message = metadata.get("error_message")
+
+        problems: list[str] = []
+        if status != "COMPLETED":
+            problems.append(f"execution_status={status!r} (expected 'COMPLETED')")
+        if not (result_text and result_text.strip()):
+            problems.append("result_text is empty")
+        if error_message:
+            problems.append(f"error_message={error_message!r}")
+        if problems:
+            pytest.fail(
+                f"Agentic-playground trace for playground {playground_id} is present "
+                f"but unhealthy: {'; '.join(problems)}"
+            )
+        fprint(
+            "Playground trace verification passed "
+            f"(execution_status={status}, result_text_chars={len(result_text)})"
+        )
+    finally:
+        try:
+            chat.delete()
+        except Exception as e:
+            fprint(f"Best-effort ComparisonChat cleanup failed (ignored): {e}")
+
+
 def _execute_deployment(
     *,
     user_prompt: str,
@@ -110,6 +336,12 @@ def _execute_deployment(
     )
 
     verify_openai_response(completion)
+
+    _verify_deployment_traces(
+        deployment_id=deployment_id,
+        datarobot_endpoint=datarobot_endpoint,
+        datarobot_api_token=datarobot_api_token,
+    )
 
 
 def _cleanup_e2e(
@@ -270,6 +502,30 @@ def run_agent_e2e(
             max_retries=3,
             delay_seconds=60,
             label="Custom model execution",
+        )
+
+        # Step 9b: Verify tracing via the agentic playground (codespace-backed runs) —
+        # the build creates the playground + LLM blueprint bound to the custom model.
+        playground_url = pulumi_stack_output_value(
+            infra_dir=infra_dir,
+            pulumi_stack=pulumi_stack,
+            pulumi_home=pulumi_home,
+            contains="Agent Playground URL",
+        )
+        playground_id = extract_id_from_url(
+            playground_url, marker="agentic-playgrounds"
+        )
+        fprint(f"Playground ID: {playground_id}")
+        retry(
+            lambda: _verify_playground_traces(
+                playground_id=playground_id,
+                user_prompt=user_prompt,
+                datarobot_endpoint=datarobot_endpoint,
+                datarobot_api_token=datarobot_api_token,
+            ),
+            max_retries=3,
+            delay_seconds=60,
+            label="Playground trace verification",
         )
 
         if run_deployment_tests:
