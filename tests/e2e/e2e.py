@@ -53,6 +53,63 @@ from ._process import (
 RESPONSE_SNIPPET_CHARS = 50
 
 
+def _verify_deployment_traces(
+    *,
+    deployment_id: str,
+    datarobot_endpoint: str,
+    datarobot_api_token: str,
+    timeout_s: int = 180,
+    poll_s: int = 15,
+) -> None:
+    """Assert the deployed agent's spans reached the deployment Tracing table.
+
+    Queries the same endpoint the Console "Data exploration" view calls
+    (``GET /api/v2/otel/deployment/{id}/traces/``). Traces export asynchronously,
+    so poll until they appear.
+    """
+    import datetime as _dt
+
+    import requests
+
+    url = f"{datarobot_endpoint.rstrip('/')}/otel/deployment/{deployment_id}/traces/"
+    headers = {"Authorization": f"Bearer {datarobot_api_token}"}
+    # Wide window: a fresh deployment has no prior traces, so width can't false-positive.
+    start_time = (_dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(hours=2)).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+
+    fprint("Verifying deployment traces")
+    fprint("===========================")
+    deadline = time.time() + timeout_s
+    total = 0
+    while True:
+        end_time = _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        resp = requests.get(
+            url,
+            headers=headers,
+            params={
+                "startTime": start_time,
+                "endTime": end_time,
+                "sortBy": "timestamp",
+                "sortDirection": "desc",
+            },
+            timeout=30,
+        )
+        resp.raise_for_status()
+        total = resp.json().get("totalCount", 0)
+        fprint(f"Deployment traces totalCount={total}")
+        if total:
+            fprint("Deployment trace verification passed")
+            return
+        if time.time() >= deadline:
+            break
+        time.sleep(poll_s)
+    pytest.fail(
+        f"No traces in the deployment Tracing table for {deployment_id} after "
+        f"{timeout_s}s (GET /otel/deployment/{{id}}/traces/ -> totalCount={total})."
+    )
+
+
 def _execute_custom_model(
     *,
     agent_framework: str,
@@ -110,6 +167,12 @@ def _execute_deployment(
     )
 
     verify_openai_response(completion)
+
+    _verify_deployment_traces(
+        deployment_id=deployment_id,
+        datarobot_endpoint=datarobot_endpoint,
+        datarobot_api_token=datarobot_api_token,
+    )
 
 
 def _cleanup_e2e(
