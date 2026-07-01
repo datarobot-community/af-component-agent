@@ -58,8 +58,20 @@ jobs:
           if [ -z "${FRAMEWORKS:-}" ]; then
             MATRIX="$ALL"
           else
+            # Parse, trim, drop empties, then dedupe preserving first-seen
+            # order. Duplicate names would otherwise spawn matrix jobs sharing
+            # one E2E_PULUMI_STACK (run_id/run_attempt are constant per run),
+            # which race on the same stack.
             MATRIX=$(printf '%s' "$FRAMEWORKS" \
-              | jq -Rc 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length>0))')
+              | jq -Rc 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length>0))
+                        | reduce .[] as $f ([]; if any(.[]; . == $f) then . else . + [$f] end)')
+            # A non-empty input that trims to nothing (e.g. "," or "   ") yields
+            # []; reject it here with a clear error rather than letting the e2e
+            # matrix fail opaquely ("matrix must have at least one value").
+            if [ "$MATRIX" = "[]" ]; then
+              echo "::error::No frameworks parsed from input '$FRAMEWORKS'. Valid: $ALL"
+              exit 1
+            fi
             INVALID=$(printf '%s' "$MATRIX" \
               | jq -c --argjson all "$ALL" 'map(select(. as $f | $all | index($f) | not))')
             if [ "$INVALID" != "[]" ]; then
