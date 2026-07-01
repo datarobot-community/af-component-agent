@@ -23,7 +23,7 @@ jobs:
     runs-on: "ubuntu-latest"
     environment: integration
     container:
-      image: ghcr.io/astral-sh/uv:python3.11-bookworm
+      image: ghcr.io/astral-sh/uv:python3.12-bookworm
     strategy:
       fail-fast: false
       matrix:
@@ -41,7 +41,7 @@ jobs:
       - name: Setup caching
         uses: ./.github/actions/setup-caching
         with:
-          python-version: python3.11
+          python-version: python3.12
           cache-key-suffix: smoke-${{ matrix.framework }}-${{ matrix.model.label }}
       - name: Render template
         uses: ./.github/actions/render-copier-instance

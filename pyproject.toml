@@ -4,7 +4,7 @@ name = "af-component-agent"
 version = "0.1.0"
 description = "Application Framework Agent Component"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 dependencies = [
     "jinja-cli>=1.2.2",
 ]
@@ -38,7 +38,7 @@ exclude = [
 line-length = 88
 indent-width = 4
 
-target-version = "py311"
+target-version = "py312"
 
 [tool.ruff.lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
