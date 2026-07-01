@@ -93,6 +93,14 @@ jobs:
         with:
           python-version: python3.11
           cache-key-suffix: e2e-${{ matrix.framework }}
+      # The uv base image ships uv + Python but not the Pulumi CLI (a native
+      # binary, not a uv/pip package). The self-rendering E2E drives Pulumi via
+      # `uv run pulumi`, which only resolves when the binary is on PATH. Matches
+      # the sibling afcomponentagent-infra-test.yaml install step.
+      - name: Install pulumi
+        run: |
+          curl -fsSL https://get.pulumi.com | sh
+          echo "/github/home/.pulumi/bin" >> $GITHUB_PATH
       - name: Run E2E
         shell: bash
         env:
