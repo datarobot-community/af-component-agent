@@ -170,6 +170,7 @@ jobs:
           fi
           export PULUMI_CONFIG_PASSPHRASE=123
           export PULUMI_HOME="${rendered}/.pulumi_home"
+          mkdir -p "$PULUMI_HOME"
           # Re-materialize creds in case the test's finally already removed .env.
           {
             echo "DATAROBOT_ENDPOINT=${DATAROBOT_ENDPOINT}"
@@ -181,6 +182,12 @@ jobs:
           # Trace teardown commands only — kept below the cred-file write so the
           # token and (unmasked) endpoint are never echoed into the step log.
           set -x
+          # Point Pulumi at the same local (file) backend the test used. Without
+          # this, `pulumi` defaults to Pulumi Cloud and fails with
+          # "PULUMI_ACCESS_TOKEN must be set", making this net a silent no-op on
+          # cancellation — exactly the case it exists to cover. `task destroy`
+          # inherits the login via PULUMI_HOME.
+          (cd "$infra" && uv run pulumi login --local) || true
           (cd "$infra" && uv run pulumi cancel --yes --stack "$stack") || true
           (cd "$rendered" && uvx --from go-task-bin task destroy -- --yes --skip-preview) || true
           (cd "$infra" && uv run pulumi stack rm -f -y "$stack") || true
