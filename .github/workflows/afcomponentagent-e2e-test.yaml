@@ -21,6 +21,8 @@ on:
     branches: ["main"]
     paths:
       - "template/**"
+      - "!template/docs/**"
+      - "!template/.skills/**"
       - "fixtures/**"
       - "tests/e2e/**"
       - "pyproject.toml"
@@ -30,6 +32,8 @@ on:
     branches: ["main"]
     paths:
       - "template/**"
+      - "!template/docs/**"
+      - "!template/.skills/**"
       - "fixtures/**"
       - "tests/e2e/**"
       - "pyproject.toml"
