@@ -1,22 +1,6 @@
 ---
 name: af-component-agent E2E
 on:
-  workflow_dispatch:
-    inputs:
-      frameworks:
-        description: "Comma-separated frameworks to run (empty = all: base,crewai,langgraph,llamaindex,nat)"
-        required: false
-        default: ""
-      run_deployment_tests:
-        description: "Run the deploy phase (1) or custom-model only (0)"
-        required: false
-        default: "1"
-        type: choice
-        options: ["1", "0"]
-      datarobot_endpoint:
-        description: "Override DataRobot endpoint (empty = use integration secret)"
-        required: false
-        default: ""
   push:
     branches: ["main"]
     paths:
@@ -94,7 +78,6 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
-          FRAMEWORKS: ${{ github.event.inputs.frameworks }}
           CORE: ${{ steps.filter.outputs.core }}
           CHANGED_base: ${{ steps.filter.outputs.base }}
           CHANGED_crewai: ${{ steps.filter.outputs.crewai }}
@@ -104,22 +87,7 @@ jobs:
         run: |
           set -euo pipefail
           ALL='["base","crewai","langgraph","llamaindex","nat"]'
-          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "${FRAMEWORKS:-}" ]; then
-            # Explicit dispatch subset: parse, trim, drop empties, dedupe first-seen.
-            MATRIX=$(printf '%s' "$FRAMEWORKS" \
-              | jq -Rc 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length>0))
-                        | reduce .[] as $f ([]; if any(.[]; . == $f) then . else . + [$f] end)')
-            if [ "$MATRIX" = "[]" ]; then
-              echo "::error::No frameworks parsed from input '$FRAMEWORKS'. Valid: $ALL"
-              exit 1
-            fi
-            INVALID=$(printf '%s' "$MATRIX" \
-              | jq -c --argjson all "$ALL" 'map(select(. as $f | $all | index($f) | not))')
-            if [ "$INVALID" != "[]" ]; then
-              echo "::error::Unknown framework(s): $INVALID. Valid: $ALL"
-              exit 1
-            fi
-          elif [ "$EVENT_NAME" = "pull_request" ] && [ "${CORE:-}" != "true" ]; then
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "${CORE:-}" != "true" ]; then
             # PR touching no shared/core path: run only frameworks whose files
             # changed. Iterate ALL so order is preserved; fail safe to ALL if
             # nothing mapped (never emit an empty matrix).
@@ -133,7 +101,7 @@ jobs:
               MATRIX="$ALL"
             fi
           else
-            # push-to-main, dispatch without input, or a PR core change → all five.
+            # push-to-main (or a PR touching a shared/core path) → all five.
             MATRIX="$ALL"
           fi
           echo "Resolved matrix: $MATRIX"
@@ -142,8 +110,8 @@ jobs:
     name: "E2E / ${{ matrix.framework }}"
     needs: setup
     # Skip on fork PRs so integration secrets are never reachable from
-    # attacker-controlled code. Same-repo branches, pushes to main, and
-    # workflow_dispatch still run normally.
+    # attacker-controlled code. Same-repo branches and pushes to main
+    # still run normally.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
     runs-on: "ubuntu-latest"
     environment: integration
@@ -191,18 +159,13 @@ jobs:
           UV_CACHE_DIR: /.uv_cache
           RUN_E2E: "1"
           E2E_AGENT_FRAMEWORKS: ${{ matrix.framework }}
-          # Full build+deploy+chat by default everywhere (PRs, push-to-main);
-          # workflow_dispatch can override to custom-model-only via its input.
-          RUN_AGENT_DEPLOYMENT_TESTS: ${{ github.event.inputs.run_deployment_tests || '1' }}
+          # Full build+deploy+chat on every run (PRs and push-to-main).
+          RUN_AGENT_DEPLOYMENT_TESTS: "1"
           ENABLE_DRAGENT_SERVER: "true"
           LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"
-          DATAROBOT_ENDPOINT: ${{ github.event.inputs.datarobot_endpoint || secrets.DATAROBOT_ENDPOINT }}
+          DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
           DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
         run: |
-          # Endpoint is auto-masked when it comes from the secret, but NOT via the
-          # datarobot_endpoint dispatch input — register it so it can't leak into
-          # the -vv -s output tee'd to the failure artifact.
-          [ -n "${DATAROBOT_ENDPOINT:-}" ] && echo "::add-mask::${DATAROBOT_ENDPOINT}"
           # Capture console output (nothing else writes log files) so the
           # failure artifact carries real triage data. `shell: bash` runs with
           # -o pipefail, so a pytest failure still fails the step despite tee.
@@ -212,15 +175,13 @@ jobs:
         if: always()
         shell: bash
         env:
-          DATAROBOT_ENDPOINT: ${{ github.event.inputs.datarobot_endpoint || secrets.DATAROBOT_ENDPOINT }}
+          DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
           DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
         run: |
           # Always destroy this run's DataRobot resources — on success, failure,
           # or cancellation. The test's own `finally` also tears down on a normal
           # exit; this net additionally covers the cancelled/killed case, and the
           # Harness `cleanup_leftovers` pipeline is the final backstop.
-          # Register the endpoint for masking (unmasked on the dispatch-input path).
-          [ -n "${DATAROBOT_ENDPOINT:-}" ] && echo "::add-mask::${DATAROBOT_ENDPOINT}"
           stack="${E2E_PULUMI_STACK}"
           rendered="./.rendered/agent_${{ matrix.framework }}"
           infra="${rendered}/infra"
