@@ -137,9 +137,9 @@ jobs:
           UV_CACHE_DIR: /.uv_cache
           RUN_E2E: "1"
           E2E_AGENT_FRAMEWORKS: ${{ matrix.framework }}
-          # Full build+deploy on workflow_dispatch (per input) and push-to-main;
-          # PRs run custom-model-only (deploy phase off) to cut per-PR cost/time.
-          RUN_AGENT_DEPLOYMENT_TESTS: ${{ github.event.inputs.run_deployment_tests || (github.event_name == 'pull_request' && '0' || '1') }}
+          # Full build+deploy+chat by default everywhere (PRs, push-to-main);
+          # workflow_dispatch can override to custom-model-only via its input.
+          RUN_AGENT_DEPLOYMENT_TESTS: ${{ github.event.inputs.run_deployment_tests || '1' }}
           ENABLE_DRAGENT_SERVER: "true"
           LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"
           DATAROBOT_ENDPOINT: ${{ github.event.inputs.datarobot_endpoint || secrets.DATAROBOT_ENDPOINT }}
