@@ -80,6 +80,10 @@ jobs:
               - 'template/**/uvlock_nat*.j2'
             core:
               - 'template/**/*.jinja'
+              # Shared multi-framework partials (e.g. custom_default.py.j2 renders
+              # into every framework but nat) — a change affects all, so treat as
+              # core → run all 5 rather than narrowing to a co-changed framework.
+              - 'template/**/*_default.*'
               - 'fixtures/**'
               - 'tests/e2e/**'
               - 'pyproject.toml'
@@ -195,6 +199,10 @@ jobs:
           DATAROBOT_ENDPOINT: ${{ github.event.inputs.datarobot_endpoint || secrets.DATAROBOT_ENDPOINT }}
           DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
         run: |
+          # Endpoint is auto-masked when it comes from the secret, but NOT via the
+          # datarobot_endpoint dispatch input — register it so it can't leak into
+          # the -vv -s output tee'd to the failure artifact.
+          [ -n "${DATAROBOT_ENDPOINT:-}" ] && echo "::add-mask::${DATAROBOT_ENDPOINT}"
           # Capture console output (nothing else writes log files) so the
           # failure artifact carries real triage data. `shell: bash` runs with
           # -o pipefail, so a pytest failure still fails the step despite tee.
@@ -211,6 +219,8 @@ jobs:
           # or cancellation. The test's own `finally` also tears down on a normal
           # exit; this net additionally covers the cancelled/killed case, and the
           # Harness `cleanup_leftovers` pipeline is the final backstop.
+          # Register the endpoint for masking (unmasked on the dispatch-input path).
+          [ -n "${DATAROBOT_ENDPOINT:-}" ] && echo "::add-mask::${DATAROBOT_ENDPOINT}"
           stack="${E2E_PULUMI_STACK}"
           rendered="./.rendered/agent_${{ matrix.framework }}"
           infra="${rendered}/infra"
@@ -242,10 +252,12 @@ jobs:
           (cd "$rendered" && uvx --from go-task-bin task destroy -- --yes --skip-preview) || true
           (cd "$infra" && uv run pulumi stack rm -f -y "$stack") || true
       - name: Upload E2E logs
-        if: failure()
+        # Also on cancellation: a runner eviction/timeout ends as `cancelled`, not
+        # `failure`, and we still want the triage logs.
+        if: failure() || cancelled()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-logs-${{ matrix.framework }}-${{ github.run_id }}
+          name: e2e-logs-${{ matrix.framework }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             e2e-${{ matrix.framework }}.log
             ./.rendered/agent_${{ matrix.framework }}/**/*.log
