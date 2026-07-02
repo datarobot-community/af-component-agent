@@ -1069,7 +1069,7 @@ class TestMemorySpaceLlmRouting:
         assert value is deployment_output
         assert isinstance(value, agent_infra.pulumi.Output) or value
 
-    def test_deployment_llm_base_url_uses_chat_completions_endpoint(self, monkeypatch):
+    def test_deployment_llm_base_url_uses_deployment_base_endpoint(self, monkeypatch):
         import infra.{{agent_app_name}} as agent_infra
 
         monkeypatch.setattr(
@@ -1079,7 +1079,7 @@ class TestMemorySpaceLlmRouting:
 
         assert (
             agent_infra._deployment_llm_base_url("deployment-123")
-            == "https://app.datarobot.com/api/v2/deployments/deployment-123/chat/completions"
+            == "https://app.datarobot.com/api/v2/deployments/deployment-123"
         )
 
     def test_configure_memory_space_llm_routing_defaults_to_gateway(self, monkeypatch):
@@ -1122,7 +1122,7 @@ class TestMemorySpaceLlmRouting:
         )
 
         assert captured == {
-            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/deployment-123/chat/completions"
+            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/deployment-123"
         }
 
     def test_configure_memory_space_llm_routing_override_model_name(self, monkeypatch):
@@ -1168,7 +1168,7 @@ class TestMemorySpaceLlmRouting:
         )
 
         assert captured == {
-            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/memory-deployment-456/chat/completions"
+            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/memory-deployment-456"
         }
 
     def test_normalize_optional_env_treats_blank_as_unset(self):
