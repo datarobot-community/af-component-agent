@@ -57,9 +57,13 @@ def _llm_component_config_value(key: str) -> Any | None:
 
 
 def _deployment_llm_base_url(deployment_id: str) -> str:
+    """Return the deployment base URL for memory-space LLM routing.
+
+    The DataRobot Memory Service appends ``/chat/completions`` when calling
+    the OpenAI-compatible client, so this must not include that suffix.
+    """
     return (
-        f"{get_datarobot_url().rstrip('/')}/deployments/"
-        f"{deployment_id}/chat/completions"
+        f"{get_datarobot_url().rstrip('/')}/deployments/{deployment_id}"
     )
 
 
