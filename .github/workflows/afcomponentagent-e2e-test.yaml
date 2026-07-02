@@ -37,10 +37,10 @@ on:
       - ".github/workflows/afcomponentagent-e2e-test.yaml"
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  # Cancel superseded runs on PRs only. On push-to-main and workflow_dispatch,
-  # let runs finish so a live deploy is never killed mid-run (which maximizes
-  # the chance of orphaned DataRobot resources).
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  # Never cancel a running job: it may be mid-deploy, and killing it risks
+  # leaving a live DataRobot deployment behind before teardown can run. A
+  # superseded run on the same ref queues behind the current one instead.
+  cancel-in-progress: false
 permissions:
   contents: read
 jobs:
