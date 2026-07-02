@@ -54,27 +54,57 @@ jobs:
     outputs:
       matrix: ${{ steps.resolve.outputs.matrix }}
     steps:
+      - name: Checkout
+        if: github.event_name == 'pull_request'
+        uses: "actions/checkout@v6"
+      - name: Detect changed paths
+        if: github.event_name == 'pull_request'
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            base:
+              - 'template/**/*_base.*'
+              - 'template/**/uvlock_base*.j2'
+            crewai:
+              - 'template/**/*_crewai.*'
+              - 'template/**/uvlock_crewai*.j2'
+            langgraph:
+              - 'template/**/*_langgraph.*'
+              - 'template/**/uvlock_langgraph*.j2'
+            llamaindex:
+              - 'template/**/*_llamaindex.*'
+              - 'template/**/uvlock_llamaindex*.j2'
+            nat:
+              - 'template/**/*_nat.*'
+              - 'template/**/uvlock_nat*.j2'
+            core:
+              - 'template/**/*.jinja'
+              - 'fixtures/**'
+              - 'tests/e2e/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - '.github/workflows/afcomponentagent-e2e-test.yaml'
       - name: Resolve matrix
         id: resolve
         shell: bash
         env:
+          EVENT_NAME: ${{ github.event_name }}
           FRAMEWORKS: ${{ github.event.inputs.frameworks }}
+          CORE: ${{ steps.filter.outputs.core }}
+          CHANGED_base: ${{ steps.filter.outputs.base }}
+          CHANGED_crewai: ${{ steps.filter.outputs.crewai }}
+          CHANGED_langgraph: ${{ steps.filter.outputs.langgraph }}
+          CHANGED_llamaindex: ${{ steps.filter.outputs.llamaindex }}
+          CHANGED_nat: ${{ steps.filter.outputs.nat }}
         run: |
           set -euo pipefail
           ALL='["base","crewai","langgraph","llamaindex","nat"]'
-          if [ -z "${FRAMEWORKS:-}" ]; then
-            MATRIX="$ALL"
-          else
-            # Parse, trim, drop empties, then dedupe preserving first-seen
-            # order. Duplicate names would otherwise spawn matrix jobs sharing
-            # one E2E_PULUMI_STACK (run_id/run_attempt are constant per run),
-            # which race on the same stack.
+          if [ "$EVENT_NAME" = "workflow_dispatch" ] && [ -n "${FRAMEWORKS:-}" ]; then
+            # Explicit dispatch subset: parse, trim, drop empties, dedupe first-seen.
             MATRIX=$(printf '%s' "$FRAMEWORKS" \
               | jq -Rc 'split(",") | map(gsub("^\\s+|\\s+$";"")) | map(select(length>0))
                         | reduce .[] as $f ([]; if any(.[]; . == $f) then . else . + [$f] end)')
-            # A non-empty input that trims to nothing (e.g. "," or "   ") yields
-            # []; reject it here with a clear error rather than letting the e2e
-            # matrix fail opaquely ("matrix must have at least one value").
             if [ "$MATRIX" = "[]" ]; then
               echo "::error::No frameworks parsed from input '$FRAMEWORKS'. Valid: $ALL"
               exit 1
@@ -85,6 +115,22 @@ jobs:
               echo "::error::Unknown framework(s): $INVALID. Valid: $ALL"
               exit 1
             fi
+          elif [ "$EVENT_NAME" = "pull_request" ] && [ "${CORE:-}" != "true" ]; then
+            # PR touching no shared/core path: run only frameworks whose files
+            # changed. Iterate ALL so order is preserved; fail safe to ALL if
+            # nothing mapped (never emit an empty matrix).
+            MATRIX=$(jq -cn --argjson all "$ALL" \
+              --arg base "${CHANGED_base:-}" --arg crewai "${CHANGED_crewai:-}" \
+              --arg langgraph "${CHANGED_langgraph:-}" --arg llamaindex "${CHANGED_llamaindex:-}" \
+              --arg nat "${CHANGED_nat:-}" \
+              '{base:$base,crewai:$crewai,langgraph:$langgraph,llamaindex:$llamaindex,nat:$nat} as $f
+               | [ $all[] | select($f[.] == "true") ]')
+            if [ "$MATRIX" = "[]" ]; then
+              MATRIX="$ALL"
+            fi
+          else
+            # push-to-main, dispatch without input, or a PR core change → all five.
+            MATRIX="$ALL"
           fi
           echo "Resolved matrix: $MATRIX"
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
