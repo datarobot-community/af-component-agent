@@ -70,7 +70,7 @@ jobs:
         shell: sh
         working-directory: ./rendered
         run: |
-          uvx --from go-task-bin task agent:cli START_DEV=1 -- \
+          uvx --from go-task-bin task agent:cli -- \
             execute \
             --show_output \
             --user_prompt "Reply with one word: OK." \
