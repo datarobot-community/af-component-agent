@@ -86,7 +86,7 @@ jobs:
             echo "FAIL: agent returned an error response"
             exit 1
           fi
-          if ! grep -q "Execution result:" ./agent/output.log; then
+          if ! grep -q "Workflow Result:" ./agent/output.log; then
             echo "FAIL: no execution result found in output"
             exit 1
           fi
