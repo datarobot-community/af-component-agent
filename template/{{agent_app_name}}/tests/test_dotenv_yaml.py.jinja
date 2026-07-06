@@ -18,10 +18,7 @@ from typing import Any
 import yaml
 
 DOTENV_CLI_YAML = (
-    Path(__file__).resolve().parent.parent.parent
-    / ".datarobot"
-    / "cli"
-    / "{{ agent_app_name }}.yaml"
+    Path(__file__).resolve().parent.parent.parent / ".datarobot" / "cli" / "{{ agent_app_name }}.yaml"
 )
 
 

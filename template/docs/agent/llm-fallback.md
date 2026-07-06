@@ -62,46 +62,6 @@ Each entry under `primary` and `fallbacks` is an `LLMConfig` with these fields:
 
 ---
 
-## DRUM (myagent.py)
-
-When using the DRUM front server, replace `get_llm()` with `get_router_llm()` in `custompy_adaptor`.
-
-**Important:** `get_router_llm()` does **not** accept the same parameters as `get_llm()`. Do not carry over parameters from the original `get_llm()` call (e.g. `model_name`, `parameters`, `stream_options`). The third argument to `get_router_llm()` is a dict of **router-level fields only** (see [Router-level fields](#router-level-fields) above). Model configuration belongs in `LLMConfig`, not in the router options dict.
-
-```python
-from datarobot_genai.core.config import LLMConfig
-from datarobot_genai.langgraph.llm import get_router_llm  # or crewai / llama_index
-
-primary = LLMConfig(
-    use_datarobot_llm_gateway=True,
-    llm_default_model="{LLM_DEFAULT_MODEL}",
-)
-fallbacks = [
-    LLMConfig(
-        use_datarobot_llm_gateway=True,
-        llm_default_model="anthropic/claude-opus-4-20250514",
-    )
-]
-
-# In custompy_adaptor:
-# The third argument only accepts router-level fields: {"num_retries": int}
-# Do NOT pass get_llm() parameters like stream_options, model_name, or parameters here.
-agent = MyAgent(
-    llm=get_router_llm(primary, fallbacks, {"num_retries": 1}),
-    ...
-)
-```
-
-Import paths per framework:
-
-| Framework | Import |
-|---|---|
-| LangGraph | `from datarobot_genai.langgraph.llm import get_router_llm` |
-| CrewAI | `from datarobot_genai.crewai.llm import get_router_llm` |
-| LlamaIndex | `from datarobot_genai.llama_index.llm import get_router_llm` |
-
----
-
 ## How fallback works
 
 When the primary model fails (network error, rate limit, model error), `litellm.Router` retries up to `num_retries` times, then moves to the next fallback in order. Each `LLMConfig` entry is independently translated to a litellm model entry, so primary and fallbacks can point to entirely different providers and models.

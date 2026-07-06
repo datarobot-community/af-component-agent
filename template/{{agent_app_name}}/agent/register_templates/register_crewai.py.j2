@@ -16,6 +16,7 @@ from typing import Annotated, Any
 
 from ag_ui.core import RunAgentInput
 from datarobot_genai.core.telemetry.agent import instrument
+from datarobot_genai.crewai.telemetry import instrument as instrument_crewai
 from datarobot_genai.dragent.frontends.response import DRAgentEventResponse
 from nat.builder.builder import Builder
 from nat.builder.framework_enum import LLMFrameworkEnum
@@ -24,7 +25,8 @@ from nat.data_models.agent import AgentBaseConfig
 from nat.data_models.component_ref import FunctionGroupRef
 
 # INSTRUMENTATION CALL IS REQUIRED TO SETUP TRACING AND TELEMETRY FOR AGENTS
-instrument(framework="crewai")
+instrument()
+instrument_crewai()
 
 
 class CrewaiAgentConfig(AgentBaseConfig, name="crewai_agent"):  # type: ignore[call-arg, misc]

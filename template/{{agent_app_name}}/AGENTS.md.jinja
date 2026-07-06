@@ -144,7 +144,7 @@ def graph_factory(llm, tools, verbose=False):
 
 ### 4. LLM Resolution
 
-The LLM is resolved via `get_llm()` from `datarobot_genai.langgraph.llm` in `custompy_adaptor`:
+The LLM is resolved via `get_llm()` from `datarobot_genai.langgraph.llm` in `register.py`:
 
 ```python
 from datarobot_genai.langgraph.llm import get_llm
@@ -208,7 +208,7 @@ workflow = AgentWorkflow(
 
 ### 3. LLM Resolution
 
-The LLM is resolved via `get_llm()` from `datarobot_genai.llama_index.llm` in `custompy_adaptor`:
+The LLM is resolved via `get_llm()` from `datarobot_genai.llama_index.llm` in `register.py`:
 
 ```python
 from datarobot_genai.llama_index.llm import get_llm
@@ -353,7 +353,7 @@ async def invoke(self, run_agent_input: RunAgentInput) -> InvokeReturn:
 
 ### 3. LLM Resolution
 
-The LLM is resolved via `get_llm()` from `datarobot_genai.langgraph.llm` in `custompy_adaptor`:
+The LLM is resolved via `get_llm()` from `datarobot_genai.langgraph.llm` in `register.py`:
 
 ```python
 from datarobot_genai.langgraph.llm import get_llm

@@ -14,7 +14,7 @@
 import uuid
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import TYPE_CHECKING, Any, Optional
+from typing import Any
 
 from ag_ui.core import (
     EventType,
@@ -32,17 +32,7 @@ from datarobot_genai.core.agents import (
     default_usage_metrics,
     extract_user_prompt_content,
 )
-from datarobot_genai.core.chat import agent_chat_completion_wrapper
 from datarobot_genai.core.mcp import MCPConfig
-
-# Use langchain LLMs in the base example
-from datarobot_genai.langgraph.llm import get_llm
-from openai.types.chat import CompletionCreateParams
-
-if TYPE_CHECKING:
-    from ragas import MultiTurnSample
-
-_PLACEHOLDER_MODELS = frozenset({"unknown"})
 
 
 @asynccontextmanager
@@ -127,27 +117,3 @@ class MyAgent(BaseAgent[None]):
             pipeline_interactions,
             usage_metrics,
         )
-
-
-async def custompy_adaptor(
-    completion_create_params: CompletionCreateParams,
-) -> InvokeReturn | tuple[str, Optional["MultiTurnSample"], UsageMetrics]:
-    forwarded_headers = completion_create_params.get("forwarded_headers", {})
-    authorization_context = completion_create_params.get("authorization_context", {})
-    mcp_config = MCPConfig(
-        forwarded_headers=forwarded_headers,
-        authorization_context=authorization_context,
-    )
-    mcp_tools_factory = lambda: mcp_tools_context(mcp_config)  # noqa: E731
-    model_name = completion_create_params.get("model")
-    agent = MyAgent(
-        llm=get_llm(
-            model_name=model_name if model_name not in _PLACEHOLDER_MODELS else None
-        ),
-        verbose=completion_create_params.get("verbose", True),  # type: ignore[arg-type]
-        timeout=completion_create_params.get("timeout", 90),  # type: ignore[arg-type]
-        forwarded_headers=forwarded_headers,  # type: ignore[arg-type]
-    )
-    return await agent_chat_completion_wrapper(
-        agent, completion_create_params, mcp_tools_factory
-    )
