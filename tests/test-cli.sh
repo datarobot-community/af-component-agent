@@ -17,35 +17,6 @@ cleanup() {
     fi
 }
 
-wait_for_port() {
-    local host="$1"
-    local port="$2"
-    local retries="${3:-60}"
-    local delay="${4:-1}"
-
-    for ((i = 1; i <= retries; i++)); do
-        python - <<'PY' "$host" "$port" >/dev/null 2>&1 && return 0
-import socket
-import sys
-
-host = sys.argv[1]
-port = int(sys.argv[2])
-
-s = socket.socket()
-s.settimeout(1.0)
-try:
-    s.connect((host, port))
-except OSError:
-    sys.exit(1)
-else:
-    s.close()
-PY
-        sleep "$delay"
-    done
-
-    return 1
-}
-
 trap cleanup EXIT
 
 if [ ! -d "${BASE_RENDER_DIR}/agent" ]; then
@@ -61,15 +32,6 @@ cd "${BASE_RENDER_DIR}"
 
 echo "DATAROBOT_API_TOKEN = secret" >> .env
 echo "DATAROBOT_ENDPOINT = https://test.com/api/v2" >> .env
-
-# Start the server, colorize output via process substitution and keep the real PID
-stdbuf -oL uvx --from go-task-bin task agent:dev > >(awk '{print "\033[34m" $0 "\033[0m"}') &
-SERVER_PID=$!
-
-if ! wait_for_port "localhost" 8842 60 1; then
-    echo "Dev server did not start listening on port 8842"
-    exit 1
-fi
 
 # Run the CLI command with a sample user prompt
 echo "Initial execution"
@@ -108,32 +70,5 @@ if cat ./agent/output.log | grep -q 'Workflow Result:' ; then
     echo "Test passed: cli.py returned log containing execution result"
     else
     echo "Test failed: cli.py did not return log containing execution result"
-    exit 1
-fi
-
-# Run the CLI command with a sample user prompt
-echo "Initial execution"
-uvx --from go-task-bin task agent:cli -- \
-    execute \
-    --user_prompt '{"topic": "Artificial Intelligence"}' \
-    > ./agent/output.log 2>&1
-cat ./agent/output.log
-
-# Check if the log file was created
-if [ $(wc -l < ./agent/output.log) -ge 13 ] ; then
-    echo "Log file created successfully and file not empty."
-    echo ""
-    echo "Contents of output.log:"
-    cat ./agent/output.log
-    else
-    echo "Log file was not created."
-    exit 1
-fi
-
-# Check the streaming returned
-if cat ./agent/output.log | grep -q 'Workflow Result:' ; then
-    echo "Test passed: cli.py returned streaming success"
-    else
-    echo "Test failed: cli.py did not return streaming success"
     exit 1
 fi
