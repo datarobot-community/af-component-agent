@@ -25,10 +25,10 @@ The `_exclude` directive in `copier.yml` ensures that `*.j2` partials and `*_tem
 ```
 template/{{agent_app_name}}/
 ├── agent/                          # Core agent package
-│   ├── __init__.py                 # Exports MyAgent, Config, custompy_adaptor
+│   ├── __init__.py                 # Exports MyAgent, Config
 │   ├── config.py.jinja             # Pydantic settings (always rendered)
 │   ├── myagent.py.jinja            # Router — includes the framework-specific partial
-│   ├── agent_templates/            # Framework-specific MyAgent + custompy_adaptor
+│   ├── agent_templates/            # Framework-specific MyAgent
 │   │   ├── agent_base.py.j2
 │   │   ├── agent_crewai.py.j2
 │   │   ├── agent_langgraph.py.j2
@@ -40,10 +40,6 @@ template/{{agent_app_name}}/
 │   ├── workflow.yaml.jinja         # Router — framework-specific workflow config
 │   └── workflow_templates/
 │       └── workflow_<framework>.yaml.j2
-├── custom.py.jinja                 # Router — includes custom_templates/*
-├── custom_templates/
-│   ├── custom_default.py.j2        # Used by base, crewai, langgraph, llamaindex
-│   └── custom_nat.py.j2            # NAT-specific custom.py
 ├── tests/
 │   ├── conftest.py                 # Shared pytest fixtures
 │   ├── test_agentic_workflow.py.jinja
@@ -107,26 +103,8 @@ Some routers (like `myagent.py.jinja` and `test_agent.py.jinja`) have a dedicate
 The generated project has a well-defined call chain:
 
 ```
-custom.py  →  agent/myagent.py (custompy_adaptor)  →  MyAgent
+register.py  →  agent/myagent.py  →  MyAgent
 ```
-
-### `custom.py` — the DataRobot entry point
-
-Exposes `load_model()` and `chat()`. The `chat()` function:
-
-1. Resolves authorization context from the incoming request.
-2. Whitelists incoming HTTP headers (only `x-datarobot-*` headers pass through).
-3. Stores both in `completion_create_params["authorization_context"]` and `completion_create_params["forwarded_headers"]`.
-4. Calls `custompy_adaptor(completion_create_params)`.
-5. Converts the result to a DataRobot chat response (streaming or non-streaming).
-
-There are two variants:
-- **`custom_default.py.j2`** — used by base, crewai, langgraph, llamaindex.
-- **`custom_nat.py.j2`** — used by NAT. Adds NAT-specific streaming handling and telemetry instrumentation with `instrument(framework="nat")`.
-
-### `custompy_adaptor` — framework-specific glue
-
-Defined in each `agent_templates/agent_<framework>.py.j2`. Receives the enriched `completion_create_params` and wires up the agent. **MCP is loaded here, not inside `MyAgent.invoke()`.**
 
 **Default frameworks** (base, crewai, langgraph, llamaindex):
 
@@ -139,7 +117,7 @@ MyAgent(forwarded_headers=...) ◄─────────┘ via agent_chat_
 
 The default pattern constructs `MyAgent` without tools, then passes an `mcp_tools_factory` to `agent_chat_completion_wrapper`. The wrapper calls the factory to obtain MCP tools and provides them to the agent before `invoke()` runs.
 
-**DRAgent path** (in `register.py` instead of `custompy_adaptor`):
+**DRAgent path** (in `register.py`):
 
 ```
 forwarded_headers ─► MCPConfig ─► async with mcp_tools_context(mcp_config) ─► mcp_tools
@@ -150,23 +128,6 @@ workflow_tools ─────────────────────�
 
 Tools are merged outside the agent and passed via the `tools` init parameter.
 
-**NAT framework**:
-
-```
-forwarded_headers ─► MCPConfig ─► server_config["headers"]
-                         │                    │
-                         └────── merge ◄──────┘
-                                  │
-                                  └─► MyAgent(forwarded_headers=merged)
-```
-
-NAT does **not** use `mcp_tools_context`. Instead, it explicitly reads `MCPConfig.server_config["headers"]` and merges those into `forwarded_headers` before passing the combined dict to `MyAgent`. This means:
-
-- The agent always receives the union of whitelisted incoming headers **and** MCP server config headers.
-- When `server_config` is `None` (no MCP configured), the agent receives just the whitelisted headers (which may be an empty dict).
-
-This distinction is the main reason NAT has separate test and custom.py templates.
-
 ## Test structure
 
 Tests mirror the router/partial pattern. Each `test_*.py.jinja` router selects the appropriate `test_*_<variant>.py.j2` partial.
@@ -174,7 +135,6 @@ Tests mirror the router/partial pattern. Each `test_*.py.jinja` router selects t
 | Test file | What it covers |
 |---|---|
 | `test_agentic_workflow.py` | End-to-end `load_model` / `chat` round-trip |
-| `test_authorization_context_threading.py` | Auth context propagation and header forwarding through `custom.py → custompy_adaptor → MyAgent` |
 | `test_agent.py` | Framework-specific agent unit tests (e.g. CrewAI crew construction) |
 | `test_mcp.py` | MCP tool integration (crewai, langgraph, llamaindex only) |
 | `test_cli_dragent.py`, `test_register_dragent.py` | CLI and DR registration tests |
@@ -203,7 +163,7 @@ The test task renders the template with `uvx copier copy`, installs dependencies
 
 ## Adding a new framework
 
-1. Add a partial in each `*_templates/` directory (agent, custom, test, workflow, register, uvlock).
+1. Add a partial in each `*_templates/` directory (agent, test, workflow, register, uvlock).
 2. Update the corresponding `.jinja` router to include the new partial.
 3. Add the framework to `copier.yml` choices.
 4. Add a `task test-<newframework>` entry in `Taskfile.yml`.

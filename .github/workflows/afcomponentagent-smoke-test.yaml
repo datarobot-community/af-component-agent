@@ -70,9 +70,8 @@ jobs:
         shell: sh
         working-directory: ./rendered
         run: |
-          uvx --from go-task-bin task agent:cli START_DEV=1 -- \
+          uvx --from go-task-bin task agent:cli -- \
             execute \
-            --show_output \
             --user_prompt "Reply with one word: OK." \
             > ./agent/output.log 2>&1
           cat ./agent/output.log
@@ -87,7 +86,11 @@ jobs:
             echo "FAIL: agent returned an error response"
             exit 1
           fi
-          if ! grep -q "Execution result:" ./agent/output.log; then
+          # DRAgent's console frontend prints one of two completion markers:
+          # "Workflow Result:" for non-streaming frameworks, or "Run finished."
+          # for frameworks that stream token deltas (e.g. langgraph). Both are
+          # emitted only after the workflow completes successfully.
+          if ! grep -qE "Workflow Result:|Run finished\." ./agent/output.log; then
             echo "FAIL: no execution result found in output"
             exit 1
           fi

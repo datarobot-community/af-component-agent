@@ -17,35 +17,6 @@ cleanup() {
     fi
 }
 
-wait_for_port() {
-    local host="$1"
-    local port="$2"
-    local retries="${3:-60}"
-    local delay="${4:-1}"
-
-    for ((i = 1; i <= retries; i++)); do
-        python - <<'PY' "$host" "$port" >/dev/null 2>&1 && return 0
-import socket
-import sys
-
-host = sys.argv[1]
-port = int(sys.argv[2])
-
-s = socket.socket()
-s.settimeout(1.0)
-try:
-    s.connect((host, port))
-except OSError:
-    sys.exit(1)
-else:
-    s.close()
-PY
-        sleep "$delay"
-    done
-
-    return 1
-}
-
 trap cleanup EXIT
 
 if [ ! -d "${BASE_RENDER_DIR}/agent" ]; then
@@ -62,20 +33,10 @@ cd "${BASE_RENDER_DIR}"
 echo "DATAROBOT_API_TOKEN = secret" >> .env
 echo "DATAROBOT_ENDPOINT = https://test.com/api/v2" >> .env
 
-# Start the server, colorize output via process substitution and keep the real PID
-stdbuf -oL uvx --from go-task-bin task agent:dev > >(awk '{print "\033[34m" $0 "\033[0m"}') &
-SERVER_PID=$!
-
-if ! wait_for_port "localhost" 8842 60 1; then
-    echo "Dev server did not start listening on port 8842"
-    exit 1
-fi
-
 # Run the CLI command with a sample user prompt
 echo "Initial execution"
 uvx --from go-task-bin task agent:cli -- \
     execute \
-    --show_output \
     --user_prompt '{"topic": "Artificial Intelligence"}' \
     > ./agent/output.log 2>&1
 cat ./agent/output.log
@@ -104,83 +65,15 @@ if cat ./agent/output.log | grep -q 'Running CLI execute' ; then
     exit 1
 fi
 
-# Check the execution result
-if cat ./agent/output.log | grep -q 'Execution result:' ; then
-    echo "Test passed: cli.py returned log containing execution result"
+# Check the execution result. This test always runs against the base agent,
+# whose LLM call is a mock and produces no NAT intermediate LLM-token steps, so
+# DRAgent's console frontend takes the non-streaming path and prints
+# "Workflow Result: [...]". (Streaming frameworks like langgraph instead print
+# "Run finished." with no result line - see afcomponentagent-smoke-test.yaml.)
+# grep -F: the "[...]" contains regex metacharacters, so match it literally.
+if grep -qF "Workflow Result: ['streaming success']" ./agent/output.log ; then
+    echo "Test passed: cli returned log containing execution result"
     else
-    echo "Test failed: cli.py did not return log containing execution result"
-    exit 1
-fi
-
-# Check the chat completion returned
-if cat ./agent/output.log | grep -q '"model": "unknown"' ; then
-    echo "Test passed: cli.py returned log containing chat completion"
-    else
-    echo "Test failed: cli.py did not return log containing chat completion"
-    exit 1
-fi
-
-# Check the chat completion returned
-if cat ./agent/output.log | grep -q '"content": "streaming success"' ; then
-    echo "Test passed: cli.py returned chat completion success"
-    else
-    echo "Test failed: cli.py did not return chat completion success"
-    exit 1
-fi
-
-# Run the CLI command with a sample user prompt
-echo "Initial execution"
-uvx --from go-task-bin task agent:cli -- \
-    execute \
-    --show_output \
-    --completion_json "example-completion.json" \
-    > ./agent/output.log 2>&1
-cat ./agent/output.log
-
-# Check if the log file was created
-if [ $(wc -l < ./agent/output.log) -ge 13 ] ; then
-    echo "Log file created successfully and file not empty."
-    echo ""
-    echo "Contents of output.log:"
-    cat ./agent/output.log
-    else
-    echo "Log file was not created."
-    exit 1
-fi
-
-# Check the chat completion returned
-if cat ./agent/output.log | grep -q '"content": "streaming success"' ; then
-    echo "Test passed: cli.py returned chat completion success"
-    else
-    echo "Test failed: cli.py did not return chat completion success"
-    exit 1
-fi
-
-# Run the CLI command with a sample user prompt
-echo "Initial execution"
-uvx --from go-task-bin task agent:cli -- \
-    execute \
-    --show_output \
-    --user_prompt '{"topic": "Artificial Intelligence"}' \
-    --stream \
-    > ./agent/output.log 2>&1
-cat ./agent/output.log
-
-# Check if the log file was created
-if [ $(wc -l < ./agent/output.log) -ge 13 ] ; then
-    echo "Log file created successfully and file not empty."
-    echo ""
-    echo "Contents of output.log:"
-    cat ./agent/output.log
-    else
-    echo "Log file was not created."
-    exit 1
-fi
-
-# Check the streaming returned
-if cat ./agent/output.log | grep -q '"content": "streaming success"' ; then
-    echo "Test passed: cli.py returned streaming success"
-    else
-    echo "Test failed: cli.py did not return streaming success"
+    echo "Test failed: cli did not return log containing execution result"
     exit 1
 fi

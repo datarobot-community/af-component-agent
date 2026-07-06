@@ -86,6 +86,9 @@ _answers_file: ".datarobot/answers/agent-{{ agent_app_name }}.yml"
 _exclude:
     - "*.j2"
     - "*_templates"
+    # NAT agents are defined declaratively in workflow.yaml, not in code, so
+    # there is no agent implementation module to generate.
+    - "{% if agent_template_framework == 'nat' %}myagent.py{% endif %}"
 
 _migrations:
   # Migrate legacy agent implementation into the new package layout.

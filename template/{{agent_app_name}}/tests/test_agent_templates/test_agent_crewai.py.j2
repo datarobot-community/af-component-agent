@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
-from unittest.mock import AsyncMock, Mock, PropertyMock, patch
+from unittest.mock import Mock
 
 import pytest
-from ragas.messages import AIMessage, HumanMessage, ToolCall, ToolMessage
 
 from agent import MyAgent
 from agent.myagent import (
@@ -95,87 +93,3 @@ class TestMyAgentCrewAI:
         agent = MyAgent(llm=mock_llm, tools=[mock_tool])
         for sub_agent in agents:
             assert mock_tool in sub_agent.tools
-
-    @pytest.mark.parametrize(
-        "model_value, expected_model_name",
-        [
-            ("unknown", None),
-            ("gpt-4", "gpt-4"),
-            ("datarobot-deployed-llm", "datarobot-deployed-llm"),
-            (None, None),
-        ],
-    )
-    @patch.object(MyAgent, "crew", new_callable=PropertyMock)
-    @patch("agent.myagent.get_llm", return_value=Mock())
-    @patch("agent.myagent.agent_chat_completion_wrapper", new_callable=AsyncMock)
-    @patch("agent.myagent.mcp_tools_context")
-    def test_custompy_adaptor_filters_placeholder_models(
-        self,
-        mock_mcp_ctx,
-        mock_wrapper,
-        mock_get_llm,
-        mock_crew_prop,
-        model_value,
-        expected_model_name,
-    ):
-        from agent.myagent import custompy_adaptor
-
-        mock_crew_prop.return_value = Mock()
-        completion_create_params = {
-            "model": model_value,
-            "messages": [{"role": "user", "content": "hi"}],
-        }
-        import asyncio
-
-        asyncio.get_event_loop().run_until_complete(
-            custompy_adaptor(completion_create_params)
-        )
-        mock_get_llm.assert_called_once()
-        assert mock_get_llm.call_args[1]["model_name"] == expected_model_name
-
-    @patch.object(MyAgent, "crew", new_callable=PropertyMock)
-    @patch("agent.myagent.get_llm", return_value=Mock())
-    @patch("datarobot_genai.crewai.agent.CrewAIRagasEventListener")
-    def test_chat(
-        self, mock_event_listener, mock_get_llm, mock_crew_prop, load_model_result
-    ):
-        from custom import chat
-
-        crew_output = Mock(
-            raw="agent result",
-            token_usage=Mock(
-                completion_tokens=1,
-                prompt_tokens=2,
-                total_tokens=3,
-            ),
-        )
-        mock_crew = Mock()
-        mock_crew.akickoff = AsyncMock(return_value=crew_output)
-        mock_crew_prop.return_value = mock_crew
-
-        events = [
-            HumanMessage(content="Hi"),
-            AIMessage(
-                content="Which language should I use?",
-                tool_calls=[
-                    ToolCall(name="find_language", args={"input_language": "en"})
-                ],
-            ),
-            ToolMessage(content="Use en"),
-            AIMessage(content="How are you today?"),
-        ]
-        mock_event_listener.return_value = Mock(messages=events)
-
-        completion_create_params = {
-            "model": "test-model",
-            "messages": [{"role": "user", "content": '{"topic": "test"}'}],
-            "environment_var": True,
-        }
-
-        response = chat(completion_create_params, load_model_result=load_model_result)
-
-        completion = json.loads(response.model_dump_json())
-        actual_events = json.loads(completion["pipeline_interactions"])["user_input"]
-        for expected_message, actual_message in zip(events, actual_events):
-            assert expected_message.content == actual_message["content"]
-            assert expected_message.type == actual_message["type"]

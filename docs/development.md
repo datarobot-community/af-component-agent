@@ -1,6 +1,6 @@
 # Developer Guide
 
-For template architecture (router/partial pattern, `custom.py` → `custompy_adaptor` call chain, NAT vs default MCP wiring), see [DESIGN.md](./DESIGN.md).
+For template architecture (router/partial pattern, NAT vs default MCP wiring), see [DESIGN.md](./DESIGN.md).
 
 ## af-component-agent
 
