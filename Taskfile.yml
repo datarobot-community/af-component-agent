@@ -308,10 +308,13 @@ tasks:
       - task: check-output
 
   check-output:
+      # These checks always run against the base agent, whose LLM call is a mock
+      # and emits no NAT intermediate LLM-token steps, so DRAgent's console
+      # frontend takes the non-streaming path and prints "Workflow Result:".
+      # (Streaming frameworks like langgraph instead print "Run finished." with no
+      # result line - see .github/workflows/afcomponentagent-smoke-test.yaml.)
       - if [ $(wc -l < $RENDER_DIR/agent_base/agent/output.log) -lt 13 ]; then exit 1; fi
       - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "Running CLI execute"; then exit 1; fi
-      - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "INFO - Parsing args"; then exit 1; fi
-      - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "INFO - Starting DRUM runner"; then exit 1; fi
       - if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "Running agent with user prompt"; then exit 1; fi
       - 'if ! cat $RENDER_DIR/agent_base/agent/output.log | grep -q "Workflow Result:"; then exit 1; fi'
 

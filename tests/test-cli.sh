@@ -65,10 +65,15 @@ if cat ./agent/output.log | grep -q 'Running CLI execute' ; then
     exit 1
 fi
 
-# Check the execution result
-if cat ./agent/output.log | grep -q 'Workflow Result:' ; then
-    echo "Test passed: cli.py returned log containing execution result"
+# Check the execution result. This test always runs against the base agent,
+# whose LLM call is a mock and produces no NAT intermediate LLM-token steps, so
+# DRAgent's console frontend takes the non-streaming path and prints
+# "Workflow Result: [...]". (Streaming frameworks like langgraph instead print
+# "Run finished." with no result line - see afcomponentagent-smoke-test.yaml.)
+# grep -F: the "[...]" contains regex metacharacters, so match it literally.
+if grep -qF "Workflow Result: ['streaming success']" ./agent/output.log ; then
+    echo "Test passed: cli returned log containing execution result"
     else
-    echo "Test failed: cli.py did not return log containing execution result"
+    echo "Test failed: cli did not return log containing execution result"
     exit 1
 fi
