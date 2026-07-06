@@ -24,7 +24,7 @@ Then send requests from a second terminal using the CLI.
 
 ## Testing with the CLI
 
-The agent CLI (`agent/cli.py`) provides commands for testing against both local and deployed agents. Under DRAgent, `execute` runs the workflow in-process via `nat dragent run` and does not require a running server.
+The agent CLI provides commands for testing against both local and deployed agents. Under DRAgent, `execute` runs the workflow in-process via `nat dragent run` and does not require a running server.
 
 ### Local execution
 
@@ -38,12 +38,6 @@ With a structured JSON prompt:
 
 ```sh
 task agent:cli -- execute --user_prompt '{"topic": "Generative AI"}'
-```
-
-With a prompt from a text file:
-
-```sh
-task agent:cli -- execute --file "example-prompt.txt"
 ```
 
 ### Deployed agent execution

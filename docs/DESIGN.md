@@ -163,7 +163,7 @@ The test task renders the template with `uvx copier copy`, installs dependencies
 
 ## Adding a new framework
 
-1. Add a partial in each `*_templates/` directory (agent, custom, test, workflow, register, uvlock).
+1. Add a partial in each `*_templates/` directory (agent, test, workflow, register, uvlock).
 2. Update the corresponding `.jinja` router to include the new partial.
 3. Add the framework to `copier.yml` choices.
 4. Add a `task test-<newframework>` entry in `Taskfile.yml`.

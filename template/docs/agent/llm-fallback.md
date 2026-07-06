@@ -5,13 +5,6 @@
 
 The agent component supports configuring primary and fallback LLM providers so that if the primary provider is unavailable or returns an error, the agent automatically retries using a fallback provider. This is powered by [litellm.Router](https://docs.litellm.ai/docs/routing) and requires `datarobot-genai>=0.15.20`.
 
-There are two integration paths depending on your front server:
-
-| Path | Front server | How to configure |
-|---|---|---|
-| [DRAgent (workflow.yaml)](#dragent-workflowyaml) | DRAgent | Replace `_type: datarobot-llm-component` with `_type: datarobot-llm-router` |
-| [DRUM (myagent.py)](#drum-myagentpy) | DRUM | Replace `get_llm()` with `get_router_llm()` |
-
 ### Determining the primary model
 
 The examples below use `{LLM_DEFAULT_MODEL}` as a placeholder for the primary model. To resolve it, run `bash -lc "grep '^LLM_DEFAULT_MODEL=' .env 2>/dev/null"` to get the value of `LLM_DEFAULT_MODEL`. Strip any leading `datarobot/` prefix from the value (e.g. `datarobot/vertex_ai/foo` → `vertex_ai/foo`), then replace `{LLM_DEFAULT_MODEL}` with the result. If the command returns nothing, use `azure/gpt-5-mini-2025-08-07`.

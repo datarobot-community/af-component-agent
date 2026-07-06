@@ -48,7 +48,6 @@ agent/
 │   ├── conftest.py
 │   ├── test_agent.py
 │   └── ...
-├── cli.py                  # CLI for local testing and deployment validation
 ├── pyproject.toml          # Python dependencies and project metadata
 ├── Taskfile.yml            # Task runner definitions (install, lint, test)
 └── uv.lock                 # Dependency lockfile

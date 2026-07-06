@@ -136,9 +136,9 @@ LlamaIndex agents receive tools through three channels:
 
 MCP tools are loaded by calling `mcp_tools_context()` in `register.py` (DRAgent)&mdash;**outside** `MyAgent`. The resulting tools are passed to the agent via the `tools` init parameter or `set_tools()`. See [MCP server](../../mcp-server.md).
 
-### Workflow tools (DRAgent only)
+### Workflow tools
 
-When you use the DRAgent front server, additional tools (e.g. A2A remote agents) resolve by NAT from `workflow.yaml` `tool_names` with `LLMFrameworkEnum.LLAMA_INDEX` and merge with MCP tools.
+Additional tools (e.g. A2A remote agents) resolve by NAT from `workflow.yaml` `tool_names` with `LLMFrameworkEnum.LLAMA_INDEX` and merge with MCP tools.
 
 ### Custom local tools
 
