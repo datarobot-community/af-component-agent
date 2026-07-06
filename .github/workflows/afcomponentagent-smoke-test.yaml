@@ -72,7 +72,6 @@ jobs:
         run: |
           uvx --from go-task-bin task agent:cli -- \
             execute \
-            --show_output \
             --user_prompt "Reply with one word: OK." \
             > ./agent/output.log 2>&1
           cat ./agent/output.log
