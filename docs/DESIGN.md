@@ -40,10 +40,6 @@ template/{{agent_app_name}}/
 │   ├── workflow.yaml.jinja         # Router — framework-specific workflow config
 │   └── workflow_templates/
 │       └── workflow_<framework>.yaml.j2
-├── custom.py.jinja                 # Router — includes custom_templates/*
-├── custom_templates/
-│   ├── custom_default.py.j2        # Used by base, crewai, langgraph, llamaindex
-│   └── custom_nat.py.j2            # NAT-specific custom.py
 ├── tests/
 │   ├── conftest.py                 # Shared pytest fixtures
 │   ├── test_agentic_workflow.py.jinja
