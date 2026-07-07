@@ -24,6 +24,7 @@ from typing import Any
 from datarobot.core.config import DataRobotAppFrameworkBaseSettings
 from pydantic import Field, ValidationInfo, field_validator, model_validator
 
+
 class Config(DataRobotAppFrameworkBaseSettings):  # type: ignore[misc]
     """
     This class finds variables in the priority order of: env
