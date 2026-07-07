@@ -17,7 +17,8 @@ dev = [
     "backoff>=2.0.0",
     "openai>=1.0.0",
     "requests>=2.31.0",
-    "datarobot-genai==0.22.0", # to use agent kernel from datarobot-genai
+    "datarobot-genai==0.22.1", # to use agent kernel from datarobot-genai
+    "datarobot>=3.10.0,<4.0.0", # trace verification (ComparisonPrompt + trace-view REST APIs)
 ]
 
 [tool.uv]
