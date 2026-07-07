@@ -34,6 +34,9 @@ from openai import (
     RateLimitError,
 )
 
+# HTTP status codes we consider transient infra failures worth retrying.
+# Everything else (4xx, plain 500 with an agent error body) propagates so
+# real bugs aren't masked.
 _RETRYABLE_STATUS_CODES = frozenset({429, 502, 503, 504})
 
 RETRYABLE_DR_STATUS_CODES = _RETRYABLE_STATUS_CODES | frozenset({500})

@@ -64,18 +64,13 @@ from ._process import (
 _AGENT_WORKFLOW_SPAN = "<workflow>"
 
 
-def _trace_error_is_permanent(exc: BaseException) -> bool:
-    """backoff giveup: retry transient statuses and transport blips, stop on the rest."""
-    if isinstance(exc, (ClientError, ServerError)):
-        return exc.status_code not in RETRYABLE_DR_STATUS_CODES
-    return False
-
-
+# backoff giveup: retry transient statuses and transport blips, stop on the rest.
 @backoff.on_exception(
     backoff.expo,
     (ClientError, ServerError, requests.RequestException),
     max_tries=5,
-    giveup=_trace_error_is_permanent,
+    giveup=lambda exc: isinstance(exc, (ClientError, ServerError))
+    and exc.status_code not in RETRYABLE_DR_STATUS_CODES,
 )
 def _trace_api_get(
     client: RESTClientObject, path: str, params: dict | None = None
