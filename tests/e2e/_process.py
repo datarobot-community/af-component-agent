@@ -34,14 +34,8 @@ from openai import (
     RateLimitError,
 )
 
-# HTTP status codes we consider transient infra failures worth retrying.
-# Everything else (4xx, plain 500 with an agent error body) propagates so
-# real bugs aren't masked.
 _RETRYABLE_STATUS_CODES = frozenset({429, 502, 503, 504})
 
-# The datarobot SDK's own calls (trace reads, playground CRUD) never carry an agent
-# error body, so a plain 500 there is transient too -- unlike the agent-invoke surface
-# above. Single source of truth, shared with the trace poll in e2e.py.
 RETRYABLE_DR_STATUS_CODES = _RETRYABLE_STATUS_CODES | frozenset({500})
 
 # Exception types that are always transient (no status code involved).
@@ -68,8 +62,7 @@ def _is_transient(exc: BaseException) -> bool:
         return status in _RETRYABLE_STATUS_CODES
     if isinstance(exc, APIStatusError):
         return exc.status_code in _RETRYABLE_STATUS_CODES
-    # datarobot SDK raises its own ClientError/ServerError on the trace-verification
-    # calls; retry the shared DR-surface transient statuses.
+    # datarobot SDK raises ClientError/ServerError on trace-verification calls.
     if isinstance(exc, (ClientError, ServerError)):
         return exc.status_code in RETRYABLE_DR_STATUS_CODES
     return False
