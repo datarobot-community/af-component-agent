@@ -62,9 +62,7 @@ def _deployment_llm_base_url(deployment_id: str) -> str:
     The DataRobot Memory Service appends ``/chat/completions`` when calling
     the OpenAI-compatible client, so this must not include that suffix.
     """
-    return (
-        f"{get_datarobot_url().rstrip('/')}/deployments/{deployment_id}"
-    )
+    return f"{get_datarobot_url().rstrip('/')}/deployments/{deployment_id}"
 
 
 def _normalize_optional_env(value: str | None) -> str | None:
