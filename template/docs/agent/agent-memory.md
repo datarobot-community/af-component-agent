@@ -168,13 +168,13 @@ Choose **Mem0** when you already use Mem0 or want a third-party memory service. 
 
 ## Configuration and runtime parameters
 
-Memory-related settings are loaded through `agent/config.py` (for TTL) and standard DataRobot runtime parameters (for provider credentials and space ID).
+Memory-related settings are loaded through `agent/config.py` and standard DataRobot runtime parameters (for provider credentials and space ID).
 
 ### TTL (time to live)
 
-| Setting                 | Env / runtime parameter | Default | Description |
-|-------------------------|---|---------|---|
-| `agent_memory_ttl_days` | `AGENT_MEMORY_TTL_DAYS` | `30`    | How long stored memories are retained before expiration. Set via the `AGENT_MEMORY_TTL_DAYS` runtime parameter at deploy time or in `.env` for local development. |
+| Env / runtime parameter | Default | Description |
+|---|---------|---|
+| `AGENT_MEMORY_TTL_DAYS` | `30`    | How long stored memories are retained before expiration. Set via the `AGENT_MEMORY_TTL_DAYS` runtime parameter at deploy time or in `.env` for local development. |
 
 The constant `AGENT_MEMORY_TTL_DAYS` in `config.py` mirrors the default (`30` seconds).
 
@@ -186,9 +186,9 @@ The constant `AGENT_MEMORY_TTL_DAYS` in `config.py` mirrors the default (`30` se
 
 ### DataRobot Memory Service provider
 
-| Setting | Env / runtime parameter | Description |
-|---|---|---|
-| &mdash; | `AGENT_MEMORY_SPACE_ID` | UUID of the DataRobot Memory Space. Set automatically by Pulumi; exported as `Agent Memory Space ID <agent_name>`. |
+| Env / runtime parameter | Description |
+|---|---|
+| `AGENT_MEMORY_SPACE_ID` | UUID of the DataRobot Memory Space. Set automatically by Pulumi; exported as `Agent Memory Space ID <agent_name>`. |
 
 ##### Memory space LLM (DataRobot Memory Service)
 
