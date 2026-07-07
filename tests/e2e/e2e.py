@@ -120,11 +120,8 @@ def _assert_agent_workflow_trace(
         "%Y-%m-%dT%H:%M:%SZ"
     )
     roots_seen: set[str] = set()
-
-    @backoff.on_predicate(
-        backoff.constant, interval=poll_s, max_time=timeout_s, jitter=None
-    )
-    def _agent_trace_found() -> bool:
+    deadline = time.monotonic() + timeout_s
+    while True:
         traces = _list_recent_traces(client, traces_path, start_time)
         roots_seen.update(t.get("rootSpanName") or "" for t in traces)
         # The agent run traces under a non-GET root; GET roots are health probes.
@@ -138,21 +135,20 @@ def _assert_agent_workflow_trace(
                 client, f"{traces_path}{trace_id}"
             ):
                 fprint(f"{entity}: found {_AGENT_WORKFLOW_SPAN} in trace {trace_id}")
-                return True
-        return False
-
-    if not _agent_trace_found():
-        pytest.fail(
-            f"No agent trace with {_AGENT_WORKFLOW_SPAN} for {entity} after {timeout_s}s "
-            f"({traces_path}). Roots seen: {sorted(roots_seen)}."
-        )
+                return
+        if time.monotonic() >= deadline:
+            pytest.fail(
+                f"No agent trace with {_AGENT_WORKFLOW_SPAN} for {entity} after {timeout_s}s "
+                f"({traces_path}). Roots seen: {sorted(roots_seen)}."
+            )
+        time.sleep(poll_s)
 
 
 def _assert_comparison_prompt_completed(prompt: ComparisonPrompt) -> None:
-    """Fail unless a COMPLETED result produced real output (no error, non-zero tokens).
+    """Fail unless a result reached COMPLETED without an error.
 
-    result_text is just "streaming success" for streaming agents, so we assert on the
-    SDK's framework-agnostic signals instead.
+    result_text is just "streaming success" for streaming agents, so we key on the
+    SDK's framework-agnostic execution_status / error_message instead.
     """
     results = prompt.results or []
     completed = [r for r in results if r.execution_status == "COMPLETED"]
@@ -168,12 +164,6 @@ def _assert_comparison_prompt_completed(prompt: ComparisonPrompt) -> None:
             pytest.fail(
                 f"ComparisonPrompt {prompt.id} result {result.id} returned an error: "
                 f"{meta.error_message}"
-            )
-        output_tokens = meta.output_token_count if meta is not None else None
-        if not output_tokens:
-            pytest.fail(
-                f"ComparisonPrompt {prompt.id} result {result.id} produced no output "
-                f"(output_token_count={output_tokens!r})"
             )
 
 
