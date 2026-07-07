@@ -62,9 +62,7 @@ def _deployment_llm_base_url(deployment_id: str) -> str:
     The DataRobot Memory Service appends ``/chat/completions`` when calling
     the OpenAI-compatible client, so this must not include that suffix.
     """
-    return (
-        f"{get_datarobot_url().rstrip('/')}/deployments/{deployment_id}"
-    )
+    return f"{get_datarobot_url().rstrip('/')}/deployments/{deployment_id}"
 
 
 def _normalize_optional_env(value: str | None) -> str | None:
@@ -173,9 +171,9 @@ DEFAULT_DRUM_CLIENT_REQUEST_TIMEOUT: Final[str] = "300"
 {% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
 # Agent memory runtime parameters
 AGENT_MEMORY_SPACE_ID: Final[str] = "AGENT_MEMORY_SPACE_ID"
-AGENT_MEMORY_TTL_SECONDS: Final[str] = "AGENT_MEMORY_TTL_SECONDS"
-CONFIGURED_AGENT_MEMORY_TTL_SECONDS: Final[str] = os.environ.get(
-    AGENT_MEMORY_TTL_SECONDS, "2592000"
+AGENT_MEMORY_TTL_DAYS: Final[str] = "AGENT_MEMORY_TTL_DAYS"
+CONFIGURED_AGENT_MEMORY_TTL_DAYS: Final[str] = os.environ.get(
+    AGENT_MEMORY_TTL_DAYS, "30"
 )
 {% endif -%}
 
@@ -615,9 +613,9 @@ agent_runtime_parameter_values.extend(
 {% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
 agent_runtime_parameter_values.append(
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        key=AGENT_MEMORY_TTL_SECONDS,
+        key=AGENT_MEMORY_TTL_DAYS,
         type="string",  # numeric is not compatible with DataRobotAppFrameworkBaseSettings
-        value=CONFIGURED_AGENT_MEMORY_TTL_SECONDS,
+        value=CONFIGURED_AGENT_MEMORY_TTL_DAYS,
     )
 )
 {% endif %}
