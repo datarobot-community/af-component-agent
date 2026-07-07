@@ -26,6 +26,7 @@ from typing import Any, Callable
 import backoff
 import pytest
 import requests
+from datarobot.errors import ClientError, ServerError
 from openai import (
     APIConnectionError,
     APIStatusError,
@@ -37,6 +38,8 @@ from openai import (
 # Everything else (4xx, plain 500 with an agent error body) propagates so
 # real bugs aren't masked.
 _RETRYABLE_STATUS_CODES = frozenset({429, 502, 503, 504})
+
+RETRYABLE_DR_STATUS_CODES = _RETRYABLE_STATUS_CODES | frozenset({500})
 
 # Exception types that are always transient (no status code involved).
 _ALWAYS_TRANSIENT: tuple[type[BaseException], ...] = (
@@ -62,6 +65,9 @@ def _is_transient(exc: BaseException) -> bool:
         return status in _RETRYABLE_STATUS_CODES
     if isinstance(exc, APIStatusError):
         return exc.status_code in _RETRYABLE_STATUS_CODES
+    # datarobot SDK raises ClientError/ServerError on trace-verification calls.
+    if isinstance(exc, (ClientError, ServerError)):
+        return exc.status_code in RETRYABLE_DR_STATUS_CODES
     return False
 
 
