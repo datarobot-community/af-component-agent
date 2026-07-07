@@ -176,7 +176,7 @@ Memory-related settings are loaded through `agent/config.py` and standard DataRo
 |---|---------|---|
 | `AGENT_MEMORY_TTL_DAYS` | `30`    | How long stored memories are retained before expiration. Set via the `AGENT_MEMORY_TTL_DAYS` runtime parameter at deploy time or in `.env` for local development. |
 
-The constant `AGENT_MEMORY_TTL_DAYS` in `config.py` mirrors the default (`30` seconds).
+The constant `AGENT_MEMORY_TTL_DAYS` in `config.py` mirrors the default (`30` days).
 
 ### Mem0 provider
 
