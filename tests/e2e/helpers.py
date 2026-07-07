@@ -102,23 +102,6 @@ def pulumi_stack_output_value(
     return val.strip()
 
 
-def assert_response_text_ok(
-    *, response_text: str, agent_framework: str, context: str
-) -> None:
-    prefix = f"{context} [{agent_framework}]"
-
-    text = (response_text or "").strip()
-    if len(text) <= 5:
-        pytest.fail(f"{prefix}: response too short: {text!r}")
-
-    lowered = text.lower()
-    if (
-        lowered.startswith("error:")
-        or "failed to obtain agent chat response" in lowered
-    ):
-        pytest.fail(f"{prefix}: agent execution returned an error:\n{text}")
-
-
 def verify_openai_response(completion: ChatCompletion) -> None:
     """Verify a ChatCompletion has at least one choice with non-empty string content."""
     try:
