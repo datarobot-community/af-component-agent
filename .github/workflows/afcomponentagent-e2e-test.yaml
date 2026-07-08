@@ -164,6 +164,7 @@ jobs:
           LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"
           DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
           DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
+          DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT: 6a4e107a05fe40d713af2713
         run: |
           # Capture console output (nothing else writes log files) so the
           # failure artifact carries real triage data. `shell: bash` runs with
