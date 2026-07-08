@@ -1194,7 +1194,7 @@ class TestEnableAgentHAMode:
 
         assert agent_infra.ENABLE_AGENT_HA_MODE is False
         assert agent_infra.DEFAULT_CUSTOM_MODEL_WORKERS == "2"
-        assert agent_infra.DEFAULT_AGENT_RESOURCE_BUNDLE_ID == "cpu.3xlarge"
+        assert agent_infra.DEFAULT_AGENT_RESOURCE_BUNDLE_ID == "cpu.xlarge"
         assert agent_infra.DEFAULT_AGENT_REPLICAS == 1
         assert agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 2
 
@@ -1208,7 +1208,7 @@ class TestEnableAgentHAMode:
 
         assert agent_infra.ENABLE_AGENT_HA_MODE is False
         assert agent_infra.DEFAULT_CUSTOM_MODEL_WORKERS == "2"
-        assert agent_infra.DEFAULT_AGENT_RESOURCE_BUNDLE_ID == "cpu.3xlarge"
+        assert agent_infra.DEFAULT_AGENT_RESOURCE_BUNDLE_ID == "cpu.xlarge"
         assert agent_infra.DEFAULT_AGENT_REPLICAS == 1
         assert agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 2
 
@@ -1222,7 +1222,7 @@ class TestEnableAgentHAMode:
 
         assert agent_infra.ENABLE_AGENT_HA_MODE is True
         assert agent_infra.DEFAULT_CUSTOM_MODEL_WORKERS == "5"
-        assert agent_infra.DEFAULT_AGENT_RESOURCE_BUNDLE_ID == "cpu.5xlarge"
+        assert agent_infra.DEFAULT_AGENT_RESOURCE_BUNDLE_ID == "cpu.3xlarge"
         assert agent_infra.DEFAULT_AGENT_REPLICAS == 2
         assert agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 4
 
@@ -1246,12 +1246,12 @@ class TestEnableAgentHAMode:
             assert agent_infra.ENABLE_AGENT_HA_MODE is expected
             if expected:
                 assert agent_infra.DEFAULT_CUSTOM_MODEL_WORKERS == "5"
-                assert agent_infra.DEFAULT_AGENT_RESOURCE_BUNDLE_ID == "cpu.5xlarge"
+                assert agent_infra.DEFAULT_AGENT_RESOURCE_BUNDLE_ID == "cpu.3xlarge"
                 assert agent_infra.DEFAULT_AGENT_REPLICAS == 2
                 assert agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 4
             else:
                 assert agent_infra.DEFAULT_CUSTOM_MODEL_WORKERS == "2"
-                assert agent_infra.DEFAULT_AGENT_RESOURCE_BUNDLE_ID == "cpu.3xlarge"
+                assert agent_infra.DEFAULT_AGENT_RESOURCE_BUNDLE_ID == "cpu.xlarge"
                 assert agent_infra.DEFAULT_AGENT_REPLICAS == 1
                 assert agent_infra.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 2
 
