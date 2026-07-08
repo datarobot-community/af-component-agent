@@ -1859,9 +1859,8 @@ class TestA2AEndpointRuntimeParameter:
     def test_a2a_endpoint_param_present_when_a2a_and_dragent_enabled(
         self, monkeypatch, tmp_path
     ):
-        """When workflow.yaml has A2A config and ENABLE_DRAGENT_SERVER=true,
+        """When workflow.yaml has A2A config
         the A2A endpoint runtime parameter must appear in {{agent_app_name}}_agent_runtime_parameters."""
-        monkeypatch.setenv("ENABLE_DRAGENT_SERVER", "true")
         monkeypatch.setenv("AGENT_DEPLOY", "1")
         monkeypatch.setenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2")
         monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
@@ -1887,8 +1886,7 @@ class TestA2AEndpointRuntimeParameter:
 
     def test_a2a_endpoint_param_absent_when_a2a_disabled(self, monkeypatch, tmp_path):
         """When workflow.yaml has no A2A config, the A2A endpoint parameter must NOT
-        appear in {{agent_app_name}}_agent_runtime_parameters — even if DRAgent is on."""
-        monkeypatch.setenv("ENABLE_DRAGENT_SERVER", "true")
+        appear in {{agent_app_name}}_agent_runtime_parameters"""
         monkeypatch.setenv("AGENT_DEPLOY", "1")
         monkeypatch.setenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2")
         monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)

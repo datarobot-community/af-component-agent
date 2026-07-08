@@ -167,7 +167,6 @@ The agent component runs on the **DRAgent** front server&mdash;a NAT (NeMo Agent
 - **Execution model**&mdash;fully asynchronous (native `async`/`await`).
 - **Streaming**&mdash;native async streaming via `DRAgentEventResponse`.
 - **Local dev**&mdash;the Taskfile runs `nat dragent serve --config_file workflow.yaml` on port `AGENT_PORT` (default `8842`). CLI commands (`task agent:cli -- execute …`) are forwarded to `nat dragent run`/`query` and run the workflow in-process without a server.
-- **Deployment**&mdash;the `ENABLE_DRAGENT_SERVER` runtime parameter on the custom model is set automatically by the infrastructure (see `template/infra/infra/<agent_app_name>.py`).
 
 DRAgent is required for [Agent-to-Agent (A2A)](./agent2agent.md), [agent memory](./agent-memory.md), and `workflow.yaml`-driven [moderation middleware](./moderation.md).
 
