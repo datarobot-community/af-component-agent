@@ -153,10 +153,16 @@ def _assert_comparison_prompt_completed(prompt: ComparisonPrompt) -> None:
     results = prompt.results or []
     completed = [r for r in results if r.execution_status == "COMPLETED"]
     if not completed:
-        statuses = [r.execution_status for r in results]
-        pytest.fail(
-            f"ComparisonPrompt {prompt.id} did not complete: statuses={statuses}"
-        )
+        details = []
+        for r in results:
+            meta = r.result_metadata
+            error = meta.error_message if meta is not None else None
+            details.append(
+                f"result {r.id}: status={r.execution_status}"
+                + (f", error={error}" if error else "")
+            )
+        joined = "; ".join(details) if details else "no results returned"
+        pytest.fail(f"ComparisonPrompt {prompt.id} did not complete: {joined}")
 
     for result in completed:
         meta = result.result_metadata
