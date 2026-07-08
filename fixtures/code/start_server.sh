@@ -25,4 +25,4 @@ time uv sync --frozen --active --no-progress --group extras || true
 echo
 echo "Executing command: nat dragent serve --config_file workflow.yaml --host 0.0.0.0 --port 8080 $*"
 echo
-exec nat dragent serve --config_file workflow.yaml --host 0.0.0.0 --port 8080
+exec nat dragent serve --config_file ${CODE_DIR}/workflow.yaml --host 0.0.0.0 --port 8080
