@@ -280,7 +280,7 @@ def test_execution_environment_pinned_set(monkeypatch):
     )
     monkeypatch.setenv(
         "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
-        "69e2134aa5df12076d70afe7",
+        "6a4e0e5874d3a4076d933c72",
     )
 
     import importlib
@@ -346,7 +346,7 @@ def test_resolve_execution_environment_version_not_found_returns_none(monkeypatc
 
     monkeypatch.setenv(
         "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
-        "69e2134aa5df12076d70afe7",
+        "6a4e0e5874d3a4076d933c72",
     )
     monkeypatch.setattr(
         "datarobot.ExecutionEnvironmentVersion.get",
@@ -361,7 +361,7 @@ def test_resolve_execution_environment_version_not_found_returns_none(monkeypatc
     assert version_id is None
     agent_infra.pulumi.warn.assert_called_once()
     call_msg = agent_infra.pulumi.warn.call_args[0][0]
-    assert "69e2134aa5df12076d70afe7" in call_msg
+    assert "6a4e0e5874d3a4076d933c72" in call_msg
     assert "using latest" in call_msg
 
 
@@ -372,10 +372,10 @@ def test_resolve_execution_environment_version_found(monkeypatch):
 
     monkeypatch.setenv(
         "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
-        "abcdef0123456789abcdef01",
+        "6a4e0e5874d3a4076d933c72",
     )
     mock_version = MagicMock()
-    mock_version.id = "abcdef0123456789abcdef01"
+    mock_version.id = "6a4e0e5874d3a4076d933c72"
     mock_version.build_status = EXECUTION_ENVIRONMENT_VERSION_BUILD_STATUS.SUCCESS
     monkeypatch.setattr(
         "datarobot.ExecutionEnvironmentVersion.get",
@@ -387,7 +387,7 @@ def test_resolve_execution_environment_version_found(monkeypatch):
         "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
     )
 
-    assert version_id == "abcdef0123456789abcdef01"
+    assert version_id == "6a4e0e5874d3a4076d933c72"
     agent_infra.pulumi.warn.assert_not_called()
 
 
@@ -397,10 +397,10 @@ def test_resolve_execution_environment_version_not_success_returns_none(monkeypa
 
     monkeypatch.setenv(
         "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
-        "abcdef0123456789abcdef01",
+        "6a4e0e5874d3a4076d933c72",
     )
     mock_version = MagicMock()
-    mock_version.id = "abcdef0123456789abcdef01"
+    mock_version.id = "6a4e0e5874d3a4076d933c72"
     mock_version.build_status = "processing"
     monkeypatch.setattr(
         "datarobot.ExecutionEnvironmentVersion.get",
@@ -415,7 +415,7 @@ def test_resolve_execution_environment_version_not_success_returns_none(monkeypa
     assert version_id is None
     agent_infra.pulumi.warn.assert_called_once()
     call_msg = agent_infra.pulumi.warn.call_args[0][0]
-    assert "abcdef0123456789abcdef01" in call_msg
+    assert "6a4e0e5874d3a4076d933c72" in call_msg
     assert "using latest" in call_msg
 
 
