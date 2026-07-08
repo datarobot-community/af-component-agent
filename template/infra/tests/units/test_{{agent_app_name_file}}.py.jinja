@@ -587,8 +587,8 @@ def test_custom_model_resource_bundle_and_replicas(monkeypatch):
     agent_infra.pulumi_datarobot.CustomModel.assert_called_once()
     args, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
 
-    # Verify resource_bundle_id is set to cpu.3xlarge (non-HA default)
-    assert kwargs["resource_bundle_id"] == "cpu.3xlarge"
+    # Verify resource_bundle_id is set to cpu.xlarge (non-HA default)
+    assert kwargs["resource_bundle_id"] == "cpu.xlarge"
 
     # Verify replicas is set to 1
     assert kwargs["replicas"] == 1
@@ -607,7 +607,7 @@ def test_custom_model_resource_bundle_and_replicas_ha_mode(monkeypatch):
 
     agent_infra.pulumi_datarobot.CustomModel.assert_called_once()
     args, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
-    assert kwargs["resource_bundle_id"] == "cpu.5xlarge"
+    assert kwargs["resource_bundle_id"] == "cpu.3xlarge"
     assert kwargs["replicas"] == 2
 
 
