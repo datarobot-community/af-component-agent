@@ -145,7 +145,7 @@ jobs:
           # Stop the container after success
           docker stop "$CONTAINER_ID"
           echo "Stopped container: $CONTAINER_ID"
-      - name: Test DRUM server in Docker container
+      - name: Test dragent server in Docker container
         run: |
           # Start the container in the background
           sudo chmod a+x $(pwd)/fixtures/code/start_server.sh
@@ -159,17 +159,17 @@ jobs:
             test-agent:latest /opt/code/start_server.sh)
           echo "Started container: $CONTAINER_ID"
           # Wait for the server to start
-          echo "Waiting for DRUM server to start..."
+          echo "Waiting for dragent server to start..."
           for i in {1..30}; do
             if curl -s http://localhost:8080/ > /dev/null; then
-              echo "DRUM server is up and responding."
+              echo "dragent server is up and responding."
               break
             fi
             sleep 1
           done
           # Check if server responded
           if ! curl -s http://localhost:8080/ > /dev/null; then
-            echo "DRUM server did not respond on port 8080 after 30 seconds."
+            echo "dragent server did not respond on port 8080 after 30 seconds."
             docker logs "$CONTAINER_ID"
             docker stop "$CONTAINER_ID"
             exit 1

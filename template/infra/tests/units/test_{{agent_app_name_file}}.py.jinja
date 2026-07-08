@@ -489,14 +489,14 @@ def test_custom_model_created(monkeypatch):
 
     runtime_parameter_values = kwargs["runtime_parameter_values"]
 {% if use_agent_memory == 'mem0' %}
-    # Should have 8 params: 1 SESSION_SECRET_KEY + 5 DRUM params + memory TTL + mem0 api key
-    assert len(runtime_parameter_values) == 8
+    # Should have 4 params: 1 SESSION_SECRET_KEY + 1 server param + memory TTL + mem0 api key
+    assert len(runtime_parameter_values) == 4
 {% elif use_agent_memory in ['datarobot_memory_service'] %}
-    # Should have 8 params: 1 SESSION_SECRET_KEY + 5 DRUM params + memory TTL + memory space ID
-    assert len(runtime_parameter_values) == 8
+    # Should have 8 params: 1 SESSION_SECRET_KEY + 1 server param + memory TTL + memory space ID
+    assert len(runtime_parameter_values) == 4
 {% else %}
-    # Should have 6 params: 1 SESSION_SECRET_KEY + 5 DRUM params
-    assert len(runtime_parameter_values) == 6
+    # Should have 2 params: 1 SESSION_SECRET_KEY + 1 server param
+    assert len(runtime_parameter_values) == 2
 {% endif %}
     # Find the SESSION_SECRET_KEY parameter
     session_secret_param = next(
@@ -1550,10 +1550,8 @@ class TestGenerateMetadataYaml:
             ),
             # Credential parameter - should NOT have defaultValue
             RuntimeParam(key="SESSION_SECRET_KEY", type="credential", value=None),
-            # DRUM numeric parameter - should HAVE defaultValue (in allowlist)
+            # numeric parameter - should HAVE defaultValue (in allowlist)
             RuntimeParam(key="CUSTOM_MODEL_WORKERS", type="numeric", value="5"),
-            # DRUM string parameter - should HAVE defaultValue (in allowlist)
-            RuntimeParam(key="DRUM_SERVER_TYPE", type="string", value="gunicorn"),
             # String parameter with special characters - should NOT have defaultValue (not in allowlist)
             RuntimeParam(
                 key="EXTERNAL_MCP_HEADERS", type="string", value='{"auth": "token"}'
@@ -1601,21 +1599,13 @@ class TestGenerateMetadataYaml:
         assert "defaultValue" not in params[1]
         assert "credentialType" not in params[1]
 
-        # DRUM numeric parameter - should HAVE defaultValue (in allowlist)
+        # numeric parameter - should HAVE defaultValue (in allowlist)
         assert params[2]["fieldName"] == "CUSTOM_MODEL_WORKERS"
         assert params[2]["type"] == "numeric"
         assert "defaultValue" in params[2], (
-            "DRUM parameters in allowlist should have defaultValue"
+            "Parameters in allowlist should have defaultValue"
         )
         assert params[2]["defaultValue"] == "5"
-
-        # DRUM string parameter - should HAVE defaultValue (in allowlist)
-        assert params[3]["fieldName"] == "DRUM_SERVER_TYPE"
-        assert params[3]["type"] == "string"
-        assert "defaultValue" in params[3], (
-            "DRUM parameters in allowlist should have defaultValue"
-        )
-        assert params[3]["defaultValue"] == "gunicorn"
 
         # String parameter with sensitive data - should NOT have defaultValue (not in allowlist)
         assert params[4]["fieldName"] == "EXTERNAL_MCP_HEADERS"
@@ -1760,9 +1750,9 @@ class TestAgentMemoryRuntimeParameter:
         assert memory_ttl_param is None
 {% endif %}
 
-class TestDrumRuntimeParameters:
-    def test_drum_runtime_parameters_included(self, monkeypatch):
-        """Test that DRUM concurrency runtime parameters are included in agent_runtime_parameter_values."""
+class TestServerRuntimeParameters:
+    def test_server_runtime_parameters_included(self, monkeypatch):
+        """Test that server concurrency runtime parameters are included in agent_runtime_parameter_values."""
         monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
 
         import importlib
@@ -1770,45 +1760,25 @@ class TestDrumRuntimeParameters:
 
         importlib.reload(agent_infra)
 
-        # Get all DRUM-related parameters
-        drum_params = {
+        # Get all server parameters
+        server_params = {
             param.key: param
             for param in agent_infra.agent_runtime_parameter_values
             if param.key
             in [
                 "CUSTOM_MODEL_WORKERS",
-                "DRUM_SERVER_TYPE",
-                "DRUM_GUNICORN_WORKER_CLASS",
-                "DRUM_WORKER_CONNECTIONS",
-                "DRUM_CLIENT_REQUEST_TIMEOUT",
             ]
         }
 
-        # Verify all 5 DRUM parameters are present
+        # Verify all parameters are present
         assert len(drum_params) == 5
 
         # Check CUSTOM_MODEL_WORKERS
-        assert drum_params["CUSTOM_MODEL_WORKERS"].type == "numeric"
-        assert drum_params["CUSTOM_MODEL_WORKERS"].value == "2"
+        assert server_params["CUSTOM_MODEL_WORKERS"].type == "numeric"
+        assert server_params["CUSTOM_MODEL_WORKERS"].value == "2"
 
-        # Check DRUM_SERVER_TYPE
-        assert drum_params["DRUM_SERVER_TYPE"].type == "string"
-        assert drum_params["DRUM_SERVER_TYPE"].value == "gunicorn"
-
-        # Check DRUM_GUNICORN_WORKER_CLASS
-        assert drum_params["DRUM_GUNICORN_WORKER_CLASS"].type == "string"
-        assert drum_params["DRUM_GUNICORN_WORKER_CLASS"].value == "sync"
-
-        # Check DRUM_WORKER_CONNECTIONS
-        assert drum_params["DRUM_WORKER_CONNECTIONS"].type == "numeric"
-        assert drum_params["DRUM_WORKER_CONNECTIONS"].value == "1"
-
-        # Check DRUM_CLIENT_REQUEST_TIMEOUT
-        assert drum_params["DRUM_CLIENT_REQUEST_TIMEOUT"].type == "numeric"
-        assert drum_params["DRUM_CLIENT_REQUEST_TIMEOUT"].value == "300"
-
-    def test_drum_runtime_parameters_passed_to_custom_model(self, monkeypatch):
-        """Test that DRUM runtime parameters are passed to CustomModel."""
+    def test_server_runtime_parameters_passed_to_custom_model(self, monkeypatch):
+        """Test that server runtime parameters are passed to CustomModel."""
         monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
 
         import importlib
@@ -1821,16 +1791,12 @@ class TestDrumRuntimeParameters:
         _, kwargs = agent_infra.pulumi_datarobot.CustomModel.call_args
 
         runtime_params = kwargs["runtime_parameter_values"]
-        drum_keys = [
+        server_keys = [
             "CUSTOM_MODEL_WORKERS",
-            "DRUM_SERVER_TYPE",
-            "DRUM_GUNICORN_WORKER_CLASS",
-            "DRUM_WORKER_CONNECTIONS",
-            "DRUM_CLIENT_REQUEST_TIMEOUT",
         ]
 
-        found_keys = [param.key for param in runtime_params if param.key in drum_keys]
-        assert set(found_keys) == set(drum_keys)
+        found_keys = [param.key for param in runtime_params if param.key in server_keys]
+        assert set(found_keys) == set(server_keys)
 
 
 class TestA2AEndpointRuntimeParameter:

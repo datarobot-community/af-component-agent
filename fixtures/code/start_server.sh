@@ -5,7 +5,7 @@
 # This is proprietary source code of DataRobot, Inc. and its affiliates.
 #
 # Released under the terms of DataRobot Tool and Utility Agreement.
-echo "Starting Custom Model environment with DRUM prediction server"
+echo "Starting Custom Model environment with dragent prediction server"
 
 if [ "${ENABLE_CUSTOM_MODEL_RUNTIME_ENV_DUMP}" = 1 ]; then
     echo "Environment variables:"
@@ -23,6 +23,6 @@ source ${VENV_PATH}/bin/activate
 time uv sync --frozen --active --no-progress --group extras || true
 
 echo
-echo "Executing command: drum server $*"
+echo "Executing command: nat dragent serve --config_file workflow.yaml --host 0.0.0.0 --port 8080 $*"
 echo
-exec drum server "$@"
+exec nat dragent serve --config_file workflow.yaml --host 0.0.0.0 --port 8080
