@@ -1582,9 +1582,9 @@ class TestGenerateMetadataYaml:
         # Verify parameters maintain order and correct types
         params = metadata["runtimeParameterDefinitions"]
 {% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
-        assert len(params) == 6
-{% else %}
         assert len(params) == 5
+{% else %}
+        assert len(params) == 4
 {% endif %}
         # String parameter - should NOT have defaultValue (not in allowlist)
         assert params[0]["fieldName"] == "LLM_DEPLOYMENT_ID"
@@ -1608,16 +1608,16 @@ class TestGenerateMetadataYaml:
         assert params[2]["defaultValue"] == "5"
 
         # String parameter with sensitive data - should NOT have defaultValue (not in allowlist)
-        assert params[4]["fieldName"] == "EXTERNAL_MCP_HEADERS"
-        assert params[4]["type"] == "string"
-        assert "defaultValue" not in params[4], (
+        assert params[3]["fieldName"] == "EXTERNAL_MCP_HEADERS"
+        assert params[3]["type"] == "string"
+        assert "defaultValue" not in params[3], (
             "String parameters with sensitive data should not have defaultValue"
         )
 {% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
         # Agent memory TTL parameter - should NOT have defaultValue
-        assert params[5]["fieldName"] == AGENT_MEMORY_TTL_DAYS
-        assert params[5]["type"] == "string"
-        assert "defaultValue" not in params[5], (
+        assert params[4]["fieldName"] == AGENT_MEMORY_TTL_DAYS
+        assert params[4]["type"] == "string"
+        assert "defaultValue" not in params[4], (
             "Agent memory TTL parameter should not have defaultValue"
         )
 {% endif %}
@@ -1771,7 +1771,7 @@ class TestServerRuntimeParameters:
         }
 
         # Verify all parameters are present
-        assert len(drum_params) == 5
+        assert len(server_params) == 1
 
         # Check CUSTOM_MODEL_WORKERS
         assert server_params["CUSTOM_MODEL_WORKERS"].type == "numeric"
