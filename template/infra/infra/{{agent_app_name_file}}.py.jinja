@@ -15,7 +15,7 @@ import os
 from pathlib import Path
 import re
 import shutil
-from typing import cast, Final, Sequence
+from typing import cast, Final, Optional, Any, Sequence
 import yaml  # type: ignore[import-untyped]
 
 import datarobot as dr
@@ -44,7 +44,7 @@ DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
 {%- if use_agent_memory == 'datarobot_memory_service' %}
 
 
-def _llm_component_config_value(key: str) -> object | None:
+def _llm_component_config_value(key: str) -> Any | None:
     """Read a value from the LLM component's configuration export."""
     for param in llm_custom_model_runtime_parameters:
         param_key = param.key
@@ -335,30 +335,55 @@ def synchronize_pyproject_dependencies():
             shutil.copy2(uv_lock_path, docker_context_uv_lock_path)
 
 
-def discover_mcp_runtime_parameters() -> list[
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs
-]:
-    """Collect MCP runtime parameters exported by sibling infra modules.
+def maybe_import_from_module(module: str, object_name: str) -> Optional[Any]:
+    """Attempt to import an object from a module.
 
-    A DataRobot MCP component, when present in the project, renders a Pulumi
-    module exporting ``mcp_custom_model_runtime_parameters`` (carrying the MCP
-    deployment id). We discover it by that convention rather than by name, so
-    the agent holds no reference to any MCP component and stays self-contained
-    when none is installed.
+    Args:
+        module: The module name to import from (can include relative imports like ".module_name")
+        object_name: The name of the object to import from the module
+
+    Returns:
+        The imported object if successful, None otherwise
+    """
+    if not module:
+        return None
+
+    try:
+        import importlib
+
+        # Ensure relative import format
+        module_path = module if module.startswith(".") else f".{module}"
+        imported_module = importlib.import_module(module_path, package=__package__)
+        return getattr(imported_module, object_name, None)
+    except (ImportError, AttributeError):
+        return None
+
+
+def discover_mcp_runtime_parameters() -> (
+    list[pulumi_datarobot.CustomModelRuntimeParameterValueArgs] | None
+):
+    """Collect MCP params from a sibling module by the
+    ``mcp_custom_model_runtime_parameters`` export convention, not by name.
+
+    Returns None when no MCP module is present (caller then uses env vars);
+    a present module returns its params even if empty.
     """
     import importlib
     import pkgutil
 
     params: list[pulumi_datarobot.CustomModelRuntimeParameterValueArgs] = []
+    found = False
     package = importlib.import_module(__package__)
     for module_info in pkgutil.iter_modules(package.__path__):
         if module_info.name == __name__.rsplit(".", 1)[-1]:
             continue  # skip this module
-        module = importlib.import_module(f".{module_info.name}", package=__package__)
-        exported = getattr(module, "mcp_custom_model_runtime_parameters", None)
+        exported = maybe_import_from_module(
+            module_info.name, "mcp_custom_model_runtime_parameters"
+        )
         if isinstance(exported, list):
+            found = True
             params.extend(exported)
-    return params
+    return params if found else None
 
 
 def get_mcp_runtime_parameters_from_env() -> list[
@@ -428,7 +453,10 @@ def get_mcp_custom_model_runtime_parameters() -> list[
     Load MCP runtime parameters from a sibling MCP module if one is present in
     the project, otherwise fall back to environment variables.
     """
-    return discover_mcp_runtime_parameters() or get_mcp_runtime_parameters_from_env()
+    discovered = discover_mcp_runtime_parameters()
+    if discovered is not None:
+        return discovered
+    return get_mcp_runtime_parameters_from_env()
 
 
 def _update_deployment_predictions_settings(
@@ -618,7 +646,7 @@ if not isinstance(_agent_llm_deployment, pulumi.Output):
     _agent_llm_deployment = pulumi.Output.from_input(_agent_llm_deployment or "")
 
 
-def _apply_memory_space_llm_config(resolved: list[str]) -> str:
+def _apply_memory_space_llm_config(resolved: list[Any]) -> str:
     space_id, agent_deployment_id = resolved
     return _configure_memory_space_llm_routing(
         space_id,

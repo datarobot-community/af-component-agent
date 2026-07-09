@@ -1442,13 +1442,65 @@ class TestDiscoverMcpRuntimeParameters:
 
         assert agent_infra.discover_mcp_runtime_parameters() == sentinel
 
-    def test_returns_empty_when_no_sibling_exports(self, monkeypatch):
-        """No sibling module exports the symbol -> empty list (self-contained agent)."""
+    def test_returns_none_when_no_sibling_exports(self, monkeypatch):
+        """No sibling module exports the symbol -> None (self-contained agent)."""
         import pkgutil
 
         import infra.{{agent_app_name}} as agent_infra
 
         monkeypatch.setattr(pkgutil, "iter_modules", lambda path: iter(()))
+        assert agent_infra.discover_mcp_runtime_parameters() is None
+
+    def test_skips_sibling_that_fails_to_import(self, monkeypatch):
+        """A sibling that raises on import is skipped; discovery keeps going."""
+        import importlib
+        import pkgutil
+
+        import infra.{{agent_app_name}} as agent_infra
+
+        sentinel = ["mcp-runtime-param-sentinel"]
+        fake_mcp_module = MagicMock()
+        fake_mcp_module.mcp_custom_model_runtime_parameters = sentinel
+        real_import_module = importlib.import_module
+
+        def fake_iter_modules(path):
+            yield pkgutil.ModuleInfo(None, "broken_module", False)
+            yield pkgutil.ModuleInfo(None, "mcp_server", False)
+
+        def fake_import_module(name, package=None):
+            if name == ".broken_module":
+                raise ImportError("boom")
+            if name == ".mcp_server":
+                return fake_mcp_module
+            return real_import_module(name, package)
+
+        monkeypatch.setattr(pkgutil, "iter_modules", fake_iter_modules)
+        monkeypatch.setattr(importlib, "import_module", fake_import_module)
+
+        assert agent_infra.discover_mcp_runtime_parameters() == sentinel
+
+    def test_returns_empty_list_when_sibling_exports_empty(self, monkeypatch):
+        """A present MCP module exporting [] -> [] (found), NOT None."""
+        import importlib
+        import pkgutil
+
+        import infra.{{agent_app_name}} as agent_infra
+
+        fake_mcp_module = MagicMock()
+        fake_mcp_module.mcp_custom_model_runtime_parameters = []
+        real_import_module = importlib.import_module
+
+        def fake_iter_modules(path):
+            yield pkgutil.ModuleInfo(None, "mcp_server", False)
+
+        def fake_import_module(name, package=None):
+            if name == ".mcp_server":
+                return fake_mcp_module
+            return real_import_module(name, package)
+
+        monkeypatch.setattr(pkgutil, "iter_modules", fake_iter_modules)
+        monkeypatch.setattr(importlib, "import_module", fake_import_module)
+
         assert agent_infra.discover_mcp_runtime_parameters() == []
 
 
@@ -1463,6 +1515,15 @@ class TestGetMcpCustomModelRuntimeParameters:
         )
         assert agent_infra.get_mcp_custom_model_runtime_parameters() == sentinel
 
+    def test_present_but_empty_mcp_module_does_not_fall_back_to_env(self, monkeypatch):
+        """A present MCP module exporting [] must NOT pull env vars (no stale-env shadowing)."""
+        import infra.{{agent_app_name}} as agent_infra
+
+        monkeypatch.setenv("MCP_DEPLOYMENT_ID", "stale-deployment-id")
+        # discovery found a module (returns []), so env must be ignored
+        monkeypatch.setattr(agent_infra, "discover_mcp_runtime_parameters", lambda: [])
+        assert agent_infra.get_mcp_custom_model_runtime_parameters() == []
+
     def test_get_mcp_custom_model_runtime_parameters_fallback_to_env(self, monkeypatch):
         """Test that MCP runtime parameters fall back to environment variables when module is unavailable."""
         import infra.{{agent_app_name}} as agent_infra
@@ -1475,8 +1536,10 @@ class TestGetMcpCustomModelRuntimeParameters:
         )
         monkeypatch.setenv("EXTERNAL_MCP_TRANSPORT", "sse")
 
-        # No sibling MCP module present -> discovery is empty, fall back to env
-        monkeypatch.setattr(agent_infra, "discover_mcp_runtime_parameters", lambda: [])
+        # No sibling MCP module present -> discovery returns None, fall back to env
+        monkeypatch.setattr(
+            agent_infra, "discover_mcp_runtime_parameters", lambda: None
+        )
 
         # Get runtime parameters - should fall back to environment variables
         result = agent_infra.get_mcp_custom_model_runtime_parameters()
