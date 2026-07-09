@@ -49,7 +49,6 @@ tasks:
       - cd ./$RENDER_DIR/agent_{{.AGENT}}/ && [ -d . ] && find . -mindepth 1 -maxdepth 1 ! -name '.venv' -exec rm -rf {} + || true
       - mkdir -p ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/
       - cp ./fixtures/.datarobot/answers/llm-llm.yml ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/llm-llm.yml
-      - cp ./fixtures/.datarobot/answers/drmcp-mcp_server.yml ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/drmcp-mcp_server.yml
       - uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_template_framework={{.AGENT_TEMPLATE_FRAMEWORK}} --data use_agent_memory={{.USE_MEMORY}} --vcs-ref=HEAD
       - cp ./fixtures/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/Taskfile.yml
       - mkdir -p ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra
@@ -75,7 +74,6 @@ tasks:
       - cp ./fixtures/infra/pyproject.toml ./$RENDER_DIR/agent_{{.AGENT}}/infra/pyproject.toml
       - cp ./fixtures/infra/__init__.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/__init__.py
       - cp ./fixtures/infra/llm.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/llm.py
-      - cp ./fixtures/infra/mcp_server.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/mcp_server.py
 
   install-rendered:
     desc: "Install dev"
