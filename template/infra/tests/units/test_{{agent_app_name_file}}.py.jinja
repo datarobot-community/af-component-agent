@@ -1415,6 +1415,65 @@ name = "old-project"
         ).read_text() == new_content
 
 
+class TestMaybeImportFromModule:
+    def test_empty_module_name_returns_none(self):
+        """An empty module name short-circuits to None."""
+        import infra.{{agent_app_name}} as agent_infra
+
+        assert agent_infra.maybe_import_from_module("", "anything") is None
+
+    def test_returns_object_when_present(self, monkeypatch):
+        """Returns the named attribute when the module imports and defines it."""
+        import importlib
+
+        import infra.{{agent_app_name}} as agent_infra
+
+        module = MagicMock()
+        module.some_export = ["value"]
+        real_import_module = importlib.import_module
+
+        def fake_import_module(name, package=None):
+            if name == ".sibling":
+                return module
+            return real_import_module(name, package)
+
+        monkeypatch.setattr(importlib, "import_module", fake_import_module)
+        result = agent_infra.maybe_import_from_module("sibling", "some_export")
+        assert result == ["value"]
+
+    def test_missing_attribute_returns_none(self, monkeypatch):
+        """Module imports but does not define the attribute -> None."""
+        import importlib
+
+        import infra.{{agent_app_name}} as agent_infra
+
+        real_import_module = importlib.import_module
+
+        def fake_import_module(name, package=None):
+            if name == ".sibling":
+                return object()
+            return real_import_module(name, package)
+
+        monkeypatch.setattr(importlib, "import_module", fake_import_module)
+        assert agent_infra.maybe_import_from_module("sibling", "missing") is None
+
+    def test_swallows_any_import_error(self, monkeypatch):
+        """Any import-time error (not just ImportError) is swallowed -> None."""
+        import importlib
+
+        import infra.{{agent_app_name}} as agent_infra
+
+        real_import_module = importlib.import_module
+
+        def fake_import_module(name, package=None):
+            if name == ".broken":
+                raise RuntimeError("boom")
+            return real_import_module(name, package)
+
+        monkeypatch.setattr(importlib, "import_module", fake_import_module)
+        assert agent_infra.maybe_import_from_module("broken", "x") is None
+
+
 class TestDiscoverMcpRuntimeParameters:
     def test_discovers_params_from_sibling_module(self, monkeypatch):
         """A sibling infra module exporting mcp_custom_model_runtime_parameters is found."""
