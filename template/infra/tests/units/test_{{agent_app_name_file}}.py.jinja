@@ -1469,7 +1469,8 @@ class TestDiscoverMcpRuntimeParameters:
 
         def fake_import_module(name, package=None):
             if name == ".broken_module":
-                raise ImportError("boom")
+                # any import-time error, not just ImportError
+                raise RuntimeError("boom")
             if name == ".mcp_server":
                 return fake_mcp_module
             return real_import_module(name, package)
