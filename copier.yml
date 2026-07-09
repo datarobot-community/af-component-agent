@@ -25,7 +25,7 @@ use_agent_memory:
   default: none
   choices:
     None: none
-    "Datarobot Memory Service": datarobot_memory_service
+    "Datarobot Memory Service (requires ENABLE_AGENTIC_MEMORY_API feature flag)": datarobot_memory_service
     Mem0: mem0
 
 agent_template_framework:
