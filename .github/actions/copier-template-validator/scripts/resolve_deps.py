@@ -71,8 +71,8 @@ def find_rendered_answers_file(rendered_dir: Path, placed_files: set[Path]) -> P
 def topo_sort(deps: dict[str, dict], dep_trees: dict[str, list[str]]) -> list[str]:
     """
     Topological sort of dep keys given their own sub-dependencies.
-    dep_trees: { "llm": ["base"], "mcp": ["base"], "base": [] }
-    Returns ordered list e.g. ["base", "llm", "mcp"]
+    dep_trees: { "llm": ["base"], "base": [] }
+    Returns ordered list e.g. ["base", "llm"]
     """
     visited = set()
     order = []

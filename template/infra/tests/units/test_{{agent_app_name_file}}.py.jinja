@@ -1475,8 +1475,9 @@ class TestMaybeImportFromModule:
 
 
 class TestDiscoverMcpRuntimeParameters:
-    def test_discovers_params_from_sibling_module(self, monkeypatch):
-        """A sibling infra module exporting mcp_custom_model_runtime_parameters is found."""
+    def test_discovers_params_from_mcp_named_sibling(self, monkeypatch):
+        """A sibling infra module whose name contains 'mcp' and exports the
+        symbol is discovered."""
         import importlib
         import pkgutil
 
@@ -1501,8 +1502,34 @@ class TestDiscoverMcpRuntimeParameters:
 
         assert agent_infra.discover_mcp_runtime_parameters() == sentinel
 
+    def test_discovers_export_from_non_mcp_named_sibling(self, monkeypatch):
+        """Matching is by the export symbol, not the module name: a sibling
+        without 'mcp' in its name that exports the symbol is still discovered."""
+        import importlib
+        import pkgutil
+
+        import infra.{{agent_app_name}} as agent_infra
+
+        sentinel = ["renamed-mcp-sentinel"]
+        fake_module = MagicMock()
+        fake_module.mcp_custom_model_runtime_parameters = sentinel
+        real_import_module = importlib.import_module
+
+        def fake_iter_modules(path):
+            yield pkgutil.ModuleInfo(None, "tool_deployments", False)
+
+        def fake_import_module(name, package=None):
+            if name == ".tool_deployments":
+                return fake_module
+            return real_import_module(name, package)
+
+        monkeypatch.setattr(pkgutil, "iter_modules", fake_iter_modules)
+        monkeypatch.setattr(importlib, "import_module", fake_import_module)
+
+        assert agent_infra.discover_mcp_runtime_parameters() == sentinel
+
     def test_returns_none_when_no_sibling_exports(self, monkeypatch):
-        """No sibling module exports the symbol -> None (self-contained agent)."""
+        """No sibling module present -> None (self-contained agent)."""
         import pkgutil
 
         import infra.{{agent_app_name}} as agent_infra
@@ -1528,7 +1555,6 @@ class TestDiscoverMcpRuntimeParameters:
 
         def fake_import_module(name, package=None):
             if name == ".broken_module":
-                # any import-time error, not just ImportError
                 raise RuntimeError("boom")
             if name == ".mcp_server":
                 return fake_mcp_module
@@ -1562,6 +1588,30 @@ class TestDiscoverMcpRuntimeParameters:
         monkeypatch.setattr(importlib, "import_module", fake_import_module)
 
         assert agent_infra.discover_mcp_runtime_parameters() == []
+
+    def test_discovers_real_on_disk_sibling_without_mocking(self):
+        """Integration: a real module written into the infra package is
+        discovered via the real pkgutil + importlib scan (nothing mocked). Its
+        name has no 'mcp' in it, proving matching is by the export symbol."""
+        import importlib
+
+        import infra.{{agent_app_name}} as agent_infra
+
+        package = importlib.import_module(agent_infra.__package__)
+        module_name = "renamed_export_probe"
+        module_file = Path(package.__path__[0]) / f"{module_name}.py"
+        module_file.write_text(
+            'mcp_custom_model_runtime_parameters = ["real-on-disk-sentinel"]\n'
+        )
+        importlib.invalidate_caches()
+        try:
+            result = agent_infra.discover_mcp_runtime_parameters()
+            assert result is not None
+            assert "real-on-disk-sentinel" in result
+        finally:
+            module_file.unlink(missing_ok=True)
+            sys.modules.pop(f"{agent_infra.__package__}.{module_name}", None)
+            importlib.invalidate_caches()
 
 
 class TestGetMcpCustomModelRuntimeParameters:
