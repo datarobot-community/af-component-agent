@@ -375,8 +375,9 @@ def discover_mcp_runtime_parameters() -> (
     import importlib
     import pkgutil
 
-    params: list[pulumi_datarobot.CustomModelRuntimeParameterValueArgs] = []
-    found = False
+    matches: list[
+        tuple[str, list[pulumi_datarobot.CustomModelRuntimeParameterValueArgs]]
+    ] = []
     package = importlib.import_module(__package__)
     for module_info in pkgutil.iter_modules(package.__path__):
         if module_info.name == __name__.rsplit(".", 1)[-1]:
@@ -385,9 +386,17 @@ def discover_mcp_runtime_parameters() -> (
             module_info.name, "mcp_custom_model_runtime_parameters"
         )
         if isinstance(exported, list):
-            found = True
-            params.extend(exported)
-    return params if found else None
+            matches.append((module_info.name, exported))
+    if not matches:
+        return None
+    if len(matches) > 1:
+        module_names = ", ".join(name for name, _ in matches)
+        raise ValueError(
+            "Multiple MCP infra modules export "
+            f"mcp_custom_model_runtime_parameters ({module_names}). "
+            "The agent supports automatic wiring for one MCP component."
+        )
+    return matches[0][1]
 
 
 def get_mcp_runtime_parameters_from_env() -> list[

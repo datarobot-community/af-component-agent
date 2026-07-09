@@ -1528,6 +1528,37 @@ class TestDiscoverMcpRuntimeParameters:
 
         assert agent_infra.discover_mcp_runtime_parameters() == sentinel
 
+    def test_multiple_mcp_exports_raise_clear_error(self, monkeypatch):
+        """Automatic MCP wiring supports one exported MCP runtime parameter list;
+        multiple exports are ambiguous and should fail loudly."""
+        import importlib
+        import pkgutil
+
+        import infra.{{agent_app_name}} as agent_infra
+
+        first_module = MagicMock()
+        first_module.mcp_custom_model_runtime_parameters = ["first"]
+        second_module = MagicMock()
+        second_module.mcp_custom_model_runtime_parameters = ["second"]
+        real_import_module = importlib.import_module
+
+        def fake_iter_modules(path):
+            yield pkgutil.ModuleInfo(None, "mcp_server", False)
+            yield pkgutil.ModuleInfo(None, "tool_deployments", False)
+
+        def fake_import_module(name, package=None):
+            if name == ".mcp_server":
+                return first_module
+            if name == ".tool_deployments":
+                return second_module
+            return real_import_module(name, package)
+
+        monkeypatch.setattr(pkgutil, "iter_modules", fake_iter_modules)
+        monkeypatch.setattr(importlib, "import_module", fake_import_module)
+
+        with pytest.raises(ValueError, match="Multiple MCP infra modules"):
+            agent_infra.discover_mcp_runtime_parameters()
+
     def test_returns_none_when_no_sibling_exports(self, monkeypatch):
         """No sibling module present -> None (self-contained agent)."""
         import pkgutil
