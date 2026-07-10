@@ -358,45 +358,9 @@ def maybe_import_from_module(module: str, object_name: str) -> Optional[Any]:
         module_path = module if module.startswith(".") else f".{module}"
         imported_module = importlib.import_module(module_path, package=__package__)
         return getattr(imported_module, object_name, None)
-    except Exception as exc:
+    except (ImportError, AttributeError) as exc:
         logger.debug("Skipping module '%s' due to import error: %s", module, exc)
         return None
-
-
-def discover_mcp_runtime_parameters() -> (
-    list[pulumi_datarobot.CustomModelRuntimeParameterValueArgs] | None
-):
-    """Collect MCP params from a sibling module by the
-    ``mcp_custom_model_runtime_parameters`` export convention, not by name.
-
-    Returns None when no MCP module is present (caller then uses env vars);
-    a present module returns its params even if empty.
-    """
-    import importlib
-    import pkgutil
-
-    matches: list[
-        tuple[str, list[pulumi_datarobot.CustomModelRuntimeParameterValueArgs]]
-    ] = []
-    package = importlib.import_module(__package__)
-    for module_info in pkgutil.iter_modules(package.__path__):
-        if module_info.name == __name__.rsplit(".", 1)[-1]:
-            continue  # skip this module
-        exported = maybe_import_from_module(
-            module_info.name, "mcp_custom_model_runtime_parameters"
-        )
-        if isinstance(exported, list):
-            matches.append((module_info.name, exported))
-    if not matches:
-        return None
-    if len(matches) > 1:
-        module_names = ", ".join(name for name, _ in matches)
-        raise ValueError(
-            "Multiple MCP infra modules export "
-            f"mcp_custom_model_runtime_parameters ({module_names}). "
-            "The agent supports automatic wiring for one MCP component."
-        )
-    return matches[0][1]
 
 
 def get_mcp_runtime_parameters_from_env() -> list[
@@ -459,16 +423,24 @@ def get_mcp_runtime_parameters_from_env() -> list[
     return mcp_runtime_parameters
 
 
+# Conventional module name of a co-deployed DataRobot MCP component. The agent
+# auto-wires it by this name (as it does the LLM component). A renamed or second
+# MCP is wired manually via env vars (MCP_DEPLOYMENT_ID / EXTERNAL_MCP_*).
+MCP_MODULE_NAME: Final[str] = "mcp_server"
+
+
 def get_mcp_custom_model_runtime_parameters() -> list[
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs
 ]:
     """
-    Load MCP runtime parameters from a sibling MCP module if one is present in
-    the project, otherwise fall back to environment variables.
+    Load MCP runtime parameters from the conventionally-named MCP module when it
+    is present in the project, otherwise fall back to environment variables.
     """
-    discovered = discover_mcp_runtime_parameters()
-    if discovered is not None:
-        return discovered
+    mcp_params = maybe_import_from_module(
+        MCP_MODULE_NAME, "mcp_custom_model_runtime_parameters"
+    )
+    if mcp_params is not None:
+        return mcp_params
     return get_mcp_runtime_parameters_from_env()
 
 
