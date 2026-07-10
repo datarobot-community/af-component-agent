@@ -1,0 +1,53 @@
+---
+name: af-component-agent Docker Build
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "template/**/uvlock_templates/**"
+      - "template/**/pyproject.toml.jinja"
+      - ".github/workflows/afcomponentagent-docker-build.yaml"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "template/**/uvlock_templates/**"
+      - "template/**/pyproject.toml.jinja"
+      - ".github/workflows/afcomponentagent-docker-build.yaml"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  docker-build:
+    name: "Test Docker Build"
+    # Runs directly on the host (no `container:`). Building the agent image needs
+    # the Docker daemon, which the uv container image does not provide; the host
+    # runner ships Docker, and uv is installed below.
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Checkout
+        uses: "actions/checkout@v6"
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Render copier instance
+        uses: ./.github/actions/render-copier-instance
+        with:
+          copier-args: '--defaults'
+      - name: Fix rendered file ownership
+        # On the host the render action falls back to `docker run`, so ./rendered
+        # is created as root. Hand it back to the runner user so the uv sync and
+        # docker build steps below can write into it.
+        shell: bash
+        run: sudo chown -R "$(id -u):$(id -g)" ./rendered
+      - name: Build Docker image
+        # Verifies build-docker-context runs end-to-end: create context -> uv sync
+        # -> docker build. We only care that the image builds, so SKIP_DOCKER_SAVE
+        # skips exporting it to a tarball.
+        shell: bash
+        working-directory: ./rendered
+        run: uvx --from go-task-bin task agent:build-docker-context
+        env:
+          SKIP_DOCKER_SAVE: "true"
