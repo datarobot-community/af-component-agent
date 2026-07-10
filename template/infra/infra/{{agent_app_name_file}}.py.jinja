@@ -423,9 +423,7 @@ def get_mcp_runtime_parameters_from_env() -> list[
     return mcp_runtime_parameters
 
 
-# Conventional module name of a co-deployed DataRobot MCP component. The agent
-# auto-wires it by this name (as it does the LLM component). A renamed or second
-# MCP is wired manually via env vars (MCP_DEPLOYMENT_ID / EXTERNAL_MCP_*).
+# Co-deployed MCP is auto-wired by this name; renamed/extra MCP → env vars.
 MCP_MODULE_NAME: Final[str] = "mcp_server"
 
 
