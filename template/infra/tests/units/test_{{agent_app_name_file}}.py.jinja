@@ -1475,33 +1475,6 @@ class TestMaybeImportFromModule:
 
 
 class TestDiscoverMcpRuntimeParameters:
-    def test_discovers_params_from_mcp_named_sibling(self, monkeypatch):
-        """A sibling infra module whose name contains 'mcp' and exports the
-        symbol is discovered."""
-        import importlib
-        import pkgutil
-
-        import infra.{{agent_app_name}} as agent_infra
-
-        sentinel = ["mcp-runtime-param-sentinel"]
-        fake_mcp_module = MagicMock()
-        fake_mcp_module.mcp_custom_model_runtime_parameters = sentinel
-
-        real_import_module = importlib.import_module
-
-        def fake_iter_modules(path):
-            yield pkgutil.ModuleInfo(None, "mcp_server", False)
-
-        def fake_import_module(name, package=None):
-            if name == ".mcp_server":
-                return fake_mcp_module
-            return real_import_module(name, package)
-
-        monkeypatch.setattr(pkgutil, "iter_modules", fake_iter_modules)
-        monkeypatch.setattr(importlib, "import_module", fake_import_module)
-
-        assert agent_infra.discover_mcp_runtime_parameters() == sentinel
-
     def test_discovers_export_from_non_mcp_named_sibling(self, monkeypatch):
         """Matching is by the export symbol, not the module name: a sibling
         without 'mcp' in its name that exports the symbol is still discovered."""
@@ -1556,8 +1529,12 @@ class TestDiscoverMcpRuntimeParameters:
         monkeypatch.setattr(pkgutil, "iter_modules", fake_iter_modules)
         monkeypatch.setattr(importlib, "import_module", fake_import_module)
 
-        with pytest.raises(ValueError, match="Multiple MCP infra modules"):
+        with pytest.raises(ValueError, match="Multiple MCP infra modules") as exc_info:
             agent_infra.discover_mcp_runtime_parameters()
+
+        message = str(exc_info.value)
+        assert "mcp_server" in message
+        assert "tool_deployments" in message
 
     def test_returns_none_when_no_sibling_exports(self, monkeypatch):
         """No sibling module present -> None (self-contained agent)."""
