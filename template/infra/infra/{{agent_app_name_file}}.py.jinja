@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import importlib
 import logging
 import os
 from pathlib import Path
@@ -352,8 +353,6 @@ def maybe_import_from_module(module: str, object_name: str) -> Optional[Any]:
         return None
 
     try:
-        import importlib
-
         # Ensure relative import format
         module_path = module if module.startswith(".") else f".{module}"
         imported_module = importlib.import_module(module_path, package=__package__)

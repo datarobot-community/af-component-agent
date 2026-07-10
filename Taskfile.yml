@@ -68,7 +68,7 @@ tasks:
       - mkdir -p ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra
       - cp ./fixtures/infra/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/infra/Taskfile.yml
       # Inject minimal infra scaffolding so `pulumi up` can run in this component repo.
-      # (In a real AF project this is provided by the base/llm/mcp components.)
+      # (In a real AF project this is provided by the base/llm components.)
       - cp ./fixtures/infra/Pulumi.yaml ./$RENDER_DIR/agent_{{.AGENT}}/infra/Pulumi.yaml
       - cp ./fixtures/infra/__main__.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/__main__.py
       - cp ./fixtures/infra/pyproject.toml ./$RENDER_DIR/agent_{{.AGENT}}/infra/pyproject.toml
