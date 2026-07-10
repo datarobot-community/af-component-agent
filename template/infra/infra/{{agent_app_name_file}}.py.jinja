@@ -11,6 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import importlib
+import logging
 import os
 from pathlib import Path
 import re
@@ -38,6 +40,8 @@ from .{{ _external_data.llm.llm_app_name }} import custom_model_runtime_paramete
 {%- if use_agent_memory == 'datarobot_memory_service' %}
 from .{{ _external_data.llm.llm_app_name }} import default_model
 {%- endif %}
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
 
@@ -349,13 +353,12 @@ def maybe_import_from_module(module: str, object_name: str) -> Optional[Any]:
         return None
 
     try:
-        import importlib
-
         # Ensure relative import format
         module_path = module if module.startswith(".") else f".{module}"
         imported_module = importlib.import_module(module_path, package=__package__)
         return getattr(imported_module, object_name, None)
-    except (ImportError, AttributeError):
+    except (ImportError, AttributeError) as exc:
+        logger.debug("Skipping module '%s' due to import error: %s", module, exc)
         return None
 
 
@@ -419,21 +422,22 @@ def get_mcp_runtime_parameters_from_env() -> list[
     return mcp_runtime_parameters
 
 
+# Co-deployed MCP is auto-wired by this name; renamed/extra MCP → env vars.
+MCP_MODULE_NAME: Final[str] = "mcp_server"
+
+
 def get_mcp_custom_model_runtime_parameters() -> list[
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs
 ]:
     """
-    Load MCP runtime parameters from the MCP Deployment module if available,
-    otherwise fall back to environment variables.
+    Load MCP runtime parameters from the conventionally-named MCP module when it
+    is present in the project, otherwise fall back to environment variables.
     """
-    mcp_module = "{{ _external_data.mcp.mcp_app_name }}"
-
     mcp_params = maybe_import_from_module(
-        mcp_module, "mcp_custom_model_runtime_parameters"
+        MCP_MODULE_NAME, "mcp_custom_model_runtime_parameters"
     )
     if mcp_params is not None:
         return mcp_params
-
     return get_mcp_runtime_parameters_from_env()
 
 

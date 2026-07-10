@@ -46,11 +46,6 @@ def pulumi_mocks(monkeypatch, tmp_path):
     mock_llm_module.default_model = "datarobot/azure/gpt-5-mini-2025-08-07"
 {%- endif %}
     monkeypatch.setitem(sys.modules, "infra.{{ _external_data.llm.llm_app_name }}", mock_llm_module)
-    # Mock out the MCP Server and just expose the runtime parameters as it is the only public
-    # interface required for this module.
-    mock_mcp_module = MagicMock()
-    mock_mcp_module.mcp_custom_model_runtime_parameters = []
-    monkeypatch.setitem(sys.modules, "infra.{{ _external_data.mcp.mcp_app_name }}", mock_mcp_module)
     # Mock pulumi_datarobot resources
     monkeypatch.setattr("pulumi_datarobot.ExecutionEnvironment", MagicMock())
     monkeypatch.setattr("pulumi_datarobot.CustomModel", MagicMock())
@@ -1421,56 +1416,94 @@ name = "old-project"
 
 
 class TestMaybeImportFromModule:
-    @pytest.fixture
-    def skip_if_no_mcp(self):
-        """Skip tests if mcp module is not available."""
-        mcp_module = "{{ _external_data.mcp.mcp_app_name }}"
-        if not mcp_module:
-            pytest.skip("Skipping tests of existing MCP when module is not provided.")
-
-    @pytest.mark.usefixtures("skip_if_no_mcp")
-    def test_maybe_import_from_module_success(self):
-        """Test that maybe_import_from_module successfully imports an existing module."""
+    def test_empty_module_name_returns_none(self):
+        """An empty module name short-circuits to None."""
         import infra.{{agent_app_name}} as agent_infra
 
-        # The fixture sets up the mocked MCP module with mcp_custom_model_runtime_parameters
-        result = agent_infra.maybe_import_from_module(
-            "{{ _external_data.mcp.mcp_app_name }}", "mcp_custom_model_runtime_parameters"
-        )
-        assert result is not None
+        assert agent_infra.maybe_import_from_module("", "anything") is None
 
-    def test_maybe_import_from_module_missing_module(self, monkeypatch):
-        """Test that maybe_import_from_module returns None when module is not available."""
+    def test_returns_object_when_present(self, monkeypatch):
+        """Returns the named attribute when the module imports and defines it."""
+        import importlib
+
         import infra.{{agent_app_name}} as agent_infra
 
-        # Mock importlib.import_module to raise ImportError
-        def mock_import_module(name, package=None):
-            raise ImportError(f"No module named '{name}'")
+        module = MagicMock()
+        module.some_export = ["value"]
+        real_import_module = importlib.import_module
 
-        monkeypatch.setattr("importlib.import_module", mock_import_module)
+        def fake_import_module(name, package=None):
+            if name == ".sibling":
+                return module
+            return real_import_module(name, package)
 
-        # Attempt to import from the non-existent module
-        result = agent_infra.maybe_import_from_module(
-            "{{ _external_data.mcp.mcp_app_name }}", "mcp_custom_model_runtime_parameters"
-        )
-        assert result is None
+        monkeypatch.setattr(importlib, "import_module", fake_import_module)
+        result = agent_infra.maybe_import_from_module("sibling", "some_export")
+        assert result == ["value"]
 
-    def test_maybe_import_from_module_empty_module_name(self):
-        """Test that maybe_import_from_module returns None with empty module name."""
+    def test_absent_module_returns_none(self, monkeypatch):
+        """An absent module (ImportError) is treated as 'not present' -> None."""
+        import importlib
+
         import infra.{{agent_app_name}} as agent_infra
 
-        result = agent_infra.maybe_import_from_module("", "some_attribute")
-        assert result is None
+        real_import_module = importlib.import_module
+
+        def fake_import_module(name, package=None):
+            if name == ".absent":
+                raise ModuleNotFoundError("no module named absent")
+            return real_import_module(name, package)
+
+        monkeypatch.setattr(importlib, "import_module", fake_import_module)
+        assert agent_infra.maybe_import_from_module("absent", "x") is None
+
+    def test_unexpected_import_error_propagates(self, monkeypatch):
+        """A real error inside a present module is NOT swallowed -> surfaces."""
+        import importlib
+
+        import infra.{{agent_app_name}} as agent_infra
+
+        real_import_module = importlib.import_module
+
+        def fake_import_module(name, package=None):
+            if name == ".broken":
+                raise RuntimeError("boom")
+            return real_import_module(name, package)
+
+        monkeypatch.setattr(importlib, "import_module", fake_import_module)
+        with pytest.raises(RuntimeError, match="boom"):
+            agent_infra.maybe_import_from_module("broken", "x")
 
 
 class TestGetMcpCustomModelRuntimeParameters:
-    def test_get_mcp_custom_model_runtime_parameters_from_module(self):
-        """Test that MCP runtime parameters are loaded from the module when available."""
+    def test_get_mcp_custom_model_runtime_parameters_from_module(self, monkeypatch):
+        """MCP params come from the conventionally-named MCP module when present."""
         import infra.{{agent_app_name}} as agent_infra
 
-        result = agent_infra.get_mcp_custom_model_runtime_parameters()
-        # The fixture sets up a mock module with empty list
-        assert isinstance(result, list)
+        sentinel = ["mcp-runtime-param-sentinel"]
+        calls = {}
+
+        def fake_maybe_import(module, object_name):
+            calls["module"] = module
+            calls["object_name"] = object_name
+            return sentinel
+
+        monkeypatch.setattr(agent_infra, "maybe_import_from_module", fake_maybe_import)
+        assert agent_infra.get_mcp_custom_model_runtime_parameters() == sentinel
+        # Wired by the conventional module name, like the LLM component.
+        assert calls["module"] == agent_infra.MCP_MODULE_NAME == "mcp_server"
+        assert calls["object_name"] == "mcp_custom_model_runtime_parameters"
+
+    def test_present_but_empty_mcp_module_does_not_fall_back_to_env(self, monkeypatch):
+        """A present MCP module exporting [] must NOT pull env vars (no stale-env shadowing)."""
+        import infra.{{agent_app_name}} as agent_infra
+
+        monkeypatch.setenv("MCP_DEPLOYMENT_ID", "stale-deployment-id")
+        # module present (returns []), so env must be ignored
+        monkeypatch.setattr(
+            agent_infra, "maybe_import_from_module", lambda module, object_name: []
+        )
+        assert agent_infra.get_mcp_custom_model_runtime_parameters() == []
 
     def test_get_mcp_custom_model_runtime_parameters_fallback_to_env(self, monkeypatch):
         """Test that MCP runtime parameters fall back to environment variables when module is unavailable."""
@@ -1484,11 +1517,10 @@ class TestGetMcpCustomModelRuntimeParameters:
         )
         monkeypatch.setenv("EXTERNAL_MCP_TRANSPORT", "sse")
 
-        # Mock importlib.import_module to raise ImportError
-        def mock_import_module(name, package=None):
-            raise ImportError(f"No module named '{name}'")
-
-        monkeypatch.setattr("importlib.import_module", mock_import_module)
+        # No MCP module present -> import returns None, fall back to env
+        monkeypatch.setattr(
+            agent_infra, "maybe_import_from_module", lambda module, object_name: None
+        )
 
         # Get runtime parameters - should fall back to environment variables
         result = agent_infra.get_mcp_custom_model_runtime_parameters()
