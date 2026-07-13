@@ -35,7 +35,7 @@ overrides = [
     { name = "langchain-community", specifier = ">=0.4.1,<0.4.2" },
     { name = "langchain-milvus", marker = "sys_platform == 'never'" },
     { name = "langsmith", specifier = ">=0.8.18" },
-    { name = "litellm", specifier = ">=1.83.7,<2.0.0" },
+    { name = "litellm", specifier = ">=1.91.1,<2.0.0" },
     { name = "llama-index-cli", marker = "sys_platform == 'never'" },
     { name = "nltk", specifier = ">=3.9.4" },
     { name = "onnxruntime", marker = "sys_platform == 'never'" },
@@ -148,7 +148,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "datarobot", extras = ["core"], specifier = ">=3.17.0,<4.0.0" },
-    { name = "datarobot-genai", extras = ["llamaindex", "dragent", "auth"], specifier = "==0.23.0" },
+    { name = "datarobot-genai", extras = ["llamaindex", "dragent", "auth"], specifier = "==0.23.18" },
     { name = "datarobot-mlops", specifier = "==11.1.28" },
     { name = "debugpy", marker = "extra == 'dev'", specifier = ">=1.8.20" },
     { name = "ecs-logging", marker = "extra == 'agentic-playground'", specifier = ">=2.2.0" },
@@ -950,11 +950,11 @@ core = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.23.0"
+version = "0.23.18"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/3b/d9/53ab636949524c46bad62c1001b409a41e72317a3e991cd3ad6be1520dd3/datarobot_genai-0.23.0.tar.gz", hash = "sha256:fb5a1f9c60e6a0c0780af1e43620751c0727229537b3ca8f032ea075f6de4007", size = 469136, upload-time = "2026-07-07T12:48:23.053Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/54/25/b50abd0534d180d0302df9e96fe4cb6396e02c367a5eb344bbd61f6e0f96/datarobot_genai-0.23.18.tar.gz", hash = "sha256:4f995485187d6dd5580f7bd30f0bfa3659f988619fd6848225adf31ec9e81053", size = 495029, upload-time = "2026-07-13T13:27:41.005Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9e/1d/513c4cfb85f5268cbb0a1e867c82de9ac7a9fdd3866e17245ae4f58c03a3/datarobot_genai-0.23.0-py3-none-any.whl", hash = "sha256:43ec7a17a4606c8f831b94fafffcf6cbf60849a0c45f7deed52b370b1be25627", size = 679307, upload-time = "2026-07-07T12:48:20.741Z" },
+    { url = "https://files.pythonhosted.org/packages/ad/b2/c481134bc3143a87b8370beb355dbcb0e0f9e89f600ed7dc7521c9017da5/datarobot_genai-0.23.18-py3-none-any.whl", hash = "sha256:b32d332ae91254fb780f91d1af3b6327e387dc82a048f2eac33a14a482926b12", size = 713724, upload-time = "2026-07-13T13:27:39.188Z" },
 ]
 
 [package.optional-dependencies]
@@ -973,6 +973,7 @@ dragent = [
     { name = "datarobot", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-moderations", extra = ["all"], marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-predict", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "httpx-retries", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "mem0ai", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "nvidia-nat", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "nvidia-nat-a2a", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -997,6 +998,7 @@ llamaindex = [
     { name = "datarobot", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-moderations", extra = ["all"], marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "datarobot-predict", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+    { name = "httpx-retries", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "litellm", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "llama-index", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "llama-index-core", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -1963,6 +1965,18 @@ http2 = [
 ]
 
 [[package]]
+name = "httpx-retries"
+version = "0.6.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e9/d3/b7a8bb09543af40009717a08a2ceba90b6d4c6f0cdf171404217d8f4c37d/httpx_retries-0.6.0.tar.gz", hash = "sha256:3e0b404969a564829d368417964fd21e6b400a10d17c92d29b8bc247ce8186e3", size = 21122, upload-time = "2026-07-06T00:52:30.093Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/56/c6/7f3d6ab3549267a1959161b38df4c0fb435eceaf2d531d8addfac01abaca/httpx_retries-0.6.0-py3-none-any.whl", hash = "sha256:d1e52a8f68a5df42de75ab89049d5020b2d0ab2f5f8bceacda008d12aa1257a3", size = 11776, upload-time = "2026-07-06T00:52:31.033Z" },
+]
+
+[[package]]
 name = "httpx-sse"
 version = "0.4.3"
 source = { registry = "https://pypi.org/simple" }
@@ -2836,7 +2850,7 @@ wheels = [
 
 [[package]]
 name = "litellm"
-version = "1.86.0"
+version = "1.92.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
@@ -2852,9 +2866,14 @@ dependencies = [
     { name = "tiktoken", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
     { name = "tokenizers", marker = "sys_platform == 'darwin' or sys_platform == 'linux' or sys_platform == 'win32'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/2f/a7/26b8b04e4fcff26b60200ffe7458a255552ae51014468188f5db45674eb2/litellm-1.86.0.tar.gz", hash = "sha256:eccab86e0820b60b3f9484b233fb8d818b97afb19d5b4fa08d0d045621350ba4", size = 15379195, upload-time = "2026-05-24T02:42:10.865Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/46/ea/5522be7e0dbcaa7c3fddfd2834f387c6e8eab47c0cc65f2a74657c815af7/litellm-1.92.0.tar.gz", hash = "sha256:773adf5503ee1793289689c899394a83df8122993760d9acd782e32aa798db9d", size = 15098143, upload-time = "2026-07-12T01:15:59.828Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ff/0b/9a044c061a69e801de042e962c34f5bc2e094810e28b49ce0b3bedee9327/litellm-1.86.0-py3-none-any.whl", hash = "sha256:9d8171ca1a17705b7c7a6fdce8cfc07bbf641284b46c1b6047f83a779159990c", size = 17011225, upload-time = "2026-05-24T02:42:00.629Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/40/401dfb16c88f22fcb285eafc074cb995047feb24b98bcf47e9552207837c/litellm-1.92.0-cp311-cp311-manylinux_2_28_aarch64.whl", hash = "sha256:f0ec8327aacc7914cc16310a1a3cc14340f1140b0a761403c5a4a98b01684373", size = 19292358, upload-time = "2026-07-12T01:15:43.628Z" },
+    { url = "https://files.pythonhosted.org/packages/51/29/f4d671762611a88ff7818e891094984202c7502e2984eed0e440a11332bd/litellm-1.92.0-cp311-cp311-manylinux_2_28_x86_64.whl", hash = "sha256:b4b65395c5d7b15fa24e08a13871c0617f6d156c46cee0eb920f3a5954e50adf", size = 19290890, upload-time = "2026-07-12T01:15:46.237Z" },
+    { url = "https://files.pythonhosted.org/packages/cf/26/8061907b67aa04b7cdf2a41cbc4f8aebfbc722c909a7e4b2aea25def7053/litellm-1.92.0-cp312-cp312-manylinux_2_28_aarch64.whl", hash = "sha256:9c7b2849591a35f7039dc7386a81a8e68fccb5ac2fecaa5122192c1172556b29", size = 19291180, upload-time = "2026-07-12T01:15:48.728Z" },
+    { url = "https://files.pythonhosted.org/packages/ba/6c/dc9b0b580ee8af9117abd729d1de25d74fae487a0029ca77049a09f3ad33/litellm-1.92.0-cp312-cp312-manylinux_2_28_x86_64.whl", hash = "sha256:f17499155366afd1eaaeb6fd0c7b55cbd2239dcd72f2fe1f8071a969cc402fae", size = 19289559, upload-time = "2026-07-12T01:15:51.376Z" },
+    { url = "https://files.pythonhosted.org/packages/10/34/1671376f228443330471416e24ee51bc8364c0ae6155d4ec6217b70a4753/litellm-1.92.0-cp313-cp313-manylinux_2_28_aarch64.whl", hash = "sha256:437a0e403136996430795ead76502103dcf74769b6909e12d3e2511061ea8ff8", size = 19291560, upload-time = "2026-07-12T01:15:54.66Z" },
+    { url = "https://files.pythonhosted.org/packages/3d/4f/141cf1162eeee762fc839c335e3f78fc309a65f2385023479a20b09e680a/litellm-1.92.0-cp313-cp313-manylinux_2_28_x86_64.whl", hash = "sha256:8f03047a73154f33c2733899e4bf9b5ed129e2e345caa305895a318452e4a807", size = 19289770, upload-time = "2026-07-12T01:15:57.136Z" },
 ]
 
 [[package]]
