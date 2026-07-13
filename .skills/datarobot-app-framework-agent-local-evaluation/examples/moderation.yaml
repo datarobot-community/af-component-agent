@@ -1,0 +1,65 @@
+---
+# moderation.yaml
+#
+# Place this file at the root of the agent directory (alongside workflow.yaml).
+#
+# Replace every <YOUR_JUDGE_LLM_DEPLOYMENT_ID> with a real 24-character
+# DataRobot deployment ID before running tests.
+#
+# Required environment variables (add to .env or export before pytest):
+#   DATAROBOT_ENDPOINT  - for example https://app.datarobot.com/api/v2
+#   DATAROBOT_API_TOKEN - your DataRobot API token
+#   TARGET_NAME         - output field of deployment response (for example resultText)
+#
+# Choose guards that match your use case and remove the rest.
+
+timeout_sec: 60
+timeout_action: block # "score" treats judge timeouts as pass during development
+
+guards:
+  # --- Agent Goal Accuracy ---------------------------------------------------
+  # Recommended for general agentic workflows.
+  - name: Agent Goal Accuracy
+    type: ootb
+    ootb_type: agent_goal_accuracy
+    stage: response
+    is_agentic: true
+    llm_type: datarobot
+    deployment_id: "<YOUR_JUDGE_LLM_DEPLOYMENT_ID>"
+    intervention:
+      action: block
+      message: "Agent failed to achieve the user's goal."
+      conditions:
+        - comparator: lessThan
+          comparand: 0.7 # fail if score is below 70%
+
+  # --- Faithfulness (hallucination detection) --------------------------------
+  # Use for RAG agents. Requires copy_citations:true and retrieved_contexts in tests.
+  - name: Faithfulness
+    type: ootb
+    ootb_type: faithfulness
+    stage: response
+    copy_citations: true
+    llm_type: datarobot
+    deployment_id: "<YOUR_JUDGE_LLM_DEPLOYMENT_ID>"
+    intervention:
+      action: block
+      message: "Hallucination detected by LLM judge."
+      conditions:
+        - comparator: equals
+          comparand: 0.0
+
+  # --- Task Adherence --------------------------------------------------------
+  # Use for instruction-following workflows.
+  - name: Task Adherence
+    type: ootb
+    ootb_type: task_adherence
+    stage: response
+    llm_type: datarobot
+    deployment_id: "<YOUR_JUDGE_LLM_DEPLOYMENT_ID>"
+    intervention:
+      action: block
+      message: "Response did not follow task instructions."
+      conditions:
+        - comparator: lessThan
+          comparand: 0.7
