@@ -990,25 +990,27 @@ class TestConfigureMemorySpaceLlm:
         mock_space.update.assert_not_called()
         assert result == "test-space-id"
 
-    def test_clears_llm_model_name_when_switching_to_deployment(self, monkeypatch):
+    def test_sets_both_model_and_base_url_for_deployment(self, monkeypatch):
         import infra.{{agent_app_name}} as agent_infra
 
-        deployment_url = (
-            "https://app.datarobot.com/api/v2/deployments/abc123/chat/completions"
-        )
+        deployment_url = "https://app.datarobot.com/api/v2/deployments/abc123"
         mock_space = MagicMock()
         mock_space.llm_model_name = "old-gateway-model"
-        mock_space.llm_base_url = deployment_url
+        mock_space.llm_base_url = None
         mock_get = MagicMock(return_value=mock_space)
         monkeypatch.setattr("datarobot.MemorySpace.get", mock_get)
 
         result = agent_infra._configure_memory_space_llm(
             space_id="test-space-id",
+            llm_model_name="new-model",
             llm_base_url=deployment_url,
         )
 
         mock_get.assert_called_once_with("test-space-id")
-        mock_space.update.assert_called_once_with(llm_model_name=None)
+        mock_space.update.assert_called_once_with(
+            llm_model_name="new-model",
+            llm_base_url=deployment_url,
+        )
         assert result == "test-space-id"
 
 
@@ -1117,7 +1119,8 @@ class TestMemorySpaceLlmRouting:
         )
 
         assert captured == {
-            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/deployment-123"
+            "llm_model_name": "azure/gpt-5-mini-2025-08-07",
+            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/deployment-123",
         }
 
     def test_configure_memory_space_llm_routing_override_model_name(self, monkeypatch):
@@ -1163,7 +1166,8 @@ class TestMemorySpaceLlmRouting:
         )
 
         assert captured == {
-            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/memory-deployment-456"
+            "llm_model_name": "anthropic/claude-opus-4-20250514",
+            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/memory-deployment-456",
         }
 
     def test_normalize_optional_env_treats_blank_as_unset(self):
