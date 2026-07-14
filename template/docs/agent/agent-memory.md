@@ -27,9 +27,9 @@ When you generate or update a project with Copier, you are prompted to choose an
 |---|---|---|
 | **None** | `none` | Default. No memory dependency or workflow changes. |
 | **Mem0** | `mem0` | External [Mem0](https://mem0.ai/) service. Requires a Mem0 API key. |
-| **Datarobot Memory Service** | `datarobot_memory_service` | DataRobot-managed memory space provisioned by Pulumi with its own LLM routing (defaults to the agent LLM component when it uses LLM Gateway or a deployed LLM; see [Memory space LLM (DataRobot Memory Service)](#memory-space-llm-datarobot-memory-service)). |
+| **Datarobot Memory Service** | `datarobot_memory_service` | DataRobot-managed memory space provisioned by Pulumi with its own LLM routing (defaults to the agent LLM component when it uses LLM Gateway; see [Memory space LLM (DataRobot Memory Service)](#memory-space-llm-datarobot-memory-service)). |
 
-When the agent LLM uses LLM Gateway or a deployed LLM, the memory space reuses that configuration automatically&mdash;no extra prompts. When the LLM component uses **External LLM** (`blueprint_with_external_llm.py`), `dr start` / `dr dotenv setup` asks for a dedicated memory-space LLM (gateway model or deployment ID). You can also set `AGENT_MEMORY_LLM_MODEL_NAME` or `AGENT_MEMORY_LLM_DEPLOYMENT_ID` in `.env` at any time to override memory-space routing.
+When the agent LLM uses **LLM Gateway**, the memory space reuses that configuration automatically&mdash;no extra prompts. When the agent LLM uses a **deployed LLM**, you must configure the memory space LLM manually (see [Deployed LLM caveat](#deployed-llm-caveat)). When the LLM component uses **External LLM** (`blueprint_with_external_llm.py`), `dr start` / `dr dotenv setup` asks for a dedicated memory-space LLM (gateway model or deployment ID). You can also set `AGENT_MEMORY_LLM_MODEL_NAME` or `AGENT_MEMORY_LLM_DEPLOYMENT_ID` in `.env` at any time to override memory-space routing.
 
 To pass the value non-interactively:
 
@@ -199,14 +199,33 @@ Pulumi always sets `llm_model_name`. When the agent LLM uses a deployed model, i
 | Default source | Memory space fields | Value |
 |---|---|---|
 | **LLM Gateway** (default) | `llm_model_name` | The LLM component's `default_model` with the `datarobot/` prefix stripped. |
-| **Deployed LLM** | `llm_model_name`, `llm_base_url` | The same gateway model name plus the deployment base URL (`/api/v2/deployments/{id}`). |
+| **Deployed LLM** | `llm_model_name`, `llm_base_url` | The agent LLM component's `default_model` plus the deployment base URL (`/api/v2/deployments/{id}`). |
 
-To configure a memory space LLM that differs from the agent LLM component, set one of these environment variables:
+##### Deployed LLM caveat
+
+> [!WARNING]
+> If the agent LLM component uses a **deployed LLM** and you select the DataRobot Memory Service, the memory space inherits the agent's `default_model`&mdash;typically `datarobot-deployed-llm`. That value is **not** a valid model name for the memory service.
+>
+> Set the memory space LLM explicitly in `.env` (or during `dr start` / `dr dotenv setup`):
+>
+> | Configuration | Behavior |
+> |---|---|
+> | `AGENT_MEMORY_LLM_MODEL_NAME` only | Routes through **LLM Gateway** using that model name. Fails at runtime if the name is not a valid gateway model. |
+> | `AGENT_MEMORY_LLM_MODEL_NAME` **and** `AGENT_MEMORY_LLM_DEPLOYMENT_ID` | Routes through the **deployed LLM** at the given deployment ID. The memory service passes `AGENT_MEMORY_LLM_MODEL_NAME` in the request. |
+>
+> Example for a deployed agent LLM:
+>
+> ```sh
+> AGENT_MEMORY_LLM_MODEL_NAME=azure/gpt-5-mini-2025-08-07
+> AGENT_MEMORY_LLM_DEPLOYMENT_ID=your-deployment-id
+> ```
+
+To configure a memory space LLM that differs from the agent LLM component defaults, set one or both of these environment variables:
 
 | Env variable | Routing | Description |
 |---|---|---|
-| `AGENT_MEMORY_LLM_DEPLOYMENT_ID` | Deployed LLM | DataRobot deployment ID for the memory space. Takes precedence over `AGENT_MEMORY_LLM_MODEL_NAME`. |
-| `AGENT_MEMORY_LLM_MODEL_NAME` | LLM Gateway | Gateway model name for the memory space (for example `azure/gpt-5-mini-2025-08-07` or `datarobot/azure/gpt-5-mini-2025-08-07`). |
+| `AGENT_MEMORY_LLM_MODEL_NAME` | LLM Gateway (alone) or deployed LLM (with deployment ID) | Gateway model name for the memory space (for example `azure/gpt-5-mini-2025-08-07` or `datarobot/azure/gpt-5-mini-2025-08-07`). Required when the agent LLM uses a deployed model. |
+| `AGENT_MEMORY_LLM_DEPLOYMENT_ID` | Deployed LLM | DataRobot deployment ID for the memory space. Use together with `AGENT_MEMORY_LLM_MODEL_NAME` to route through a deployment instead of the gateway. |
 
 > [!IMPORTANT]
 > For the DataRobot Memory Service provider, do not create the memory space manually unless you are overriding infrastructure defaults. Pulumi creates the space, configures its LLM routing, and wires the ID into the agent deployment.
@@ -248,7 +267,8 @@ For the DataRobot Memory Service provider, the feature flag `ENABLE_AGENTIC_MEMO
    # LLM Gateway model override
    AGENT_MEMORY_LLM_MODEL_NAME=anthropic/claude-opus-4-20250514
 
-   # or deployed LLM override (takes precedence over model name)
+   # Deployed LLM override (set both; model name is passed in the request)
+   AGENT_MEMORY_LLM_MODEL_NAME=azure/gpt-5-mini-2025-08-07
    AGENT_MEMORY_LLM_DEPLOYMENT_ID=your-deployment-id
    ```
 
