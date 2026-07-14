@@ -46,6 +46,11 @@ def pulumi_mocks(monkeypatch, tmp_path):
     mock_llm_module.default_model = "datarobot/azure/gpt-5-mini-2025-08-07"
 {%- endif %}
     monkeypatch.setitem(sys.modules, "infra.{{ _external_data.llm.llm_app_name }}", mock_llm_module)
+    # Stub infra.mcp_server so generic tests stay MCP-agnostic; importing the real module
+    # runs its module-level Pulumi resource registration and breaks them.
+    mock_mcp_module = MagicMock()
+    mock_mcp_module.mcp_custom_model_runtime_parameters = []
+    monkeypatch.setitem(sys.modules, "infra.mcp_server", mock_mcp_module)
     # Mock pulumi_datarobot resources
     monkeypatch.setattr("pulumi_datarobot.ExecutionEnvironment", MagicMock())
     monkeypatch.setattr("pulumi_datarobot.CustomModel", MagicMock())
