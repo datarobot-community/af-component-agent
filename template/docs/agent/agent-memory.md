@@ -194,12 +194,12 @@ The constant `AGENT_MEMORY_TTL_DAYS` in `config.py` mirrors the default (`30` da
 
 The memory space has its **own** LLM routing, separate from both the inner agent and the memory wrapper.
 
-Each memory space uses **one** LLM routing mode. Pulumi sets either `llm_model_name` or `llm_base_url` on the space, never both:
+Pulumi always sets `llm_model_name`. When the agent LLM uses a deployed model, it also sets `llm_base_url`:
 
-| Default source | Memory space field | Value |
+| Default source | Memory space fields | Value |
 |---|---|---|
 | **LLM Gateway** (default) | `llm_model_name` | The LLM component's `default_model` with the `datarobot/` prefix stripped. |
-| **Deployed LLM** | `llm_base_url` | The deployment chat completions endpoint (`/api/v2/deployments/{id}/chat/completions`). |
+| **Deployed LLM** | `llm_model_name`, `llm_base_url` | The same gateway model name plus the deployment base URL (`/api/v2/deployments/{id}`). |
 
 To configure a memory space LLM that differs from the agent LLM component, set one of these environment variables:
 
