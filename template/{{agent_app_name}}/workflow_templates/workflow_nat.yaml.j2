@@ -105,6 +105,9 @@ functions:
       3. Call word_counter once on the writer's final output to check its length, then return — do not loop, rewrite, or append the count.
       You also have access to additional tools (e.g. MCP tools) — use them when they are relevant to fulfilling the request.
       After completing the steps, return the blog post.
+    middleware:
+      - datarobot_dragent_normalization
+
 function_groups:
   mcp_tools:
     _type: datarobot_mcp_client
@@ -154,3 +157,5 @@ middleware:
     _type: datarobot_moderation
   datarobot_otel_conventions:
     _type: datarobot_otel_conventions
+  datarobot_dragent_normalization:
+    _type: datarobot_dragent_normalization
