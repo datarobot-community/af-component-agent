@@ -489,14 +489,14 @@ def test_custom_model_created(monkeypatch):
 
     runtime_parameter_values = kwargs["runtime_parameter_values"]
 {% if use_agent_memory == 'mem0' %}
-    # Should have 4 params: 1 SESSION_SECRET_KEY + 1 server param + memory TTL + mem0 api key
-    assert len(runtime_parameter_values) == 4
+    # Should have 5 params: 1 SESSION_SECRET_KEY + 2 server params + memory TTL + mem0 api key
+    assert len(runtime_parameter_values) == 5
 {% elif use_agent_memory in ['datarobot_memory_service'] %}
-    # Should have 8 params: 1 SESSION_SECRET_KEY + 1 server param + memory TTL + memory space ID
-    assert len(runtime_parameter_values) == 4
+    # Should have 5 params: 1 SESSION_SECRET_KEY + 2 server params + memory TTL + memory space ID
+    assert len(runtime_parameter_values) == 5
 {% else %}
-    # Should have 2 params: 1 SESSION_SECRET_KEY + 1 server param
-    assert len(runtime_parameter_values) == 2
+    # Should have 3 params: 1 SESSION_SECRET_KEY + 2 server params
+    assert len(runtime_parameter_values) == 3
 {% endif %}
     # Find the SESSION_SECRET_KEY parameter
     session_secret_param = next(
@@ -505,6 +505,18 @@ def test_custom_model_created(monkeypatch):
     assert session_secret_param is not None
     assert session_secret_param.type == "credential"
     assert session_secret_param.value is not None
+
+    gunicorn_timeout_param = next(
+        (
+            p
+            for p in runtime_parameter_values
+            if p.key == "AGENT_GUNICORN_WORKER_TIMEOUT"
+        ),
+        None,
+    )
+    assert gunicorn_timeout_param is not None
+    assert gunicorn_timeout_param.type == "string"
+    assert gunicorn_timeout_param.value == "600"
 {%- if use_agent_memory == 'mem0' %}
 
     mem0_param = next(
