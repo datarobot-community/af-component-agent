@@ -573,7 +573,7 @@ agent_runtime_parameter_values.extend(
         ),
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
             key="AGENT_GUNICORN_WORKER_TIMEOUT",
-            type="string",  # numeric is not compatible with DataRobotAppFrameworkBaseSettings
+            type="string",  # string is type-agnostic; numeric fails str settings fields
             value=DEFAULT_AGENT_GUNICORN_WORKER_TIMEOUT,
         ),
     ]
