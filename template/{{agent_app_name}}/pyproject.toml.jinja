@@ -223,7 +223,10 @@ override-dependencies = [
     "python-dotenv>=1.2.2",
 
     # crewai 1.15.4 (required for the mcp>=1.28.1 CVE floor) pins aiofiles~=24.1 while
-    # nvidia-nat-core 1.7.0 requires aiofiles>=25.1 — irreconcilable as declared.
+    # nvidia-nat-core 1.7.0 requires aiofiles>=25.1, so no version satisfies both as declared.
+    # This override replaces both declarations. crewai's cap is conservative pinning: its only
+    # aiofiles usage (state JSON provider: aiofiles.open / aiofiles.os.makedirs) is verified
+    # working on 25.1.0.
     "aiofiles>=25.1,<26",
 
     # Excluded
