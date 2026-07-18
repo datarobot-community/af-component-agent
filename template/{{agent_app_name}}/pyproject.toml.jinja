@@ -244,6 +244,7 @@ override-dependencies = [
     "openpyxl; sys_platform == 'never'",  # Excel parser pulled in by crewai-tools; not used
     "python-docx; sys_platform == 'never'",  # Word doc parser pulled in by crewai-tools; not used
     "llama-index-cli; sys_platform == 'never'",  # CLI tool pulled in by llama-index; not needed at runtime
+    "crewai-cli; sys_platform == 'never'",  # CLI tool pulled in by crewai 1.15+; not needed at runtime
     "scikit-network; sys_platform == 'never'",  # graph analysis pulled in by ragas; not used
     # nemoguardrails — server / CLI stack pulled in via datarobot-moderations[all]; not used at runtime
     "watchdog; sys_platform == 'never'",  # file watcher for guardrails hot-reload; not used
