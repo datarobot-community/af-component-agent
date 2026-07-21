@@ -19,13 +19,10 @@ DataRobot credentials automatically.
 """
 
 import os
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from datarobot.core.config import DataRobotAppFrameworkBaseSettings
 from pydantic import Field, ValidationInfo, field_validator, model_validator
-
-if TYPE_CHECKING:
-    from datarobot_genai.core.config import LLMConfig
 
 
 class Config(DataRobotAppFrameworkBaseSettings):  # type: ignore[misc]
@@ -45,8 +42,8 @@ class Config(DataRobotAppFrameworkBaseSettings):  # type: ignore[misc]
     # another LLM component adds its own namespaced set of these fields.
     {{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id: str | None = None
     {{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model: str = "datarobot/azure/gpt-5-mini-2025-08-07"
-    nim_deployment_id: str | None = None
-    use_datarobot_llm_gateway: bool = False
+    {{ _external_data.llm.llm_app_name|replace("-", "_") }}_nim_deployment_id: str | None = None
+    {{ _external_data.llm.llm_app_name|replace("-", "_") }}_use_datarobot_llm_gateway: bool = True
     mcp_deployment_id: str | None = None
     external_mcp_url: str | None = None
 {%- if use_agent_memory == 'mem0' %}
@@ -80,27 +77,6 @@ class Config(DataRobotAppFrameworkBaseSettings):  # type: ignore[misc]
                     data[field_name] = field_info.default
         return data
 
-    def resolve_llm(
-        self, name: str = "{{ _external_data.llm.llm_app_name|replace("-", "_") }}"
-    ) -> "LLMConfig":
-        """Translate this app config into the flat LLMConfig genai consumes.
-
-        This config is the single source of truth for LLM settings. genai never
-        reads this class directly; it receives a fully formed LLMConfig via the
-        registered provider below. Per-LLM values are looked up by instance name;
-        the two globals are shared across instances.
-        """
-        from datarobot_genai.core.config import LLMConfig
-
-        return LLMConfig(
-            datarobot_endpoint=self.datarobot_endpoint,
-            datarobot_api_token=self.datarobot_api_token,
-            llm_deployment_id=getattr(self, f"{name}_deployment_id", None),
-            nim_deployment_id=self.nim_deployment_id,
-            use_datarobot_llm_gateway=self.use_datarobot_llm_gateway,
-            llm_default_model=getattr(self, f"{name}_default_model", None),
-        )
-
 
 def _register_config_provider() -> None:
     """Register this app's Config as genai's authoritative LLM config source.
@@ -115,7 +91,10 @@ def _register_config_provider() -> None:
         from datarobot_genai.core.config import register_config_provider
     except ImportError:
         return
-    register_config_provider(lambda: Config().resolve_llm())
+    register_config_provider(
+        lambda: Config(),
+        default_llm_name="{{ _external_data.llm.llm_app_name|replace("-", "_") }}",
+    )
 
 
 _register_config_provider()
