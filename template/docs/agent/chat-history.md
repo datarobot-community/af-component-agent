@@ -59,7 +59,7 @@ You can switch LangGraph or LlamaIndex to a text summary by adding `{chat_histor
 
 ## Template opt-in
 
-Chat history injection is **automatic once the template declares where history should go**:
+Chat history injection is **automatic when the client sends prior turns in `messages`**:
 
 - **LangGraph / LlamaIndex**&mdash;structured replay is on by default when the prompt has no `{chat_history}` variable.
 - **CrewAI**&mdash;include `"chat_history": ""` in `kickoff_inputs` and place `{chat_history}` at the **end** of a task `description` or agent `backstory` as a self-contained section. On the first turn the value stays empty; when history exists the base class replaces it with a `Prior conversation:` block.
@@ -85,7 +85,7 @@ agent = MyAgent(llm=llm, structured_history=False, max_history_messages=10)
 `task agent:cli -- execute --user_prompt "..."` sends a **single-turn** prompt. To exercise multi-turn history, start the dev server and POST a full AG-UI payload to the streaming endpoint:
 
 ```sh
-dr task run agent:dev
+dr run agent:dev
 ```
 
 In another terminal:
