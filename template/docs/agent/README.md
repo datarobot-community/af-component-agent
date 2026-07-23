@@ -170,6 +170,9 @@ The agent component runs on the **DRAgent** front server&mdash;a NAT (NeMo Agent
 
 DRAgent is required for [Agent-to-Agent (A2A)](./agent2agent.md), [agent memory](./agent-memory.md), and `workflow.yaml`-driven [moderation middleware](./moderation.md).
 
+> [!NOTE]
+> All agents run on DRAgent. If your project still sets `ENABLE_DRAGENT_SERVER` in `.env` or as a custom-model runtime parameter, only `true` is supported.
+
 ## Agent types
 
 This template ships with a LangGraph-based agent by default, but the agent component supports multiple frameworks. Each framework uses a different approach to defining agents while following the same project structure, deployment pipeline, and file layout.
