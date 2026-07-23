@@ -225,7 +225,9 @@ workflow = AgentWorkflow(
 
 ### Chat history
 
-This template's `FunctionAgent` system prompts and `AgentWorkflow` declare no `{chat_history}` placeholder, so as of `datarobot-genai` 0.16.0 the agent replays prior turns to the model by default (*structured history*): prior turns&mdash;including tool calls and their results&mdash;are passed to the workflow as native `ChatMessage` history, bounded by `max_history_messages` (default `20`), with prior-turn reasoning folded into its answer. To restore the previous single-turn behavior or change the bound, pass `structured_history=False` or `max_history_messages` to `MyAgent(...)` (in `register.py` and `myagent.py`):
+This template's `FunctionAgent` system prompts declare no `{chat_history}` placeholder, so prior turns replay to the model by default as **structured history**: native `ChatMessage` objects (including tool calls and results), bounded by `max_history_messages` (default `20`), with prior-turn reasoning folded into assistant content. See [Chat history](../chat-history.md).
+
+To restore single-turn behavior or change the bound, pass `structured_history=False` or `max_history_messages` to `MyAgent(...)` in `register.py`:
 
 ```python
 agent = MyAgent(llm=llm, structured_history=False, max_history_messages=10)
