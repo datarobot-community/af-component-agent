@@ -198,4 +198,4 @@ Rules specific to this repository:
 
 ### C1: Templating logic
 
-Adding more logic for copier templates is very much discouraged: it increses the test matrix, impacts our reliability, and decreases readability of the template. Current level of complexity (e.g. 5 different agents, mem0 vs no memory) is high enough to make a component unstable. No new templating clauses should be added without a review from TECHLEAD.
+Adding more logic for copier templates is very much discouraged: it increases the test matrix, impacts our reliability, and decreases readability of the template. Current level of complexity (e.g. 5 different agents, mem0 vs no memory) is high enough to make a component unstable. No new templating clauses should be added without a review from TECHLEAD.

@@ -171,7 +171,7 @@ The agent component runs on the **DRAgent** front server&mdash;a NAT (NeMo Agent
 DRAgent is required for [Agent-to-Agent (A2A)](./agent2agent.md), [agent memory](./agent-memory.md), and `workflow.yaml`-driven [moderation middleware](./moderation.md).
 
 > [!NOTE]
-> All agents run on DRAgent. If your project still sets `ENABLE_DRAGENT_SERVER` in `.env` or as a custom-model runtime parameter, only `true` is supported.
+> All agents run on DRAgent. `ENABLE_DRAGENT_SERVER` is a legacy setting; if it is present, it must be set to `true` (or remove it entirely).
 
 ## Agent types
 
