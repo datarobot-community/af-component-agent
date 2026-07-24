@@ -17,7 +17,7 @@ import os
 from pathlib import Path
 import re
 import shutil
-from typing import cast, Final, Optional, Any, Sequence
+from typing import cast, Final, Optional, Any
 import yaml  # type: ignore[import-untyped]
 
 import datarobot as dr
@@ -162,12 +162,6 @@ CONFIGURED_AGENT_MEMORY_TTL_DAYS: Final[str] = os.environ.get(
     AGENT_MEMORY_TTL_DAYS, "30"
 )
 {% endif -%}
-
-# Runtime parameters that are safe to include defaultValue in metadata
-SERVER_PARAMS_WITH_DEFAULTS: Final[set[str]] = {
-    "CUSTOM_MODEL_WORKERS",
-    "AGENT_GUNICORN_WORKER_TIMEOUT",
-}
 
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
