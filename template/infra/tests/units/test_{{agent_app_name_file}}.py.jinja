@@ -1630,8 +1630,9 @@ class TestGetMcpCustomModelRuntimeParameters:
         assert memory_ttl_param.type == "string"
         assert memory_ttl_param.value == "1"
 
-        
-{% else %}class TestAgentMemoryRuntimeParameter:
+
+{% else %}
+class TestAgentMemoryRuntimeParameter:
     def test_ttl_runtime_parameter_excluded_when_memory_disabled(self, monkeypatch):
         """Test that the agent memory TTL runtime parameter is excluded by default."""
         monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
