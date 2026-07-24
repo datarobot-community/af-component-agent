@@ -225,7 +225,7 @@ workflow = AgentWorkflow(
 
 ### Chat history
 
-This template's `FunctionAgent` system prompts declare no `{chat_history}` placeholder, so prior turns replay to the model by default as **structured history**: native `ChatMessage` objects (including tool calls and results), bounded by `max_history_messages` (default `20`), with prior-turn reasoning folded into assistant content. See [Chat history](../chat-history.md).
+This template's `FunctionAgent` user message declares no `{chat_history}` placeholder, so prior turns replay to the model by default as **structured history**: native `ChatMessage` objects (including tool calls and results), bounded by `max_history_messages` (default `20`), with prior-turn reasoning folded into assistant content. See [Chat history](../chat-history.md).
 
 To restore single-turn behavior or change the bound, pass `structured_history=False` or `max_history_messages` to `MyAgent(...)` in `register.py`:
 
