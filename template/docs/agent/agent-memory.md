@@ -4,6 +4,9 @@
 
 The agent template can wire in **persistent, per-user memory** so the agent recalls facts across conversations. Memory is configured at project generation time with the Copier variable `use_agent_memory` and implemented declaratively in `workflow.yaml`.
 
+> [!NOTE]
+> **Chat history** (prior `messages` in the same request) is separate from agent memory. All frameworks support multi-turn chat history via `datarobot-genai`; see [Chat history](./chat-history.md).
+
 Memory is **not** implemented in `myagent.py`. The template wraps your framework agent in a `streaming_memory_agent` workflow that automatically retrieves relevant memories before each turn and captures new ones after.
 
 | Section | Description |
@@ -14,7 +17,7 @@ Memory is **not** implemented in `myagent.py`. The template wraps your framework
 | [Memory providers](#memory-providers) | Mem0 vs DataRobot Memory Service. |
 | [Configuration and runtime parameters](#configuration-and-runtime-parameters) | TTL, credentials, and memory space settings. |
 | [Infrastructure provisioning](#infrastructure-provisioning) | What Pulumi creates for each provider. |
-| [Local development](#local-development) | Environment variables and DRAgent requirements. |
+| [Local development](#local-development) | Environment variables and local setup. |
 | [Migrating from legacy answers](#migrating-from-legacy-answers) | Upgrading projects that used a boolean `use_agent_memory` flag. |
 
 ---
@@ -302,6 +305,6 @@ Then re-run `copier update` to regenerate `workflow.yaml`, `pyproject.toml`, `co
 
 | Topic | Description |
 |---|---|
-| [Agent README](./README.md) | Agent component overview, front servers, and framework guides. |
-| [DRAgent front server](./README.md#dragent) | How to enable and use the DRAgent runtime required for memory. |
+| [Agent README](./README.md) | Agent component overview, front server, and framework guides. |
+| [DRAgent front server](./README.md#front-server) | DRAgent runtime overview (required for memory). |
 | [LLM provider fallback](./llm-fallback.md) | Configure primary and fallback LLMs used by the memory wrapper and inner agent. |
