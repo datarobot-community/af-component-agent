@@ -41,6 +41,9 @@ python_files = ["test_*.py"]
 python_functions = ["test_*"]
 pythonpath = ["."]
 asyncio_mode = "auto"
+markers = [
+    "eval: marks tests as live evaluation tests requiring DataRobot credentials",
+]
 
 [tool.ruff]
 # Exclude a variety of commonly ignored directories.

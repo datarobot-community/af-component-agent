@@ -93,6 +93,20 @@ tasks:
       - "{% raw %}{{.UV_CMD}}{% endraw %} run pytest -vv ./tests/"
     silent: true
 
+  eval:
+    desc: "📊 Run NAT batch evaluation (pass eval config path as CLI_ARGS)"
+    deps:
+      - auth-check
+    cmds:
+      - |
+        set -- {% raw %}{{.CLI_ARGS}}{% endraw %}
+        if [ $# -eq 0 ]; then
+          echo "Usage: task {{ agent_app_name }}:eval -- eval/eval-config-agent-goal-accuracy.yaml"; exit 1
+        fi
+        echo "Running nat eval with config $1"
+        {% raw %}{{.UV_CMD}}{% endraw %} run nat eval --config_file "$1"
+    silent: true
+
   test-coverage:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
     # desc: 🧪 Run tests with coverage
