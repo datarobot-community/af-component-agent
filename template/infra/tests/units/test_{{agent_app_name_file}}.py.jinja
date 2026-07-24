@@ -1582,7 +1582,6 @@ class TestGetMcpCustomModelRuntimeParameters:
         assert external_mcp_transport_param is not None
         assert external_mcp_transport_param.type == "string"
         assert external_mcp_transport_param.value == "sse"
-
 {% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
 class TestAgentMemoryRuntimeParameter:
     def test_default_ttl_runtime_parameter_included(self, monkeypatch):
