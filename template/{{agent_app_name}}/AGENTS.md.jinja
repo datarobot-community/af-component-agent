@@ -36,6 +36,8 @@ kickoff_inputs = lambda user_prompt_content: {"topic": str(user_prompt_content),
 MyAgent = datarobot_agent_class_from_crew(crew, agents, tasks, kickoff_inputs)
 ```
 
+Include `"chat_history": ""` and `{chat_history}` in task descriptions to opt into multi-turn history injection&mdash;see [Chat history](../docs/agent/chat-history.md).
+
 **Important**: `MyAgent` class should NOT be renamed!
 
 ### 2. Agent and Task Definitions
@@ -105,10 +107,12 @@ Define a `ChatPromptTemplate` that structures user input:
 
 ```python
 prompt_template = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful assistant. Chat history: {chat_history}"),
+    ("system", "You are a helpful assistant that plans and writes content based on the user's topic."),
     ("user", "The topic is {topic}."),
 ])
 ```
+
+Prior turns from multi-turn requests are replayed as structured native messages automatically&mdash;see [Chat history](../docs/agent/chat-history.md).
 
 ### 3. Graph Factory
 
