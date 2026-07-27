@@ -37,6 +37,8 @@ The Playground remains the preferred environment for evaluating live deployed ag
 
 Local evaluation uses **`nat eval`** plugins shipped in `datarobot-genai` **0.26.10 or newer** (`dr_eval_plugins` entry point). The agent template already depends on `datarobot-genai[dragent, …]`; ensure your lockfile resolves to a version that includes the eval plugins.
 
+Pytest evaluation tests use `@pytest.mark.timeout`; `pytest-timeout` is included in the template's `dev` optional dependencies (`dr task run agent:install`).
+
 No separate `datarobot-moderations` install is required&mdash;evaluators call the same OOTB scorers in-process.
 
 ### Required environment variables
@@ -66,7 +68,8 @@ agent/
 ├── eval/
 │   ├── eval-config-base.yaml
 │   ├── eval-config-agent-goal-accuracy.yaml
-│   ├── dataset-agent-goal-accuracy.json
+│   ├── dataset/
+│   │   └── dataset-agent-goal-accuracy.json
 │   └── ...
 └── tests/
     └── test_agent_eval.py
@@ -106,7 +109,7 @@ eval:
   general:
     dataset:
       _type: json
-      file_path: ./dataset-agent-goal-accuracy.json
+      file_path: ./dataset/dataset-agent-goal-accuracy.json
   evaluators:
     agent_goal_accuracy:
       _type: agent_goal_accuracy
@@ -304,7 +307,7 @@ Define `judge_llm` separately from the agent's `datarobot_llm` in `eval-config-b
 
 ### Keep datasets in version control
 
-Store `eval/dataset-*.json` alongside your agent code so evaluation cases are reviewed in pull requests alongside agent changes.
+Store `eval/dataset/*.json` alongside your agent code so evaluation cases are reviewed in pull requests alongside agent changes.
 
 ### Separate eval tests from unit tests with markers
 

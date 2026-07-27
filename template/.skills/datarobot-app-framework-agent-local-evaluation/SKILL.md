@@ -8,7 +8,7 @@
 
 Before generating any code, confirm the following with the user:
 
-1. Dependencies are installed — `datarobot-genai[nat, dragent]` (or the framework extra your agent uses) must be **0.26.10 or newer**, which ships `nat eval` plugins for DataRobot moderation metrics. Run `dr task run agent:install` if needed.
+1. Dependencies are installed — `datarobot-genai[nat, dragent]` (or the framework extra your agent uses) must be **0.26.10 or newer**, which ships `nat eval` plugins for DataRobot moderation metrics. Dev dependencies (including `pytest-timeout` for `@pytest.mark.timeout`) are installed via `dr task run agent:install`.
 2. `DATAROBOT_ENDPOINT` and `DATAROBOT_API_TOKEN` are set as environment variables. `dr start` creates the project-root `.env` file where the user configures these values.
 3. The agent has a `workflow.yaml` at the agent component root (standard for all DRAgent templates).
 
@@ -42,14 +42,14 @@ eval:
 
 ### 2. Create metric-specific eval configs and datasets
 
-Copy the matching pair from `examples/` for each metric the user needs:
+Copy the matching config from `examples/` and dataset from `examples/dataset/` for each metric the user needs:
 
 | Metric | Config | Dataset |
 |---|---|---|
-| Agent goal accuracy | `eval-config-agent-goal-accuracy.yaml` | `dataset-agent-goal-accuracy.json` |
-| Faithfulness (RAG) | `eval-config-faithfulness.yaml` | `dataset-faithfulness.json` |
-| Task adherence | `eval-config-task-adherence.yaml` | `dataset-task-adherence.json` |
-| Guideline adherence | `eval-config-agent-guideline-adherence.yaml` | `dataset-agent-guideline-adherence.json` |
+| Agent goal accuracy | `eval-config-agent-goal-accuracy.yaml` | `dataset/dataset-agent-goal-accuracy.json` |
+| Faithfulness (RAG) | `eval-config-faithfulness.yaml` | `dataset/dataset-faithfulness.json` |
+| Task adherence | `eval-config-task-adherence.yaml` | `dataset/dataset-task-adherence.json` |
+| Guideline adherence | `eval-config-agent-guideline-adherence.yaml` | `dataset/dataset-agent-guideline-adherence.json` |
 
 Each metric config extends the base:
 
@@ -60,7 +60,7 @@ eval:
   general:
     dataset:
       _type: json
-      file_path: ./dataset-agent-goal-accuracy.json
+      file_path: ./dataset/dataset-agent-goal-accuracy.json
   evaluators:
     agent_goal_accuracy:
       _type: agent_goal_accuracy

@@ -5,7 +5,7 @@ eval:
   general:
     dataset:
       _type: json
-      file_path: ./dataset-task-adherence.json
+      file_path: ./dataset/dataset-task-adherence.json
   evaluators:
     task_adherence:
       _type: task_adherence

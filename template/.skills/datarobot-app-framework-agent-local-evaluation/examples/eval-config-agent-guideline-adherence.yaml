@@ -5,7 +5,7 @@ eval:
   general:
     dataset:
       _type: json
-      file_path: ./dataset-agent-guideline-adherence.json
+      file_path: ./dataset/dataset-agent-guideline-adherence.json
   evaluators:
     agent_guideline_adherence:
       _type: agent_guideline_adherence

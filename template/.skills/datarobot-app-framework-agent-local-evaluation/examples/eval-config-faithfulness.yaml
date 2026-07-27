@@ -5,7 +5,7 @@ eval:
   general:
     dataset:
       _type: json
-      file_path: ./dataset-faithfulness.json
+      file_path: ./dataset/dataset-faithfulness.json
   evaluators:
     faithfulness:
       _type: faithfulness

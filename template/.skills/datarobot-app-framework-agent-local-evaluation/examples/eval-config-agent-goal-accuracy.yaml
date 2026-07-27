@@ -5,7 +5,7 @@ eval:
   general:
     dataset:
       _type: json
-      file_path: ./dataset-agent-goal-accuracy.json
+      file_path: ./dataset/dataset-agent-goal-accuracy.json
   evaluators:
     agent_goal_accuracy:
       _type: agent_goal_accuracy
