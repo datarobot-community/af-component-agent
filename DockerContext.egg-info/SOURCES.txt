@@ -1,9 +1,0 @@
-AUTHORS
-LICENSE
-README.md
-pyproject.toml
-DockerContext.egg-info/PKG-INFO
-DockerContext.egg-info/SOURCES.txt
-DockerContext.egg-info/dependency_links.txt
-DockerContext.egg-info/requires.txt
-DockerContext.egg-info/top_level.txt
