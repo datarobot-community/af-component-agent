@@ -1,17 +1,16 @@
 # Local evaluation for agentic workflows
 
-This guide covers how to evaluate agentic workflows locally using **`nat eval`** and DataRobot moderation metrics from `datarobot-genai`. It explains how to configure batch evaluation, wire quality gates into Pytest, and integrate them into CI/CD pipelines.
+This guide covers how to evaluate agentic workflows locally using **`nat eval`** and DataRobot moderation metrics from `datarobot-genai`. It explains how to configure batch evaluation and optionally wrap runs in Pytest during development.
 
 > [!NOTE]
-> This guide covers **offline evaluation** in tests. To enforce guardrails on live agent traffic through DRAgent, see [Moderation and guardrails](./moderation.md).
+> This guide covers **local, offline evaluation** during development. It is not intended for CI/CD pipelines. To enforce guardrails on live agent traffic through DRAgent, see [Moderation and guardrails](./moderation.md).
 
 | Section | Description |
 |---|---|
 | [Why local evaluation](#why-local-evaluation) | When to use local evaluation vs. the Agentic Playground. |
 | [Prerequisites](#prerequisites) | Required environment variables and resources. |
 | [Configuration](#configuration) | `eval/*.yaml` structure and available metrics. |
-| [Usage examples](#usage-examples) | CLI and Pytest patterns for local evaluation. |
-| [CI/CD integration](#cicd-integration) | Running evaluation gates in automated pipelines. |
+| [Usage examples](#usage-examples) | CLI and optional Pytest patterns for local evaluation. |
 | [Troubleshooting](#troubleshooting) | Common errors and fixes. |
 | [Best practices](#best-practices) | Patterns and anti-patterns. |
 | [Further reading](#further-reading) | Related docs and components. |
@@ -23,8 +22,7 @@ This guide covers how to evaluate agentic workflows locally using **`nat eval`**
 The DataRobot Agentic Playground provides a UI-based environment for evaluating deployed agents with built-in quality metrics and traces. Local evaluation with `nat eval` is the preferred approach when you need:
 
 - **Fast feedback loops**&mdash;no deployment required; evaluation runs against your local `workflow.yaml` during development.
-- **CI/CD quality gates**&mdash;block a pipeline (`dr run deploy`) if agent responses fall below a quality threshold.
-- **Reproducible assertions**&mdash;define evaluation datasets and metrics as code in version control.
+- **Reproducible datasets**&mdash;define evaluation cases and metrics as code in version control.
 - **End-to-end coverage**&mdash;`nat eval` runs the same workflow path as `nat dragent serve`, then scores outputs in-process.
 
 The Playground remains the preferred environment for evaluating live deployed agents, inspecting real LLM traces, and exploring quality metrics interactively across conversation turns.
@@ -162,9 +160,9 @@ cd agent && uv run nat eval --config_file eval/eval-config-agent-goal-accuracy.y
 
 On success, the CLI prints an `EVALUATION SUMMARY` with per-metric scores. Results are also written under `eval/.tmp/nat-eval` (configurable via `eval.general.output.dir`).
 
-### Pytest quality gates
+### Optional Pytest wrapper
 
-Wrap `nat eval` in Pytest to gate CI pipelines. Add tests to `agent/tests/test_agent_eval.py`:
+You can wrap `nat eval` in Pytest for repeatable local runs during development. Add tests to `agent/tests/test_agent_eval.py`:
 
 ```python
 import os
@@ -215,47 +213,6 @@ markers = [
     "eval: marks tests as live evaluation tests requiring DataRobot credentials",
 ]
 ```
-
-<a name="cicd-integration"></a>
-
-## CI/CD integration
-
-Run only evaluation tests (requires DataRobot credentials):
-
-```sh
-cd agent && uv run pytest tests/ -m eval
-```
-
-Run all tests except evaluation (no credentials needed):
-
-```sh
-cd agent && uv run pytest tests/ -m "not eval"
-```
-
-The Taskfile exposes a `test` task for the full suite:
-
-```sh
-dr task run agent:test
-```
-
-You can also run `nat eval` directly in CI without Pytest:
-
-```sh
-cd agent && uv run nat eval --config_file eval/eval-config-agent-goal-accuracy.yaml
-```
-
-Example GitHub Actions step:
-
-```yaml
-- name: Run agent evaluation
-  run: cd agent && uv run nat eval --config_file eval/eval-config-agent-goal-accuracy.yaml
-  env:
-    DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
-    DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
-```
-
-> [!NOTE]
-> Evaluation calls the DataRobot API to run the agent workflow and judge LLM. Standard unit tests marked with `not eval` continue to pass without credentials.
 
 <a name="troubleshooting"></a>
 
@@ -311,12 +268,14 @@ Store `eval/dataset/*.json` alongside your agent code so evaluation cases are re
 
 ### Separate eval tests from unit tests with markers
 
-Use `@pytest.mark.eval` on all tests that call the DataRobot API. This allows unit tests and eval tests to be run independently:
+Use `@pytest.mark.eval` on tests that call the DataRobot API so you can run them separately from unit tests during local development:
 
 ```sh
 cd agent && uv run pytest tests/ -m eval        # Only evaluation tests (requires credentials)
 cd agent && uv run pytest tests/ -m "not eval"  # Only unit tests (no credentials needed)
 ```
+
+Do not run `nat eval` or eval-marked tests in CI&mdash;they require live DataRobot credentials and LLM deployments.
 
 ### Align runtime and offline guardrails
 

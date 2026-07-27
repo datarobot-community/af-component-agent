@@ -26,7 +26,7 @@ Moderations run in two stages:
 Both stages are implemented by the `datarobot_moderation` middleware on DRAgent, which loads guard definitions from either `moderation_config.yaml` or an inline `moderation` block in `workflow.yaml`.
 
 > [!NOTE]
-> Runtime moderations (this guide) enforce guardrails on live traffic. For **offline quality gates**&mdash;batch-scoring agent outputs with `nat eval` in CI without deploying&mdash;see [Local evaluation](./evaluation.md).
+> Runtime moderations (this guide) enforce guardrails on live traffic. For **offline evaluation** during local development&mdash;batch-scoring agent outputs with `nat eval` without deploying&mdash;see [Local evaluation](./evaluation.md).
 
 ## Guard configuration file
 
@@ -223,7 +223,7 @@ Or add `DISABLE_MODERATION=true` to `.env`. Guards resume when the variable is u
 
 Runtime moderations (this guide) enforce guardrails on live agent traffic through the DRAgent middleware.
 
-For **offline evaluation**&mdash;batch-scoring agent responses against the same OOTB metrics in CI&mdash;use **`nat eval`** with DataRobot moderation evaluators from `datarobot-genai`. That workflow is documented in [Local evaluation for agentic workflows](./evaluation.md).
+For **offline evaluation** during local development&mdash;batch-scoring agent responses against the same OOTB metrics without deploying&mdash;use **`nat eval`** with DataRobot moderation evaluators from `datarobot-genai`. That workflow is documented in [Local evaluation for agentic workflows](./evaluation.md).
 
 | Mechanism | Purpose | Used by |
 |---|---|---|

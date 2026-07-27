@@ -120,12 +120,6 @@ dr task run agent:eval -- eval/eval-config-agent-goal-accuracy.yaml
 cd agent && uv run pytest tests/test_agent_eval.py -m eval -v
 ```
 
-### "How do I skip evaluation tests in CI when I don't have credentials?"
-
-```sh
-cd agent && uv run pytest tests/ -m "not eval"
-```
-
 ### "The judge keeps timing out."
 
 Reduce `max_concurrency` in `eval-config-base.yaml` to `1` (already the default in examples). Cold-start LLM deployments can take up to two minutes — increase the pytest timeout (`@pytest.mark.timeout(180)`) if needed.
@@ -136,4 +130,4 @@ Reduce `max_concurrency` in `eval-config-base.yaml` to `1` (already the default 
 - Evaluator plugins ship in `datarobot-genai` (`dr_eval_plugins` entry point) and require **datarobot-genai >= 0.26.10**.
 - `llm_name: judge_llm` on each evaluator points at the judge LLM defined in `eval-config-base.yaml`, not at a raw deployment ID.
 - Faithfulness rows need a `context` field (list of strings). Agent goal accuracy and task adherence use `question` only.
-- See [`docs/agent/evaluation.md`](../../docs/agent/evaluation.md) for full configuration options, troubleshooting, and CI/CD integration.
+- See [`docs/agent/evaluation.md`](../../docs/agent/evaluation.md) for full configuration options and troubleshooting.
