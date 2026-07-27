@@ -125,7 +125,7 @@ function_groups:
 ### Custom local tools
 
 The template ships with a `word_counter` tool that counts words in a given text. It is defined in `register.py`, registered via `nat_tool`, and declared in `workflow.yaml`. You can remove it or replace it with your own tools.
-To add a custom tool to a NAT agent, define a plain Python function and register it with **`nat_tool(fn, tool_name, ...)`** from `datarobot_genai.nat.tool` in `register.py` (a **call** at module level after the function exists). Then reference `tool_name` in `workflow.yaml`.
+To add a custom tool to a NAT agent, define a plain Python function and register it with **`nat_tool(fn, tool_name, ...)`** from `datarobot_genai.dragent.tool` in `register.py` (a **call** at module level after the function exists). Then reference `tool_name` in `workflow.yaml`.
 
 **Do not** use `@nat_tool()` as a decorator with no arguments; `nat_tool` requires the function and name as positional arguments, and bare `@nat_tool()` raises `TypeError: nat_tool() missing 2 required positional arguments: 'fn' and 'name'`.
 
@@ -149,7 +149,7 @@ Use `Annotated` type hints to provide parameter descriptions&mdash;NAT uses thes
 **Step 2**&mdash;Register the tool in `register.py`:
 
 ```python
-from datarobot_genai.nat.tool import nat_tool
+from datarobot_genai.dragent.tool import nat_tool
 from agent.tools import word_counter
 
 nat_tool(word_counter, "word_counter", description="Count words in a given text.")
@@ -235,6 +235,12 @@ workflow:
 ```
 
 This prompt should clearly describe the execution order and what each tool/function does. The orchestrator uses this to decide the sequence of calls.
+
+### Chat history
+
+NAT agents receive multi-turn context from the request `messages` list. Prior user and assistant turns are passed to the `per_user_tool_calling_agent` orchestrator automatically&mdash;no `{chat_history}` placeholder in `workflow.yaml` is required. The client (UI, API, or chat-completions adapter) must include earlier turns in `messages` when you want the agent to reference them.
+
+For details on request shape, limits, and testing, see [Chat history](../chat-history.md). For durable facts across sessions, see [Agent memory](../agent-memory.md).
 
 ### How to modify
 

@@ -46,6 +46,11 @@ def pulumi_mocks(monkeypatch, tmp_path):
     mock_llm_module.default_model = "datarobot/azure/gpt-5-mini-2025-08-07"
 {%- endif %}
     monkeypatch.setitem(sys.modules, "infra.{{ _external_data.llm.llm_app_name }}", mock_llm_module)
+    # Stub infra.mcp_server so generic tests stay MCP-agnostic; importing the real module
+    # runs its module-level Pulumi resource registration and breaks them.
+    mock_mcp_module = MagicMock()
+    mock_mcp_module.mcp_custom_model_runtime_parameters = []
+    monkeypatch.setitem(sys.modules, "infra.mcp_server", mock_mcp_module)
     # Mock pulumi_datarobot resources
     monkeypatch.setattr("pulumi_datarobot.ExecutionEnvironment", MagicMock())
     monkeypatch.setattr("pulumi_datarobot.CustomModel", MagicMock())
@@ -484,14 +489,14 @@ def test_custom_model_created(monkeypatch):
 
     runtime_parameter_values = kwargs["runtime_parameter_values"]
 {% if use_agent_memory == 'mem0' %}
-    # Should have 4 params: 1 SESSION_SECRET_KEY + 1 server param + memory TTL + mem0 api key
-    assert len(runtime_parameter_values) == 4
+    # Should have 5 params: 1 SESSION_SECRET_KEY + 2 server params + memory TTL + mem0 api key
+    assert len(runtime_parameter_values) == 5
 {% elif use_agent_memory in ['datarobot_memory_service'] %}
-    # Should have 8 params: 1 SESSION_SECRET_KEY + 1 server param + memory TTL + memory space ID
-    assert len(runtime_parameter_values) == 4
+    # Should have 5 params: 1 SESSION_SECRET_KEY + 2 server params + memory TTL + memory space ID
+    assert len(runtime_parameter_values) == 5
 {% else %}
-    # Should have 2 params: 1 SESSION_SECRET_KEY + 1 server param
-    assert len(runtime_parameter_values) == 2
+    # Should have 3 params: 1 SESSION_SECRET_KEY + 2 server params
+    assert len(runtime_parameter_values) == 3
 {% endif %}
     # Find the SESSION_SECRET_KEY parameter
     session_secret_param = next(
@@ -500,6 +505,18 @@ def test_custom_model_created(monkeypatch):
     assert session_secret_param is not None
     assert session_secret_param.type == "credential"
     assert session_secret_param.value is not None
+
+    gunicorn_timeout_param = next(
+        (
+            p
+            for p in runtime_parameter_values
+            if p.key == "AGENT_GUNICORN_WORKER_TIMEOUT"
+        ),
+        None,
+    )
+    assert gunicorn_timeout_param is not None
+    assert gunicorn_timeout_param.type == "string"
+    assert gunicorn_timeout_param.value == "600"
 {%- if use_agent_memory == 'mem0' %}
 
     mem0_param = next(
@@ -990,25 +1007,27 @@ class TestConfigureMemorySpaceLlm:
         mock_space.update.assert_not_called()
         assert result == "test-space-id"
 
-    def test_clears_llm_model_name_when_switching_to_deployment(self, monkeypatch):
+    def test_sets_both_model_and_base_url_for_deployment(self, monkeypatch):
         import infra.{{agent_app_name}} as agent_infra
 
-        deployment_url = (
-            "https://app.datarobot.com/api/v2/deployments/abc123/chat/completions"
-        )
+        deployment_url = "https://app.datarobot.com/api/v2/deployments/abc123"
         mock_space = MagicMock()
         mock_space.llm_model_name = "old-gateway-model"
-        mock_space.llm_base_url = deployment_url
+        mock_space.llm_base_url = None
         mock_get = MagicMock(return_value=mock_space)
         monkeypatch.setattr("datarobot.MemorySpace.get", mock_get)
 
         result = agent_infra._configure_memory_space_llm(
             space_id="test-space-id",
+            llm_model_name="new-model",
             llm_base_url=deployment_url,
         )
 
         mock_get.assert_called_once_with("test-space-id")
-        mock_space.update.assert_called_once_with(llm_model_name=None)
+        mock_space.update.assert_called_once_with(
+            llm_model_name="new-model",
+            llm_base_url=deployment_url,
+        )
         assert result == "test-space-id"
 
 
@@ -1117,7 +1136,8 @@ class TestMemorySpaceLlmRouting:
         )
 
         assert captured == {
-            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/deployment-123"
+            "llm_model_name": "azure/gpt-5-mini-2025-08-07",
+            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/deployment-123",
         }
 
     def test_configure_memory_space_llm_routing_override_model_name(self, monkeypatch):
@@ -1163,7 +1183,8 @@ class TestMemorySpaceLlmRouting:
         )
 
         assert captured == {
-            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/memory-deployment-456"
+            "llm_model_name": "anthropic/claude-opus-4-20250514",
+            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/memory-deployment-456",
         }
 
     def test_normalize_optional_env_treats_blank_as_unset(self):
@@ -1273,17 +1294,23 @@ class TestGetCustomModelFiles:
         # Create files that should be excluded
         (tmp_path / "file1.py").write_text("print('hi')")
         (tmp_path / ".DS_Store").write_text("")
+        (tmp_path / ".env").write_text("SECRET=token")
+        (tmp_path / ".env.local").write_text("SECRET=token")
+        (tmp_path / ".environment").write_text("not a secret file")
         (tmp_path / "__pycache__").mkdir()
         (tmp_path / "__pycache__" / "foo.pyc").write_text("")
         files = agent_infra.get_custom_model_files(str(tmp_path), [])
         file_names = [f[1] for f in files]
         assert "file1.py" in file_names
         assert ".DS_Store" not in file_names
+        assert ".env" not in file_names
+        assert ".env.local" not in file_names
+        assert ".environment" in file_names
         assert "__pycache__/foo.pyc" not in file_names
 
         # Autogenerated metadata file
         assert "model-metadata.yaml" in file_names
-        assert len(files) == 2
+        assert len(files) == 3
 
     def test_get_custom_model_files_excludes_docker_context(self, tmp_path):
         import infra.{{agent_app_name}} as agent_infra
@@ -1799,15 +1826,20 @@ class TestServerRuntimeParameters:
             if param.key
             in [
                 "CUSTOM_MODEL_WORKERS",
+                "AGENT_GUNICORN_WORKER_TIMEOUT",
             ]
         }
 
         # Verify all parameters are present
-        assert len(server_params) == 1
+        assert len(server_params) == 2
 
         # Check CUSTOM_MODEL_WORKERS
         assert server_params["CUSTOM_MODEL_WORKERS"].type == "numeric"
         assert server_params["CUSTOM_MODEL_WORKERS"].value == "2"
+
+        # Check AGENT_GUNICORN_WORKER_TIMEOUT
+        assert server_params["AGENT_GUNICORN_WORKER_TIMEOUT"].type == "string"
+        assert server_params["AGENT_GUNICORN_WORKER_TIMEOUT"].value == "600"
 
     def test_server_runtime_parameters_passed_to_custom_model(self, monkeypatch):
         """Test that server runtime parameters are passed to CustomModel."""
@@ -1825,6 +1857,7 @@ class TestServerRuntimeParameters:
         runtime_params = kwargs["runtime_parameter_values"]
         server_keys = [
             "CUSTOM_MODEL_WORKERS",
+            "AGENT_GUNICORN_WORKER_TIMEOUT",
         ]
 
         found_keys = [param.key for param in runtime_params if param.key in server_keys]

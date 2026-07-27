@@ -25,10 +25,9 @@ git mv agent/agent/workflow.yaml agent/workflow.yaml
 
 Remove any leftover copy under `agent/agent/` so only one `workflow.yaml` exists.
 
-### 2. Update `workflow_path` in NAT `myagent.py` (DRUM fallback only)
+### 2. Update `workflow_path` in NAT `myagent.py` (if present)
 
-> [!NOTE]
-> Only relevant if you use the deprecated [DRUM fallback](./README.md#drum-fallback-deprecated-temporary) with the NAT framework. DRAgent loads `workflow.yaml` directly via `--config_file` and ignores `workflow_path`.
+If your NAT project sets `workflow_path` in `myagent.py`, point it at the new location. DRAgent loads `workflow.yaml` via `--config_file` at the agent root (see step 3); the generated Taskfile does not rely on `workflow_path`.
 
 **Before** (file co-located with `myagent.py`):
 

@@ -52,9 +52,11 @@ task agent:cli -- execute-deployment --user_prompt "Artificial Intelligence" --d
 
 | Flag | Description |
 |---|---|
-| `--user_prompt` | Text or JSON prompt to send. |
+| `--user_prompt` | Text or JSON prompt to send (single turn). |
 | `--file` | Path to a text file whose contents are used as the prompt. |
 | `--deployment_id` | Target a deployed agent instead of running locally. |
+
+For **multi-turn** requests, POST a full AG-UI payload (including prior `messages`) to the dev server's `/generate/stream` endpoint. See [Chat history](../chat-history.md#testing-locally).
 
 ## Debugging in VS Code
 

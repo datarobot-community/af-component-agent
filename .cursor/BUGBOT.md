@@ -186,7 +186,6 @@ Current blocked packages (see `# Excluded` in `override-dependencies`):
 | `openpyxl` | Excel parser pulled in by crewai-tools; not used |
 | `python-docx` | Word doc parser pulled in by crewai-tools; not used |
 | `llama-index-cli` | CLI tool pulled in by llama-index; not needed at runtime |
-| `scikit-network` | Graph analysis pulled in by ragas; not used |
 | `watchdog` | File watcher for nemoguardrails hot-reload; not used at runtime |
 | `typer` | CLI framework for nemoguardrails CLI; not used at runtime |
 | `shellingham` | Shell detection; sole dependent was typer |
@@ -199,4 +198,4 @@ Rules specific to this repository:
 
 ### C1: Templating logic
 
-Adding more logic for copier templates is very much discouraged: it increses the test matrix, impacts our reliability, and decreases readability of the template. Current level of complexity (e.g. 5 different agents, mem0 vs no memory, two frontservers) is high enough to make a component unstable. No new templating clauses should be added without a review from TECHLEAD.
+Adding more logic for copier templates is very much discouraged: it increases the test matrix, impacts our reliability, and decreases readability of the template. Current level of complexity (e.g. 5 different agents, mem0 vs no memory) is high enough to make a component unstable. No new templating clauses should be added without a review from TECHLEAD.

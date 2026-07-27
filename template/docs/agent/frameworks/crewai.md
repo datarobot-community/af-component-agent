@@ -255,7 +255,9 @@ All `{variable}` placeholders in `role`, `goal`, `backstory`, `description`, and
 
 ### Chat history
 
-CrewAI supports chat history only as **flat text**, opt-in: add a `"chat_history"` key to `kickoff_inputs` and reference `{chat_history}` in a `backstory` or `description`. Prior turns are then injected as a plain-text summary; omit the key and no history is added. Prior turns aren't threaded as native role-tagged messages, since `Crew.kickoff()` accepts only string variables, not a message list.
+This template opts into multi-turn chat history via the `"chat_history"` key in `kickoff_inputs` and `{chat_history}` placeholders at the end of task `description` strings. When the request includes prior user and assistant messages, `datarobot-genai` replaces the empty `chat_history` value with a plain-text `Prior conversation:\n...` summary before `Crew.kickoff()` runs.
+
+CrewAI accepts only string kickoff variables, so history is **flat text**, not native role-tagged messages. Omit `"chat_history"` from `kickoff_inputs` (and remove `{chat_history}` from prompts) to disable injection. See [Chat history](../chat-history.md) for request format and examples.
 
 ### How to modify
 

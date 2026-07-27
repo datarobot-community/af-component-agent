@@ -89,21 +89,19 @@ def _configure_memory_space_llm(
 ) -> str:
     """Configure the memory space LLM settings via the DataRobot SDK.
 
-    Set ``llm_model_name`` for LLM Gateway routing or ``llm_base_url`` for a
-    deployed LLM endpoint&mdash;not both.
+    Always set ``llm_model_name``. When routing to a deployed LLM, also set
+    ``llm_base_url``. Gateway-only routing clears any existing deployment URL.
     """
     space = dr.MemorySpace.get(space_id)
     update_kwargs: dict[str, str | None] = {}
     if llm_model_name is not None:
         if space.llm_model_name != llm_model_name:
             update_kwargs["llm_model_name"] = llm_model_name
-        if space.llm_base_url is not None:
-            update_kwargs["llm_base_url"] = None
-    elif llm_base_url is not None:
+    if llm_base_url is not None:
         if space.llm_base_url != llm_base_url:
             update_kwargs["llm_base_url"] = llm_base_url
-        if space.llm_model_name is not None:
-            update_kwargs["llm_model_name"] = None
+    elif llm_model_name is not None and space.llm_base_url is not None:
+        update_kwargs["llm_base_url"] = None
     if update_kwargs:
         space.update(**update_kwargs)
     pulumi.info(f"Memory space configured: {space_id}")
@@ -119,17 +117,19 @@ def _configure_memory_space_llm_routing(
     override_deployment_id: str | None = None,
 ) -> str:
     """Configure memory-space LLM routing from env overrides or agent LLM defaults."""
+    model_name = _gateway_model_name(override_model_name or agent_default_model)
     deployment_id = override_deployment_id or (
         None if override_model_name else agent_deployment_id
     )
     if deployment_id:
         return _configure_memory_space_llm(
             space_id,
+            llm_model_name=model_name,
             llm_base_url=_deployment_llm_base_url(deployment_id),
         )
     return _configure_memory_space_llm(
         space_id,
-        llm_model_name=_gateway_model_name(override_model_name or agent_default_model),
+        llm_model_name=model_name,
     )
 
 {%- endif %}
@@ -142,6 +142,9 @@ ENABLE_AGENT_HA_MODE = os.environ.get("ENABLE_AGENT_HA_MODE", "false").lower() =
 
 # Custom Model runtime parameters (concurrency configuration)
 DEFAULT_CUSTOM_MODEL_WORKERS: Final[str] = "5" if ENABLE_AGENT_HA_MODE else "2"
+# Gunicorn worker timeout (seconds) for the dragent front end, read by datarobot-genai.
+# Raised above gunicorn's 30s default so long agent turns aren't killed mid-stream.
+DEFAULT_AGENT_GUNICORN_WORKER_TIMEOUT: Final[str] = "600"
 # Custom Model resource bundle configuration
 DEFAULT_AGENT_RESOURCE_BUNDLE_ID: str = (
     "cpu.3xlarge" if ENABLE_AGENT_HA_MODE else "cpu.xlarge"
@@ -163,6 +166,7 @@ CONFIGURED_AGENT_MEMORY_TTL_DAYS: Final[str] = os.environ.get(
 # Runtime parameters that are safe to include defaultValue in metadata
 SERVER_PARAMS_WITH_DEFAULTS: Final[set[str]] = {
     "CUSTOM_MODEL_WORKERS",
+    "AGENT_GUNICORN_WORKER_TIMEOUT",
 }
 
 EXCLUDE_PATTERNS = [
@@ -179,6 +183,7 @@ EXCLUDE_PATTERNS = [
         r".*\.pytest_cache/.*",
         r".*\.uv/.*",
         r".*docker_context/.*",
+        r".*\.env(?:\.[A-Za-z0-9_-]+)*$",
     ]
 ]
 
@@ -566,6 +571,11 @@ agent_runtime_parameter_values.extend(
             key="CUSTOM_MODEL_WORKERS",
             type="numeric",
             value=DEFAULT_CUSTOM_MODEL_WORKERS,
+        ),
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key="AGENT_GUNICORN_WORKER_TIMEOUT",
+            type="string",  # string is type-agnostic; numeric fails str settings fields
+            value=DEFAULT_AGENT_GUNICORN_WORKER_TIMEOUT,
         ),
     ]
 )
