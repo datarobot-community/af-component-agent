@@ -16,11 +16,11 @@ Evaluators use the `judge_llm` entry you add in `eval/eval-config-base.yaml` (`_
 
 ## Step-by-step implementation guide
 
-When a user asks to set up local evaluation, generate the files below. Complete, copy-paste-ready versions are in the `examples/` folder alongside this skill.
+When a user asks to set up local evaluation, generate the files below. Copy-paste-ready YAML and dataset templates are in `references/`; a runnable Pytest wrapper is in `examples/`.
 
 ### 1. Create `eval/eval-config-base.yaml`
 
-Copy `examples/eval-config-base.yaml` to `agent/eval/eval-config-base.yaml`. It inherits the agent's `workflow.yaml` and adds a dedicated judge LLM plus output settings:
+Copy `references/eval-config-base.yaml` to `agent/eval/eval-config-base.yaml`. It inherits the agent's `workflow.yaml` and adds a dedicated judge LLM plus output settings:
 
 ```yaml
 base: ../workflow.yaml
@@ -42,34 +42,34 @@ eval:
 
 ### 2. Create metric-specific eval configs and datasets
 
-Copy the matching config from `examples/` and dataset from `examples/dataset/` for each metric the user needs.
+Copy the matching config from `references/` and dataset from `references/dataset/` for each metric the user needs.
 
 #### Agent goal accuracy
 
 - **Evaluator `_type`:** `agent_goal_accuracy`
-- **Config (copy to `agent/eval/`):** `examples/eval-config-agent-goal-accuracy.yaml`
-- **Dataset (copy to `agent/eval/dataset/`):** `examples/dataset/dataset-agent-goal-accuracy.json`
+- **Config (copy to `agent/eval/`):** `references/eval-config-agent-goal-accuracy.yaml`
+- **Dataset (copy to `agent/eval/dataset/`):** `references/dataset/dataset-agent-goal-accuracy.json`
 - **Required JSON fields per row:** `id`, `question`, `answer`
 
 #### Faithfulness (RAG / hallucination detection)
 
 - **Evaluator `_type`:** `faithfulness`
-- **Config (copy to `agent/eval/`):** `examples/eval-config-faithfulness.yaml`
-- **Dataset (copy to `agent/eval/dataset/`):** `examples/dataset/dataset-faithfulness.json`
+- **Config (copy to `agent/eval/`):** `references/eval-config-faithfulness.yaml`
+- **Dataset (copy to `agent/eval/dataset/`):** `references/dataset/dataset-faithfulness.json`
 - **Required JSON fields per row:** `id`, `question`, `answer`, `context` (array of retrieved passage strings)
 
 #### Task adherence
 
 - **Evaluator `_type`:** `task_adherence`
-- **Config (copy to `agent/eval/`):** `examples/eval-config-task-adherence.yaml`
-- **Dataset (copy to `agent/eval/dataset/`):** `examples/dataset/dataset-task-adherence.json`
+- **Config (copy to `agent/eval/`):** `references/eval-config-task-adherence.yaml`
+- **Dataset (copy to `agent/eval/dataset/`):** `references/dataset/dataset-task-adherence.json`
 - **Required JSON fields per row:** `id`, `question`, `answer`
 
 #### Guideline adherence
 
 - **Evaluator `_type`:** `agent_guideline_adherence`
-- **Config (copy to `agent/eval/`):** `examples/eval-config-agent-guideline-adherence.yaml`
-- **Dataset (copy to `agent/eval/dataset/`):** `examples/dataset/dataset-agent-guideline-adherence.json`
+- **Config (copy to `agent/eval/`):** `references/eval-config-agent-guideline-adherence.yaml`
+- **Dataset (copy to `agent/eval/dataset/`):** `references/dataset/dataset-agent-guideline-adherence.json`
 - **Required JSON fields per row:** `id`, `question`, `answer`
 - **Extra evaluator YAML field:** `agent_guideline` (string describing the rule to enforce, e.g. `"Respond in one sentence or less."`)
 
@@ -142,7 +142,7 @@ cd agent && uv run pytest tests/test_agent_eval.py -m eval -v
 
 ### "The judge keeps timing out."
 
-Reduce `max_concurrency` in `eval-config-base.yaml` to `1` (already the default in examples). Cold-start LLM deployments can take up to two minutes — increase the pytest timeout (`@pytest.mark.timeout(180)`) if needed.
+Reduce `max_concurrency` in `eval-config-base.yaml` to `1` (already the default in `references/`). Cold-start LLM deployments can take up to two minutes — increase the pytest timeout (`@pytest.mark.timeout(180)`) if needed.
 
 ## Key facts to communicate to the user
 
@@ -150,4 +150,4 @@ Reduce `max_concurrency` in `eval-config-base.yaml` to `1` (already the default 
 - Evaluator plugins ship in `datarobot-genai` (`dr_eval_plugins` entry point) and require **datarobot-genai >= 0.26.10**.
 - `llm_name: judge_llm` on each evaluator points at the judge LLM defined in `eval-config-base.yaml`, not at a raw deployment ID.
 - Faithfulness rows need a `context` field (list of strings). All rows should include `question` and `answer`.
-- See [`docs/agent/evaluation.md`](../../docs/agent/evaluation.md) for full configuration options and troubleshooting.
+- See [`docs/agent/evaluation.md`](../../../docs/agent/evaluation.md) for full configuration options and troubleshooting.

@@ -2,8 +2,8 @@
 # prompts in eval/dataset/*.json with content relevant to your agent's domain.
 #
 # Prerequisites:
-#   - Copy examples/eval-config-*.yaml to agent/eval/
-#   - Copy examples/dataset/*.json to agent/eval/dataset/
+#   - Copy references/eval-config-*.yaml to agent/eval/
+#   - Copy references/dataset/*.json to agent/eval/dataset/
 #   - Install dev deps (includes pytest-timeout for @pytest.mark.timeout)
 #   - datarobot-genai >= 0.26.10 (nat eval moderation plugins)
 #   - DATAROBOT_ENDPOINT and DATAROBOT_API_TOKEN in .env

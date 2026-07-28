@@ -162,7 +162,7 @@ NAT maps `question` to the workflow input and `answer` to the expected output (`
 cd agent && uv run nat eval --config_file eval/eval-config-agent-goal-accuracy.yaml
 ```
 
-On success, the CLI prints an `EVALUATION SUMMARY` with per-metric scores. Results are also written under `eval/.tmp/nat-eval` (configurable via `eval.general.output.dir`).
+On success, the CLI prints an `EVALUATION SUMMARY` with per-metric scores. Results are also written under `.tmp/nat-eval` at the agent root (configurable via `eval.general.output.dir`).
 
 ### Optional Pytest wrapper
 
@@ -296,4 +296,4 @@ Runtime guardrails use `moderation_config.yaml` with `datarobot_moderation` midd
 | [Implement tracing](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-tracing-code.html) | Add OpenTelemetry spans for observability in deployed agents. |
 | [Agentic Playground](https://docs.datarobot.com/en/docs/agentic-ai/agentic-eval/agentic-playground.html) | UI-based evaluation environment for deployed agents with built-in metrics. |
 | [AG-UI protocol](./ag-ui.md) | Event types emitted during agent execution. |
-| [DataRobot agentic skills](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-skills.html) | Install the `datarobot-app-framework-agent-local-evaluation` skill for coding-agent setup help. |
+| [DataRobot agentic skills](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-skills.html) | Install the `datarobot-app-framework-agent-local-evaluation` skill from `.agents/skills/` for coding-agent setup help. |

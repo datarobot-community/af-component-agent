@@ -13,7 +13,7 @@ The `datarobot-moderations[all]` package is already included in `pyproject.toml`
 | [Test moderations locally](#test-moderations-locally) | Run prompts through your configured guards. |
 | [Environment variables](#environment-variables) | Credentials and runtime toggles. |
 | [Disabling moderations](#disabling-moderations) | Turn guards off without removing configuration. |
-| [Local evaluation](#local-evaluation) | Quality gates in Pytest (separate from runtime guards). |
+| [Local evaluation](#local-evaluation) | Offline `nat eval` quality checks during development (separate from runtime guards). |
 | [Further reading](#further-reading) | Full guard type reference and official docs. |
 
 ## Overview

@@ -6,7 +6,7 @@ on:
     paths:
       - "template/**"
       - "!template/docs/**"
-      - "!template/.skills/**"
+      - "!template/.agents/skills/**"
       - "fixtures/**"
       - "tests/e2e/**"
       - "pyproject.toml"
@@ -17,7 +17,7 @@ on:
     paths:
       - "template/**"
       - "!template/docs/**"
-      - "!template/.skills/**"
+      - "!template/.agents/skills/**"
       - "fixtures/**"
       - "tests/e2e/**"
       - "pyproject.toml"
