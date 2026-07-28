@@ -42,14 +42,36 @@ eval:
 
 ### 2. Create metric-specific eval configs and datasets
 
-Copy the matching config from `examples/` and dataset from `examples/dataset/` for each metric the user needs:
+Copy the matching config from `examples/` and dataset from `examples/dataset/` for each metric the user needs.
 
-| Metric | Config | Dataset |
-|---|---|---|
-| Agent goal accuracy | `eval-config-agent-goal-accuracy.yaml` | `dataset/dataset-agent-goal-accuracy.json` |
-| Faithfulness (RAG) | `eval-config-faithfulness.yaml` | `dataset/dataset-faithfulness.json` |
-| Task adherence | `eval-config-task-adherence.yaml` | `dataset/dataset-task-adherence.json` |
-| Guideline adherence | `eval-config-agent-guideline-adherence.yaml` | `dataset/dataset-agent-guideline-adherence.json` |
+#### Agent goal accuracy
+
+- **Evaluator `_type`:** `agent_goal_accuracy`
+- **Config (copy to `agent/eval/`):** `examples/eval-config-agent-goal-accuracy.yaml`
+- **Dataset (copy to `agent/eval/dataset/`):** `examples/dataset/dataset-agent-goal-accuracy.json`
+- **Required JSON fields per row:** `id`, `question`, `answer`
+
+#### Faithfulness (RAG / hallucination detection)
+
+- **Evaluator `_type`:** `faithfulness`
+- **Config (copy to `agent/eval/`):** `examples/eval-config-faithfulness.yaml`
+- **Dataset (copy to `agent/eval/dataset/`):** `examples/dataset/dataset-faithfulness.json`
+- **Required JSON fields per row:** `id`, `question`, `answer`, `context` (array of retrieved passage strings)
+
+#### Task adherence
+
+- **Evaluator `_type`:** `task_adherence`
+- **Config (copy to `agent/eval/`):** `examples/eval-config-task-adherence.yaml`
+- **Dataset (copy to `agent/eval/dataset/`):** `examples/dataset/dataset-task-adherence.json`
+- **Required JSON fields per row:** `id`, `question`, `answer`
+
+#### Guideline adherence
+
+- **Evaluator `_type`:** `agent_guideline_adherence`
+- **Config (copy to `agent/eval/`):** `examples/eval-config-agent-guideline-adherence.yaml`
+- **Dataset (copy to `agent/eval/dataset/`):** `examples/dataset/dataset-agent-guideline-adherence.json`
+- **Required JSON fields per row:** `id`, `question`, `answer`
+- **Extra evaluator YAML field:** `agent_guideline` (string describing the rule to enforce, e.g. `"Respond in one sentence or less."`)
 
 Each metric config extends the base:
 
@@ -60,16 +82,14 @@ eval:
   general:
     dataset:
       _type: json
-      file_path: ./dataset/dataset-agent-goal-accuracy.json
+      file_path: ./eval/dataset/dataset-agent-goal-accuracy.json
   evaluators:
     agent_goal_accuracy:
       _type: agent_goal_accuracy
       llm_name: judge_llm
 ```
 
-Faithfulness datasets must include a `context` array per row (retrieved passages). Guideline adherence configs accept an `agent_guideline` string on the evaluator.
-
-Replace placeholder prompts and contexts with content relevant to the user's agent domain.
+Replace placeholder `question`, `answer`, and `context` values with content relevant to the user's agent domain.
 
 ### 3. Generate the Pytest evaluation test
 
@@ -129,5 +149,5 @@ Reduce `max_concurrency` in `eval-config-base.yaml` to `1` (already the default 
 - `nat eval` runs the agent workflow on each dataset question, then scores outputs in-process via DataRobot moderation OOTB judges — no NeMo Evaluator microservice and no separate `moderation.yaml` for offline eval.
 - Evaluator plugins ship in `datarobot-genai` (`dr_eval_plugins` entry point) and require **datarobot-genai >= 0.26.10**.
 - `llm_name: judge_llm` on each evaluator points at the judge LLM defined in `eval-config-base.yaml`, not at a raw deployment ID.
-- Faithfulness rows need a `context` field (list of strings). Agent goal accuracy and task adherence use `question` only.
+- Faithfulness rows need a `context` field (list of strings). All rows should include `question` and `answer`.
 - See [`docs/agent/evaluation.md`](../../docs/agent/evaluation.md) for full configuration options and troubleshooting.

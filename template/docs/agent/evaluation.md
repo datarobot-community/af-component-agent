@@ -107,7 +107,7 @@ eval:
   general:
     dataset:
       _type: json
-      file_path: ./dataset/dataset-agent-goal-accuracy.json
+      file_path: ./eval/dataset/dataset-agent-goal-accuracy.json
   evaluators:
     agent_goal_accuracy:
       _type: agent_goal_accuracy
@@ -118,20 +118,21 @@ eval:
 
 | Evaluator (`_type`) | Description | Dataset fields |
 |---|---|---|
-| `agent_goal_accuracy` | Whether the agent achieved the user's stated goal. | `question` |
-| `faithfulness` | Detects hallucinations by comparing the response to retrieved context. | `question`, `context` (list of strings) |
-| `task_adherence` | How closely the response follows prompt instructions. | `question` |
-| `agent_guideline_adherence` | Whether the response follows a fixed guideline string. | `question`; set `agent_guideline` on the evaluator |
+| `agent_goal_accuracy` | Whether the agent achieved the user's stated goal. | `question`, `answer` |
+| `faithfulness` | Detects hallucinations by comparing the response to retrieved context. | `question`, `answer`, `context` (list of strings) |
+| `task_adherence` | How closely the response follows prompt instructions. | `question`, `answer` |
+| `agent_guideline_adherence` | Whether the response follows a fixed guideline string. | `question`, `answer`; set `agent_guideline` on the evaluator |
 
 ### Dataset format
 
-Datasets are JSON arrays. Each row needs a unique `id` and a `question` (the user prompt `nat eval` sends to your workflow):
+Datasets are JSON arrays. Each row needs a unique `id`, a `question` (the user prompt `nat eval` sends to your workflow), and an `answer` (the reference response for the row):
 
 ```json
 [
   {
     "id": "goal-accuracy-1",
-    "question": "What is the return policy?"
+    "question": "What is the return policy?",
+    "answer": "Returns are accepted within 30 days of purchase."
   }
 ]
 ```
@@ -143,10 +144,13 @@ For faithfulness, include retrieved context:
   {
     "id": "faithfulness-1",
     "question": "What is the return policy?",
+    "answer": "Returns are accepted within 30 days of purchase.",
     "context": ["Returns are accepted within 30 days of purchase."]
   }
 ]
 ```
+
+NAT maps `question` to the workflow input and `answer` to the expected output (`expected_output_obj`). After a run, `nat eval` can populate `generated_answer` with the workflow response.
 
 <a name="usage-examples"></a>
 
@@ -290,6 +294,6 @@ Runtime guardrails use `moderation_config.yaml` with `datarobot_moderation` midd
 | [Moderation and guardrails](./moderation.md) | Runtime guardrails with DRAgent middleware. |
 | [Debugging agents](./debugging.md) | Step through agent code locally in VS Code and PyCharm. |
 | [Implement tracing](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-tracing-code.html) | Add OpenTelemetry spans for observability in deployed agents. |
-| [Agentic Playground](https://docs.datarobot.com/en/docs/agentic-ai/agentic-evaluate/agentic-playground.html) | UI-based evaluation environment for deployed agents with built-in metrics. |
+| [Agentic Playground](https://docs.datarobot.com/en/docs/agentic-ai/agentic-eval/agentic-playground.html) | UI-based evaluation environment for deployed agents with built-in metrics. |
 | [AG-UI protocol](./ag-ui.md) | Event types emitted during agent execution. |
 | [DataRobot agentic skills](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-skills.html) | Install the `datarobot-app-framework-agent-local-evaluation` skill for coding-agent setup help. |

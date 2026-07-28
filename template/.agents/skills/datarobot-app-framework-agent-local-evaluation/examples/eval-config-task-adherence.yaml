@@ -5,8 +5,8 @@ eval:
   general:
     dataset:
       _type: json
-      file_path: ./dataset/dataset-agent-goal-accuracy.json
+      file_path: ./eval/dataset/dataset-task-adherence.json
   evaluators:
-    agent_goal_accuracy:
-      _type: agent_goal_accuracy
+    task_adherence:
+      _type: task_adherence
       llm_name: judge_llm
