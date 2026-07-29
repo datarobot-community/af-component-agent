@@ -1,3 +1,10 @@
+---
+name: datarobot-app-framework-agent-local-evaluation
+description: >-
+  Use this skill when a user asks how to evaluate their agent locally, how to write quality-gate tests for their 
+  agent, how to detect hallucinations, or how to configure batch evaluation with DataRobot moderation 
+  metrics (Faithfulness, Task Adherence, Agent Goal Accuracy, Agent Guideline Adherence).
+---
 # Skill: DataRobot local agentic evaluation
 
 **When to use this skill:** Use this skill when a user asks how to evaluate their agent locally, how to write quality-gate tests for their agent, how to detect hallucinations, or how to configure batch evaluation with DataRobot moderation metrics (Faithfulness, Task Adherence, Agent Goal Accuracy, Agent Guideline Adherence).
