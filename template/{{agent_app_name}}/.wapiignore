@@ -1,0 +1,23 @@
+# gitignore-syntax exclusions for Workload API source upload (see the agent
+# README's Workload API section).
+#
+# Read by `infra/workload_api/artifact_code.py` when Pulumi archives and
+# uploads agent source for the two C2W scenarios. The replace-on-change hash
+# is computed from the same archived bytes, so this file is the single source
+# of truth for what counts as agent source.
+tests/
+*.coverage
+.DS_Store
+*.pyc
+.ruff_cache/
+.venv/
+.mypy_cache/
+__pycache__/
+.pytest_cache/
+.uv/
+docker_context/
+docker_context.tar.gz
+.env
+.env.*
+model-metadata.yaml
+.wapiignore

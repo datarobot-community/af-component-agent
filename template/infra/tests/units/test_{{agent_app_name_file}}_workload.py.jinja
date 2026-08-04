@@ -1,0 +1,496 @@
+# Copyright 2026 DataRobot, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Tests for infra.{{agent_app_name}}_infra.workload: the Workload API runtime."""
+
+import sys
+from pathlib import Path
+from typing import Any
+import pytest
+import pulumi
+from unittest.mock import MagicMock, patch, PropertyMock
+from collections import namedtuple
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+RuntimeParam = namedtuple(
+    "RuntimeParam", ["key", "type", "value"], defaults=[None, None, None]
+)
+
+
+class FakeOutput:
+    """Minimal stand-in for pulumi.Output that resolves .apply() synchronously."""
+
+    def __init__(self, val):
+        self._val = val
+
+    def apply(self, fn):
+        return FakeOutput(fn(self._val))
+
+    def __eq__(self, other):
+        if isinstance(other, FakeOutput):
+            return self._val == other._val
+        return self._val == other
+
+
+def _fake_resource(**attrs: Any) -> MagicMock:
+    """A MagicMock that passes real pulumi.ResourceOptions(depends_on=[...])
+    validation (which requires actual pulumi.Resource instances), while still
+    allowing arbitrary attribute access/assignment like a plain MagicMock."""
+    mock = MagicMock()
+    mock.__class__ = pulumi.Resource  # type: ignore[assignment]
+    for key, value in attrs.items():
+        setattr(mock, key, value)
+    return mock
+
+
+@pytest.fixture(autouse=True)
+def workload_env_mocks(monkeypatch, tmp_path):
+    monkeypatch.setenv("PULUMI_STACK_CONTEXT", "unittest")
+    monkeypatch.setenv("DATAROBOT_API_TOKEN", "test-token")
+    monkeypatch.setenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2")
+    monkeypatch.delenv("WORKLOAD_AGENT_IMAGE_URI", raising=False)
+    monkeypatch.delenv("WORKLOAD_DOCKERFILE_PATH", raising=False)
+    monkeypatch.delenv("WORKLOAD_ENTRYPOINT", raising=False)
+    monkeypatch.setattr("datarobot_pulumi_utils.pulumi.export", MagicMock())
+
+    mock_use_case = MagicMock()
+    mock_use_case.id = "mock-use-case-id"
+    monkeypatch.setattr("infra.use_case", mock_use_case)
+    monkeypatch.setattr("infra.project_dir", tmp_path)
+
+    mock_llm_module = MagicMock()
+    mock_llm_module.custom_model_runtime_parameters = []
+{%- if use_agent_memory == 'datarobot_memory_service' %}
+    mock_llm_module.default_model = "datarobot/azure/gpt-5-mini-2025-08-07"
+{%- endif %}
+    monkeypatch.setitem(sys.modules, "infra.{{ _external_data.llm.llm_app_name }}", mock_llm_module)
+
+    mock_mcp_module = MagicMock()
+    mock_mcp_module.mcp_custom_model_runtime_parameters = []
+    monkeypatch.setitem(sys.modules, "infra.mcp_server", mock_mcp_module)
+
+    monkeypatch.setattr("pulumi_datarobot.ExecutionEnvironment", MagicMock())
+    monkeypatch.setattr("pulumi_datarobot.ApiTokenCredentialArgs", MagicMock())
+    monkeypatch.setattr("pulumi_datarobot.MemorySpace", MagicMock())
+    monkeypatch.setattr(
+        "pulumi_datarobot.ApplicationSourceRuntimeParameterValueArgs", RuntimeParam
+    )
+    monkeypatch.setattr(
+        "pulumi_datarobot.CustomModelRuntimeParameterValueArgs", RuntimeParam
+    )
+    monkeypatch.setattr("pulumi.export", MagicMock())
+    monkeypatch.setattr("pulumi.info", MagicMock())
+    monkeypatch.setattr("pulumi.warn", MagicMock())
+    monkeypatch.setattr("pulumi.error", MagicMock())
+
+    from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
+
+    patcher = patch.object(
+        RuntimeEnvironments.PYTHON_311_GENAI_AGENTS.value.__class__,
+        "id",
+        new_callable=PropertyMock,
+        return_value="python-311-genai-agents-id",
+    )
+    patcher.start()
+
+    from datarobot.enums import EXECUTION_ENVIRONMENT_VERSION_BUILD_STATUS
+
+    _default_ee_version = MagicMock()
+    _default_ee_version.id = "69e2134aa5df12076d70afe7"
+    _default_ee_version.build_status = (
+        EXECUTION_ENVIRONMENT_VERSION_BUILD_STATUS.SUCCESS
+    )
+    monkeypatch.setattr(
+        "datarobot.ExecutionEnvironmentVersion.get",
+        MagicMock(return_value=_default_ee_version),
+    )
+
+    yield
+    patcher.stop()
+
+
+def _workload_module(monkeypatch):
+    """Import infra.{{agent_app_name}}_infra.workload with its workload_api
+    collaborators and pulumi_datarobot.Artifact/Workload stubbed out.
+
+    No reload needed: workload.py has no env-dependent module-level constants
+    (all env reads happen inside functions), unlike deployment.py's HA-mode ones.
+    """
+    import infra.{{agent_app_name}}_infra.workload as workload
+
+    monkeypatch.setattr(
+        workload,
+        "WorkloadImageArtifact",
+        MagicMock(return_value=_fake_resource(artifact_id="image-artifact-id")),
+    )
+    monkeypatch.setattr(
+        workload,
+        "WorkloadGeneratedImageArtifact",
+        MagicMock(return_value=_fake_resource(artifact_id="generated-artifact-id")),
+    )
+    monkeypatch.setattr(workload, "source_hash", MagicMock(return_value="hash123"))
+    monkeypatch.setattr(
+        workload,
+        "build_artifact_from_image_uri",
+        MagicMock(
+            return_value=MagicMock(to_payload=MagicMock(return_value={"name": "spec"}))
+        ),
+    )
+
+    # _fake_resource so the real pulumi.ResourceOptions(depends_on=[...])
+    # validation (which requires actual Resource instances) accepts these stubs.
+    mock_workload_instance = _fake_resource(
+        endpoint=FakeOutput("https://workload.example.com/"),
+        id=FakeOutput("workload-123"),
+        artifact_id=FakeOutput("artifact-123"),
+    )
+    monkeypatch.setattr(
+        workload.pulumi_datarobot,
+        "Workload",
+        MagicMock(return_value=mock_workload_instance),
+    )
+
+    mock_artifact_instance = _fake_resource(artifact_id="mock-artifact-id")
+    monkeypatch.setattr(
+        workload.pulumi_datarobot,
+        "Artifact",
+        MagicMock(return_value=mock_artifact_instance),
+    )
+    monkeypatch.setattr(
+        workload.pulumi_datarobot,
+        "ExecutionEnvironment",
+        MagicMock(return_value=_fake_resource(id="ee-id", version_id="ee-version-id")),
+    )
+
+    return workload
+
+
+class TestResolveDockerfileRelativePath:
+    def test_default_absent_returns_none(self, monkeypatch, tmp_path):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
+        assert workload._resolve_dockerfile_relative_path() is None
+
+    def test_default_present_returns_default_path(self, monkeypatch, tmp_path):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
+        (tmp_path / "docker").mkdir()
+        (tmp_path / "docker" / "Dockerfile").write_text("FROM scratch\n")
+        assert workload._resolve_dockerfile_relative_path() == "docker/Dockerfile"
+
+    def test_explicit_override(self, monkeypatch, tmp_path):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
+        monkeypatch.setenv("WORKLOAD_DOCKERFILE_PATH", "custom/Dockerfile.wapi")
+        assert workload._resolve_dockerfile_relative_path() == "custom/Dockerfile.wapi"
+
+    @pytest.mark.parametrize("value", ["none", "NONE", "false", "0"])
+    def test_explicit_disable_forces_generated_even_if_present(
+        self, monkeypatch, tmp_path, value
+    ):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
+        (tmp_path / "docker").mkdir()
+        (tmp_path / "docker" / "Dockerfile").write_text("FROM scratch\n")
+        monkeypatch.setenv("WORKLOAD_DOCKERFILE_PATH", value)
+        assert workload._resolve_dockerfile_relative_path() is None
+
+
+class TestExplicitWorkloadEntrypoint:
+    def test_unset_returns_none(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        assert workload._explicit_workload_entrypoint() is None
+
+    def test_json_list(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setenv("WORKLOAD_ENTRYPOINT", '["sh", "run_server.sh"]')
+        assert workload._explicit_workload_entrypoint() == ["sh", "run_server.sh"]
+
+    def test_comma_separated(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setenv("WORKLOAD_ENTRYPOINT", "sh, run_server.sh")
+        assert workload._explicit_workload_entrypoint() == ["sh", "run_server.sh"]
+
+    def test_invalid_json_raises(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setenv("WORKLOAD_ENTRYPOINT", "[not json")
+        with pytest.raises(RuntimeError, match="not valid JSON"):
+            workload._explicit_workload_entrypoint()
+
+    def test_json_non_string_list_raises(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setenv("WORKLOAD_ENTRYPOINT", "[1, 2]")
+        with pytest.raises(RuntimeError, match="list of strings"):
+            workload._explicit_workload_entrypoint()
+
+    def test_resolve_generated_entrypoint_default(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        assert workload._resolve_generated_entrypoint() == [
+            "sh",
+            "workload/run_server.sh",
+        ]
+
+    def test_resolve_generated_entrypoint_override(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setenv("WORKLOAD_ENTRYPOINT", "custom-entrypoint.sh")
+        assert workload._resolve_generated_entrypoint() == ["custom-entrypoint.sh"]
+
+
+class TestResolveContainerPortAndReadinessProbe:
+    def test_default_port(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        assert workload._resolve_container_port() == 8080
+
+    def test_override_port(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setenv("WORKLOAD_CONTAINER_PORT", "9090")
+        assert workload._resolve_container_port() == 9090
+
+    def test_readiness_probe_uses_resolved_port(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setenv("WORKLOAD_CONTAINER_PORT", "9090")
+        probe = workload._readiness_probe()
+        assert probe.path == "/health"
+        assert probe.port == 9090
+
+
+class TestRuntimeParamEnvVars:
+    def test_credential_type_becomes_dr_credential(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        params = [
+            RuntimeParam(key="SESSION_SECRET_KEY", type="credential", value="cred-id")
+        ]
+        env_vars = workload._runtime_param_env_vars(params)
+        assert env_vars == [
+            {
+                "name": "SESSION_SECRET_KEY",
+                "source": "dr-credential",
+                "drCredentialId": "cred-id",
+                "key": "apiToken",
+            }
+        ]
+
+    def test_other_types_become_plain_value(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        params = [
+            RuntimeParam(
+                key="AGENT_GUNICORN_WORKER_TIMEOUT", type="string", value="600"
+            )
+        ]
+        env_vars = workload._runtime_param_env_vars(params)
+        assert env_vars == [{"name": "AGENT_GUNICORN_WORKER_TIMEOUT", "value": "600"}]
+
+    def test_workload_environment_vars_leads_with_api_key_source(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        env_vars = workload._workload_environment_vars([])
+        assert env_vars[0] == {"source": "api-key"}
+
+    def test_workload_environment_vars_excludes_nothing_extra(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        params = [RuntimeParam(key="LLM_DEPLOYMENT_ID", type="string", value="dep-1")]
+        env_vars = workload._workload_environment_vars(params)
+        assert len(env_vars) == 2
+        assert env_vars[1] == {"name": "LLM_DEPLOYMENT_ID", "value": "dep-1"}
+
+
+class TestProvisionWorkloadAgentRequiredEnv:
+    def test_missing_api_token_raises(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.delenv("DATAROBOT_API_TOKEN", raising=False)
+        with pytest.raises(RuntimeError, match="DATAROBOT_API_TOKEN"):
+            workload.provision_workload_agent([])
+
+    def test_missing_endpoint_raises(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.delenv("DATAROBOT_ENDPOINT", raising=False)
+        with pytest.raises(RuntimeError, match="DATAROBOT_ENDPOINT"):
+            workload.provision_workload_agent([])
+
+
+class TestProvisionWorkloadAgentImageUriScenario:
+    def test_selected_when_image_uri_set(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setenv(
+            "WORKLOAD_AGENT_IMAGE_URI", "registry.example.com/agent:latest"
+        )
+
+        result = workload.provision_workload_agent([])
+
+        workload.build_artifact_from_image_uri.assert_called_once()
+        _, kwargs = workload.build_artifact_from_image_uri.call_args
+        assert kwargs["image_uri"] == "registry.example.com/agent:latest"
+        assert kwargs["readiness_probe"] == workload.ReadinessProbe(
+            path="/health", port=8080
+        )
+
+        workload.pulumi_datarobot.Artifact.assert_called_once()
+        workload.pulumi_datarobot.Workload.assert_called_once()
+        assert result["execution_environment"] is None
+        assert result["deployment"] is None
+        assert result["workload"] is not None
+
+    def test_does_not_touch_custom_models_resources(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setenv(
+            "WORKLOAD_AGENT_IMAGE_URI", "registry.example.com/agent:latest"
+        )
+        monkeypatch.setattr("pulumi_datarobot.CustomModel", MagicMock())
+        monkeypatch.setattr("pulumi_datarobot.Playground", MagicMock())
+        monkeypatch.setattr("pulumi_datarobot.LlmBlueprint", MagicMock())
+
+        workload.provision_workload_agent([])
+
+        workload.pulumi_datarobot.CustomModel.assert_not_called()
+        workload.pulumi_datarobot.Playground.assert_not_called()
+        workload.pulumi_datarobot.LlmBlueprint.assert_not_called()
+
+    def test_entrypoint_override_passed_through(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setenv(
+            "WORKLOAD_AGENT_IMAGE_URI", "registry.example.com/agent:latest"
+        )
+        monkeypatch.setenv("WORKLOAD_ENTRYPOINT", '["python", "main.py"]')
+
+        workload.provision_workload_agent([])
+
+        _, kwargs = workload.build_artifact_from_image_uri.call_args
+        assert kwargs["entrypoints"] == ["python", "main.py"]
+
+
+class TestProvisionWorkloadAgentSourceBundleScenarios:
+    def test_custom_dockerfile_scenario(self, monkeypatch, tmp_path):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
+        (tmp_path / "docker").mkdir()
+        (tmp_path / "docker" / "Dockerfile").write_text("FROM scratch\n")
+
+        result = workload.provision_workload_agent([])
+
+        workload.WorkloadImageArtifact.assert_called_once()
+        workload.WorkloadGeneratedImageArtifact.assert_not_called()
+        _, kwargs = workload.WorkloadImageArtifact.call_args
+        assert kwargs["dockerfile_relative_path"] == "docker/Dockerfile"
+        assert kwargs["application_path"] == str(tmp_path)
+        # A custom Dockerfile builds its own base image -- no dropin EE needed.
+        assert result["execution_environment"] is None
+
+    def test_generated_dockerfile_scenario(self, monkeypatch, tmp_path):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
+        # No docker/Dockerfile present -> falls through to DockerfileGenerated.
+
+        result = workload.provision_workload_agent([])
+
+        workload.WorkloadGeneratedImageArtifact.assert_called_once()
+        workload.WorkloadImageArtifact.assert_not_called()
+        _, kwargs = workload.WorkloadGeneratedImageArtifact.call_args
+        assert kwargs["entrypoint"] == ["sh", "workload/run_server.sh"]
+        assert kwargs["application_path"] == str(tmp_path)
+        workload.pulumi_datarobot.ExecutionEnvironment.assert_called_once()
+        _, ee_kwargs = workload.pulumi_datarobot.ExecutionEnvironment.call_args
+        assert ee_kwargs["use_cases"] == ["customModel"]
+        assert result["execution_environment"] is not None
+
+    def test_does_not_touch_custom_models_resources(self, monkeypatch, tmp_path):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
+        monkeypatch.setattr("pulumi_datarobot.CustomModel", MagicMock())
+        monkeypatch.setattr("pulumi_datarobot.Playground", MagicMock())
+        monkeypatch.setattr("pulumi_datarobot.LlmBlueprint", MagicMock())
+
+        result = workload.provision_workload_agent([])
+
+        workload.pulumi_datarobot.CustomModel.assert_not_called()
+        workload.pulumi_datarobot.Playground.assert_not_called()
+        workload.pulumi_datarobot.LlmBlueprint.assert_not_called()
+        assert result["deployment"] is None
+
+    def test_readiness_probe_threaded_into_image_artifact(self, monkeypatch, tmp_path):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
+        monkeypatch.setenv("WORKLOAD_CONTAINER_PORT", "9090")
+
+        workload.provision_workload_agent([])
+
+        _, kwargs = workload.WorkloadGeneratedImageArtifact.call_args
+        assert kwargs["readiness_probe"] == {
+            "path": "/health",
+            "port": 9090,
+            "initial_delay_seconds": 10,
+            "period_seconds": 10,
+            "timeout_seconds": 5,
+            "failure_threshold": 6,
+            "scheme": "HTTP",
+        }
+
+
+class TestProvisionWorkloadAgentExports:
+    def test_a2a_endpoint_present_when_enabled(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setenv(
+            "WORKLOAD_AGENT_IMAGE_URI", "registry.example.com/agent:latest"
+        )
+        monkeypatch.setattr(workload.base, "IS_A2A_SERVER_ENABLED", True)
+
+        result = workload.provision_workload_agent([])
+
+        assert result["agent_a2a_endpoint"] == FakeOutput(
+            "https://workload.example.com/a2a/"
+        )
+        param_keys = [p.key for p in result["agent_runtime_parameters"]]
+        assert "{{ agent_app_name | upper }}_A2A_ENDPOINT" in param_keys
+
+    def test_a2a_endpoint_absent_when_disabled(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setenv(
+            "WORKLOAD_AGENT_IMAGE_URI", "registry.example.com/agent:latest"
+        )
+        monkeypatch.setattr(workload.base, "IS_A2A_SERVER_ENABLED", False)
+
+        result = workload.provision_workload_agent([])
+
+        assert result["agent_a2a_endpoint"] is None
+        param_keys = [p.key for p in result["agent_runtime_parameters"]]
+        assert "{{ agent_app_name | upper }}_A2A_ENDPOINT" not in param_keys
+
+    def test_completions_endpoint_format(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setenv(
+            "WORKLOAD_AGENT_IMAGE_URI", "registry.example.com/agent:latest"
+        )
+
+        result = workload.provision_workload_agent([])
+
+        assert result["agent_serving_endpoint"] == FakeOutput(
+            "https://workload.example.com/chat/completions"
+        )
+
+    def test_runtime_parameter_keys(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setenv(
+            "WORKLOAD_AGENT_IMAGE_URI", "registry.example.com/agent:latest"
+        )
+
+        result = workload.provision_workload_agent([])
+
+        app_keys = {p.key for p in result["app_runtime_parameters"]}
+        agent_keys = {p.key for p in result["agent_runtime_parameters"]}
+        assert app_keys == {
+            "{{ agent_app_name | upper }}_WORKLOAD_ID",
+            "{{ agent_app_name | upper }}_ENDPOINT",
+        }
+        assert agent_keys == {
+            "{{ agent_app_name | upper }}_WORKLOAD_ID",
+            "{{ agent_app_name | upper }}_ENDPOINT",
+        }
