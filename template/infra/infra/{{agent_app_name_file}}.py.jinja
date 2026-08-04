@@ -37,102 +37,13 @@ from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 from . import project_dir, use_case
 
 from .{{ _external_data.llm.llm_app_name }} import custom_model_runtime_parameters as llm_custom_model_runtime_parameters
-{%- if use_agent_memory == 'datarobot_memory_service' %}
-from .{{ _external_data.llm.llm_app_name }} import default_model
+{%- if use_agent_memory == 'memory_component' %}
+from .{{ _external_data.memory.memory_app_name_file }} import memory_custom_model_runtime_parameters
 {%- endif %}
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_EXECUTION_ENVIRONMENT = "Python 3.11 GenAI Agents"
-
-{%- if use_agent_memory == 'datarobot_memory_service' %}
-
-
-def _llm_component_config_value(key: str) -> Any | None:
-    """Read a value from the LLM component's configuration export."""
-    for param in llm_custom_model_runtime_parameters:
-        param_key = param.key
-        if isinstance(param_key, str) and param_key == key:
-            value = param.value
-            if isinstance(value, str) and not value:
-                return None
-            return value
-    return None
-
-
-def _deployment_llm_base_url(deployment_id: str) -> str:
-    """Return the deployment base URL for memory-space LLM routing.
-
-    The DataRobot Memory Service appends ``/chat/completions`` when calling
-    the OpenAI-compatible client, so this must not include that suffix.
-    """
-    return f"{get_datarobot_url().rstrip('/')}/deployments/{deployment_id}"
-
-
-def _normalize_optional_env(value: str | None) -> str | None:
-    """Return stripped env value, or None when unset or blank."""
-    if value is None:
-        return None
-    stripped = value.strip()
-    return stripped or None
-
-
-def _gateway_model_name(model: str) -> str:
-    return model.removeprefix("datarobot/")
-
-
-def _configure_memory_space_llm(
-    space_id: str,
-    *,
-    llm_model_name: str | None = None,
-    llm_base_url: str | None = None,
-) -> str:
-    """Configure the memory space LLM settings via the DataRobot SDK.
-
-    Always set ``llm_model_name``. When routing to a deployed LLM, also set
-    ``llm_base_url``. Gateway-only routing clears any existing deployment URL.
-    """
-    space = dr.MemorySpace.get(space_id)
-    update_kwargs: dict[str, str | None] = {}
-    if llm_model_name is not None:
-        if space.llm_model_name != llm_model_name:
-            update_kwargs["llm_model_name"] = llm_model_name
-    if llm_base_url is not None:
-        if space.llm_base_url != llm_base_url:
-            update_kwargs["llm_base_url"] = llm_base_url
-    elif llm_model_name is not None and space.llm_base_url is not None:
-        update_kwargs["llm_base_url"] = None
-    if update_kwargs:
-        space.update(**update_kwargs)
-    pulumi.info(f"Memory space configured: {space_id}")
-    return space_id
-
-
-def _configure_memory_space_llm_routing(
-    space_id: str,
-    *,
-    agent_default_model: str,
-    agent_deployment_id: str | None = None,
-    override_model_name: str | None = None,
-    override_deployment_id: str | None = None,
-) -> str:
-    """Configure memory-space LLM routing from env overrides or agent LLM defaults."""
-    model_name = _gateway_model_name(override_model_name or agent_default_model)
-    deployment_id = override_deployment_id or (
-        None if override_model_name else agent_deployment_id
-    )
-    if deployment_id:
-        return _configure_memory_space_llm(
-            space_id,
-            llm_model_name=model_name,
-            llm_base_url=_deployment_llm_base_url(deployment_id),
-        )
-    return _configure_memory_space_llm(
-        space_id,
-        llm_model_name=model_name,
-    )
-
-{%- endif %}
 
 # Toggle for High Availability (HA) and Load Balancing configuration for agent deployment
 # To enable HA mode: Add ENABLE_AGENT_HA_MODE="true" to your .env file in the project root
@@ -153,15 +64,6 @@ DEFAULT_AGENT_REPLICAS: Final[int] = 2 if ENABLE_AGENT_HA_MODE else 1
 # Agent deployment configuration (HPA autoscaling)
 DEFAULT_AGENT_DEPLOYMENT_MIN_COMPUTES: Final[int] = 0
 DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES: Final[int] = 4 if ENABLE_AGENT_HA_MODE else 2
-
-{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
-# Agent memory runtime parameters
-AGENT_MEMORY_SPACE_ID: Final[str] = "AGENT_MEMORY_SPACE_ID"
-AGENT_MEMORY_TTL_DAYS: Final[str] = "AGENT_MEMORY_TTL_DAYS"
-CONFIGURED_AGENT_MEMORY_TTL_DAYS: Final[str] = os.environ.get(
-    AGENT_MEMORY_TTL_DAYS, "30"
-)
-{% endif -%}
 
 # Runtime parameters that are safe to include defaultValue in metadata
 SERVER_PARAMS_WITH_DEFAULTS: Final[set[str]] = {
@@ -563,6 +465,9 @@ else:
 agent_runtime_parameter_values: list[
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs
 ] = [] + llm_custom_model_runtime_parameters + get_mcp_custom_model_runtime_parameters()
+{% if use_agent_memory == 'memory_component' %}
+agent_runtime_parameter_values.extend(memory_custom_model_runtime_parameters)
+{% endif %}
 
 # Server runtime parameters for concurrency configuration
 agent_runtime_parameter_values.extend(
@@ -579,16 +484,6 @@ agent_runtime_parameter_values.extend(
         ),
     ]
 )
-{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
-agent_runtime_parameter_values.append(
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        key=AGENT_MEMORY_TTL_DAYS,
-        type="string",  # numeric is not compatible with DataRobotAppFrameworkBaseSettings
-        value=CONFIGURED_AGENT_MEMORY_TTL_DAYS,
-    )
-)
-{% endif %}
-
 # Handle session secret key credential
 SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
 
@@ -605,67 +500,6 @@ if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
             value=session_secret_cred.id,
         ),
     )
-
-{%- if use_agent_memory == 'mem0' %}
-# Handle Mem0 key credential
-MEM0_API_KEY: Final[str] = "MEM0_API_KEY"
-
-if mem0_api_key := os.environ.get(MEM0_API_KEY):
-    mem0_api_key_cred = pulumi_datarobot.ApiTokenCredential(
-        {{agent_app_name}}_asset_name + " Mem0 API Key",
-        args=pulumi_datarobot.ApiTokenCredentialArgs(api_token=str(mem0_api_key)),
-    )
-    agent_runtime_parameter_values.append(
-        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-            type="credential",
-            key=MEM0_API_KEY,
-            value=mem0_api_key_cred.id,
-        ),
-    )
-{% endif %}
-
-{%- if use_agent_memory == 'datarobot_memory_service' %}
-# Create the memory space
-AGENT_MEMORY_LLM_MODEL_NAME: Final[str] = "AGENT_MEMORY_LLM_MODEL_NAME"
-AGENT_MEMORY_LLM_DEPLOYMENT_ID: Final[str] = "AGENT_MEMORY_LLM_DEPLOYMENT_ID"
-{{agent_app_name}}_memory_space = pulumi_datarobot.MemorySpace({{agent_app_name}}_asset_name + " Memory Space")
-_memory_llm_model = _normalize_optional_env(os.environ.get(AGENT_MEMORY_LLM_MODEL_NAME))
-_memory_llm_deployment = _normalize_optional_env(
-    os.environ.get(AGENT_MEMORY_LLM_DEPLOYMENT_ID)
-)
-_agent_llm_deployment = _llm_component_config_value("{{ _external_data.llm.llm_app_name|upper }}_DEPLOYMENT_ID")
-if not isinstance(_agent_llm_deployment, pulumi.Output):
-    _agent_llm_deployment = pulumi.Output.from_input(_agent_llm_deployment or "")
-
-
-def _apply_memory_space_llm_config(resolved: list[Any]) -> str:
-    space_id, agent_deployment_id = resolved
-    return _configure_memory_space_llm_routing(
-        space_id,
-        agent_default_model=default_model,
-        agent_deployment_id=agent_deployment_id or None,
-        override_model_name=_memory_llm_model,
-        override_deployment_id=_memory_llm_deployment,
-    )
-
-
-{{agent_app_name}}_memory_space_ready = pulumi.Output.all(
-    {{agent_app_name}}_memory_space.id,
-    _agent_llm_deployment,
-).apply(_apply_memory_space_llm_config)
-agent_runtime_parameter_values.append(
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        key=AGENT_MEMORY_SPACE_ID,
-        type="string",
-        value={{agent_app_name}}_memory_space_ready,
-    )
-)
-export(AGENT_MEMORY_SPACE_ID, {{agent_app_name}}_memory_space_ready)
-pulumi.export(
-    "Agent Memory Space ID " + {{agent_app_name}}_asset_name,
-    {{agent_app_name}}_memory_space_ready,
-)
-{% endif %}
 
 IDP_AGENT_ID_PARAM: Final[str] = "IDP_AGENT_ID"
 idp_agent_id = os.environ.get(IDP_AGENT_ID_PARAM, "")

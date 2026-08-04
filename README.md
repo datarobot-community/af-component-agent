@@ -82,6 +82,12 @@ The following components must be applied to the project **before** this componen
 | `base` | [https://github.com/datarobot-community/af-component-base](https://github.com/datarobot-community/af-component-base) | No |
 | `llm` | [https://github.com/datarobot-community/af-component-llm](https://github.com/datarobot-community/af-component-llm) | Yes |
 
+## Optional integrations
+
+| Name | Repository | Repeatable |
+|------|-----------|------------|
+| `memory` | [https://github.com/datarobot-community/af-component-memory](https://github.com/datarobot-community/af-component-memory) | Yes |
+
 # Authentication and configuration
 
 Set the following environment variables before running or deploying the agent:
