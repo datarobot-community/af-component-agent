@@ -12,7 +12,7 @@ dependencies = [
     "pulumi-datarobot>=0.10.27",
     "jinja2>=3.1.5,<4.0",
     "pytz>=2024.1", # Temporary fix for datarobot pandas issue
-    "gitignore-parser>=0.1.11" # Parses .wapiignore for Workload API source hashing
+    "gitignore-parser>=0.1.11" # Parses .wapiignore for Workload API source upload
 ]
 # requests is not declared directly: it's already a transitive dependency of
 # datarobot-pulumi-utils (via the datarobot client) and used as such elsewhere

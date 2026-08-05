@@ -188,9 +188,6 @@ The agent's Pulumi infrastructure (`infra/infra/agent.py`) supports two deployme
 | **Custom Models** (default) | `ENABLE_AGENT_ON_WORKLOAD_API` unset or falsy | `CustomModel`, `Playground`, `LlmBlueprint`, and (when `ENABLE_AGENT_HA_MODE=true`) a `CustomModelDeployment`. |
 | **Workload API** | `ENABLE_AGENT_ON_WORKLOAD_API=true` | An `Artifact` (image build or reference) plus a `Workload`. Serving-only — no `CustomModel`/`Playground`/`LlmBlueprint` are created. |
 
-> [!IMPORTANT]
-> **Playground is not available when running on the Workload API runtime.**
-
 When `ENABLE_AGENT_ON_WORKLOAD_API=true`, the deployment scenario is selected automatically based on which of these variables is set (checked in this order):
 
 | Variable | Scenario |
