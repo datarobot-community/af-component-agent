@@ -174,8 +174,13 @@ implicit_reexport = true
 follow_imports = "skip"
 
 [tool.uv]
-# exclude-dependencies requires uv >= 0.10.0. Older uv versions do not know the
-# key, fail settings discovery, and resolve with the exclusions silently absent.
+# exclude-dependencies requires uv >= 0.10.0. Treat the floor below as a label,
+# not a guarantee: an older uv rejects exclude-dependencies as an unknown key,
+# which fails parsing of this entire [tool.uv] table and takes required-version
+# down with it. uv then only warns, exits 0, and resolves with the exclusions
+# silently absent. Confirmed on 0.7.0, 0.8.0, 0.8.17 and 0.9.0; the hard failure
+# only starts somewhere in late 0.9.x. Because the guard cannot protect itself,
+# the image build asserts the uv version before syncing.
 required-version = ">=0.10.0"
 # Packages a generated agent is verified not to need at runtime. Dropping a
 # package is a judgement about this project, so it is deliberately NOT org-wide
@@ -215,10 +220,11 @@ exclude-dependencies = [
     "wheel",                    # build-time packaging tool; not a runtime dependency
     "datarobot-early-access",   # randomly overlaps the core `datarobot`
 ]
+# Managed by cve-sync from policy/. Do not hand-edit between the markers below:
+# `cve-sync sync` regenerates both keys wholesale from policy and drops anything
+# policy lacks. Contribute a needed entry to cve-sync policy/ instead. This note
+# sits ABOVE the begin marker on purpose, since everything inside is replaced.
 # cve-sync:begin
-# Managed by cve-sync from policy/. Do not hand-edit inside these markers:
-# a sync regenerates both keys wholesale from policy and drops anything policy
-# lacks. Contribute a needed entry to cve-sync policy/ instead.
 constraint-dependencies = [
     "pip>=26.1.2",
     "pdfminer.six>=20251230",
@@ -269,9 +275,6 @@ override-dependencies = [
     "click>=8.3.3",
     "json-repair>=0.60.1",
     "mcp>=1.28.1",
-    # NOT YET IN cve-sync POLICY - contribute upstream before sync manages this file.
-    # crewai pins aiofiles~=24.1 while nvidia-nat-core requires >=25.1. crewai's only
-    # usage (state JSON provider) is verified working on 25.1.
     "aiofiles>=25.1,<26",
 ]
 # cve-sync:end
