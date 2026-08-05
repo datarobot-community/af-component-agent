@@ -32,9 +32,18 @@ class Config(DataRobotAppFrameworkBaseSettings):  # type: ignore[misc]
     Pulumi output variables.
     """
 
+    # Fixed ecosystem-wide absolutes. These names never change and are shared by
+    # every LLM instance.
+    datarobot_endpoint: str = "https://app.datarobot.com/api/v2"
+    datarobot_api_token: str | None = None
+
+    # Per-LLM fields, namespaced by the component instance name. This app's default
+    # instance is "{{ _external_data.llm.llm_app_name|replace("-", "_") }}"; adding
+    # another LLM component adds its own namespaced set of these fields.
     {{ _external_data.llm.llm_app_name|replace("-", "_") }}_deployment_id: str | None = None
     {{ _external_data.llm.llm_app_name|replace("-", "_") }}_default_model: str = "datarobot/azure/gpt-5-mini-2025-08-07"
-    use_datarobot_llm_gateway: bool = False
+    {{ _external_data.llm.llm_app_name|replace("-", "_") }}_nim_deployment_id: str | None = None
+    {{ _external_data.llm.llm_app_name|replace("-", "_") }}_use_datarobot_llm_gateway: bool = True
     mcp_deployment_id: str | None = None
     external_mcp_url: str | None = None
 {%- if use_agent_memory == 'mem0' %}
@@ -67,3 +76,25 @@ class Config(DataRobotAppFrameworkBaseSettings):  # type: ignore[misc]
                 if data.get(field_name) == "SET_VIA_PULUMI_OR_MANUALLY":
                     data[field_name] = field_info.default
         return data
+
+
+def _register_config_provider() -> None:
+    """Register this app's Config as genai's authoritative LLM config source.
+
+    Once registered, genai reads LLM config from this app config instead of its
+    own env-only defaults. This is a no-op on a genai that predates the injection
+    seam. The agent package is imported during NAT plugin discovery, before NAT
+    validates the workflow config, so the provider is in place before genai first
+    reads its config.
+    """
+    try:
+        from datarobot_genai.core.config import register_config_provider
+    except ImportError:
+        return
+    register_config_provider(
+        lambda: Config(),
+        default_llm_name="{{ _external_data.llm.llm_app_name|replace("-", "_") }}",
+    )
+
+
+_register_config_provider()
