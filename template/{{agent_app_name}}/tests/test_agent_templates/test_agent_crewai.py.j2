@@ -90,6 +90,6 @@ class TestMyAgentCrewAI:
         """Test that set_tools propagates tools to all sub-agents."""
         mock_llm = Mock()
         mock_tool = Mock()
-        agent = MyAgent(llm=mock_llm, tools=[mock_tool])
+        MyAgent(llm=mock_llm, tools=[mock_tool])
         for sub_agent in agents:
             assert mock_tool in sub_agent.tools
