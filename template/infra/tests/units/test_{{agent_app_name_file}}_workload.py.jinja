@@ -353,10 +353,10 @@ class TestProvisionWorkloadAgentImageUriScenario:
             call.args[0] for call in workload.pulumi.export.call_args_list
         ]
         asset_name = "[unittest] [agent]"
-        assert asset_name + " Workload Endpoint" in export_names
-        assert asset_name + " Workload Id" in export_names
-        assert asset_name + " Workload Artifact Id" in export_names
-        assert asset_name + " Workload Image URI" in export_names
+        assert "Agent Workload Endpoint " + asset_name in export_names
+        assert "Agent Workload Id " + asset_name in export_names
+        assert "Agent Workload Artifact Id " + asset_name in export_names
+        assert "Agent Workload Image URI " + asset_name in export_names
         assert "Agent Workload Chat Endpoint " + asset_name in export_names
 
     def test_does_not_touch_custom_models_resources(self, monkeypatch):

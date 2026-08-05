@@ -37,7 +37,7 @@ def _is_truthy_env(name: str) -> bool:
 ENABLE_AGENT_ON_WORKLOAD_API = _is_truthy_env("ENABLE_AGENT_ON_WORKLOAD_API")
 
 pulumi.export(
-    base.{{agent_app_name}}_asset_name + " AGENT_RUNTIME",
+    "Agent Runtime " + base.{{agent_app_name}}_asset_name,
     "workload-api" if ENABLE_AGENT_ON_WORKLOAD_API else "custom-model",
 )
 

@@ -318,9 +318,9 @@ def _export_workload_endpoints(
     asset_name: str, workload: pulumi_datarobot.Workload
 ) -> tuple[pulumi.Output[str], pulumi.Output[str] | None]:
     """Export workload IDs/endpoints; return (chat-completions endpoint, a2a endpoint | None)."""
-    pulumi.export(asset_name + " Workload Endpoint", workload.endpoint)
-    pulumi.export(asset_name + " Workload Id", workload.id)
-    pulumi.export(asset_name + " Workload Artifact Id", workload.artifact_id)
+    pulumi.export("Agent Workload Endpoint " + asset_name, workload.endpoint)
+    pulumi.export("Agent Workload Id " + asset_name, workload.id)
+    pulumi.export("Agent Workload Artifact Id " + asset_name, workload.artifact_id)
 
     completions_endpoint = workload.endpoint.apply(
         lambda endpoint: f"{endpoint.rstrip('/')}/chat/completions"
@@ -419,7 +419,7 @@ def _provision_from_image_uri(
         depends_on=[artifact],
     )
 
-    pulumi.export(base.{{agent_app_name}}_asset_name + " Workload Image URI", image_uri)
+    pulumi.export("Agent Workload Image URI " + base.{{agent_app_name}}_asset_name, image_uri)
     completions_endpoint, a2a_endpoint = _export_workload_endpoints(
         base.{{agent_app_name}}_asset_name, workload
     )
@@ -499,6 +499,12 @@ def _provision_from_source_bundle(
             execution_environment.id,
         )
         pulumi.export(
+            "Agent Execution Environment ID " + base.{{agent_app_name}}_asset_name,
+            execution_environment.id,
+        )
+        pulumi.export(
+            "Agent Execution Environment Version ID "
+            + base.{{agent_app_name}}_asset_name,
             "Agent Execution Environment Version ID "
             + base.{{agent_app_name}}_asset_name,
             execution_environment.version_id,
