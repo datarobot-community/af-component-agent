@@ -421,6 +421,22 @@ class TestProvisionWorkloadAgentSourceBundleScenarios:
         assert ee_kwargs["use_cases"] == ["customModel"]
         assert result["execution_environment"] is not None
 
+    def test_generated_dockerfile_exports_execution_environment_ids(
+        self, monkeypatch, tmp_path
+    ):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
+        workload.pulumi.export.reset_mock()
+
+        workload.provision_workload_agent([])
+
+        export_names = [
+            call.args[0] for call in workload.pulumi.export.call_args_list
+        ]
+        asset_name = "[unittest] [agent]"
+        assert "Agent Execution Environment ID " + asset_name in export_names
+        assert "Agent Execution Environment Version ID " + asset_name in export_names
+
     def test_does_not_touch_custom_models_resources(self, monkeypatch, tmp_path):
         workload = _workload_module(monkeypatch)
         monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)

@@ -499,12 +499,6 @@ def _provision_from_source_bundle(
             execution_environment.id,
         )
         pulumi.export(
-            "Agent Execution Environment ID " + base.{{agent_app_name}}_asset_name,
-            execution_environment.id,
-        )
-        pulumi.export(
-            "Agent Execution Environment Version ID "
-            + base.{{agent_app_name}}_asset_name,
             "Agent Execution Environment Version ID "
             + base.{{agent_app_name}}_asset_name,
             execution_environment.version_id,
