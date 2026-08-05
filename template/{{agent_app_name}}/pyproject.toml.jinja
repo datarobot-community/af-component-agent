@@ -173,6 +173,19 @@ module = "datarobot.*"
 implicit_reexport = true
 follow_imports = "skip"
 
+# -----------------------------------------------------------------------
+# af-component marker - declares what this component is, without anything
+# needing to import it or activate its environment. Two readers today:
+#
+#  - the core CLI, which discovers components by scanning for this table;
+#  - cve-sync, which pairs this template with its policy/copier.yaml entry
+#    on `type`, and refuses to render a template that declares none. It
+#    reads the type out of the raw text, before rendering, so the marker
+#    has to stay outside any jinja conditional.
+# -----------------------------------------------------------------------
+[tool.af-component]
+type = "agent"
+
 [tool.uv]
 # exclude-dependencies requires uv >= 0.10.0. Treat the floor below as a label,
 # not a guarantee: an older uv rejects exclude-dependencies as an unknown key,
