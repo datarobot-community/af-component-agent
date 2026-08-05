@@ -102,10 +102,12 @@ crew = Crew(
     stream=False,
 )
 
+
 def kickoff_inputs(user_prompt_content: str) -> dict[str, str]:
     return {
         "topic": str(user_prompt_content),
         "chat_history": "",
     }
+
 
 MyAgent = datarobot_agent_class_from_crew(crew, agents, tasks, kickoff_inputs)
