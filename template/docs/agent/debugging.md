@@ -174,7 +174,7 @@ Supported values: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. Defaults to `
 
 **Symptom**: Agent fails with missing `DATAROBOT_API_TOKEN`.
 
-**Fix**: Confirm `envFile` in VS Code or **Paths to ".env" files** in PyCharm points to the `.env` at the repository root.
+**Fix**: Confirm `envFile` in VS Code or Paths to ".env" files in PyCharm points to the `.env` at the repository root.
 
 ## Debugging deployed agents
 

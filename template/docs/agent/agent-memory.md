@@ -28,8 +28,8 @@ When you generate or update a project with Copier, you are prompted to choose an
 
 | Copier choice | Stored value | Description |
 |---|---|---|
-| **None** | `none` | Default. No memory dependency or workflow changes. |
-| **Mem0** | `mem0` | External [Mem0](https://mem0.ai/) service. Requires a Mem0 API key. |
+| None | `none` | Default. No memory dependency or workflow changes. |
+| Mem0 | `mem0` | External [Mem0](https://mem0.ai/) service. Requires a Mem0 API key. |
 | **Datarobot Memory Service** | `datarobot_memory_service` | DataRobot-managed memory space provisioned by Pulumi with its own LLM routing (defaults to the agent LLM component when it uses LLM Gateway; see [Memory space LLM (DataRobot Memory Service)](#memory-space-llm-datarobot-memory-service)). |
 
 When the agent LLM uses **LLM Gateway**, the memory space reuses that configuration automatically&mdash;no extra prompts. When the agent LLM uses a **deployed LLM**, you must configure the memory space LLM manually (see [Deployed LLM caveat](#deployed-llm-caveat)). When the LLM component uses **External LLM** (`blueprint_with_external_llm.py`), `dr start` / `dr dotenv setup` asks for a dedicated memory-space LLM (gateway model or deployment ID). You can also set `AGENT_MEMORY_LLM_MODEL_NAME` or `AGENT_MEMORY_LLM_DEPLOYMENT_ID` in `.env` at any time to override memory-space routing.
@@ -201,8 +201,8 @@ Pulumi always sets `llm_model_name`. When the agent LLM uses a deployed model, i
 
 | Default source | Memory space fields | Value |
 |---|---|---|
-| **LLM Gateway** (default) | `llm_model_name` | The LLM component's `default_model` with the `datarobot/` prefix stripped. |
-| **Deployed LLM** | `llm_model_name`, `llm_base_url` | The agent LLM component's `default_model` plus the deployment base URL (`/api/v2/deployments/{id}`). |
+| LLM Gateway (default) | `llm_model_name` | The LLM component's `default_model` with the `datarobot/` prefix stripped. |
+| Deployed LLM | `llm_model_name`, `llm_base_url` | The agent LLM component's `default_model` plus the deployment base URL (`/api/v2/deployments/{id}`). |
 
 ##### Deployed LLM caveat
 
