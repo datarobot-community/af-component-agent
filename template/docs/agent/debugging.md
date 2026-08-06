@@ -161,6 +161,12 @@ Supported values: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. Defaults to `
 
 **Fix**: Verify `.env` exists with `DATAROBOT_API_TOKEN` and `DATAROBOT_ENDPOINT`. Re-run `dr task run agent:install` to ensure dependencies are up to date.
 
+### Agent card shows empty skills
+
+**Symptom:** `GET /.well-known/agent-card.json` returns `"skills": []` during local development.
+
+**Fix:** See [Local agent card](#local-agent-card) above.
+
 ### Breakpoints not hit
 
 **Symptom**: The CLI command completes but the debugger never pauses.
