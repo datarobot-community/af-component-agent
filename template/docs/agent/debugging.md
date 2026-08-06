@@ -24,7 +24,7 @@ Then send requests from a second terminal using the CLI.
 
 ### Local agent card
 
-During local development (`task agent:dev`), `GET /.well-known/agent-card.json` returns a **redacted** card (for example, `"skills": []`) unless you pass gateway identity headers—the same behavior as a deployed agent without authentication.
+During local development (`task agent:dev`), `GET /.well-known/agent-card.json` returns a redacted card (for example, `"skills": []`) unless you pass gateway identity headers—the same behavior as a deployed agent without authentication.
 
 To inspect the full card locally, include either header on the request. Any value is sufficient for local testing:
 
@@ -163,9 +163,7 @@ Supported values: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. Defaults to `
 
 ### Agent card shows empty skills
 
-**Symptom:** `GET /.well-known/agent-card.json` returns `"skills": []` during local development.
-
-**Fix:** See [Local agent card](#local-agent-card) above.
+During local development, `GET /.well-known/agent-card.json` may return `"skills": []`. See [Local agent card](#local-agent-card) above.
 
 ### Breakpoints not hit
 
