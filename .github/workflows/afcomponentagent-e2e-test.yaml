@@ -160,7 +160,7 @@ jobs:
           RUN_E2E: "1"
           E2E_AGENT_FRAMEWORKS: ${{ matrix.framework }}
           # Full build+deploy+chat on every run (PRs and push-to-main).
-          RUN_AGENT_DEPLOYMENT_TESTS: "0"
+          RUN_AGENT_DEPLOYMENT_TESTS: "1"
           LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"
           DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
           DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
