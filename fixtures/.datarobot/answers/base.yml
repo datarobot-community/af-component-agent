@@ -1,0 +1,4 @@
+# Fixture base answers used when rendering component integrations.
+_commit: fixture
+_src_path: fixture
+template_name: DataRobot Agent Templates

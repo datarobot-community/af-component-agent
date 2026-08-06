@@ -6,6 +6,8 @@ on:
     paths:
       - "fixtures/**"
       - "template/**"
+      - "copier-module.yaml"
+      - "copier.yml"
       - ".github/actions/copier-template-validator/**"
       - ".github/workflows/afcomponentagent-framework-test.yaml"
   pull_request:
@@ -13,6 +15,8 @@ on:
     paths:
       - "fixtures/**"
       - "template/**"
+      - "copier-module.yaml"
+      - "copier.yml"
       - ".github/actions/copier-template-validator/**"
       - ".github/workflows/afcomponentagent-framework-test.yaml"
 concurrency:
@@ -53,12 +57,35 @@ jobs:
     steps:
       - name: Checkout
         uses: "actions/checkout@v6"
+      - name: Checkout memory component
+        if: matrix.framework.use_memory != 'none'
+        uses: "actions/checkout@v6"
+        with:
+          repository: datarobot-community/af-component-memory
+          path: af-component-memory
+      - name: Render memory component
+        if: matrix.framework.use_memory != 'none'
+        uses: ./.github/actions/copier-template-validator
+        with:
+          working-directory: ./af-component-memory
+          rendered-dir: ./rendered
+          copier-args: '--data memory_provider=${{ matrix.framework.use_memory }}'
+      - name: Resolve memory answers file
+        id: memory
+        shell: bash
+        run: |
+          answers_file=".datarobot/answers/memory-memory.yml"
+          if [ "${{ matrix.framework.use_memory }}" != "none" ]; then
+            rendered_file="$(find ./rendered/.datarobot/answers -maxdepth 1 -type f -name 'memory-*.yml' -print -quit)"
+            answers_file="${rendered_file#./rendered/}"
+          fi
+          echo "answers_file=$answers_file" >> "$GITHUB_OUTPUT"
       - name: Render template
         uses: ./.github/actions/copier-template-validator
         with:
           working-directory: .
           rendered-dir: ./rendered
-          copier-args: '--data agent_app_name=${{ matrix.framework.agent_name }} --data agent_template_framework=${{ matrix.framework.name }} --data use_agent_memory=${{ matrix.framework.use_memory }} --data base_answers_file=.datarobot/answers/base.yml'
+          copier-args: '--data agent_app_name=${{ matrix.framework.agent_name }} --data agent_template_framework=${{ matrix.framework.name }} --data base_answers_file=.datarobot/answers/base.yml --data memory_answers_file=${{ steps.memory.outputs.answers_file }}'
       - name: Check lock file
         shell: sh
         working-directory: ./rendered/${{ matrix.framework.agent_name }}

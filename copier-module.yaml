@@ -7,3 +7,7 @@ depends_on:
   llm:
     url: https://github.com/datarobot-community/af-component-llm
     repeatable: true
+collaborates_with:
+  memory:
+    url: https://github.com/datarobot-community/af-component-memory
+    repeatable: true
