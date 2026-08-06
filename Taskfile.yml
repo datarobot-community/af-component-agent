@@ -3,6 +3,19 @@
 version: '3'
 env :
   RENDER_DIR: .rendered
+
+includes:
+  # Vendored from datarobot-oss/cve-sync (taskfiles/cve-sync.yml). Only the
+  # taskfile is vendored; the tool and the CVE policy are fetched at run time, so
+  # this file does not need updating when a floor changes. Not flattened, so the
+  # tasks are namespaced as `task cve-sync:<name>`.
+  #
+  # `task cve-sync:check-templates` is the one that matters most here: this repo's
+  # real dependency surface is the pyproject.toml.jinja and the pre-baked locks
+  # generated from it, and the plain `check` task cannot see either.
+  cve-sync:
+    taskfile: .taskfiles/cve-sync.yml
+
 tasks:
   default:
     desc: "Show all available tasks"

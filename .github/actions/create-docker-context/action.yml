@@ -26,7 +26,9 @@ runs:
           uvx --from go-task-bin task agent:create-docker-context BRANCH="${{ inputs.branch }}"
         else
           # Running on host, use docker container
-          docker run --rm -v "$(pwd):/workspace" -w /workspace ghcr.io/astral-sh/uv:python3.11-bookworm bash -c "
+          # trixie, not bookworm: the `-bookworm` python variants are frozen at
+          # uv 0.9.30; the `-trixie` variants track current uv.
+          docker run --rm -v "$(pwd):/workspace" -w /workspace ghcr.io/astral-sh/uv:python3.11-trixie bash -c "
             cd ${{ inputs.rendered-directory }}
             uvx --from go-task-bin task agent:create-docker-context BRANCH='${{ inputs.branch }}'
           "
