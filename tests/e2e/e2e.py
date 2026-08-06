@@ -63,6 +63,13 @@ from ._process import (
 # Its presence in a trace proves the agent ran, regardless of the trace's root span.
 _AGENT_WORKFLOW_SPAN = "<workflow>"
 
+# Span buzok opens in the use-case (experiment_container) view when a Playground prompt
+# is routed to a DEPLOYED agent; it carries the injected traceparent into the deployment.
+# The codespace path does not emit it, so a use-case trace containing both this span and
+# _AGENT_WORKFLOW_SPAN proves the deployed agent's spans nested under the playground
+# bridge instead of fragmenting.
+_DEPLOYMENT_BRIDGE_SPAN = "chat_completion_deployment"
+
 
 # backoff giveup: retry transient statuses and transport blips, stop on the rest.
 @backoff.on_exception(
@@ -112,10 +119,16 @@ def _assert_agent_workflow_trace(
     client: RESTClientObject,
     traces_path: str,
     entity: str,
+    required_spans: frozenset[str] = frozenset({_AGENT_WORKFLOW_SPAN}),
     timeout_s: int = 300,
     poll_s: int = 15,
 ) -> None:
-    """Poll an OTel traces endpoint until a non-probe trace has _AGENT_WORKFLOW_SPAN."""
+    """Poll an OTel traces endpoint until one non-probe trace contains all required_spans.
+
+    Requiring a set (rather than a single span) lets the deployment check demand the
+    bridge span and the workflow span in the same trace, which is what proves the
+    deployed agent's spans nested under the playground bridge.
+    """
     start_time = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=2)).strftime(
         "%Y-%m-%dT%H:%M:%SZ"
     )
@@ -131,15 +144,16 @@ def _assert_agent_workflow_trace(
         fprint(f"{entity}: {len(traces)} traces, {len(candidates)} candidate(s)")
         for t in candidates:
             trace_id = t.get("traceId")
-            if trace_id and _AGENT_WORKFLOW_SPAN in _trace_span_names(
-                client, f"{traces_path}{trace_id}"
-            ):
-                fprint(f"{entity}: found {_AGENT_WORKFLOW_SPAN} in trace {trace_id}")
+            if not trace_id:
+                continue
+            names = set(_trace_span_names(client, f"{traces_path}{trace_id}"))
+            if required_spans.issubset(names):
+                fprint(f"{entity}: found {sorted(required_spans)} in trace {trace_id}")
                 return
         if time.monotonic() >= deadline:
             pytest.fail(
-                f"No agent trace with {_AGENT_WORKFLOW_SPAN} for {entity} after {timeout_s}s "
-                f"({traces_path}). Roots seen: {sorted(roots_seen)}."
+                f"No agent trace with {sorted(required_spans)} for {entity} after "
+                f"{timeout_s}s ({traces_path}). Roots seen: {sorted(roots_seen)}."
             )
         time.sleep(poll_s)
 
@@ -173,20 +187,28 @@ def _assert_comparison_prompt_completed(prompt: ComparisonPrompt) -> None:
             )
 
 
-def _verify_codespace_run(
+def _verify_playground_run(
     *,
     playground_id: str,
     use_case_id: str,
     user_prompt: str,
     datarobot_endpoint: str,
     datarobot_api_token: str,
+    required_spans: frozenset[str] = frozenset({_AGENT_WORKFLOW_SPAN}),
+    run_label: str = "codespace",
 ) -> None:
     """Run the agent via a playground ComparisonPrompt, then assert it completed and
     traced to the use-case OTel view (a ComparisonPrompt traces there; a direct chat
     endpoint call does not).
+
+    Which backend the prompt hits is decided by buzok at request time: with no active
+    deployment for the custom-model version it runs the codespace; once the agent is
+    deployed the same blueprint routes to the deployment, which adds the
+    _DEPLOYMENT_BRIDGE_SPAN in the use-case view. Callers pass required_spans to assert
+    the path they expect.
     """
     client = dr.Client(endpoint=datarobot_endpoint, token=datarobot_api_token)
-    fprint("Verifying codespace (agentic-playground) run + traces")
+    fprint(f"Verifying {run_label} (agentic-playground) run + use-case traces")
     fprint("=====================================================")
     blueprints = LLMBlueprint.list(playground=playground_id)
     if not blueprints:
@@ -206,7 +228,8 @@ def _verify_codespace_run(
         _assert_agent_workflow_trace(
             client=client,
             traces_path=f"otel/use_case/{use_case_id}/traces/",
-            entity=f"Codespace use_case {use_case_id}",
+            entity=f"{run_label} use_case {use_case_id}",
+            required_spans=required_spans,
         )
     finally:
         try:
@@ -222,9 +245,15 @@ def _verify_deployment_run(
     datarobot_endpoint: str,
     datarobot_api_token: str,
 ) -> None:
+    """Call the deployed agent directly and verify its reply.
+
+    This does not assert traces: a direct chat lands in the deployment OTel view, which
+    kept showing the agent subtree even while the playground view was broken, so it is a
+    false green for the fragmentation bug. Tracing is asserted via the playground run in
+    the use-case view. The call also warms the deployment so that run routes to it.
+    """
     fprint("Running deployed agent execution")
     fprint("================================")
-    client = dr.Client(endpoint=datarobot_endpoint, token=datarobot_api_token)
     kernel = AgentEnvironment(
         api_token=datarobot_api_token, base_url=datarobot_endpoint
     ).interface
@@ -233,11 +262,6 @@ def _verify_deployment_run(
         kernel.deployment(deployment_id=deployment_id, user_prompt=user_prompt),
     )
     verify_openai_response(completion)
-    _assert_agent_workflow_trace(
-        client=client,
-        traces_path=f"otel/deployment/{deployment_id}/traces/",
-        entity=f"Deployment {deployment_id}",
-    )
 
 
 def _cleanup_e2e(
@@ -388,12 +412,13 @@ def run_agent_e2e(
         use_case_id = extract_id_from_url(playground_url, marker="usecases")
         fprint(f"Playground ID: {playground_id}  Use case ID: {use_case_id}")
         retry(
-            lambda: _verify_codespace_run(
+            lambda: _verify_playground_run(
                 playground_id=playground_id,
                 use_case_id=use_case_id,
                 user_prompt=user_prompt,
                 datarobot_endpoint=datarobot_endpoint,
                 datarobot_api_token=datarobot_api_token,
+                run_label="codespace",
             ),
             max_retries=3,
             delay_seconds=60,
@@ -420,7 +445,8 @@ def run_agent_e2e(
             )
             fprint(f"Deployment ID: {deployment_id}")
 
-            # Step 11: Run the deployed agent and verify its reply + trace.
+            # Step 11: Run the deployed agent directly and verify its reply. This also
+            # warms the deployment so the next step's playground run routes to it.
             retry(
                 lambda: _verify_deployment_run(
                     user_prompt=user_prompt,
@@ -433,9 +459,30 @@ def run_agent_e2e(
                 label="Deployment execution",
             )
 
+            # Step 12: Run the deployed agent through the playground and verify the
+            # use-case trace nests the agent under the bridge span. With the deployment
+            # active, the same blueprint routes to it, so the trace must carry both the
+            # bridge span and the workflow span in one trace.
+            retry(
+                lambda: _verify_playground_run(
+                    playground_id=playground_id,
+                    use_case_id=use_case_id,
+                    user_prompt=user_prompt,
+                    datarobot_endpoint=datarobot_endpoint,
+                    datarobot_api_token=datarobot_api_token,
+                    required_spans=frozenset(
+                        {_DEPLOYMENT_BRIDGE_SPAN, _AGENT_WORKFLOW_SPAN}
+                    ),
+                    run_label="deployed agent",
+                ),
+                max_retries=3,
+                delay_seconds=60,
+                label="Deployment playground trace verification",
+            )
+
         fprint("Agent execution completed successfully")
     finally:
-        # Step 12: Cleanup (Pulumi cancel + destroy + stack rm, and delete rendered `.env`).
+        # Step 13: Cleanup (Pulumi cancel + destroy + stack rm, and delete rendered `.env`).
         _cleanup_e2e(
             rendered_dir=rendered_dir,
             infra_dir=infra_dir,
