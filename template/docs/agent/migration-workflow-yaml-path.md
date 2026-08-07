@@ -1,15 +1,15 @@
 # `workflow.yaml` path migration (11.9.3)
 
-This guide covers the breaking layout change introduced in agent component **11.9.3**.
+This guide covers the breaking layout change introduced in agent component 11.9.3.
 
 ## Summary
 
-`workflow.yaml` moved out of the inner Python package to the **agent component root**:
+`workflow.yaml` moved out of the inner Python package to the agent component root:
 
 | | Path (from repository root) |
 |---|---|
-| **Before** | `agent/agent/workflow.yaml` |
-| **After** | `agent/workflow.yaml` |
+| Before | `agent/agent/workflow.yaml` |
+| After | `agent/workflow.yaml` |
 
 `workflow.yaml` is the top-level NeMo Agent Toolkit (NAT) configuration loaded by the [DRAgent front server](./README.md#front-server) to build the FastAPI front server, tools, LLMs, middleware, and workflow graph for every framework.
 
@@ -29,13 +29,13 @@ Remove any leftover copy under `agent/agent/` so only one `workflow.yaml` exists
 
 If your NAT project sets `workflow_path` in `myagent.py`, point it at the new location. DRAgent loads `workflow.yaml` via `--config_file` at the agent root (see step 3); the generated Taskfile does not rely on `workflow_path`.
 
-**Before** (file co-located with `myagent.py`):
+Before (file co-located with `myagent.py`):
 
 ```python
 workflow_path: Path = Path(__file__).parent / "workflow.yaml",
 ```
 
-**After** (`workflow.yaml` one directory up):
+After (`workflow.yaml` one directory up):
 
 ```python
 workflow_path: Path = Path(__file__).parent.parent / "workflow.yaml",
