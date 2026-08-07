@@ -21,7 +21,7 @@ When the `ENABLE_GENAI_AGENT_TO_AGENT_SUPPORT` feature flag is enabled and you d
 
 ## Unauthenticated agent card access
 
-Starting in `datarobot-genai` 0.27.0, anonymous `GET /.well-known/agent-card.json` requests are opt-in. By default, unauthenticated requests receive `401 Unauthorized`.
+Anonymous `GET /.well-known/agent-card.json` requests are opt-in. By default, unauthenticated requests receive `401 Unauthorized`.
 
 | Caller | Result |
 |--------|--------|
