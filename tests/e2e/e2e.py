@@ -58,11 +58,8 @@ from ._process import (
 # Its presence in a trace proves the agent ran, regardless of the trace's root span.
 _AGENT_WORKFLOW_SPAN = "<workflow>"
 
-# Span buzok opens in the use-case (experiment_container) view when a Playground prompt
-# is routed to a DEPLOYED agent; it carries the injected traceparent into the deployment.
-# The codespace path does not emit it, so a use-case trace containing both this span and
-# _AGENT_WORKFLOW_SPAN proves the deployed agent's spans nested under the playground
-# bridge instead of fragmenting.
+# Bridge span in the use-case view when a Playground prompt runs against a DEPLOYED agent
+# (deployment path only). This plus _AGENT_WORKFLOW_SPAN in one trace = nested, not fragmented.
 _DEPLOYMENT_BRIDGE_SPAN = "chat_completion_deployment"
 
 
@@ -118,12 +115,7 @@ def _assert_agent_workflow_trace(
     timeout_s: int = 300,
     poll_s: int = 15,
 ) -> None:
-    """Poll an OTel traces endpoint until one non-probe trace contains all required_spans.
-
-    Requiring a set (rather than a single span) lets the deployment check demand the
-    bridge span and the workflow span in the same trace, which is what proves the
-    deployed agent's spans nested under the playground bridge.
-    """
+    """Poll an OTel traces endpoint until one non-probe trace contains all required_spans."""
     start_time = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=2)).strftime(
         "%Y-%m-%dT%H:%M:%SZ"
     )
@@ -192,15 +184,10 @@ def _verify_playground_run(
     required_spans: frozenset[str] = frozenset({_AGENT_WORKFLOW_SPAN}),
     run_label: str = "codespace",
 ) -> None:
-    """Run the agent via a playground ComparisonPrompt, then assert it completed and
-    traced to the use-case OTel view (a ComparisonPrompt traces there; a direct chat
-    endpoint call does not).
+    """Run a Playground ComparisonPrompt and assert its use-case trace has required_spans.
 
-    Which backend the prompt hits is decided by buzok at request time: with no active
-    deployment for the custom-model version it runs the codespace; once the agent is
-    deployed the same blueprint routes to the deployment, which adds the
-    _DEPLOYMENT_BRIDGE_SPAN in the use-case view. Callers pass required_spans to assert
-    the path they expect.
+    Before deploy the prompt runs the codespace; after deploy the same blueprint routes to
+    the deployment (adding _DEPLOYMENT_BRIDGE_SPAN), so callers set required_spans per phase.
     """
     client = dr.Client(endpoint=datarobot_endpoint, token=datarobot_api_token)
     fprint(f"Verifying {run_label} (agentic-playground) run + use-case traces")
@@ -402,10 +389,8 @@ def run_agent_e2e(
                 cwd=rendered_dir,
             )
 
-            # Step 10: Run the deployed agent through the playground and verify the
-            # use-case trace nests the agent under the bridge span. With the deployment
-            # active, the same blueprint routes to it, so the trace must carry both the
-            # bridge span and the workflow span in one trace.
+            # Step 10: Run the deployed agent through the Playground; assert the use-case
+            # trace carries both the bridge and workflow spans (nested, not fragmented).
             retry(
                 lambda: _verify_playground_run(
                     playground_id=playground_id,
