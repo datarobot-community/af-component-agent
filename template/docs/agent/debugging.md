@@ -22,6 +22,19 @@ dr task run agent:dev
 
 Then send requests from a second terminal using the CLI.
 
+### Local agent card
+
+During local development (`task agent:dev`), `GET /.well-known/agent-card.json` returns a redacted card (for example, `"skills": []`) unless you pass gateway identity headers—the same behavior as a deployed agent without authentication.
+
+To inspect the full card locally, include either header on the request. Any value is sufficient for local testing:
+
+```sh
+curl -s http://localhost:8842/a2a/.well-known/agent-card.json \
+  -H 'X-DataRobot-User-Id: local-dev-user' | jq .
+```
+
+Alternatively, use `X-DataRobot-Authorization-Context` if you are exercising auth-context flows.
+
 ## Testing with the CLI
 
 The agent CLI provides commands for testing against both local and deployed agents. Under DRAgent, `execute` runs the workflow in-process via `nat dragent run` and does not require a running server.
@@ -147,6 +160,10 @@ Supported values: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. Defaults to `
 **Symptom**: `task agent:dev` fails or the server doesn't respond.
 
 **Fix**: Verify `.env` exists with `DATAROBOT_API_TOKEN` and `DATAROBOT_ENDPOINT`. Re-run `dr task run agent:install` to ensure dependencies are up to date.
+
+### Agent card shows empty skills
+
+During local development, `GET /.well-known/agent-card.json` may return `"skills": []`. See [Local agent card](#local-agent-card) above.
 
 ### Breakpoints not hit
 
