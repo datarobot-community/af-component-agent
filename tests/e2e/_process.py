@@ -82,12 +82,6 @@ def is_truthy(value: str | None) -> bool:
     return (value or "").strip().lower() in {"1", "true", "yes", "on"}
 
 
-def response_snippet(text: str, *, max_chars: int) -> str:
-    """Return a compact one-line snippet for logs."""
-    compact = " ".join((text or "").strip().split())
-    return compact
-
-
 def task_cmd(*args: str) -> list[str]:
     # `uvx --from go-task-bin task`.
     return ["uvx", "--from", "go-task-bin", "task", *args]
