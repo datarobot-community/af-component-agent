@@ -17,7 +17,7 @@ import os
 from pathlib import Path
 import re
 import shutil
-from typing import cast, Final, Optional, Any, Sequence
+from typing import cast, Final, Optional, Any
 import yaml  # type: ignore[import-untyped]
 
 import datarobot as dr
@@ -163,12 +163,6 @@ CONFIGURED_AGENT_MEMORY_TTL_DAYS: Final[str] = os.environ.get(
 )
 {% endif -%}
 
-# Runtime parameters that are safe to include defaultValue in metadata
-SERVER_PARAMS_WITH_DEFAULTS: Final[set[str]] = {
-    "CUSTOM_MODEL_WORKERS",
-    "AGENT_GUNICORN_WORKER_TIMEOUT",
-}
-
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
     for pattern in [
@@ -237,70 +231,9 @@ def _check_a2a_server_enabled() -> bool:
 _is_a2a_server_enabled = _check_a2a_server_enabled()
 
 
-def _generate_metadata_yaml(
-    agent_name: str,
-    custom_model_folder: str,
-    runtime_parameter_values: Sequence[
-        pulumi_datarobot.CustomModelRuntimeParameterValueArgs
-    ],
-) -> None:
-    """Generate model-metadata.yaml file from scratch with runtime parameters.
-
-    Args:
-        agent_name: Name of the agent
-        custom_model_folder: Path to the custom model folder
-        runtime_parameter_values: List of runtime parameter definitions
-
-    Raises:
-        OSError: If unable to write the metadata file
-    """
-    # Build runtime parameter definitions, excluding Pulumi Output objects
-    runtime_param_defs = []
-    for param in runtime_parameter_values:
-        param_def = {
-            "fieldName": param.key,
-            "type": param.type,
-        }
-        # Only include defaultValue for safe parameters (allowlisted params)
-        if (
-            hasattr(param, "value")
-            and param.value
-            and not isinstance(param.value, pulumi.Output)
-            and param.key in SERVER_PARAMS_WITH_DEFAULTS
-        ):
-            param_def["defaultValue"] = param.value
-        runtime_param_defs.append(param_def)
-
-    metadata = {
-        "name": agent_name,
-        "type": "inference",
-        "targetType": "agenticworkflow",
-        "runtimeParameterDefinitions": runtime_param_defs,
-    }
-
-    # Write the file using yaml library for proper formatting
-    metadata_output_path = Path(custom_model_folder) / "model-metadata.yaml"
-    metadata_output_path.parent.mkdir(parents=True, exist_ok=True)
-    metadata_output_path.write_text(
-        yaml.dump(
-            metadata, default_flow_style=False, sort_keys=False, explicit_start=True
-        ),
-        encoding="utf-8",
-    )
-
-
 def get_custom_model_files(
     custom_model_folder: str,
-    runtime_parameter_values: Sequence[
-        pulumi_datarobot.CustomModelRuntimeParameterValueArgs
-    ],
 ) -> list[tuple[str, str]]:
-    # generate model-metadata.yaml file in the custom model folder
-    _generate_metadata_yaml(
-        agent_name="{{agent_app_name}}",
-        custom_model_folder=custom_model_folder,
-        runtime_parameter_values=runtime_parameter_values,
-    )
     # Get all files from application path, following symlinks
     # When we've upgraded to Python 3.13 we can use Path.glob(reduce_symlinks=True)
     # https://docs.python.org/3.13/library/pathlib.html#pathlib.Path.glob
@@ -698,7 +631,6 @@ if private_jwk:
 
 {{agent_app_name}}_custom_model_files = get_custom_model_files(
     custom_model_folder=str({{agent_app_name}}_application_path),
-    runtime_parameter_values=agent_runtime_parameter_values,
 )
 
 {{agent_app_name}}_custom_model = pulumi_datarobot.CustomModel(
