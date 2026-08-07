@@ -184,11 +184,7 @@ def _verify_playground_run(
     required_spans: frozenset[str] = frozenset({_AGENT_WORKFLOW_SPAN}),
     run_label: str = "codespace",
 ) -> None:
-    """Run a Playground ComparisonPrompt and assert its use-case trace has required_spans.
-
-    Before deploy the prompt runs the codespace; after deploy the same blueprint routes to
-    the deployment (adding _DEPLOYMENT_BRIDGE_SPAN), so callers set required_spans per phase.
-    """
+    """Run a Playground ComparisonPrompt and assert its use-case trace contains required_spans."""
     client = dr.Client(endpoint=datarobot_endpoint, token=datarobot_api_token)
     fprint(f"Verifying {run_label} (agentic-playground) run + use-case traces")
     fprint("=====================================================")
