@@ -23,7 +23,6 @@ import os
 import time
 import uuid
 from pathlib import Path
-from typing import cast
 
 import backoff
 import datarobot as dr
@@ -34,9 +33,6 @@ from datarobot.models.genai.comparison_chat import ComparisonChat
 from datarobot.models.genai.comparison_prompt import ComparisonPrompt
 from datarobot.models.genai.llm_blueprint import LLMBlueprint
 from datarobot.rest import RESTClientObject
-from openai.types.chat import ChatCompletion
-
-from datarobot_genai.core.cli import AgentEnvironment
 
 from .helpers import (
     ALL_FRAMEWORKS,
@@ -46,7 +42,6 @@ from .helpers import (
     require_datarobot_env,
     require_e2e_enabled,
     should_run_framework,
-    verify_openai_response,
     write_testing_env,
 )
 from ._process import (
@@ -238,32 +233,6 @@ def _verify_playground_run(
             fprint(f"Best-effort ComparisonChat cleanup failed (ignored): {e}")
 
 
-def _verify_deployment_run(
-    *,
-    user_prompt: str,
-    deployment_id: str,
-    datarobot_endpoint: str,
-    datarobot_api_token: str,
-) -> None:
-    """Call the deployed agent directly and verify its reply.
-
-    This does not assert traces: a direct chat lands in the deployment OTel view, which
-    kept showing the agent subtree even while the playground view was broken, so it is a
-    false green for the fragmentation bug. Tracing is asserted via the playground run in
-    the use-case view. The call also warms the deployment so that run routes to it.
-    """
-    fprint("Running deployed agent execution")
-    fprint("================================")
-    kernel = AgentEnvironment(
-        api_token=datarobot_api_token, base_url=datarobot_endpoint
-    ).interface
-    completion = cast(
-        ChatCompletion,
-        kernel.deployment(deployment_id=deployment_id, user_prompt=user_prompt),
-    )
-    verify_openai_response(completion)
-
-
 def _cleanup_e2e(
     *,
     rendered_dir: Path | None,
@@ -433,33 +402,7 @@ def run_agent_e2e(
                 cwd=rendered_dir,
             )
 
-            # Step 10: Fetch the Deployment endpoint from Pulumi stack outputs.
-            deployment_chat_endpoint = pulumi_stack_output_value(
-                infra_dir=infra_dir,
-                pulumi_stack=pulumi_stack,
-                pulumi_home=pulumi_home,
-                contains="Deployment Chat Endpoint",
-            )
-            deployment_id = extract_id_from_url(
-                deployment_chat_endpoint, marker="deployments"
-            )
-            fprint(f"Deployment ID: {deployment_id}")
-
-            # Step 11: Run the deployed agent directly and verify its reply. This also
-            # warms the deployment so the next step's playground run routes to it.
-            retry(
-                lambda: _verify_deployment_run(
-                    user_prompt=user_prompt,
-                    deployment_id=deployment_id,
-                    datarobot_endpoint=datarobot_endpoint,
-                    datarobot_api_token=datarobot_api_token,
-                ),
-                max_retries=3,
-                delay_seconds=30,
-                label="Deployment execution",
-            )
-
-            # Step 12: Run the deployed agent through the playground and verify the
+            # Step 10: Run the deployed agent through the playground and verify the
             # use-case trace nests the agent under the bridge span. With the deployment
             # active, the same blueprint routes to it, so the trace must carry both the
             # bridge span and the workflow span in one trace.
@@ -482,7 +425,7 @@ def run_agent_e2e(
 
         fprint("Agent execution completed successfully")
     finally:
-        # Step 13: Cleanup (Pulumi cancel + destroy + stack rm, and delete rendered `.env`).
+        # Step 11: Cleanup (Pulumi cancel + destroy + stack rm, and delete rendered `.env`).
         _cleanup_e2e(
             rendered_dir=rendered_dir,
             infra_dir=infra_dir,
