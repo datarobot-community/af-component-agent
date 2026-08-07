@@ -24,9 +24,14 @@ Then send requests from a second terminal using the CLI.
 
 ### Local agent card
 
-During local development (`task agent:dev`), `GET /.well-known/agent-card.json` returns a redacted card (for example, `"skills": []`) unless you pass gateway identity headers—the same behavior as a deployed agent without authentication.
+During local development (`task agent:dev`), `GET /.well-known/agent-card.json` returns `401 Unauthorized` by default when the request has no gateway identity headers—the same behavior as a deployed agent (`datarobot-genai` 0.27.0+).
 
-To inspect the full card locally, include either header on the request. Any value is sufficient for local testing:
+To fetch the card locally:
+
+- Full card — include either gateway identity header on the request. Any value is sufficient for local testing.
+- Redacted card — set `enable_unauthenticated_well_known_route: true` under `general.front_end.a2a` in `workflow.yaml`. Anonymous callers then receive a redacted card (for example, `"skills": []`). Deployed agents also require platform-level opt-in per cluster. See [Agent-to-Agent (A2A) → Unauthenticated agent card access](./agent2agent.md#unauthenticated-agent-card-access).
+
+To inspect the full card locally, include either header on the request:
 
 ```sh
 curl -s http://localhost:8842/a2a/.well-known/agent-card.json \
@@ -161,9 +166,9 @@ Supported values: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. Defaults to `
 
 **Fix**: Verify `.env` exists with `DATAROBOT_API_TOKEN` and `DATAROBOT_ENDPOINT`. Re-run `dr task run agent:install` to ensure dependencies are up to date.
 
-### Agent card shows empty skills
+### Agent card returns 401 or empty skills
 
-During local development, `GET /.well-known/agent-card.json` may return `"skills": []`. See [Local agent card](#local-agent-card) above.
+During local development, `GET /.well-known/agent-card.json` returns `401` when unauthenticated access is disabled (the default), or `"skills": []` when `enable_unauthenticated_well_known_route: true` is set and the request has no identity headers. See [Local agent card](#local-agent-card) above.
 
 ### Breakpoints not hit
 
