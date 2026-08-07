@@ -11,9 +11,14 @@ dependencies = [
     "pulumi>=3.175.0",
     "pulumi-datarobot>=0.10.27",
     "jinja2>=3.1.5,<4.0",
-    "pytz>=2024.1" # Temporary fix for datarobot pandas issue
+    "pytz>=2024.1", # Temporary fix for datarobot pandas issue
+    "gitignore-parser>=0.1.11" # Parses .wapiignore for Workload API source upload
 ]
-
+# requests is not declared directly: it's already a transitive dependency of
+# datarobot-pulumi-utils (via the datarobot client) and used as such elsewhere
+# in this codebase (e.g. `import datarobot as dr`) -- workload_api relies
+# on that same transitive availability (see recipe-fastmcp-template's
+# infra/pyproject.toml, which takes the identical approach).
 
 [project.optional-dependencies]
 dev = [
@@ -21,5 +26,6 @@ dev = [
     "pytest>=7.4.0",
     "mypy>=1.8.0",
     "ruff>=0.3.0",
-    "types-PyYAML>=6.0.12"
+    "types-PyYAML>=6.0.12",
+    "types-requests>=2.31.0"
 ]

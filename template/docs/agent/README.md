@@ -12,6 +12,7 @@ For the official DataRobot documentation on agent components, see [Agent compone
 | [Tool integration](#tool-integration) | How agents use tools via MCP, workflow tools, and custom local tools. |
 | [Configuration](#configuration) | Agent configuration management. |
 | [Front server](#front-server) | DRAgent — the only supported front server |
+| [Deployment runtime](#deployment-runtime) | Custom Models vs. Workload API, selected via `ENABLE_AGENT_ON_WORKLOAD_API`. |
 | [Agent types](#agent-types) | Supported agent frameworks and links to examples. |
 | [Debugging](./debugging.md) | Debug agents locally using the CLI, VS Code, and PyCharm. |
 | [Tracing and telemetry](./tracing.md) | OpenTelemetry tracing for DRAgent agents: how `register.py` and `workflow.yaml` are instrumented to export spans to DataRobot. |
@@ -177,6 +178,28 @@ DRAgent is required for [Agent-to-Agent (A2A)](./agent2agent.md), [agent memory]
 
 > [!NOTE]
 > All agents run on DRAgent. `ENABLE_DRAGENT_SERVER` is a legacy setting; if it is present, it must be set to `true` (or remove it entirely).
+
+## Deployment runtime
+
+The agent's Pulumi infrastructure (`infra/infra/agent.py`) supports two deployment runtimes, selected by the `ENABLE_AGENT_ON_WORKLOAD_API` environment variable:
+
+| Runtime | When | Provisions |
+|---|---|---|
+| **Custom Models** (default) | `ENABLE_AGENT_ON_WORKLOAD_API` unset or falsy | `CustomModel`, `Playground`, `LlmBlueprint`, and (when `ENABLE_AGENT_HA_MODE=true`) a `CustomModelDeployment`. |
+| **Workload API** | `ENABLE_AGENT_ON_WORKLOAD_API=true` | An `Artifact` (image build or reference) plus a `Workload`. Serving-only — no `CustomModel`/`Playground`/`LlmBlueprint` are created. |
+
+When `ENABLE_AGENT_ON_WORKLOAD_API=true`, the deployment scenario is selected automatically based on which of these variables is set (checked in this order):
+
+| Variable | Scenario |
+|---|---|
+| `WORKLOAD_AGENT_IMAGE_URI` | Use a pre-built image from a personal registry as-is. |
+| `WORKLOAD_DOCKERFILE_PATH` resolves (default `docker/Dockerfile`) | Build from a custom Dockerfile ("C2W", code-to-workload) on top of a generic base image. |
+| _(neither of the above)_ | Build from a platform-generated Dockerfile ("C2W") on top of a DataRobot execution environment; runs `workload/run_server.sh`. |
+
+Set `WORKLOAD_DOCKERFILE_PATH=none` (or `false`/`0`) to force the generated-Dockerfile scenario even if `docker/Dockerfile` is present. Other tuning variables: `WORKLOAD_ENTRYPOINT` (override the container entrypoint), `WORKLOAD_CONTAINER_PORT` (default `8080`), `WORKLOAD_CPU`, `WORKLOAD_MEMORY` (bytes), `WORKLOAD_REPLICA_COUNT`, and `WORKLOAD_BUILD_TIMEOUT_S`.
+
+> [!NOTE]
+> The two "C2W" (code-to-workload) scenarios upload agent source directly via the DataRobot Files API during `pulumi up` — no external CLI is required. Files matched by `.wapiignore` (gitignore syntax) at the root of the agent app are excluded from the upload. 
 
 ## Agent types
 
