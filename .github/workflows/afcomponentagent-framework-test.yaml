@@ -23,7 +23,10 @@ jobs:
     name: "Test ${{ matrix.framework.agent_name }} (${{ matrix.python }})"
     runs-on: "ubuntu-latest"
     container:
-      image: ghcr.io/astral-sh/uv:${{ matrix.python }}-bookworm
+      # trixie, not bookworm: astral stopped rebuilding the `-bookworm` python
+      # variants at uv 0.9.30, so that floating tag is frozen and too old for
+      # the template's `required-version`. The `-trixie` variants track current.
+      image: ghcr.io/astral-sh/uv:${{ matrix.python }}-trixie
     strategy:
       fail-fast: false
       matrix:
