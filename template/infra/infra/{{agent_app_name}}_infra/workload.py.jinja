@@ -106,7 +106,7 @@ def _resolve_dockerfile_relative_path() -> str | None:
     ``WORKLOAD_DOCKERFILE_PATH`` overrides the default ``docker/Dockerfile`` check.
     Set ``WORKLOAD_DOCKERFILE_PATH=none`` (or ``false``/``0``) to force the
     DockerfileGenerated (dropin execution environment) scenario even when
-    ``docker/Dockerfile`` exists — per Confluence, using a dropin execution
+    ``docker/Dockerfile`` exists — using a dropin execution
     environment as the base image of a *custom* Dockerfile is unsupported, so
     the two scenarios are mutually exclusive by construction, never combined.
     """
@@ -206,7 +206,7 @@ def _workload_environment_vars(
     return [
         # Pulls DATAROBOT_API_TOKEN from the local env into the workload; the
         # platform injects DATAROBOT_API_ENDPOINT and WORKLOAD_ID automatically
-        # and they must not be listed here (Confluence).
+        # and they must not be listed here — the platform injects them automatically.
         {"source": "api-key"},
         {
             "name": "WORKLOAD_CONTAINER_PORT",
@@ -566,7 +566,7 @@ def provision_workload_agent(
     Dockerfile path always short-circuits scenario 3). The external
     "C2W script + Pulumi workload-only" scenario (`WORKLOAD_ARTIFACT_ID`,
     `dr artifact` CLI + a Pulumi stack that only creates the ``Workload``) is a
-    documented Confluence workaround for Pulumi having no native c2w support —
+    documented workaround for Pulumi having no native code-to-workload support —
     it is intentionally not implemented here; see the agent README.
     """
     _require_env("DATAROBOT_API_TOKEN")

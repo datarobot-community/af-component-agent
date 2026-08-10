@@ -16,7 +16,7 @@
 
 No agent-deployment decisions live here — that's the agent's ``*_infra/workload.py``
 job. Source upload for image builds is a stand-in in ``artifact_code.py`` until
-native Pulumi ``ArtifactCode`` support ships (PBMP-7947).
+native Pulumi ``ArtifactCode`` support ships.
 """
 
 from .artifact_code import source_hash

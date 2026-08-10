@@ -14,8 +14,8 @@
 
 """Upload agent source to a Workload API artifact.
 
-Stand-in for pulumi-datarobot's not-yet-shipped ``ArtifactCode`` resource
-(PBMP-7947). Delete this module (and the ``code_ref`` field it feeds) once
+Stand-in for pulumi-datarobot's not-yet-shipped ``ArtifactCode`` resource.
+Delete this module (and the ``code_ref`` field it feeds) once
 native Pulumi support lands.
 """
 
