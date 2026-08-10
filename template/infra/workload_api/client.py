@@ -103,12 +103,6 @@ class ReadinessProbe:
 
 
 @dataclass
-class DockerfileProvided:
-    path: str
-    source: str = "provided"
-
-
-@dataclass
 class DockerfileGenerated:
     execution_environment_id: str
     execution_environment_version_id: str
@@ -129,7 +123,7 @@ class CodeRef:
 
 @dataclass
 class ImageBuildConfig:
-    dockerfile: DockerfileProvided | DockerfileGenerated
+    dockerfile: DockerfileGenerated
     code_ref: CodeRef | None = None
 
 
@@ -336,7 +330,7 @@ def _create_and_build_artifact(
 def _image_build_spec(
     *,
     artifact_name: str,
-    dockerfile: DockerfileProvided | DockerfileGenerated,
+    dockerfile: DockerfileGenerated,
     container_name: str,
     container_port: int,
     environment_vars: list[dict[str, str]],
@@ -359,43 +353,6 @@ def _image_build_spec(
             container_groups=[ContainerGroup(containers=[container])]
         ),
     )
-
-
-def build_artifact_with_provided_dockerfile(
-    *,
-    workload_api_endpoint: str,
-    workload_api_token: str,
-    artifact_name: str,
-    application_path: Path,
-    dockerfile_relative_path: str,
-    container_name: str,
-    container_port: int,
-    environment_vars: list[dict[str, str]],
-    routes: list[dict[str, str]],
-    build_timeout_s: int,
-    readiness_probe: ReadinessProbe | None = None,
-) -> str:
-    catalog_id, catalog_version_id = upload_source(
-        endpoint=workload_api_endpoint,
-        token=workload_api_token,
-        application_path=application_path,
-    )
-    artifact_spec = _image_build_spec(
-        artifact_name=artifact_name,
-        dockerfile=DockerfileProvided(path=dockerfile_relative_path),
-        container_name=container_name,
-        container_port=container_port,
-        environment_vars=environment_vars,
-        routes=routes,
-        code_ref=CodeRef(
-            datarobot=CodeRefDatarobot(
-                catalog_id=catalog_id, catalog_version_id=catalog_version_id
-            )
-        ),
-        readiness_probe=readiness_probe,
-    )
-    client = WorkloadClient(endpoint=workload_api_endpoint, token=workload_api_token)
-    return _create_and_build_artifact(client, artifact_spec, build_timeout_s)
 
 
 def build_artifact_with_generated_dockerfile(

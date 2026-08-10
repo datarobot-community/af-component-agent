@@ -60,7 +60,6 @@ def workload_env_mocks(monkeypatch, tmp_path):
     monkeypatch.setenv("DATAROBOT_API_TOKEN", "test-token")
     monkeypatch.setenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2")
     monkeypatch.delenv("WORKLOAD_AGENT_IMAGE_URI", raising=False)
-    monkeypatch.delenv("WORKLOAD_DOCKERFILE_PATH", raising=False)
     monkeypatch.delenv("WORKLOAD_ENTRYPOINT", raising=False)
     monkeypatch.setattr("datarobot_pulumi_utils.pulumi.export", MagicMock())
 
@@ -131,11 +130,6 @@ def _workload_module(monkeypatch):
 
     monkeypatch.setattr(
         workload,
-        "WorkloadImageArtifact",
-        MagicMock(return_value=_fake_resource(artifact_id="image-artifact-id")),
-    )
-    monkeypatch.setattr(
-        workload,
         "WorkloadGeneratedImageArtifact",
         MagicMock(return_value=_fake_resource(artifact_id="generated-artifact-id")),
     )
@@ -175,37 +169,6 @@ def _workload_module(monkeypatch):
     monkeypatch.setattr(workload, "export", MagicMock())
 
     return workload
-
-
-class TestResolveDockerfileRelativePath:
-    def test_default_absent_returns_none(self, monkeypatch, tmp_path):
-        workload = _workload_module(monkeypatch)
-        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
-        assert workload._resolve_dockerfile_relative_path() is None
-
-    def test_default_present_returns_default_path(self, monkeypatch, tmp_path):
-        workload = _workload_module(monkeypatch)
-        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
-        (tmp_path / "docker").mkdir()
-        (tmp_path / "docker" / "Dockerfile").write_text("FROM scratch\n")
-        assert workload._resolve_dockerfile_relative_path() == "docker/Dockerfile"
-
-    def test_explicit_override(self, monkeypatch, tmp_path):
-        workload = _workload_module(monkeypatch)
-        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
-        monkeypatch.setenv("WORKLOAD_DOCKERFILE_PATH", "custom/Dockerfile.wapi")
-        assert workload._resolve_dockerfile_relative_path() == "custom/Dockerfile.wapi"
-
-    @pytest.mark.parametrize("value", ["none", "NONE", "false", "0"])
-    def test_explicit_disable_forces_generated_even_if_present(
-        self, monkeypatch, tmp_path, value
-    ):
-        workload = _workload_module(monkeypatch)
-        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
-        (tmp_path / "docker").mkdir()
-        (tmp_path / "docker" / "Dockerfile").write_text("FROM scratch\n")
-        monkeypatch.setenv("WORKLOAD_DOCKERFILE_PATH", value)
-        assert workload._resolve_dockerfile_relative_path() is None
 
 
 class TestExplicitWorkloadEntrypoint:
@@ -410,31 +373,13 @@ class TestProvisionWorkloadAgentImageUriScenario:
 
 
 class TestProvisionWorkloadAgentSourceBundleScenarios:
-    def test_custom_dockerfile_scenario(self, monkeypatch, tmp_path):
-        workload = _workload_module(monkeypatch)
-        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
-        (tmp_path / "docker").mkdir()
-        (tmp_path / "docker" / "Dockerfile").write_text("FROM scratch\n")
-
-        result = workload.provision_workload_agent([])
-
-        workload.WorkloadImageArtifact.assert_called_once()
-        workload.WorkloadGeneratedImageArtifact.assert_not_called()
-        _, kwargs = workload.WorkloadImageArtifact.call_args
-        assert kwargs["dockerfile_relative_path"] == "docker/Dockerfile"
-        assert kwargs["application_path"] == str(tmp_path)
-        # A custom Dockerfile builds its own base image -- no dropin EE needed.
-        assert result["execution_environment"] is None
-
     def test_generated_dockerfile_scenario(self, monkeypatch, tmp_path):
         workload = _workload_module(monkeypatch)
         monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
-        # No docker/Dockerfile present -> falls through to DockerfileGenerated.
 
         result = workload.provision_workload_agent([])
 
         workload.WorkloadGeneratedImageArtifact.assert_called_once()
-        workload.WorkloadImageArtifact.assert_not_called()
         _, kwargs = workload.WorkloadGeneratedImageArtifact.call_args
         assert kwargs["entrypoint"] == ["sh", "workload/run_server.sh"]
         assert kwargs["application_path"] == str(tmp_path)

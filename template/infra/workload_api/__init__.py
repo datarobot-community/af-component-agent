@@ -24,15 +24,11 @@ from .client import (
     WorkloadArtifactSpecFromImageUri,
     build_artifact_from_image_uri,
 )
-from .resources import (
-    WorkloadGeneratedImageArtifact,
-    WorkloadImageArtifact,
-)
+from .resources import WorkloadGeneratedImageArtifact
 
 __all__ = [
     "source_hash",
     "WorkloadArtifactSpecFromImageUri",
     "build_artifact_from_image_uri",
     "WorkloadGeneratedImageArtifact",
-    "WorkloadImageArtifact",
 ]

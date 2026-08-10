@@ -17,16 +17,15 @@
 Serving-only: creates an image-build ``Artifact`` (or references one by URI)
 plus a ``Workload`` — no ``CustomModel``/``Playground``/``LlmBlueprint``
 anywhere in this module (Playground for this runtime is an explicit, deferred
-follow-up; see the agent README). Selects one of three deployment scenarios
+follow-up; see the agent README). Selects one of two deployment scenarios
 based on env vars; see ``provision_workload_agent()``'s docstring for the
 exact precedence. Self-contained: everything specific to this runtime lives
 here or in ``workload_api/`` (HTTP/Pulumi-provider plumbing only, no
 deployment decisions). Never checks ``ENABLE_AGENT_ON_WORKLOAD_API`` itself —
 the entry router is the only place that branches on it.
 
-Source upload for the image-build scenarios is handled by
-``workload_api.artifact_code`` (a stand-in until native Pulumi ``ArtifactCode``
-support ships).
+Source upload for the C2W scenario is handled by ``workload_api.artifact_code``
+(a stand-in until native Pulumi ``ArtifactCode`` support ships).
 """
 
 from __future__ import annotations
@@ -34,7 +33,6 @@ from __future__ import annotations
 import dataclasses
 import json
 import os
-from dataclasses import dataclass
 from typing import Any, Final
 
 import pulumi
@@ -42,7 +40,6 @@ import pulumi_datarobot
 from datarobot_pulumi_utils.pulumi import export
 from workload_api import (
     WorkloadGeneratedImageArtifact,
-    WorkloadImageArtifact,
     build_artifact_from_image_uri,
     source_hash,
 )
@@ -52,35 +49,14 @@ from . import base
 
 WORKLOAD_CONTAINER_NAME: Final[str] = "{{ agent_app_name | replace('_', '-') }}"
 DEFAULT_WORKLOAD_CONTAINER_PORT: Final[int] = 8080
-
-
-@dataclass(frozen=True)
-class WapiAssetPaths:
-    """Paths to WAPI-owned assets, relative to the agent application root.
-
-    Grouping these together (rather than separate module-level constants)
-    keeps every path this runtime cares about discoverable in one place, and
-    keeps them visually distinct from the Custom Models runtime's own paths
-    (e.g. ``deployment.py``'s ``model-metadata.yaml``).
-    """
-
-    dockerfile_relative_path: str = "docker/Dockerfile"
-    # Only used by the C2W + WAPI-generated Dockerfile scenario; lives under
-    # `workload/` (not the application root) to make that scoping explicit —
-    # see `template/{agent_app_name}/workload/run_server.sh`.
-    run_server_relative_path: str = "workload/run_server.sh"
-
-
-WAPI_ASSET_PATHS: Final[WapiAssetPaths] = WapiAssetPaths()
+RUN_SERVER_RELATIVE_PATH: Final[str] = "workload/run_server.sh"
 # Agent images carry framework + ML dependencies and build considerably longer
 # than MCP's small server image (whose DEFAULT_BUILD_TIMEOUT_S is 6000).
 DEFAULT_BUILD_TIMEOUT_S: Final[int] = 9000
-# CMD for the platform-generated Dockerfile (DockerfileGenerated scenario only —
-# DockerfileProvided's CMD lives in the Dockerfile itself, and the image-URI
-# scenario keeps the image's own CMD unless WORKLOAD_ENTRYPOINT overrides it).
+# Entrypoint for the platform-generated Dockerfile C2W build.
 DEFAULT_GENERATED_ENTRYPOINT: Final[list[str]] = [
     "sh",
-    WAPI_ASSET_PATHS.run_server_relative_path,
+    RUN_SERVER_RELATIVE_PATH,
 ]
 # Field holding the token inside a DataRobot api_token credential; the `key` of
 # "dr-credential" env var references in Workload artifact specs.
@@ -98,30 +74,6 @@ def _require_env(name: str) -> str:
         pulumi.error(message)
         raise RuntimeError(message)
     return value
-
-
-def _resolve_dockerfile_relative_path() -> str | None:
-    """Return a catalog-relative Dockerfile path when using DockerfileProvided.
-
-    ``WORKLOAD_DOCKERFILE_PATH`` overrides the default ``docker/Dockerfile`` check.
-    Set ``WORKLOAD_DOCKERFILE_PATH=none`` (or ``false``/``0``) to force the
-    DockerfileGenerated scenario even when ``docker/Dockerfile`` exists.
-    Using a dropin execution environment as the base image of a *custom*
-    Dockerfile is unsupported, so the two scenarios are mutually exclusive
-    by construction and are never combined.
-    """
-    explicit = os.getenv("WORKLOAD_DOCKERFILE_PATH", "").strip()
-    if explicit.lower() in {"none", "false", "0"}:
-        return None
-    if explicit:
-        return explicit
-
-    default_path = (
-        base.{{agent_app_name}}_application_path / WAPI_ASSET_PATHS.dockerfile_relative_path
-    )
-    if default_path.is_file():
-        return WAPI_ASSET_PATHS.dockerfile_relative_path
-    return None
 
 
 def _explicit_workload_entrypoint() -> list[str] | None:
@@ -216,7 +168,7 @@ def _workload_environment_vars(
     ]
 
 
-def _create_workload_image_artifact(
+def _create_generated_image_artifact(
     *,
     asset_name: str,
     workload_api_endpoint: str,
@@ -224,38 +176,10 @@ def _create_workload_image_artifact(
     bundle_hash: str,
     environment_vars: list[dict[str, Any]],
     build_timeout_s: int,
-    dockerfile_relative_path: str | None,
-    execution_environment: pulumi_datarobot.ExecutionEnvironment | None,
-) -> WorkloadImageArtifact | WorkloadGeneratedImageArtifact:
-    if dockerfile_relative_path:
-        pulumi.info(
-            f"Workload image build: DockerfileProvided (path={dockerfile_relative_path})"
-        )
-        return WorkloadImageArtifact(
-            asset_name + " Workload Artifact [Provided Dockerfile]",
-            workload_api_endpoint=workload_api_endpoint,
-            artifact_name=asset_name,
-            application_path=application_path,
-            dockerfile_relative_path=dockerfile_relative_path,
-            container_name=WORKLOAD_CONTAINER_NAME,
-            container_port=_resolve_container_port(),
-            environment_vars=environment_vars,
-            routes=[],
-            source_hash=bundle_hash,
-            build_timeout_s=build_timeout_s,
-            readiness_probe=dataclasses.asdict(_readiness_probe()),
-        )
-
-    if execution_environment is None:
-        message = (
-            "Internal error: execution environment is required for "
-            "DockerfileGenerated builds"
-        )
-        pulumi.error(message)
-        raise RuntimeError(message)
-
+    execution_environment: pulumi_datarobot.ExecutionEnvironment,
+) -> WorkloadGeneratedImageArtifact:
     pulumi.info(
-        "Workload image build: DockerfileGenerated "
+        "Workload image build: platform-generated Dockerfile "
         "(execution environment aligned with the Custom Models runtime)"
     )
     return WorkloadGeneratedImageArtifact(
@@ -461,30 +385,23 @@ def _provision_from_source_bundle(
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs
     ],
 ) -> dict[str, Any]:
-    dockerfile_relative_path = _resolve_dockerfile_relative_path()
     pulumi.info(
-        "Workload scenario: "
-        + (
-            f"C2W + custom Dockerfile ({dockerfile_relative_path})."
-            if dockerfile_relative_path
-            else "C2W + WAPI-generated Dockerfile (dropin execution environment)."
-        )
+        "Workload scenario: C2W with platform-generated Dockerfile "
+        "(dropin execution environment)."
     )
 
     bundle_hash = source_hash(base.{{agent_app_name}}_application_path)
 
-    execution_environment: pulumi_datarobot.ExecutionEnvironment | None = None
-    if dockerfile_relative_path is None:
-        # use_cases=["customModel"] only: this EE is used purely as the base
-        # image for the generated Dockerfile build, never for Playground's
-        # codespace fallback (which doesn't exist in Workload API mode).
-        execution_environment = base.resolve_agent_execution_environment(
-            asset_name=base.{{agent_app_name}}_asset_name + " [Workload Generated Dockerfile]",
-            application_path=base.{{agent_app_name}}_application_path,
-            use_cases=["customModel"],
-        )
+    # use_cases=["customModel"] only: this EE is used purely as the base
+    # image for the generated Dockerfile build, never for Playground's
+    # codespace fallback (which doesn't exist in Workload API mode).
+    execution_environment = base.resolve_agent_execution_environment(
+        asset_name=base.{{agent_app_name}}_asset_name + " [Workload Generated Dockerfile]",
+        application_path=base.{{agent_app_name}}_application_path,
+        use_cases=["customModel"],
+    )
 
-    artifact = _create_workload_image_artifact(
+    artifact = _create_generated_image_artifact(
         asset_name=base.{{agent_app_name}}_asset_name,
         workload_api_endpoint=datarobot_endpoint,
         application_path=str(base.{{agent_app_name}}_application_path),
@@ -493,29 +410,23 @@ def _provision_from_source_bundle(
         build_timeout_s=int(
             os.getenv("WORKLOAD_BUILD_TIMEOUT_S", str(DEFAULT_BUILD_TIMEOUT_S))
         ),
-        dockerfile_relative_path=dockerfile_relative_path,
         execution_environment=execution_environment,
     )
-
-    workload_depends_on: list[Any] = [artifact]
-    if execution_environment is not None:
-        workload_depends_on.append(execution_environment)
 
     workload = _create_workload(
         asset_name=base.{{agent_app_name}}_asset_name,
         artifact_id=artifact.artifact_id,
-        depends_on=workload_depends_on,
+        depends_on=[artifact, execution_environment],
     )
 
-    if execution_environment is not None:
-        pulumi.export(
-            "Agent Execution Environment ID " + base.{{agent_app_name}}_asset_name,
-            execution_environment.id,
-        )
-        pulumi.export(
-            "Agent Execution Environment Version ID " + base.{{agent_app_name}}_asset_name,
-            execution_environment.version_id,
-        )
+    pulumi.export(
+        "Agent Execution Environment ID " + base.{{agent_app_name}}_asset_name,
+        execution_environment.id,
+    )
+    pulumi.export(
+        "Agent Execution Environment Version ID " + base.{{agent_app_name}}_asset_name,
+        execution_environment.version_id,
+    )
     completions_endpoint, a2a_endpoint = _export_workload_endpoints(
         base.{{agent_app_name}}_asset_name, workload
     )
@@ -550,24 +461,20 @@ def provision_workload_agent(
     """Provision the agent on the Workload API runtime.
 
     Serving-only: never creates ``CustomModel``/``Playground``/``LlmBlueprint``
-    (see module docstring). Selects exactly one of three scenarios, in this
+    (see module docstring). Selects exactly one of two scenarios, in this
     precedence order:
 
     1. ``WORKLOAD_AGENT_IMAGE_URI`` set → pre-built image from a personal
        registry (``pulumi_datarobot.Artifact`` from an image URI + ``Workload``).
-    2. else, a Dockerfile resolves (``WORKLOAD_DOCKERFILE_PATH``, default
-       ``docker/Dockerfile``) → C2W + custom Dockerfile with a generic base
-       image (``WorkloadImageArtifact`` + ``Workload``).
-    3. else → C2W + WAPI-generated Dockerfile with a dropin execution
+    2. else → C2W with a platform-generated Dockerfile and a dropin execution
        environment as the base image (execution environment +
        ``WorkloadGeneratedImageArtifact`` + ``Workload``).
 
-    Scenarios 2 and 3 are mutually exclusive by construction (a resolved
-    Dockerfile path always short-circuits scenario 3). The external
-    "C2W script + Pulumi workload-only" scenario (`WORKLOAD_ARTIFACT_ID`,
-    `dr artifact` CLI + a Pulumi stack that only creates the ``Workload``) is a
-    documented workaround for Pulumi having no native code-to-workload support —
-    it is intentionally not implemented here; see the agent README.
+    The external "C2W script + Pulumi workload-only" scenario
+    (``WORKLOAD_ARTIFACT_ID``, ``dr artifact`` CLI + a Pulumi stack that only
+    creates the ``Workload``) is a documented workaround for Pulumi having no
+    native code-to-workload support — it is intentionally not implemented here;
+    see the agent README.
     """
     _require_env("DATAROBOT_API_TOKEN")
     datarobot_endpoint = _require_env("DATAROBOT_ENDPOINT")

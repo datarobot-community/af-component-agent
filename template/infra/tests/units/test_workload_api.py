@@ -41,14 +41,11 @@ from workload_api.client import (
     _to_wire,
     build_artifact_from_image_uri,
     build_artifact_with_generated_dockerfile,
-    build_artifact_with_provided_dockerfile,
     datarobot_api_token,
 )
 from workload_api.resources import (
     WorkloadGeneratedImageArtifactProvider,
-    WorkloadImageArtifactProvider,
     _readiness_probe_from_props,
-    _PROVIDED_TRACKED_KEYS,
     _GENERATED_TRACKED_KEYS,
 )
 
@@ -149,44 +146,6 @@ class TestBuildArtifactFromImageUri:
 
 
 class TestBuildArtifactWithDockerfile:
-    def test_provided_dockerfile_builds_and_creates(self, monkeypatch):
-        monkeypatch.setattr(
-            "workload_api.client.upload_source",
-            MagicMock(return_value=("cat-1", "ver-1")),
-        )
-        monkeypatch.setattr(
-            "workload_api.client._create_and_build_artifact",
-            MagicMock(return_value="artifact-1"),
-        )
-        artifact_id = build_artifact_with_provided_dockerfile(
-            workload_api_endpoint="https://wapi.example.com",
-            workload_api_token="tok",
-            artifact_name="agent-artifact",
-            application_path=Path("/tmp/agent-app"),
-            dockerfile_relative_path="docker/Dockerfile",
-            container_name="agent",
-            container_port=8080,
-            environment_vars=[],
-            routes=[],
-            build_timeout_s=100,
-            readiness_probe=ReadinessProbe(port=8080),
-        )
-        assert artifact_id == "artifact-1"
-        from workload_api.client import _create_and_build_artifact
-
-        spec = _create_and_build_artifact.call_args[0][1]
-        payload = spec.to_payload()
-        container = payload["spec"]["containerGroups"][0]["containers"][0]
-        assert (
-            container["imageBuildConfig"]["dockerfile"]["path"] == "docker/Dockerfile"
-        )
-        assert container["imageBuildConfig"]["dockerfile"]["source"] == "provided"
-        assert container["imageBuildConfig"]["codeRef"]["datarobot"] == {
-            "catalogId": "cat-1",
-            "catalogVersionId": "ver-1",
-        }
-        assert container["readinessProbe"]["port"] == 8080
-
     def test_generated_dockerfile_builds_and_creates(self, monkeypatch):
         monkeypatch.setattr(
             "workload_api.client.upload_source",
@@ -512,25 +471,24 @@ class TestWorkloadArtifactProviders:
     def test_readiness_probe_from_props_none_when_absent(self):
         assert _readiness_probe_from_props({}) is None
 
-    def test_provided_tracked_keys_include_readiness_probe(self):
-        assert "readiness_probe" in _PROVIDED_TRACKED_KEYS
-
     def test_generated_tracked_keys_include_readiness_probe(self):
         assert "readiness_probe" in _GENERATED_TRACKED_KEYS
 
-    def test_provided_provider_create_passes_readiness_probe(self, monkeypatch):
+    def test_generated_provider_create_passes_readiness_probe(self, monkeypatch):
         monkeypatch.setenv(DATAROBOT_API_TOKEN_ENV, "tok")
         monkeypatch.setattr(
-            "workload_api.resources.build_artifact_with_provided_dockerfile",
+            "workload_api.resources.build_artifact_with_generated_dockerfile",
             MagicMock(return_value="artifact-1"),
         )
-        provider = WorkloadImageArtifactProvider()
+        provider = WorkloadGeneratedImageArtifactProvider()
         result = provider.create(
             {
                 "workload_api_endpoint": "https://wapi.example.com",
                 "artifact_name": "agent",
                 "application_path": "/tmp/agent-app",
-                "dockerfile_relative_path": "docker/Dockerfile",
+                "execution_environment_id": "ee-1",
+                "execution_environment_version_id": "ee-v1",
+                "entrypoint": ["sh", "run_server.sh"],
                 "container_name": "agent",
                 "container_port": 8080,
                 "environment_vars": [],
@@ -541,9 +499,9 @@ class TestWorkloadArtifactProviders:
         )
         assert result.id == "artifact-1"
 
-        from workload_api.resources import build_artifact_with_provided_dockerfile
+        from workload_api.resources import build_artifact_with_generated_dockerfile
 
-        _, kwargs = build_artifact_with_provided_dockerfile.call_args
+        _, kwargs = build_artifact_with_generated_dockerfile.call_args
         assert isinstance(kwargs["readiness_probe"], ReadinessProbe)
         assert kwargs["readiness_probe"].port == 8080
 
@@ -571,7 +529,7 @@ class TestWorkloadArtifactProviders:
             "workload_api.resources.WorkloadClient",
             MagicMock(return_value=mock_client),
         )
-        provider = WorkloadImageArtifactProvider()
+        provider = WorkloadGeneratedImageArtifactProvider()
         provider.delete(
             "artifact-1", {"workload_api_endpoint": "https://wapi.example.com"}
         )

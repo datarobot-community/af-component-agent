@@ -193,13 +193,12 @@ When `ENABLE_AGENT_ON_WORKLOAD_API=true`, the deployment scenario is selected au
 | Variable | Scenario |
 |---|---|
 | `WORKLOAD_AGENT_IMAGE_URI` | Use a pre-built image from a personal registry as-is. |
-| `WORKLOAD_DOCKERFILE_PATH` resolves (default `docker/Dockerfile`) | Build from a custom Dockerfile ("C2W", code-to-workload) on top of a generic base image. |
-| _(neither of the above)_ | Build from a platform-generated Dockerfile ("C2W") on top of a DataRobot execution environment; runs `workload/run_server.sh`. |
+| _(not set)_ | Build from a platform-generated Dockerfile ("C2W") on top of a DataRobot execution environment; runs `workload/run_server.sh`. |
 
-Set `WORKLOAD_DOCKERFILE_PATH=none` (or `false`/`0`) to force the generated-Dockerfile scenario even if `docker/Dockerfile` is present. Other tuning variables: `WORKLOAD_ENTRYPOINT` (override the container entrypoint), `WORKLOAD_CONTAINER_PORT` (default `8080`), `WORKLOAD_CPU`, `WORKLOAD_MEMORY` (bytes), `WORKLOAD_REPLICA_COUNT`, and `WORKLOAD_BUILD_TIMEOUT_S`.
+Other tuning variables: `WORKLOAD_ENTRYPOINT` (override the container entrypoint), `WORKLOAD_CONTAINER_PORT` (default `8080`), `WORKLOAD_CPU`, `WORKLOAD_MEMORY` (bytes), `WORKLOAD_REPLICA_COUNT`, and `WORKLOAD_BUILD_TIMEOUT_S`.
 
 > [!NOTE]
-> The two "C2W" (code-to-workload) scenarios upload agent source directly via the DataRobot Files API during `pulumi up` — no external CLI is required. Files matched by `.wapiignore` (gitignore syntax) at the root of the agent app are excluded from the upload. 
+> The C2W scenario uploads agent source directly via the DataRobot Files API during `pulumi up` — no external CLI is required. Files matched by `.wapiignore` (gitignore syntax) at the root of the agent app are excluded from the upload.
 
 ## Agent types
 

@@ -30,18 +30,7 @@ from .client import (
     ReadinessProbe,
     WorkloadClient,
     build_artifact_with_generated_dockerfile,
-    build_artifact_with_provided_dockerfile,
     datarobot_api_token,
-)
-
-_PROVIDED_TRACKED_KEYS = (
-    "source_hash",
-    "dockerfile_relative_path",
-    "container_name",
-    "container_port",
-    "environment_vars",
-    "routes",
-    "readiness_probe",
 )
 
 _GENERATED_TRACKED_KEYS = (
@@ -83,37 +72,6 @@ def _readiness_probe_from_props(props: dict[str, Any]) -> ReadinessProbe | None:
     return ReadinessProbe(**raw) if raw else None
 
 
-class WorkloadImageArtifactProvider(ResourceProvider):
-    """Image build using a Dockerfile provided in the uploaded source bundle.
-
-    Any tracked change replaces the artifact (create new + delete old), so no
-    update() is implemented.
-    """
-
-    def create(self, inputs: dict[str, Any]) -> CreateResult:
-        artifact_id = build_artifact_with_provided_dockerfile(
-            workload_api_endpoint=inputs["workload_api_endpoint"],
-            workload_api_token=datarobot_api_token(),
-            artifact_name=inputs["artifact_name"],
-            application_path=Path(inputs["application_path"]),
-            dockerfile_relative_path=inputs["dockerfile_relative_path"],
-            container_name=inputs["container_name"],
-            container_port=inputs["container_port"],
-            environment_vars=inputs["environment_vars"],
-            routes=inputs["routes"],
-            build_timeout_s=inputs["build_timeout_s"],
-            readiness_probe=_readiness_probe_from_props(inputs),
-        )
-        outs = {**inputs, "artifact_id": artifact_id}
-        return CreateResult(id_=artifact_id, outs=outs)
-
-    def diff(self, _id: str, olds: dict[str, Any], news: dict[str, Any]) -> DiffResult:
-        return _diff_changed(olds, news, _PROVIDED_TRACKED_KEYS)
-
-    def delete(self, _id: str, props: dict[str, Any]) -> None:
-        _delete_artifact(props["workload_api_endpoint"], _id)
-
-
 class WorkloadGeneratedImageArtifactProvider(ResourceProvider):
     """Image build using a platform-generated Dockerfile from an execution environment.
 
@@ -145,50 +103,6 @@ class WorkloadGeneratedImageArtifactProvider(ResourceProvider):
 
     def delete(self, _id: str, props: dict[str, Any]) -> None:
         _delete_artifact(props["workload_api_endpoint"], _id)
-
-
-class WorkloadImageArtifact(Resource):
-    """Workload artifact built from a user-provided Dockerfile in the source bundle."""
-
-    artifact_id: str
-
-    def __init__(
-        self,
-        name: str,
-        *,
-        workload_api_endpoint: str,
-        artifact_name: str,
-        application_path: str,
-        dockerfile_relative_path: str,
-        container_name: str,
-        container_port: int,
-        environment_vars: list[dict[str, str]],
-        routes: list[dict[str, str]],
-        source_hash: str,
-        build_timeout_s: int = 6000,
-        readiness_probe: dict[str, Any] | None = None,
-        opts: Any = None,
-    ) -> None:
-        super().__init__(
-            WorkloadImageArtifactProvider(),
-            name,
-            {
-                "workload_api_endpoint": workload_api_endpoint,
-                "artifact_name": artifact_name,
-                "application_path": application_path,
-                "dockerfile_relative_path": dockerfile_relative_path,
-                "container_name": container_name,
-                "container_port": container_port,
-                "environment_vars": environment_vars,
-                "routes": routes,
-                "source_hash": source_hash,
-                "build_timeout_s": build_timeout_s,
-                "readiness_probe": readiness_probe,
-                # outputs
-                "artifact_id": None,
-            },
-            opts,
-        )
 
 
 class WorkloadGeneratedImageArtifact(Resource):

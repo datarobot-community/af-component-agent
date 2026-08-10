@@ -1,20 +1,17 @@
 #!/bin/sh
-# Entrypoint for the Workload API "C2W + WAPI-generated Dockerfile" scenario
-# (DockerfileGenerated -- see infra/{{agent_app_name}}_infra/workload.py's
-# WapiAssetPaths.run_server_relative_path). The generated Dockerfile runs
-# `uv sync` against uv.lock to install this agent's *dependencies* into the
-# dropin execution environment's venv, but does not install the agent package
-# itself -- that happens here, at container start, because the agent's source
-# only lands in the image via this build.
+# Entrypoint for the Workload API C2W scenario with a platform-generated
+# Dockerfile (see infra/{{agent_app_name}}_infra/workload.py). The generated
+# Dockerfile runs `uv sync` against uv.lock to install this agent's *dependencies*
+# into the dropin execution environment's venv, but does not install the agent
+# package itself -- that happens here, at container start, because the agent's
+# source only lands in the image via this build.
 #
 # Lives under workload/ (not the application root) to make explicit that it
-# only applies to this one scenario. Invoked as `sh workload/run_server.sh`
-# with the application root as the working directory, so relative paths below
+# only applies to this scenario. Invoked as `sh workload/run_server.sh` with
+# the application root as the working directory, so relative paths below
 # (e.g. `.` for `uv pip install`, `workflow.yaml`) still resolve there.
 #
-# Not used by the default Custom Models path, and not used by the
-# "C2W + custom Dockerfile" scenario either (that Dockerfile installs the
-# agent package itself at build time; see docker/Dockerfile).
+# Not used by the default Custom Models path.
 set -eu
 
 AGENT_PKG_DIR="/tmp/agent-pkgs"

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/marcin.dambski/.cursor/plans/**)",
+      "Bash(rg -rn --hidden -g '!.git/*' -l \"WORKLOAD_AGENT_IMAGE_URI|ENABLE_AGENT_ON_WORKLOAD_API\")"
+    ]
+  }
+}
