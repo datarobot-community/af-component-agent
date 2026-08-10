@@ -1,4 +1,5 @@
 .idea/
+.claude/
 .rendered/
 .python-version
 .env*
