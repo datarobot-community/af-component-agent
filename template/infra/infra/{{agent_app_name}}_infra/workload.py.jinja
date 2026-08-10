@@ -39,6 +39,7 @@ from typing import Any, Final
 
 import pulumi
 import pulumi_datarobot
+from datarobot_pulumi_utils.pulumi import export
 from workload_api import (
     WorkloadGeneratedImageArtifact,
     WorkloadImageArtifact,
@@ -207,6 +208,10 @@ def _workload_environment_vars(
         # platform injects DATAROBOT_API_ENDPOINT and WORKLOAD_ID automatically
         # and they must not be listed here (Confluence).
         {"source": "api-key"},
+        {
+            "name": "WORKLOAD_CONTAINER_PORT",
+            "value": str(_resolve_container_port()),
+        },
         *_runtime_param_env_vars(shared_runtime_parameters),
     ]
 
@@ -384,6 +389,10 @@ def _build_runtime_parameter_exports(
                 value=a2a_endpoint,
             ),
         )
+    export(
+        application_name.upper() + "_WORKLOAD_ID",
+        workload.id,
+    )
     return app_runtime_parameters, agent_runtime_parameters
 
 
@@ -434,6 +443,11 @@ def _provision_from_image_uri(
         "execution_environment": None,
         "deployment": None,
         "workload": workload,
+        "custom_model": None,
+        "agent_deployment_id": None,
+        "prediction_environment": None,
+        "registered_model_args": None,
+        "deployment_args": None,
         "agent_serving_endpoint": completions_endpoint,
         "agent_a2a_endpoint": a2a_endpoint,
         "app_runtime_parameters": app_runtime_parameters,
@@ -499,8 +513,7 @@ def _provision_from_source_bundle(
             execution_environment.id,
         )
         pulumi.export(
-            "Agent Execution Environment Version ID "
-            + base.{{agent_app_name}}_asset_name,
+            "Agent Execution Environment Version ID " + base.{{agent_app_name}}_asset_name,
             execution_environment.version_id,
         )
     completions_endpoint, a2a_endpoint = _export_workload_endpoints(
@@ -517,6 +530,11 @@ def _provision_from_source_bundle(
         "execution_environment": execution_environment,
         "deployment": None,
         "workload": workload,
+        "custom_model": None,
+        "agent_deployment_id": None,
+        "prediction_environment": None,
+        "registered_model_args": None,
+        "deployment_args": None,
         "agent_serving_endpoint": completions_endpoint,
         "agent_a2a_endpoint": a2a_endpoint,
         "app_runtime_parameters": app_runtime_parameters,

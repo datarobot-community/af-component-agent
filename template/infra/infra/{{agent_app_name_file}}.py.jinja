@@ -54,9 +54,17 @@ else:
 # off `infra.{{agent_app_name}}`. None of them exist when the other runtime is active
 # (e.g. `{{agent_app_name}}_execution_environment` is None in the image-URI Workload
 # scenario, since there is no execution environment to report).
+{{agent_app_name}}_application_name = base.{{agent_app_name}}_application_name
+{{agent_app_name}}_application_path = base.{{agent_app_name}}_application_path
+
 {{agent_app_name}}_execution_environment = _agent_exports["execution_environment"]
 {{agent_app_name}}_agent_deployment = _agent_exports["deployment"]
 {{agent_app_name}}_workload = _agent_exports["workload"]
+{{agent_app_name}}_custom_model = _agent_exports.get("custom_model")
+{{agent_app_name}}_agent_deployment_id = _agent_exports.get("agent_deployment_id")
+{{agent_app_name}}_prediction_environment = _agent_exports.get("prediction_environment")
+{{agent_app_name}}_registered_model_args = _agent_exports.get("registered_model_args")
+{{agent_app_name}}_deployment_args = _agent_exports.get("deployment_args")
 {{agent_app_name}}_agent_serving_endpoint = _agent_exports["agent_serving_endpoint"]
 {{agent_app_name}}_agent_a2a_endpoint = _agent_exports["agent_a2a_endpoint"]
 
@@ -64,7 +72,14 @@ else:
 {{agent_app_name}}_agent_runtime_parameters = _agent_exports["agent_runtime_parameters"]
 
 __all__ = [
+    "{{agent_app_name}}_application_name",
+    "{{agent_app_name}}_application_path",
     "{{agent_app_name}}_execution_environment",
+    "{{agent_app_name}}_prediction_environment",
+    "{{agent_app_name}}_custom_model",
+    "{{agent_app_name}}_agent_deployment_id",
+    "{{agent_app_name}}_registered_model_args",
+    "{{agent_app_name}}_deployment_args",
     "{{agent_app_name}}_agent_deployment",
     "{{agent_app_name}}_workload",
     "{{agent_app_name}}_agent_serving_endpoint",

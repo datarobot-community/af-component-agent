@@ -33,4 +33,4 @@ UV_NO_CACHE=1 uv pip install --no-deps \
 export PYTHONPATH="${AGENT_PKG_DIR}${PYTHONPATH:+:${PYTHONPATH}}"
 
 echo "Running nat dragent serve"
-exec nat dragent serve --config_file workflow.yaml --host 0.0.0.0 --port 8080 --use_gunicorn true
+exec nat dragent serve --config_file workflow.yaml --host 0.0.0.0 --port "${WORKLOAD_CONTAINER_PORT:-8080}" --use_gunicorn true

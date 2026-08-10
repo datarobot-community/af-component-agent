@@ -21,14 +21,15 @@ ENABLE_AGENT_ON_WORKLOAD_API branch picks the right one and never both.
 import sys
 import importlib
 from pathlib import Path
+from typing import Any
 import pytest
 from unittest.mock import MagicMock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 
-def _result_dict(tag: str) -> dict:
-    return {
+def _result_dict(tag: str, *, runtime: str = "generic") -> dict[str, Any]:
+    result: dict[str, Any] = {
         "execution_environment": f"{tag}-execution-environment",
         "deployment": f"{tag}-deployment",
         "workload": f"{tag}-workload",
@@ -37,6 +38,27 @@ def _result_dict(tag: str) -> dict:
         "app_runtime_parameters": [f"{tag}-app-param"],
         "agent_runtime_parameters": [f"{tag}-agent-param"],
     }
+    if runtime == "cm":
+        result.update(
+            {
+                "custom_model": f"{tag}-custom-model",
+                "agent_deployment_id": f"{tag}-deployment-id",
+                "prediction_environment": f"{tag}-prediction-environment",
+                "registered_model_args": f"{tag}-registered-model-args",
+                "deployment_args": f"{tag}-deployment-args",
+            }
+        )
+    else:
+        result.update(
+            {
+                "custom_model": None,
+                "agent_deployment_id": None,
+                "prediction_environment": None,
+                "registered_model_args": None,
+                "deployment_args": None,
+            }
+        )
+    return result
 
 
 @pytest.fixture(autouse=True)
@@ -88,8 +110,8 @@ def router_mocks(monkeypatch, tmp_path):
     monkeypatch.setattr(
         base, "build_shared_agent_runtime_parameters", MagicMock(return_value=[])
     )
-    deployment_mock = MagicMock(return_value=_result_dict("cm"))
-    workload_mock = MagicMock(return_value=_result_dict("wapi"))
+    deployment_mock = MagicMock(return_value=_result_dict("cm", runtime="cm"))
+    workload_mock = MagicMock(return_value=_result_dict("wapi", runtime="wapi"))
     monkeypatch.setattr(deployment, "provision_deployment_agent", deployment_mock)
     monkeypatch.setattr(workload, "provision_workload_agent", workload_mock)
 
@@ -185,3 +207,35 @@ class TestRuntimeDispatch:
         assert agent_infra.{{agent_app_name}}_agent_runtime_parameters == ["cm-agent-param"]
         assert agent_infra.{{agent_app_name}}_agent_serving_endpoint == "cm-serving-endpoint"
         assert agent_infra.{{agent_app_name}}_agent_a2a_endpoint == "cm-a2a-endpoint"
+
+    def test_re_exports_backward_compatible_custom_models_symbols(
+        self, monkeypatch, router_mocks
+    ):
+        monkeypatch.delenv("ENABLE_AGENT_ON_WORKLOAD_API", raising=False)
+        import infra.{{agent_app_name}}_infra.base as base
+
+        agent_infra = _reload_router()
+
+        assert agent_infra.{{agent_app_name}}_application_name == base.{{agent_app_name}}_application_name
+        assert agent_infra.{{agent_app_name}}_application_path == base.{{agent_app_name}}_application_path
+        assert agent_infra.{{agent_app_name}}_custom_model == "cm-custom-model"
+        assert agent_infra.{{agent_app_name}}_agent_deployment_id == "cm-deployment-id"
+        assert agent_infra.{{agent_app_name}}_prediction_environment == "cm-prediction-environment"
+        assert agent_infra.{{agent_app_name}}_registered_model_args == "cm-registered-model-args"
+        assert agent_infra.{{agent_app_name}}_deployment_args == "cm-deployment-args"
+
+    def test_re_exports_backward_compatible_workload_symbols_are_none(
+        self, monkeypatch, router_mocks
+    ):
+        monkeypatch.setenv("ENABLE_AGENT_ON_WORKLOAD_API", "true")
+        import infra.{{agent_app_name}}_infra.base as base
+
+        agent_infra = _reload_router()
+
+        assert agent_infra.{{agent_app_name}}_application_name == base.{{agent_app_name}}_application_name
+        assert agent_infra.{{agent_app_name}}_application_path == base.{{agent_app_name}}_application_path
+        assert agent_infra.{{agent_app_name}}_custom_model is None
+        assert agent_infra.{{agent_app_name}}_agent_deployment_id is None
+        assert agent_infra.{{agent_app_name}}_prediction_environment is None
+        assert agent_infra.{{agent_app_name}}_registered_model_args is None
+        assert agent_infra.{{agent_app_name}}_deployment_args is None

@@ -328,6 +328,9 @@ def provision_deployment_agent(
     deployment_endpoint: pulumi.Output[str] = cast(pulumi.Output[str], "None")
     deployment_a2a_endpoint: pulumi.Output[str] = cast(pulumi.Output[str], "None")
     agent_deployment = None
+    prediction_environment = None
+    registered_model_args = None
+    deployment_args = None
     if os.environ.get("AGENT_DEPLOY") != "0":
         if prediction_environment_id := os.environ.get(
             "DATAROBOT_DEFAULT_PREDICTION_ENVIRONMENT"
@@ -446,6 +449,10 @@ def provision_deployment_agent(
         "deployment": agent_deployment,
         "workload": None,
         "custom_model": custom_model,
+        "agent_deployment_id": agent_deployment_id,
+        "prediction_environment": prediction_environment,
+        "registered_model_args": registered_model_args,
+        "deployment_args": deployment_args,
         "playground": playground,
         "agent_serving_endpoint": deployment_endpoint,
         "agent_a2a_endpoint": (

@@ -172,6 +172,7 @@ def _workload_module(monkeypatch):
         "ExecutionEnvironment",
         MagicMock(return_value=_fake_resource(id="ee-id", version_id="ee-version-id")),
     )
+    monkeypatch.setattr(workload, "export", MagicMock())
 
     return workload
 
@@ -300,8 +301,15 @@ class TestRuntimeParamEnvVars:
         workload = _workload_module(monkeypatch)
         params = [RuntimeParam(key="LLM_DEPLOYMENT_ID", type="string", value="dep-1")]
         env_vars = workload._workload_environment_vars(params)
-        assert len(env_vars) == 2
-        assert env_vars[1] == {"name": "LLM_DEPLOYMENT_ID", "value": "dep-1"}
+        assert len(env_vars) == 3
+        assert env_vars[1] == {"name": "WORKLOAD_CONTAINER_PORT", "value": "8080"}
+        assert env_vars[2] == {"name": "LLM_DEPLOYMENT_ID", "value": "dep-1"}
+
+    def test_workload_environment_vars_injects_resolved_port(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setenv("WORKLOAD_CONTAINER_PORT", "9090")
+        env_vars = workload._workload_environment_vars([])
+        assert env_vars[1] == {"name": "WORKLOAD_CONTAINER_PORT", "value": "9090"}
 
 
 class TestProvisionWorkloadAgentRequiredEnv:
@@ -349,15 +357,29 @@ class TestProvisionWorkloadAgentImageUriScenario:
 
         workload.provision_workload_agent([])
 
-        export_names = [
-            call.args[0] for call in workload.pulumi.export.call_args_list
-        ]
+        export_names = [call.args[0] for call in workload.pulumi.export.call_args_list]
         asset_name = "[unittest] [agent]"
         assert "Agent Workload Endpoint " + asset_name in export_names
         assert "Agent Workload Id " + asset_name in export_names
         assert "Agent Workload Artifact Id " + asset_name in export_names
         assert "Agent Workload Image URI " + asset_name in export_names
         assert "Agent Workload Chat Endpoint " + asset_name in export_names
+
+    def test_disk_exports_workload_id(self, monkeypatch):
+        from unittest.mock import ANY
+
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setenv(
+            "WORKLOAD_AGENT_IMAGE_URI", "registry.example.com/agent:latest"
+        )
+        workload.export.reset_mock()
+
+        workload.provision_workload_agent([])
+
+        workload.export.assert_any_call(
+            "{{ agent_app_name | upper }}_WORKLOAD_ID",
+            ANY,
+        )
 
     def test_does_not_touch_custom_models_resources(self, monkeypatch):
         workload = _workload_module(monkeypatch)
@@ -430,9 +452,7 @@ class TestProvisionWorkloadAgentSourceBundleScenarios:
 
         workload.provision_workload_agent([])
 
-        export_names = [
-            call.args[0] for call in workload.pulumi.export.call_args_list
-        ]
+        export_names = [call.args[0] for call in workload.pulumi.export.call_args_list]
         asset_name = "[unittest] [agent]"
         assert "Agent Execution Environment ID " + asset_name in export_names
         assert "Agent Execution Environment Version ID " + asset_name in export_names

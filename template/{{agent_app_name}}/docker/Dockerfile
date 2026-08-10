@@ -42,6 +42,8 @@ ENV HOME=/app
 ENV UV_CACHE_DIR=/app/.uv-cache
 RUN mkdir -p /app/.uv-cache && chmod -R 777 /app
 
+ENV WORKLOAD_CONTAINER_PORT=8080
+
 EXPOSE 8080
 
 # IMPORTANT: invoke the venv's binary by absolute path, not via `uv run`.
@@ -50,4 +52,4 @@ EXPOSE 8080
 # "exec: <binary>: executable file not found in $PATH" even though the same
 # image runs fine locally with `docker run`. Absolute paths sidestep that
 # entirely since they don't depend on $PATH resolution at exec time.
-CMD ["/app/.venv/bin/nat", "dragent", "serve", "--config_file", "workflow.yaml", "--host", "0.0.0.0", "--port", "8080", "--use_gunicorn", "true"]
+CMD ["/bin/sh", "-c", "exec /app/.venv/bin/nat dragent serve --config_file workflow.yaml --host 0.0.0.0 --port ${WORKLOAD_CONTAINER_PORT:-8080} --use_gunicorn true"]

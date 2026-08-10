@@ -581,6 +581,19 @@ class TestBuildSharedAgentRuntimeParameters:
         assert space_param.type == "string"
         base.pulumi_datarobot.MemorySpace.assert_called_once()
 
+    def test_memory_space_id_disk_export(self, monkeypatch):
+        from unittest.mock import ANY
+        import datarobot_pulumi_utils.pulumi as pulumi_utils
+        import infra.{{agent_app_name}}_infra.base as base
+
+        pulumi_utils.export.reset_mock()
+        base.build_shared_agent_runtime_parameters()
+
+        pulumi_utils.export.assert_any_call(
+            base.AGENT_MEMORY_SPACE_ID,
+            ANY,
+        )
+
 
 class TestConfigureMemorySpaceLlm:
     def test_updates_llm_when_model_differs(self, monkeypatch):
