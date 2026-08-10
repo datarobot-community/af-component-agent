@@ -105,10 +105,10 @@ def _resolve_dockerfile_relative_path() -> str | None:
 
     ``WORKLOAD_DOCKERFILE_PATH`` overrides the default ``docker/Dockerfile`` check.
     Set ``WORKLOAD_DOCKERFILE_PATH=none`` (or ``false``/``0``) to force the
-    DockerfileGenerated (dropin execution environment) scenario even when
-    ``docker/Dockerfile`` exists — using a dropin execution
-    environment as the base image of a *custom* Dockerfile is unsupported, so
-    the two scenarios are mutually exclusive by construction, never combined.
+    DockerfileGenerated scenario even when ``docker/Dockerfile`` exists.
+    Using a dropin execution environment as the base image of a *custom*
+    Dockerfile is unsupported, so the two scenarios are mutually exclusive
+    by construction and are never combined.
     """
     explicit = os.getenv("WORKLOAD_DOCKERFILE_PATH", "").strip()
     if explicit.lower() in {"none", "false", "0"}:
