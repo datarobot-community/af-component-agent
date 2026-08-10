@@ -120,7 +120,9 @@ jobs:
     env:
       E2E_PULUMI_STACK: af-component-agent-e2e-${{ matrix.framework }}-${{ github.run_id }}-${{ github.run_attempt }}
     container:
-      image: ghcr.io/astral-sh/uv:python3.11-bookworm
+      # trixie, not bookworm: the `-bookworm` python variants are frozen at uv
+      # 0.9.30; the `-trixie` variants track current uv.
+      image: ghcr.io/astral-sh/uv:python3.11-trixie
     timeout-minutes: 75
     strategy:
       fail-fast: false

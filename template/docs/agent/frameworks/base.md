@@ -151,6 +151,6 @@ class MyAgent(BaseAgent[None]):
 
 ## Extending
 
-1. **Add an LLM**&mdash;use `get_llm()` from `datarobot_genai.langgraph.llm` (or any other provider) and call it inside `invoke()`.
-2. **Add tools**&mdash;implement tool calls within `invoke()` using any library you prefer.
-3. **Enable DRAgent tools**&mdash;uncomment the `builder.get_llm()` and `builder.get_tools()` lines in `register.py` and add the appropriate `framework_wrappers`.
+1. Add an LLM&mdash;use `get_llm()` from `datarobot_genai.langgraph.llm` (or any other provider) and call it inside `invoke()`.
+2. Add tools&mdash;implement tool calls within `invoke()` using any library you prefer.
+3. Enable DRAgent tools&mdash;uncomment the `builder.get_llm()` and `builder.get_tools()` lines in `register.py` and add the appropriate `framework_wrappers`.

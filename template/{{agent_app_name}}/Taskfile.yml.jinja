@@ -72,7 +72,7 @@ tasks:
       - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff check . --fix"
       - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff format ."
       - "{% raw %}{{.UV_CMD}}{% endraw %} run mypy --pretty ."
-      - "{% raw %}{{.UV_CMD}}{% endraw %} run yamlfix . -e '.venv/**/*.yaml' -e '.venv/**/*.yml' -e 'build/**/*.yaml' -e 'build/**/*.yml'"
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run yamlfix *.yaml *.yml agent tests"
     silent: true
 
   lint-check:
