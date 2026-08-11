@@ -141,10 +141,7 @@ def _configure_memory_space_llm_routing(
     if llm_base_url is None:
         model_name = _gateway_model_name(model_name)
 
-    config_kwargs: dict[str, str | None] = {"llm_model_name": model_name}
-    if llm_base_url:
-        config_kwargs["llm_base_url"] = llm_base_url
-    return _configure_memory_space_llm(space_id, **config_kwargs)
+    return _configure_memory_space_llm(space_id, llm_model_name=model_name, llm_base_url=llm_base_url)
 
 {%- endif %}
 
