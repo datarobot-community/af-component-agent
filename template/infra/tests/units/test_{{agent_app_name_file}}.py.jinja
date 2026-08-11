@@ -1234,6 +1234,29 @@ class TestMemorySpaceLlmRouting:
             override_model_name="datarobot/anthropic/claude-opus-4-20250514",
         )
 
+        assert captured == {
+            "llm_model_name": "datarobot/anthropic/claude-opus-4-20250514",
+            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/deployment-123",
+        }
+
+    def test_configure_memory_space_llm_routing_override_model_name_gateway_only(
+        self, monkeypatch
+    ):
+        import infra.{{agent_app_name}} as agent_infra
+
+        captured: dict[str, str | None] = {}
+
+        def _capture(space_id: str, **kwargs: str | None) -> str:
+            captured.update(kwargs)
+            return space_id
+
+        monkeypatch.setattr(agent_infra, "_configure_memory_space_llm", _capture)
+        agent_infra._configure_memory_space_llm_routing(
+            "test-space-id",
+            agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
+            override_model_name="datarobot/anthropic/claude-opus-4-20250514",
+        )
+
         assert captured == {"llm_model_name": "anthropic/claude-opus-4-20250514"}
 
     def test_configure_memory_space_llm_routing_override_deployment_id(

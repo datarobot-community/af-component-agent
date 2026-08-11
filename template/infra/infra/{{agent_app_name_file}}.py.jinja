@@ -119,24 +119,30 @@ def _configure_memory_space_llm_routing(
 ) -> str:
     """Configure memory-space LLM routing from env overrides or agent LLM defaults.
 
-    Override precedence for ``llm_base_url``:
+    ``llm_model_name`` selection:
+    1. ``AGENT_MEMORY_LLM_MODEL_NAME``
+    2. Agent LLM default model
+
+    ``llm_base_url`` precedence:
     1. ``AGENT_MEMORY_LLM_BASE_URL`` — use as-is
     2. ``AGENT_MEMORY_LLM_DEPLOYMENT_ID`` — deployment endpoint
-    3. ``AGENT_MEMORY_LLM_MODEL_NAME`` alone — LLM Gateway (no base URL)
-    4. Agent LLM deployment ID — deployment endpoint
-    5. Otherwise — LLM Gateway
+    3. Agent LLM deployment ID — deployment endpoint
+    4. Otherwise — LLM Gateway
     """
     model_name = override_model_name or agent_default_model
-    if override_base_url:
-        llm_base_url = override_base_url
-    elif override_deployment_id:
-        llm_base_url = _deployment_llm_base_url(override_deployment_id)
-    elif override_model_name:
-        llm_base_url = None
-    elif agent_deployment_id:
-        llm_base_url = _deployment_llm_base_url(agent_deployment_id)
-    else:
-        llm_base_url = None
+    llm_base_url = (
+        override_base_url
+        or (
+            _deployment_llm_base_url(override_deployment_id)
+            if override_deployment_id
+            else None
+        )
+        or (
+            _deployment_llm_base_url(agent_deployment_id)
+            if agent_deployment_id
+            else None
+        )
+    )
 
     if llm_base_url is None:
         model_name = _gateway_model_name(model_name)
