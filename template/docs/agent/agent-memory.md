@@ -205,7 +205,7 @@ To configure a memory space LLM that differs from the agent LLM component defaul
 
 | Env variable | Routing | Description |
 |---|---|---|
-| `AGENT_MEMORY_LLM_BASE_URL` | Custom endpoint | OpenAI-compatible base URL for the memory space LLM. Takes precedence over deployment ID. |
+| `AGENT_MEMORY_LLM_BASE_URL` | Custom endpoint | OpenAI-compatible base URL for the memory space LLM. Takes precedence over deployment ID. The memory service must be configured to allow this host. |
 | `AGENT_MEMORY_LLM_MODEL_NAME` | LLM Gateway (alone) or deployed LLM (with deployment ID or base URL) | Model name for the memory space (for example `azure/gpt-5-mini-2025-08-07` or `datarobot-deployed-llm`). When set alone, routes through LLM Gateway. |
 | `AGENT_MEMORY_LLM_DEPLOYMENT_ID` | Deployed LLM | DataRobot deployment ID for the memory space. Sets `llm_base_url` to the deployment endpoint. |
 
