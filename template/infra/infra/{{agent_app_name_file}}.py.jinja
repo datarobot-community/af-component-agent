@@ -123,7 +123,7 @@ def _configure_memory_space_llm_routing(
     1. ``AGENT_MEMORY_LLM_MODEL_NAME``
     2. Agent LLM default model
 
-    ``deployment_id`` selection:
+    ``deployment_id`` selection (only when ``AGENT_MEMORY_LLM_BASE_URL`` is unset):
     1. ``AGENT_MEMORY_LLM_DEPLOYMENT_ID``
     2. Agent LLM deployment ID
 
@@ -133,15 +133,22 @@ def _configure_memory_space_llm_routing(
     3. Otherwise — LLM Gateway
     """
     model_name = override_model_name or agent_default_model
-    deployment_id = override_deployment_id or agent_deployment_id
-    llm_base_url = override_base_url or (
-        _deployment_llm_base_url(deployment_id) if deployment_id else None
-    )
+    if override_base_url:
+        # Explicit base URL bypasses deployment-based routing.
+        llm_base_url = override_base_url
+    else:
+        deployment_id = override_deployment_id or agent_deployment_id
+        llm_base_url = (
+            _deployment_llm_base_url(deployment_id) if deployment_id else None
+        )
 
     if llm_base_url is None:
         model_name = _gateway_model_name(model_name)
 
-    return _configure_memory_space_llm(space_id, llm_model_name=model_name, llm_base_url=llm_base_url)
+    config_kwargs: dict[str, str | None] = {"llm_model_name": model_name}
+    if llm_base_url is not None:
+        config_kwargs["llm_base_url"] = llm_base_url
+    return _configure_memory_space_llm(space_id, **config_kwargs)
 
 {%- endif %}
 

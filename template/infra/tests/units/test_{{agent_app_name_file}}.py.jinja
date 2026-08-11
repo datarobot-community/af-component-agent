@@ -1133,6 +1133,11 @@ class TestMemorySpaceLlmRouting:
             return space_id
 
         monkeypatch.setattr(agent_infra, "_configure_memory_space_llm", _capture)
+        monkeypatch.setattr(
+            agent_infra,
+            "_deployment_llm_base_url",
+            lambda _: (_ for _ in ()).throw(AssertionError("should not be called")),
+        )
         agent_infra._configure_memory_space_llm_routing(
             "test-space-id",
             agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
