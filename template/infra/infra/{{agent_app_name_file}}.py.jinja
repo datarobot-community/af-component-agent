@@ -132,6 +132,12 @@ def _configure_memory_space_llm_routing(
     2. selected deployment ID endpoint
     3. Otherwise — LLM Gateway
     """
+    if override_base_url and override_deployment_id:
+        raise ValueError(
+            "Set only one of AGENT_MEMORY_LLM_BASE_URL or "
+            "AGENT_MEMORY_LLM_DEPLOYMENT_ID."
+        )
+
     model_name = override_model_name or agent_default_model
     if override_base_url:
         # Explicit base URL bypasses deployment-based routing.

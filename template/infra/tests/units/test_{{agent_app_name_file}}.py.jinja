@@ -1150,6 +1150,22 @@ class TestMemorySpaceLlmRouting:
             "llm_base_url": "https://custom.example.com/v1",
         }
 
+    def test_configure_memory_space_llm_routing_rejects_base_url_and_deployment(
+        self,
+    ):
+        import infra.{{agent_app_name}} as agent_infra
+
+        with pytest.raises(
+            ValueError,
+            match="Set only one of AGENT_MEMORY_LLM_BASE_URL or AGENT_MEMORY_LLM_DEPLOYMENT_ID.",
+        ):
+            agent_infra._configure_memory_space_llm_routing(
+                "test-space-id",
+                agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
+                override_base_url="https://custom.example.com/v1",
+                override_deployment_id="memory-deployment-456",
+            )
+
     def test_configure_memory_space_llm_routing_override_deployment_without_model(
         self, monkeypatch
     ):
