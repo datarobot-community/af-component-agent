@@ -18,9 +18,6 @@ Within the Workload API there are two paths. The default one builds the image fo
 | What a code change costs | Custom model version + deployment update | A full image rebuild | Your own build and push; no platform build |
 | Playground / deployment ID | Yes | No | No |
 
-<!-- TODO(verify): concrete per-path deploy durations, and whether the Workload API
-     runtime requires a cluster-side feature flag. The only figure traceable to code
-     today is the 10–20 min execution-environment build below. -->
 
 - Pick **Custom Models** if you want the Playground, a deployment ID, or deployment monitoring.
 - Pick **Workload API + C2W** if you want a leaner serving-only deploy and no Docker tooling of your own.
