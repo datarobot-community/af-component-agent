@@ -33,7 +33,8 @@ external_llm:
       Your agent LLM uses external provider credentials, which cannot
       back the DataRobot Memory Service memory space directly. Choose a
       dedicated LLM for memory indexing.
-      You can also set AGENT_MEMORY_LLM_MODEL_NAME or
+      You can also set AGENT_MEMORY_LLM_BASE_URL,
+      AGENT_MEMORY_LLM_MODEL_NAME, or
       AGENT_MEMORY_LLM_DEPLOYMENT_ID in .env to override routing.
     options:
       - name: "LLM Gateway"
