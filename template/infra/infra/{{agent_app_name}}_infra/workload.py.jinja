@@ -17,10 +17,10 @@
 Serving-only: creates an image-build ``Artifact`` (or references one by URI)
 plus a ``Workload`` — no ``CustomModel``/``Playground``/``LlmBlueprint``
 anywhere in this module (Playground for this runtime is an explicit, deferred
-follow-up; see the agent README). Selects one of two deployment scenarios
-based on env vars; see ``provision_workload_agent()``'s docstring for the
-exact precedence. Self-contained: everything specific to this runtime lives
-here or in ``workload_api/`` (HTTP/Pulumi-provider plumbing only, no
+follow-up; see docs/agent/deployment-runtimes.md). Selects one of two
+deployment scenarios based on env vars; see ``provision_workload_agent()``'s
+docstring for the exact precedence. Self-contained: everything specific to
+this runtime lives here or in ``workload_api/`` (HTTP/Pulumi-provider only, no
 deployment decisions). Never checks ``ENABLE_AGENT_ON_WORKLOAD_API`` itself —
 the entry router is the only place that branches on it.
 
@@ -470,11 +470,9 @@ def provision_workload_agent(
        environment as the base image (execution environment +
        ``WorkloadGeneratedImageArtifact`` + ``Workload``).
 
-    The external "C2W script + Pulumi workload-only" scenario
-    (``WORKLOAD_ARTIFACT_ID``, ``dr artifact`` CLI + a Pulumi stack that only
-    creates the ``Workload``) is a documented workaround for Pulumi having no
-    native code-to-workload support — it is intentionally not implemented here;
-    see the agent README.
+    Building the artifact out-of-band (``dr artifact`` CLI + a Pulumi stack
+    that only creates the ``Workload`` from a pre-existing artifact ID) is
+    intentionally not implemented here and is not a supported path.
     """
     _require_env("DATAROBOT_API_TOKEN")
     datarobot_endpoint = _require_env("DATAROBOT_ENDPOINT")

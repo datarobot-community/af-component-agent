@@ -12,7 +12,7 @@ For the official DataRobot documentation on agent components, see [Agent compone
 | [Tool integration](#tool-integration) | How agents use tools via MCP, workflow tools, and custom local tools. |
 | [Configuration](#configuration) | Agent configuration management. |
 | [Front server](#front-server) | DRAgent — the only supported front server |
-| [Deployment runtime](#deployment-runtime) | Custom Models vs. Workload API, selected via `ENABLE_AGENT_ON_WORKLOAD_API`. |
+| [Deployment runtimes](./deployment-runtimes.md) | Custom Models vs. Workload API: choosing one, deploying on the Workload API, `WORKLOAD_*` configuration, and switching later. |
 | [Agent types](#agent-types) | Supported agent frameworks and links to examples. |
 | [Debugging](./debugging.md) | Debug agents locally using the CLI, VS Code, and PyCharm. |
 | [Tracing and telemetry](./tracing.md) | OpenTelemetry tracing for DRAgent agents: how `register.py` and `workflow.yaml` are instrumented to export spans to DataRobot. |
@@ -20,6 +20,7 @@ For the official DataRobot documentation on agent components, see [Agent compone
 | [Agent memory](./agent-memory.md) | Persistent per-user memory via `use_agent_memory`: `streaming_memory_agent`, `dr_mem0_memory`, and provider configuration. |
 | [Chat history](./chat-history.md) | Multi-turn conversation context: how prior `messages` are injected across LangGraph, CrewAI, LlamaIndex, and NAT. |
 | [Local evaluation](./evaluation.md) | Evaluate agentic workflows locally with `nat eval` during development. |
+| [Custom metrics](./custom-metrics.md) | Create custom metrics on a DataRobot deployment and submit values to them. |
 | [Further reading](#further-reading) | Links to official DataRobot docs for troubleshooting, tracing, global tools, and more. |
 
 ## Features
@@ -188,17 +189,9 @@ The agent's Pulumi infrastructure (`infra/infra/agent.py`) supports two deployme
 | **Custom Models** (default) | `ENABLE_AGENT_ON_WORKLOAD_API` unset or falsy | `CustomModel`, `Playground`, `LlmBlueprint`, and (when `ENABLE_AGENT_HA_MODE=true`) a `CustomModelDeployment`. |
 | **Workload API** | `ENABLE_AGENT_ON_WORKLOAD_API=true` | An `Artifact` (image build or reference) plus a `Workload`. Serving-only — no `CustomModel`/`Playground`/`LlmBlueprint` are created. |
 
-When `ENABLE_AGENT_ON_WORKLOAD_API=true`, the deployment scenario is selected automatically based on which of these variables is set (checked in this order):
+Custom Models is the default and needs no configuration. Setting `ENABLE_AGENT_ON_WORKLOAD_API=true` selects the Workload API, whose default scenario builds the image on the platform from your agent source and needs no Docker registry of your own.
 
-| Variable | Scenario |
-|---|---|
-| `WORKLOAD_AGENT_IMAGE_URI` | Use a pre-built image from a personal registry as-is. |
-| _(not set)_ | Build from a platform-generated Dockerfile ("C2W") on top of a DataRobot execution environment; runs `workload/run_server.sh`. |
-
-Other tuning variables: `WORKLOAD_ENTRYPOINT` (override the container entrypoint), `WORKLOAD_CONTAINER_PORT` (default `8080`), `WORKLOAD_CPU`, `WORKLOAD_MEMORY` (bytes), `WORKLOAD_REPLICA_COUNT`, and `WORKLOAD_BUILD_TIMEOUT_S`.
-
-> [!NOTE]
-> The C2W scenario uploads agent source directly via the DataRobot Files API during `pulumi up` — no external CLI is required. Files matched by `.wapiignore` (gitignore syntax) at the root of the agent app are excluded from the upload.
+See [Deployment runtimes](./deployment-runtimes.md) for how to choose between them, a Workload API quick start, the full `WORKLOAD_*` configuration reference, and how to switch runtimes later.
 
 ## Agent types
 
@@ -304,3 +297,5 @@ task agent:cli -- execute --user_prompt '{"topic":"Generative AI"}'
 ```sh
 task agent:cli -- execute-deployment --user_prompt "Your test prompt" --deployment_id DEPLOYMENT_ID
 ```
+
+This applies to the **Custom Models** runtime only. The Workload API runtime creates no deployment and therefore no deployment ID — POST to the workload's chat endpoint instead, as described in [Deployment runtimes](./deployment-runtimes.md#deploy-on-workload-api).

@@ -1,5 +1,5 @@
-# gitignore-syntax exclusions for Workload API source upload (see the agent
-# README's Workload API section).
+# gitignore-syntax exclusions for Workload API source upload (see
+# docs/agent/deployment-runtimes.md).
 #
 # Read by `infra/workload_api/artifact_code.py` when Pulumi archives and
 # uploads agent source for the C2W scenario with a platform-generated Dockerfile.
