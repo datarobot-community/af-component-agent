@@ -253,7 +253,7 @@ For the DataRobot Memory Service provider, the feature flag `ENABLE_AGENTIC_MEMO
    AGENT_MEMORY_LLM_DEPLOYMENT_ID=your-deployment-id
 
    # Custom endpoint override
-   AGENT_MEMORY_LLM_BASE_URL=https://app.datarobot.com/api/v2/deployments/your-deployment-id
+   AGENT_MEMORY_LLM_BASE_URL=https://your-llm-provider.example.com/v1
    ```
 
 2. Start the agent:
