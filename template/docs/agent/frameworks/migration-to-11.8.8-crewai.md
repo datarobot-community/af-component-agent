@@ -150,7 +150,7 @@ kickoff_inputs = lambda user_prompt_content: {
 }
 ```
 
-The `"chat_history"` key is required for multi-turn text history; `datarobot-genai` populates it when prior messages are present. See [Chat history](../chat-history.md).
+The `"chat_history"` key is required for multi-turn text history; `datarobot-genai` populates it when prior messages are present. See [Multi-turn chat history](../chat-history.md).
 
 ### 6. Generate `MyAgent` with the factory
 

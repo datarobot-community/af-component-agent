@@ -138,7 +138,7 @@ Replace the entire `MyAgent` class with a single line:
 MyAgent = datarobot_agent_class_from_langgraph(graph_factory, prompt_template)
 ```
 
-Multi-turn context is injected automatically via structured history when the template omits `{chat_history}`. See [Chat history](../chat-history.md).
+Multi-turn context is injected automatically via structured history when the template omits `{chat_history}`. See [Multi-turn chat history](../chat-history.md).
 
 ### 5. Delete the `__init__` and `llm()` methods
 
