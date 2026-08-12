@@ -139,6 +139,7 @@ def _configure_memory_space_llm_routing(
         )
 
     model_name = override_model_name or agent_default_model
+    llm_base_url: str | None
     if override_base_url:
         # Explicit base URL bypasses deployment-based routing.
         llm_base_url = override_base_url
@@ -154,8 +155,7 @@ def _configure_memory_space_llm_routing(
     if llm_base_url is not None:
         config_kwargs["llm_base_url"] = llm_base_url
     return _configure_memory_space_llm(space_id, **config_kwargs)
-
-{%- endif %}
+{% endif %}
 
 # Toggle for High Availability (HA) and Load Balancing configuration for agent deployment
 # To enable HA mode: Add ENABLE_AGENT_HA_MODE="true" to your .env file in the project root
@@ -657,7 +657,9 @@ _memory_llm_model = _normalize_optional_env(os.environ.get(AGENT_MEMORY_LLM_MODE
 _memory_llm_deployment = _normalize_optional_env(
     os.environ.get(AGENT_MEMORY_LLM_DEPLOYMENT_ID)
 )
-_memory_llm_base_url = _normalize_optional_env(os.environ.get(AGENT_MEMORY_LLM_BASE_URL))
+_memory_llm_base_url = _normalize_optional_env(
+    os.environ.get(AGENT_MEMORY_LLM_BASE_URL)
+)
 _agent_llm_deployment = _llm_component_config_value("{{ _external_data.llm.llm_app_name|upper }}_DEPLOYMENT_ID")
 if not isinstance(_agent_llm_deployment, pulumi.Output):
     _agent_llm_deployment = pulumi.Output.from_input(_agent_llm_deployment or "")
