@@ -121,7 +121,7 @@ def workload_env_mocks(monkeypatch, tmp_path):
 
 def _workload_module(monkeypatch):
     """Import infra.{{agent_app_name}}_infra.workload with its workload_api
-    collaborators and pulumi_datarobot.Artifact/Workload stubbed out.
+    subpackage collaborators and pulumi_datarobot.Artifact/Workload stubbed out.
 
     No reload needed: workload.py has no env-dependent module-level constants
     (all env reads happen inside functions), unlike deployment.py's HA-mode ones.
@@ -134,13 +134,6 @@ def _workload_module(monkeypatch):
         MagicMock(return_value=_fake_resource(artifact_id="generated-artifact-id")),
     )
     monkeypatch.setattr(workload, "source_hash", MagicMock(return_value="hash123"))
-    monkeypatch.setattr(
-        workload,
-        "build_artifact_from_image_uri",
-        MagicMock(
-            return_value=MagicMock(to_payload=MagicMock(return_value={"name": "spec"}))
-        ),
-    )
 
     # _fake_resource so the real pulumi.ResourceOptions(depends_on=[...])
     # validation (which requires actual Resource instances) accepts these stubs.
@@ -229,6 +222,52 @@ class TestResolveContainerPortAndReadinessProbe:
         assert probe.port == 9090
 
 
+class TestImageUriArtifactArgs:
+    """The pre-built-image payload is built here, not in workload_api."""
+
+    def _container(self, workload, **overrides):
+        args = workload._image_uri_artifact_args(
+            **{
+                "artifact_name": "agent-artifact",
+                "image_uri": "registry.example.com/agent:latest",
+                "environment_vars": [{"source": "api-key"}],
+                "entrypoints": None,
+                **overrides,
+            }
+        )
+        return args, args["spec"]["containerGroups"][0]["containers"][0]
+
+    def test_payload_shape(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        args, container = self._container(workload)
+        assert args["name"] == "agent-artifact"
+        assert args["type"] == "service"
+        assert container["name"] == workload.WORKLOAD_CONTAINER_NAME
+        assert container["primary"] is True
+        assert container["port"] == 8080
+        assert container["imageUri"] == "registry.example.com/agent:latest"
+        assert container["environmentVars"] == [{"source": "api-key"}]
+        assert container["readinessProbe"]["path"] == "/health"
+
+    def test_entrypoints_omitted_when_unset(self, monkeypatch):
+        """Omitting the key keeps the image's own CMD/entrypoint."""
+        workload = _workload_module(monkeypatch)
+        _, container = self._container(workload)
+        assert "entrypoints" not in container
+
+    def test_entrypoints_included_when_set(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        _, container = self._container(workload, entrypoints=["python", "main.py"])
+        assert container["entrypoints"] == ["python", "main.py"]
+
+    def test_port_override_applies_to_container_and_probe(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setenv("WORKLOAD_CONTAINER_PORT", "9090")
+        _, container = self._container(workload)
+        assert container["port"] == 9090
+        assert container["readinessProbe"]["port"] == 9090
+
+
 class TestRuntimeParamEnvVars:
     def test_credential_type_becomes_dr_credential(self, monkeypatch):
         workload = _workload_module(monkeypatch)
@@ -298,14 +337,12 @@ class TestProvisionWorkloadAgentImageUriScenario:
 
         result = workload.provision_workload_agent([])
 
-        workload.build_artifact_from_image_uri.assert_called_once()
-        _, kwargs = workload.build_artifact_from_image_uri.call_args
-        assert kwargs["image_uri"] == "registry.example.com/agent:latest"
-        assert kwargs["readiness_probe"] == workload.ReadinessProbe(
-            path="/health", port=8080
-        )
-
         workload.pulumi_datarobot.Artifact.assert_called_once()
+        _, kwargs = workload.pulumi_datarobot.Artifact.call_args
+        container = kwargs["spec"]["containerGroups"][0]["containers"][0]
+        assert container["imageUri"] == "registry.example.com/agent:latest"
+        assert container["readinessProbe"] == workload._readiness_probe().to_wire()
+        assert container["environmentVars"] == workload._workload_environment_vars([])
         workload.pulumi_datarobot.Workload.assert_called_once()
         assert result["execution_environment"] is None
         assert result["deployment"] is None
@@ -368,8 +405,9 @@ class TestProvisionWorkloadAgentImageUriScenario:
 
         workload.provision_workload_agent([])
 
-        _, kwargs = workload.build_artifact_from_image_uri.call_args
-        assert kwargs["entrypoints"] == ["python", "main.py"]
+        _, kwargs = workload.pulumi_datarobot.Artifact.call_args
+        container = kwargs["spec"]["containerGroups"][0]["containers"][0]
+        assert container["entrypoints"] == ["python", "main.py"]
 
 
 class TestProvisionWorkloadAgentSourceBundleScenarios:

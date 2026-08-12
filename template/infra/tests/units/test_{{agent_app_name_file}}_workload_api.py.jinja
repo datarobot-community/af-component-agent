@@ -11,13 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for the workload_api package: Workload API HTTP client + Pulumi plumbing.
+"""Tests for infra.{{agent_app_name}}_infra.workload_api: HTTP client + Pulumi plumbing.
 
-Not templated (workload_api has no Jinja-conditional content -- see its module
-docstrings), so this test file isn't templated either.
+The package itself has no Jinja-conditional content; this file is templated only
+because its import paths run through the agent package name.
 """
 
-import sys
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -26,28 +25,34 @@ from unittest.mock import MagicMock
 import pytest
 import requests
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
-
-from workload_api.artifact_code import (
+from infra.{{agent_app_name}}_infra.workload_api.artifact_code import (
     source_archive,
     source_hash,
     upload_source,
 )
-from workload_api.client import (
+from infra.{{agent_app_name}}_infra.workload_api.client import (
     DATAROBOT_API_TOKEN_ENV,
-    ContainerImageUri,
+    CodeRef,
+    CodeRefDatarobot,
+    Container,
+    DockerfileGenerated,
+    ImageBuildConfig,
     ReadinessProbe,
     WorkloadClient,
+    _image_build_spec,
     _to_wire,
-    build_artifact_from_image_uri,
     build_artifact_with_generated_dockerfile,
     datarobot_api_token,
 )
-from workload_api.resources import (
+from infra.{{agent_app_name}}_infra.workload_api.resources import (
     WorkloadGeneratedImageArtifactProvider,
     _readiness_probe_from_props,
     _GENERATED_TRACKED_KEYS,
 )
+
+_CLIENT_MODULE = "infra.{{agent_app_name}}_infra.workload_api.client"
+_ARTIFACT_CODE_MODULE = "infra.{{agent_app_name}}_infra.workload_api.artifact_code"
+_RESOURCES_MODULE = "infra.{{agent_app_name}}_infra.workload_api.resources"
 
 
 class _FakeResponse:
@@ -67,37 +72,43 @@ class _FakeResponse:
             raise requests.HTTPError(f"{self.status_code} error", response=self)
 
 
+def _dockerfile():
+    return DockerfileGenerated(
+        execution_environment_id="ee-1",
+        execution_environment_version_id="ee-v1",
+        entrypoint=["sh", "run_server.sh"],
+    )
+
+
+def _container(**overrides):
+    return Container(
+        **{
+            "name": "agent",
+            "primary": True,
+            "port": 8080,
+            "image_build_config": ImageBuildConfig(dockerfile=_dockerfile()),
+            **overrides,
+        }
+    )
+
+
 class TestToWire:
-    def test_drops_none_fields(self):
-        probe = ReadinessProbe()
-        wire = _to_wire(probe)
-        assert wire["path"] == "/health"
-        assert "port" in wire
-
     def test_camel_cases_field_names(self):
-        probe = ReadinessProbe(initial_delay_seconds=15)
-        wire = _to_wire(probe)
-        assert wire["initialDelaySeconds"] == 15
+        wire = _to_wire(_dockerfile())
+        assert wire["executionEnvironmentId"] == "ee-1"
+        assert wire["executionEnvironmentVersionId"] == "ee-v1"
+        assert wire["source"] == "generated"
 
-    def test_omits_none_optional_field(self):
-        container = ContainerImageUri(
-            name="agent", primary=True, port=8080, image_uri="img:latest"
-        )
-        wire = _to_wire(container)
-        assert "entrypoints" not in wire
+    def test_drops_none_fields(self):
+        wire = _to_wire(_container())
         assert "readinessProbe" not in wire
+        assert "codeRef" not in wire["imageBuildConfig"]
 
-    def test_includes_readiness_probe_when_set(self):
-        container = ContainerImageUri(
-            name="agent",
-            primary=True,
-            port=8080,
-            image_uri="img:latest",
-            readiness_probe=ReadinessProbe(port=9090),
-        )
-        wire = _to_wire(container)
+    def test_serializes_nested_readiness_probe(self):
+        wire = _to_wire(_container(readiness_probe=ReadinessProbe(port=9090)))
         assert wire["readinessProbe"]["port"] == 9090
         assert wire["readinessProbe"]["path"] == "/health"
+        assert wire["readinessProbe"]["initialDelaySeconds"] == 10
 
     def test_passes_through_lists_and_dicts(self):
         assert _to_wire([{"a": 1}, "x"]) == [{"a": 1}, "x"]
@@ -105,54 +116,35 @@ class TestToWire:
         assert _to_wire("plain") == "plain"
 
 
-class TestBuildArtifactFromImageUri:
-    def test_basic_payload_shape(self):
-        spec = build_artifact_from_image_uri(
-            artifact_name="agent-artifact",
-            container_name="agent",
-            container_port=8080,
-            image_uri="registry.example.com/agent:latest",
+class TestReadinessProbeToWire:
+    def test_matches_nested_serialization(self):
+        """`to_wire()` must produce exactly what nesting the probe would."""
+        probe = ReadinessProbe(port=9090)
+        assert (
+            probe.to_wire()
+            == _to_wire(_container(readiness_probe=probe))["readinessProbe"]
         )
-        payload = spec.to_payload()
-        container = payload["spec"]["containerGroups"][0]["containers"][0]
-        assert container["imageUri"] == "registry.example.com/agent:latest"
-        assert container["port"] == 8080
-        assert "entrypoints" not in container
-        assert "readinessProbe" not in container
 
-    def test_with_readiness_probe(self):
-        spec = build_artifact_from_image_uri(
-            artifact_name="agent-artifact",
-            container_name="agent",
-            container_port=8080,
-            image_uri="registry.example.com/agent:latest",
-            readiness_probe=ReadinessProbe(port=8080),
-        )
-        payload = spec.to_payload()
-        container = payload["spec"]["containerGroups"][0]["containers"][0]
-        assert container["readinessProbe"]["port"] == 8080
-
-    def test_entrypoints_passed_through(self):
-        spec = build_artifact_from_image_uri(
-            artifact_name="agent-artifact",
-            container_name="agent",
-            container_port=8080,
-            image_uri="registry.example.com/agent:latest",
-            entrypoints=["python", "main.py"],
-        )
-        payload = spec.to_payload()
-        container = payload["spec"]["containerGroups"][0]["containers"][0]
-        assert container["entrypoints"] == ["python", "main.py"]
+    def test_camel_cases_and_keeps_defaults(self):
+        assert ReadinessProbe().to_wire() == {
+            "path": "/health",
+            "port": 8080,
+            "initialDelaySeconds": 10,
+            "periodSeconds": 10,
+            "timeoutSeconds": 5,
+            "failureThreshold": 6,
+            "scheme": "HTTP",
+        }
 
 
 class TestBuildArtifactWithDockerfile:
     def test_generated_dockerfile_builds_and_creates(self, monkeypatch):
         monkeypatch.setattr(
-            "workload_api.client.upload_source",
+            f"{_CLIENT_MODULE}.upload_source",
             MagicMock(return_value=("cat-2", "ver-2")),
         )
         monkeypatch.setattr(
-            "workload_api.client._create_and_build_artifact",
+            f"{_CLIENT_MODULE}._create_and_build_artifact",
             MagicMock(return_value="artifact-2"),
         )
         artifact_id = build_artifact_with_generated_dockerfile(
@@ -170,7 +162,9 @@ class TestBuildArtifactWithDockerfile:
             build_timeout_s=100,
         )
         assert artifact_id == "artifact-2"
-        from workload_api.client import _create_and_build_artifact
+        from infra.{{agent_app_name}}_infra.workload_api.client import (
+            _create_and_build_artifact,
+        )
 
         spec = _create_and_build_artifact.call_args[0][1]
         payload = spec.to_payload()
@@ -224,7 +218,7 @@ class TestArtifactCode:
                 },
             )
         )
-        monkeypatch.setattr("workload_api.artifact_code.requests.post", mock_post)
+        monkeypatch.setattr(f"{_ARTIFACT_CODE_MODULE}.requests.post", mock_post)
 
         catalog_id, catalog_version_id = upload_source(
             endpoint="https://wapi.example.com",
@@ -240,7 +234,7 @@ class TestArtifactCode:
     def test_upload_source_async_polls_to_completion(self, monkeypatch, tmp_path):
         (tmp_path / "main.py").write_text("print('hi')\n")
         monkeypatch.setattr(
-            "workload_api.artifact_code.requests.post",
+            f"{_ARTIFACT_CODE_MODULE}.requests.post",
             MagicMock(
                 return_value=_FakeResponse(
                     status_code=202,
@@ -253,7 +247,7 @@ class TestArtifactCode:
             ),
         )
         monkeypatch.setattr(
-            "workload_api.artifact_code.requests.get",
+            f"{_ARTIFACT_CODE_MODULE}.requests.get",
             MagicMock(return_value=_FakeResponse(status_code=303)),
         )
 
@@ -270,7 +264,7 @@ class TestArtifactCode:
     def test_upload_source_raises_on_failed_status(self, monkeypatch, tmp_path):
         (tmp_path / "main.py").write_text("print('hi')\n")
         monkeypatch.setattr(
-            "workload_api.artifact_code.requests.post",
+            f"{_ARTIFACT_CODE_MODULE}.requests.post",
             MagicMock(
                 return_value=_FakeResponse(
                     status_code=202,
@@ -283,7 +277,7 @@ class TestArtifactCode:
             ),
         )
         monkeypatch.setattr(
-            "workload_api.artifact_code.requests.get",
+            f"{_ARTIFACT_CODE_MODULE}.requests.get",
             MagicMock(
                 return_value=_FakeResponse(
                     status_code=200,
@@ -304,7 +298,7 @@ class TestArtifactCode:
     def test_upload_source_times_out(self, monkeypatch, tmp_path):
         (tmp_path / "main.py").write_text("print('hi')\n")
         monkeypatch.setattr(
-            "workload_api.artifact_code.requests.post",
+            f"{_ARTIFACT_CODE_MODULE}.requests.post",
             MagicMock(
                 return_value=_FakeResponse(
                     status_code=202,
@@ -317,7 +311,7 @@ class TestArtifactCode:
             ),
         )
         monkeypatch.setattr(
-            "workload_api.artifact_code.requests.get",
+            f"{_ARTIFACT_CODE_MODULE}.requests.get",
             MagicMock(
                 return_value=_FakeResponse(
                     status_code=200, json_data={"status": "INITIALIZED"}
@@ -347,10 +341,20 @@ class TestWorkloadClient:
         client._session.post.return_value = _FakeResponse(
             status_code=200, json_data={"id": "artifact-1"}
         )
-        spec = build_artifact_from_image_uri(
-            artifact_name="a", container_name="c", container_port=8080, image_uri="img"
+        spec = _image_build_spec(
+            artifact_name="a",
+            dockerfile=_dockerfile(),
+            container_name="c",
+            container_port=8080,
+            environment_vars=[],
+            routes=[],
+            code_ref=CodeRef(
+                datarobot=CodeRefDatarobot(catalog_id="cat", catalog_version_id="ver")
+            ),
         )
         assert client.create_artifact(spec) == "artifact-1"
+        _, kwargs = client._session.post.call_args
+        assert kwargs["json"]["name"] == "a"
 
     def test_delete_artifact_swallows_404(self):
         client = self._client()
@@ -477,7 +481,7 @@ class TestWorkloadArtifactProviders:
     def test_generated_provider_create_passes_readiness_probe(self, monkeypatch):
         monkeypatch.setenv(DATAROBOT_API_TOKEN_ENV, "tok")
         monkeypatch.setattr(
-            "workload_api.resources.build_artifact_with_generated_dockerfile",
+            f"{_RESOURCES_MODULE}.build_artifact_with_generated_dockerfile",
             MagicMock(return_value="artifact-1"),
         )
         provider = WorkloadGeneratedImageArtifactProvider()
@@ -499,11 +503,43 @@ class TestWorkloadArtifactProviders:
         )
         assert result.id == "artifact-1"
 
-        from workload_api.resources import build_artifact_with_generated_dockerfile
+        from infra.{{agent_app_name}}_infra.workload_api.resources import (
+            build_artifact_with_generated_dockerfile as mocked_build,
+        )
 
-        _, kwargs = build_artifact_with_generated_dockerfile.call_args
+        _, kwargs = mocked_build.call_args
         assert isinstance(kwargs["readiness_probe"], ReadinessProbe)
         assert kwargs["readiness_probe"].port == 8080
+
+    def test_generated_provider_create_without_readiness_probe(self, monkeypatch):
+        monkeypatch.setenv(DATAROBOT_API_TOKEN_ENV, "tok")
+        monkeypatch.setattr(
+            f"{_RESOURCES_MODULE}.build_artifact_with_generated_dockerfile",
+            MagicMock(return_value="artifact-1"),
+        )
+        provider = WorkloadGeneratedImageArtifactProvider()
+        provider.create(
+            {
+                "workload_api_endpoint": "https://wapi.example.com",
+                "artifact_name": "agent",
+                "application_path": "/tmp/agent-app",
+                "execution_environment_id": "ee-1",
+                "execution_environment_version_id": "ee-v1",
+                "entrypoint": ["sh", "run_server.sh"],
+                "container_name": "agent",
+                "container_port": 8080,
+                "environment_vars": [],
+                "routes": [],
+                "build_timeout_s": 100,
+            }
+        )
+
+        from infra.{{agent_app_name}}_infra.workload_api.resources import (
+            build_artifact_with_generated_dockerfile as mocked_build,
+        )
+
+        _, kwargs = mocked_build.call_args
+        assert kwargs["readiness_probe"] is None
 
     def test_generated_provider_diff_replaces_on_tracked_change(self):
         provider = WorkloadGeneratedImageArtifactProvider()
@@ -526,7 +562,7 @@ class TestWorkloadArtifactProviders:
         monkeypatch.setenv(DATAROBOT_API_TOKEN_ENV, "tok")
         mock_client = MagicMock()
         monkeypatch.setattr(
-            "workload_api.resources.WorkloadClient",
+            f"{_RESOURCES_MODULE}.WorkloadClient",
             MagicMock(return_value=mock_client),
         )
         provider = WorkloadGeneratedImageArtifactProvider()

@@ -17,8 +17,7 @@ dependencies = [
 # requests is not declared directly: it's already a transitive dependency of
 # datarobot-pulumi-utils (via the datarobot client) and used as such elsewhere
 # in this codebase (e.g. `import datarobot as dr`) -- workload_api relies
-# on that same transitive availability (see recipe-fastmcp-template's
-# infra/pyproject.toml, which takes the identical approach).
+# on that same transitive availability.
 
 [project.optional-dependencies]
 dev = [

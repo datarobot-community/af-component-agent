@@ -20,12 +20,18 @@ anywhere in this module (Playground for this runtime is an explicit, deferred
 follow-up; see docs/agent/deployment-runtimes.md). Selects one of two
 deployment scenarios based on env vars; see ``provision_workload_agent()``'s
 docstring for the exact precedence. Self-contained: everything specific to
-this runtime lives here or in ``workload_api/`` (HTTP/Pulumi-provider only, no
-deployment decisions). Never checks ``ENABLE_AGENT_ON_WORKLOAD_API`` itself —
-the entry router is the only place that branches on it.
+this runtime lives here or in the ``workload_api/`` subpackage (HTTP client and
+Pulumi dynamic provider only, no deployment decisions). Never checks
+``ENABLE_AGENT_ON_WORKLOAD_API`` itself — the entry router is the only place
+that branches on it.
 
-Source upload for the C2W scenario is handled by ``workload_api.artifact_code``
-(a stand-in until native Pulumi ``ArtifactCode`` support ships).
+The payloads the platform receives are assembled here: the container env vars
+and, for the pre-built-image scenario, the whole artifact payload — which needs
+no client at all, since ``pulumi_datarobot.Artifact`` posts it for us. Both are
+built in the Workload API's own wire format (camelCase) because they are
+forwarded verbatim. Source upload for the C2W scenario is handled by
+``workload_api.artifact_code`` (a stand-in until native Pulumi ``ArtifactCode``
+support ships).
 """
 
 from __future__ import annotations
@@ -38,20 +44,20 @@ from typing import Any, Final
 import pulumi
 import pulumi_datarobot
 from datarobot_pulumi_utils.pulumi import export
-from workload_api import (
-    WorkloadGeneratedImageArtifact,
-    build_artifact_from_image_uri,
-    source_hash,
-)
-from workload_api.client import ReadinessProbe
 
 from . import base
+from .workload_api import (
+    WORKLOAD_ARTIFACT_TYPE,
+    ReadinessProbe,
+    WorkloadGeneratedImageArtifact,
+    source_hash,
+)
 
 WORKLOAD_CONTAINER_NAME: Final[str] = "{{ agent_app_name | replace('_', '-') }}"
 DEFAULT_WORKLOAD_CONTAINER_PORT: Final[int] = 8080
 RUN_SERVER_RELATIVE_PATH: Final[str] = "workload/run_server.sh"
-# Agent images carry framework + ML dependencies and build considerably longer
-# than MCP's small server image (whose DEFAULT_BUILD_TIMEOUT_S is 6000).
+# 2.5h. Agent images carry a full framework + ML dependency set, so a cold
+# platform build takes considerably longer than a plain web-server image.
 DEFAULT_BUILD_TIMEOUT_S: Final[int] = 9000
 # Entrypoint for the platform-generated Dockerfile C2W build.
 DEFAULT_GENERATED_ENTRYPOINT: Final[list[str]] = [
@@ -62,8 +68,8 @@ DEFAULT_GENERATED_ENTRYPOINT: Final[list[str]] = [
 # "dr-credential" env var references in Workload artifact specs.
 DR_CREDENTIAL_API_TOKEN_KEY: Final[str] = "apiToken"
 DEFAULT_WORKLOAD_CPU: Final[str] = "1"
-# ~1.5 GiB: comfortably above MCP's 512 MiB default for an agent process (LLM
-# client libraries, framework deps) without over-provisioning by default.
+# 1.5 GiB: room for an agent process (LLM client libraries, framework deps)
+# without over-provisioning every deployment by default.
 DEFAULT_WORKLOAD_MEMORY_BYTES: Final[int] = 1536 * 1024 * 1024
 
 
@@ -166,6 +172,39 @@ def _workload_environment_vars(
         },
         *_runtime_param_env_vars(shared_runtime_parameters),
     ]
+
+
+def _image_uri_artifact_args(
+    *,
+    artifact_name: str,
+    image_uri: str,
+    environment_vars: list[dict[str, Any]],
+    entrypoints: list[str] | None,
+) -> dict[str, Any]:
+    """Build the ``pulumi_datarobot.Artifact`` arguments for a pre-built image.
+
+    The pre-built-image scenario reaches the platform entirely through the
+    Pulumi provider, so this payload is the whole integration — no HTTP client,
+    no artifact build to wait on. Keys are the Workload API's own wire format
+    and are forwarded by the provider as-is (see the module docstring).
+    """
+    container: dict[str, Any] = {
+        "name": WORKLOAD_CONTAINER_NAME,
+        "primary": True,
+        "port": _resolve_container_port(),
+        "imageUri": image_uri,
+        "environmentVars": environment_vars,
+        "routes": [],
+        "readinessProbe": _readiness_probe().to_wire(),
+    }
+    if entrypoints is not None:
+        # Omitting the key entirely keeps the image's own CMD/entrypoint.
+        container["entrypoints"] = entrypoints
+    return {
+        "name": artifact_name,
+        "type": WORKLOAD_ARTIFACT_TYPE,
+        "spec": {"containerGroups": [{"containers": [container]}]},
+    }
 
 
 def _create_generated_image_artifact(
@@ -330,20 +369,15 @@ def _provision_from_image_uri(
         f"Workload scenario: pre-built image from personal registry ({image_uri})."
     )
 
-    workload_artifact_spec = build_artifact_from_image_uri(
-        artifact_name=base.{{agent_app_name}}_asset_name,
-        container_name=WORKLOAD_CONTAINER_NAME,
-        container_port=_resolve_container_port(),
-        image_uri=image_uri,
-        environment_vars=_workload_environment_vars(shared_runtime_parameters),
-        # Only override the image's own CMD/entrypoint when explicitly configured.
-        entrypoints=_explicit_workload_entrypoint(),
-        readiness_probe=_readiness_probe(),
-    )
-
     artifact = pulumi_datarobot.Artifact(
         base.{{agent_app_name}}_asset_name + " Workload Artifact [Image URI]",
-        **workload_artifact_spec.to_payload(),
+        **_image_uri_artifact_args(
+            artifact_name=base.{{agent_app_name}}_asset_name,
+            image_uri=image_uri,
+            environment_vars=_workload_environment_vars(shared_runtime_parameters),
+            # Only override the image's own CMD/entrypoint when explicitly configured.
+            entrypoints=_explicit_workload_entrypoint(),
+        ),
     )
 
     workload = _create_workload(

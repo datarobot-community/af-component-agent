@@ -14,9 +14,11 @@
 
 """Workload API wire models, HTTP client, and image-build orchestration.
 
-Agents expose an HTTP health endpoint that the platform should poll before
-routing traffic to a replica. Source upload for image-build scenarios lives in
-``artifact_code.py`` (stand-in for native Pulumi ``ArtifactCode`` support).
+The HTTP client covers the platform-built-image path only: the pre-built-image
+path needs no client at all, since ``../workload.py`` hands its payload straight
+to ``pulumi_datarobot.Artifact``. The wire models here are shared by both paths.
+Source upload for image builds lives in ``artifact_code.py`` (stand-in for
+native Pulumi ``ArtifactCode`` support).
 """
 
 from __future__ import annotations
@@ -67,9 +69,9 @@ def _to_camel_case(snake_str: str) -> str:
 def _to_wire(value: Any) -> Any:
     """Serialize spec dataclasses to the camelCase wire format, dropping None fields.
 
-    Leaf values are passed through by reference (deliberately no deepcopy):
-    when the spec feeds a ``pulumi_datarobot.Artifact``, values may be pulumi
-    Outputs, which cannot be copied.
+    Dicts are already in wire format and pass through untouched: container env
+    vars are built that way by ``../workload.py`` so they reach the platform
+    verbatim.
     """
     if dataclasses.is_dataclass(value) and not isinstance(value, type):
         return {
@@ -88,9 +90,9 @@ def _to_wire(value: Any) -> Any:
 class ReadinessProbe:
     """Container readiness probe for the workload's HTTP health endpoint.
 
-    Agent-specific addition (not present in MCP's client): agents built on
-    ``datarobot_genai.dragent`` expose a ``/health`` endpoint, and the platform
-    should not route traffic to a replica until it responds.
+    Agents built on ``datarobot_genai.dragent`` expose a ``/health`` endpoint,
+    and the platform should not route traffic to a replica until it responds.
+    The defaults give a replica ``10 + 6 * 10`` = 70 seconds to come up.
     """
 
     path: str = "/health"
@@ -100,6 +102,15 @@ class ReadinessProbe:
     timeout_seconds: int = 5
     failure_threshold: int = 6
     scheme: str = "HTTP"
+
+    def to_wire(self) -> dict[str, Any]:
+        """camelCase form, for payloads assembled outside this module.
+
+        Nested probes are serialized by ``_to_wire`` along with their container;
+        this is for the pre-built-image payload, which ``../workload.py`` builds
+        as a plain dict.
+        """
+        return dict(_to_wire(self))
 
 
 @dataclass
@@ -152,39 +163,6 @@ class ArtifactSpecFromImageBuildConfig:
 class WorkloadArtifactSpecFromImageBuildConfig:
     name: str
     spec: ArtifactSpecFromImageBuildConfig
-    type: str = WORKLOAD_ARTIFACT_TYPE
-
-    def to_payload(self) -> dict:
-        return _to_wire(self)
-
-
-@dataclass
-class ContainerImageUri:
-    name: str
-    primary: bool
-    port: int
-    image_uri: str
-    environment_vars: list[dict[str, str]] = field(default_factory=list)
-    # None omits the key so the image's own entrypoint is used.
-    entrypoints: list[str] | None = None
-    routes: list[dict[str, str]] = field(default_factory=list)
-    readiness_probe: ReadinessProbe | None = None
-
-
-@dataclass
-class ContainerGroupImageUri:
-    containers: list[ContainerImageUri]
-
-
-@dataclass
-class ArtifactSpecFromImageUri:
-    container_groups: list[ContainerGroupImageUri]
-
-
-@dataclass
-class WorkloadArtifactSpecFromImageUri:
-    name: str
-    spec: ArtifactSpecFromImageUri
     type: str = WORKLOAD_ARTIFACT_TYPE
 
     def to_payload(self) -> dict:
@@ -396,32 +374,3 @@ def build_artifact_with_generated_dockerfile(
     )
     client = WorkloadClient(endpoint=workload_api_endpoint, token=workload_api_token)
     return _create_and_build_artifact(client, artifact_spec, build_timeout_s)
-
-
-def build_artifact_from_image_uri(
-    *,
-    artifact_name: str,
-    container_name: str,
-    container_port: int,
-    image_uri: str,
-    environment_vars: list[dict[str, str]] | None = None,
-    entrypoints: list[str] | None = None,
-    routes: list[dict[str, str]] | None = None,
-    readiness_probe: ReadinessProbe | None = None,
-) -> WorkloadArtifactSpecFromImageUri:
-    container = ContainerImageUri(
-        name=container_name,
-        primary=True,
-        port=container_port,
-        image_uri=image_uri,
-        environment_vars=environment_vars if environment_vars is not None else [],
-        entrypoints=entrypoints,
-        routes=routes if routes is not None else [],
-        readiness_probe=readiness_probe,
-    )
-    return WorkloadArtifactSpecFromImageUri(
-        name=artifact_name,
-        spec=ArtifactSpecFromImageUri(
-            container_groups=[ContainerGroupImageUri(containers=[container])]
-        ),
-    )
