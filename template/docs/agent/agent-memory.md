@@ -30,9 +30,9 @@ When you generate or update a project with Copier (including the first `dr start
 |---|---|---|
 | None | `none` | Default. No memory dependency or workflow changes. |
 | Mem0 | `mem0` | External [Mem0](https://mem0.ai/) service. Requires a Mem0 API key. |
-| DataRobot Memory Service | `datarobot_memory_service` | DataRobot-managed memory space provisioned by Pulumi with its own LLM routing (defaults to the agent LLM component when it uses LLM Gateway; see [Memory space LLM (DataRobot Memory Service)](#memory-space-llm-datarobot-memory-service)). |
+| Datarobot Memory Service | `datarobot_memory_service` | DataRobot-managed memory space provisioned by Pulumi with its own LLM routing (defaults to the agent LLM component when it uses LLM Gateway; see [Memory space LLM (DataRobot Memory Service)](#memory-space-llm-datarobot-memory-service)). |
 
-When the agent LLM uses **LLM Gateway** or a **deployed LLM** (including External LLM via `blueprint_with_external_llm.py`), the memory space reuses that configuration automatically&mdash;no extra prompts. You can set `AGENT_MEMORY_LLM_BASE_URL`, `AGENT_MEMORY_LLM_MODEL_NAME`, or `AGENT_MEMORY_LLM_DEPLOYMENT_ID` in `.env` to override memory-space routing; changes take effect the next time you run `task deploy-dev` (or `dr start`, which provisions/applies infra).
+When the agent LLM uses LLM Gateway or a deployed LLM (including External LLM via `blueprint_with_external_llm.py`), the memory space reuses that configuration automatically&mdash;no extra prompts. You can set `AGENT_MEMORY_LLM_BASE_URL`, `AGENT_MEMORY_LLM_MODEL_NAME`, or `AGENT_MEMORY_LLM_DEPLOYMENT_ID` in `.env` to override memory-space routing; changes take effect the next time you run `task deploy-dev` (or `dr start`, which provisions/applies infra).
 
 To pass the value non-interactively:
 
