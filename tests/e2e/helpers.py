@@ -23,12 +23,10 @@ import os
 from pathlib import Path
 
 import pytest
-from openai.types.chat import ChatCompletion
 
-from ._process import fprint, is_truthy, response_snippet, run_cmd, task_cmd
+from ._process import is_truthy, run_cmd, task_cmd
 
 ALL_FRAMEWORKS = ("base", "crewai", "langgraph", "llamaindex", "nat")
-RESPONSE_SNIPPET_CHARS = 50
 
 
 def render_project(*, repo_root: Path, agent_framework: str) -> tuple[Path, Path]:
@@ -100,28 +98,6 @@ def pulumi_stack_output_value(
             f"Pulumi stack output value for {matches[-1]!r} was not a non-empty string: {val!r}"
         )
     return val.strip()
-
-
-def verify_openai_response(completion: ChatCompletion) -> None:
-    """Verify a ChatCompletion has at least one choice with non-empty string content."""
-    try:
-        message_content = completion.choices[0].message.content
-    except (AttributeError, IndexError) as e:
-        pytest.fail(
-            f"ChatCompletion did not include choices[0].message.content: {e}\n"
-            f"Completion: {completion!r}"
-        )
-
-    if not isinstance(message_content, str) or len(message_content.strip()) <= 5:
-        pytest.fail(f"Message content too short: {message_content!r}")
-
-    fprint("Valid agent response")
-    fprint(
-        f"Response content (first {RESPONSE_SNIPPET_CHARS} chars): "
-        f"{response_snippet(message_content, max_chars=RESPONSE_SNIPPET_CHARS)!r}"
-    )
-    if is_truthy(os.environ.get("E2E_DEBUG")):
-        fprint(f"Full response content:\n{message_content}")
 
 
 def require_e2e_enabled() -> None:
