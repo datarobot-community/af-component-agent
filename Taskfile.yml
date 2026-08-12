@@ -51,6 +51,14 @@ tasks:
       - task: install-e2e
       - task: e2e
 
+  test-e2e-workload:
+    # Deliberately not folded into `test-e2e`: a real Workload API deploy builds
+    # a container image on the platform, and there would be no way to opt out.
+    desc: "Install + run Workload API E2E"
+    cmds:
+      - task: install-e2e
+      - task: e2e-workload
+
   render-template:
     desc: "Render template"
     vars:
@@ -406,4 +414,23 @@ tasks:
             RUN_E2E=1 uv run --all-extras --active pytest --import-mode=importlib -vv -s ./tests/e2e/test_agent_e2e.py
           else
             RUN_E2E=1 uv run --all-extras pytest --import-mode=importlib -vv -s ./tests/e2e/test_agent_e2e.py
+          fi
+
+  e2e-workload:
+    desc: "Run Workload API E2E (set RUN_AGENT_WORKLOAD_DEPLOY_TESTS=0 for plan-only)"
+    cmds:
+      - echo "Running Workload API E2E"
+      - |
+          # Load local repo `.env` (gitignored) if present.
+          # Keep it scoped to E2E so credentials don't leak into unrelated tasks.
+          set -a
+          if [ -f ".env" ]; then
+            . ".env"
+          fi
+          set +a
+
+          if [ -n "${VIRTUAL_ENV:-}" ]; then
+            RUN_E2E=1 uv run --all-extras --active pytest --import-mode=importlib -vv -s ./tests/e2e/test_agent_workload_e2e.py
+          else
+            RUN_E2E=1 uv run --all-extras pytest --import-mode=importlib -vv -s ./tests/e2e/test_agent_workload_e2e.py
           fi

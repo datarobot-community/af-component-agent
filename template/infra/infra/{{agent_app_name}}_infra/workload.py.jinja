@@ -162,9 +162,9 @@ def _workload_environment_vars(
     ],
 ) -> list[dict[str, Any]]:
     return [
-        # Pulls DATAROBOT_API_TOKEN from the local env into the workload; the
-        # platform injects DATAROBOT_API_ENDPOINT and WORKLOAD_ID automatically
-        # and they must not be listed here — the platform injects them automatically.
+        # Pulls DATAROBOT_API_TOKEN from the local env into the workload. The
+        # platform injects DATAROBOT_ENDPOINT and WORKLOAD_ID automatically, so
+        # they must not be listed here.
         {"source": "api-key"},
         {
             "name": "WORKLOAD_CONTAINER_PORT",
