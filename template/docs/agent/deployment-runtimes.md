@@ -21,7 +21,7 @@ Within the Workload API there are two paths. The default one builds the image fo
 
 - Pick **Custom Models** if you want the Playground, a deployment ID, or deployment monitoring.
 - Pick **Workload API + C2W** if you want a leaner serving-only deploy and no Docker tooling of your own.
-- Pick **Workload API + your own image** if you already build and publish the agent image in CI.
+- Pick **Workload API + your own image** if you already build and publish the agent image in CI, or if your organization requires images to be scanned and served from a registry it controls.
 
 ---
 
@@ -84,14 +84,21 @@ Set `WORKLOAD_AGENT_IMAGE_URI` to an image DataRobot can pull. The image must li
 
 Leave `WORKLOAD_ENTRYPOINT` unset to keep the image's own entrypoint — unlike C2W, nothing is substituted for you. No execution environment is created in this scenario, so `DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT` and `WORKLOAD_BUILD_TIMEOUT_S` have no effect.
 
+> [!NOTE]
+> DataRobot's drop-in execution environments cannot currently be used as the base image for an image you build yourself. Start from your own base image and install the agent's dependencies as part of that build.
+
 ---
 
 ## What changes trigger a rebuild
 
-Workload artifacts are **replace-on-change**: there is no in-place update, so any tracked change creates a new artifact and discards the old one. The rule of thumb:
+An artifact is locked before its image is built, and nothing inside a locked artifact can be edited afterwards. Anything that lives in the artifact spec therefore costs a new artifact and a new build:
 
-- **New image build** — agent source, dependencies, container port, entrypoint, or any environment variable passed to the container.
+- **New artifact and image build** — agent source, dependencies, container port, entrypoint, or any environment variable passed to the container.
 - **Workload update only, no rebuild** — CPU, memory, replica count, and importance.
+
+Environment variables landing in the first group is the surprising one: they are part of the artifact spec, not of the running workload, so changing one is as expensive as changing code.
+
+The workload itself is not recreated in either case. Pulumi relinks it to the new artifact, so it keeps its ID and endpoint and callers stay pointed at the right place across rebuilds.
 
 What counts as "agent source" is decided by the `.wapiignore` file at the agent app root — the same archived bytes are both uploaded and hashed, so editing an ignored file changes nothing. Read that file for the default exclusions.
 
@@ -112,7 +119,12 @@ This runtime is serving-only. Compared with Custom Models, these are not created
 
 ## Switching runtimes
 
-Switching is a supported, one-variable change in both directions — flip `ENABLE_AGENT_ON_WORKLOAD_API` and redeploy with `dr run deploy`. Pulumi reconciles the existing stack by creating the new runtime's resources and deleting the old runtime's, in place; you do not need a fresh stack.
+Switching is a supported, one-variable change in both directions — flip `ENABLE_AGENT_ON_WORKLOAD_API` and redeploy with `dr run deploy`. Pulumi reconciles the existing stack in place, creating the incoming runtime's resources and deleting the outgoing runtime's; you do not need a fresh stack.
+
+What gets deleted:
+
+- **Workload API → Custom Models** deletes the workload and its artifact. The built image is not kept, so switching back rebuilds it from source.
+- **Custom Models → Workload API** deletes the custom model, Playground, LLM blueprint, and deployment — including that deployment's monitoring history.
 
 Two things to plan for either way:
 
