@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import asyncio
 import sys
 import os
 from pathlib import Path
@@ -27,6 +28,10 @@ AGENT_MEMORY_TTL_DAYS = "AGENT_MEMORY_TTL_DAYS"
 # Patch all Pulumi resources and functions used in the module
 @pytest.fixture(autouse=True)
 def pulumi_mocks(monkeypatch, tmp_path):
+    # Python 3.14+ no longer auto-creates an event loop on the main thread, but
+    # Pulumi resource registration requires one when infra is first imported.
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     monkeypatch.setenv("PULUMI_STACK_CONTEXT", "unittest")
     # Neutralize the module-level export() calls in infra.__init__ before the
     # first infra import below triggers them outside a pulumi Stack context.
@@ -164,6 +169,8 @@ def pulumi_mocks(monkeypatch, tmp_path):
 
     yield
     patcher.stop()
+    loop.close()
+    asyncio.set_event_loop(None)
 
 
 def test_execution_environment_not_set_and_docker_context(monkeypatch):
@@ -203,11 +210,13 @@ def test_execution_environment_not_set_with_docker_image(monkeypatch):
     """Test execution environment creation when DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT is not set and docker_context.tar.gz exists"""
     monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
 
-    # Mock os.path.exists to return True for docker_context.tar.gz
+    # Python 3.14 pathlib.Path.exists() passes a Path into os.path.exists.
+    real_exists = os.path.exists
+
     def mock_exists(path):
-        if path.endswith("docker_context.tar.gz"):
+        if os.fspath(path).endswith("docker_context.tar.gz"):
             return True
-        return False
+        return real_exists(path)
 
     monkeypatch.setattr("os.path.exists", mock_exists)
 
@@ -1096,6 +1105,104 @@ class TestMemorySpaceLlmRouting:
             == "https://app.datarobot.com/api/v2/deployments/deployment-123"
         )
 
+    def test_configure_memory_space_llm_routing_uses_agent_deployed_placeholder(
+        self, monkeypatch
+    ):
+        import infra.{{agent_app_name}} as agent_infra
+
+        captured: dict[str, str | None] = {}
+
+        def _capture(space_id: str, **kwargs: str | None) -> str:
+            captured.update(kwargs)
+            return space_id
+
+        monkeypatch.setattr(agent_infra, "_configure_memory_space_llm", _capture)
+        monkeypatch.setattr(
+            "datarobot_pulumi_utils.common.get_datarobot_url",
+            lambda: "https://app.datarobot.com/api/v2",
+        )
+        agent_infra._configure_memory_space_llm_routing(
+            "test-space-id",
+            agent_default_model="datarobot-deployed-llm",
+            agent_deployment_id="deployment-123",
+        )
+
+        assert captured == {
+            "llm_model_name": "datarobot-deployed-llm",
+            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/deployment-123",
+        }
+
+    def test_configure_memory_space_llm_routing_override_base_url(self, monkeypatch):
+        import infra.{{agent_app_name}} as agent_infra
+
+        captured: dict[str, str | None] = {}
+
+        def _capture(space_id: str, **kwargs: str | None) -> str:
+            captured.update(kwargs)
+            return space_id
+
+        monkeypatch.setattr(agent_infra, "_configure_memory_space_llm", _capture)
+        monkeypatch.setattr(
+            agent_infra,
+            "_deployment_llm_base_url",
+            lambda _: (_ for _ in ()).throw(AssertionError("should not be called")),
+        )
+        agent_infra._configure_memory_space_llm_routing(
+            "test-space-id",
+            agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
+            agent_deployment_id="deployment-123",
+            override_base_url="https://custom.example.com/v1",
+        )
+
+        assert captured == {
+            "llm_model_name": "azure/gpt-5-mini-2025-08-07",
+            "llm_base_url": "https://custom.example.com/v1",
+        }
+
+    def test_configure_memory_space_llm_routing_rejects_base_url_and_deployment(
+        self,
+    ):
+        import infra.{{agent_app_name}} as agent_infra
+
+        with pytest.raises(
+            ValueError,
+            match="Set only one of AGENT_MEMORY_LLM_BASE_URL or AGENT_MEMORY_LLM_DEPLOYMENT_ID.",
+        ):
+            agent_infra._configure_memory_space_llm_routing(
+                "test-space-id",
+                agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
+                override_base_url="https://custom.example.com/v1",
+                override_deployment_id="memory-deployment-456",
+            )
+
+    def test_configure_memory_space_llm_routing_override_deployment_without_model(
+        self, monkeypatch
+    ):
+        import infra.{{agent_app_name}} as agent_infra
+
+        captured: dict[str, str | None] = {}
+
+        def _capture(space_id: str, **kwargs: str | None) -> str:
+            captured.update(kwargs)
+            return space_id
+
+        monkeypatch.setattr(agent_infra, "_configure_memory_space_llm", _capture)
+        monkeypatch.setattr(
+            "datarobot_pulumi_utils.common.get_datarobot_url",
+            lambda: "https://app.datarobot.com/api/v2",
+        )
+        agent_infra._configure_memory_space_llm_routing(
+            "test-space-id",
+            agent_default_model="datarobot-deployed-llm",
+            agent_deployment_id="agent-deployment-123",
+            override_deployment_id="memory-deployment-456",
+        )
+
+        assert captured == {
+            "llm_model_name": "datarobot-deployed-llm",
+            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/memory-deployment-456",
+        }
+
     def test_configure_memory_space_llm_routing_defaults_to_gateway(self, monkeypatch):
         import infra.{{agent_app_name}} as agent_infra
 
@@ -1154,6 +1261,29 @@ class TestMemorySpaceLlmRouting:
             "test-space-id",
             agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
             agent_deployment_id="deployment-123",
+            override_model_name="datarobot/anthropic/claude-opus-4-20250514",
+        )
+
+        assert captured == {
+            "llm_model_name": "anthropic/claude-opus-4-20250514",
+            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/deployment-123",
+        }
+
+    def test_configure_memory_space_llm_routing_override_model_name_gateway_only(
+        self, monkeypatch
+    ):
+        import infra.{{agent_app_name}} as agent_infra
+
+        captured: dict[str, str | None] = {}
+
+        def _capture(space_id: str, **kwargs: str | None) -> str:
+            captured.update(kwargs)
+            return space_id
+
+        monkeypatch.setattr(agent_infra, "_configure_memory_space_llm", _capture)
+        agent_infra._configure_memory_space_llm_routing(
+            "test-space-id",
+            agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
             override_model_name="datarobot/anthropic/claude-opus-4-20250514",
         )
 
