@@ -486,6 +486,54 @@ class TestCheckA2aServerEnabled:
         assert base.check_a2a_server_enabled() is False
 
 
+class TestCheckA2aUnauthenticatedWellKnownRouteEnabled:
+    def test_true_when_flag_set_in_workflow_yaml(self, monkeypatch, tmp_path):
+        import infra.{{agent_app_name}}_infra.base as base
+
+        agent_dir = tmp_path.parent / "{{agent_app_name}}"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        (agent_dir / "workflow.yaml").write_text(
+            "general:\n  front_end:\n    a2a:\n"
+            "      enable_unauthenticated_well_known_route: true\n"
+            "      server:\n        name: test\n"
+        )
+        monkeypatch.setattr(base, "project_dir", tmp_path)
+
+        assert base.check_a2a_unauthenticated_well_known_route_enabled() is True
+
+    def test_false_when_flag_absent(self, monkeypatch, tmp_path):
+        import infra.{{agent_app_name}}_infra.base as base
+
+        agent_dir = tmp_path.parent / "{{agent_app_name}}"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        (agent_dir / "workflow.yaml").write_text(
+            "general:\n  front_end:\n    a2a:\n      server:\n        name: test\n"
+        )
+        monkeypatch.setattr(base, "project_dir", tmp_path)
+
+        assert base.check_a2a_unauthenticated_well_known_route_enabled() is False
+
+    def test_false_when_flag_explicitly_false(self, monkeypatch, tmp_path):
+        import infra.{{agent_app_name}}_infra.base as base
+
+        agent_dir = tmp_path.parent / "{{agent_app_name}}"
+        agent_dir.mkdir(parents=True, exist_ok=True)
+        (agent_dir / "workflow.yaml").write_text(
+            "general:\n  front_end:\n    a2a:\n"
+            "      enable_unauthenticated_well_known_route: false\n"
+            "      server:\n        name: test\n"
+        )
+        monkeypatch.setattr(base, "project_dir", tmp_path)
+
+        assert base.check_a2a_unauthenticated_well_known_route_enabled() is False
+
+    def test_false_when_workflow_yaml_absent(self, monkeypatch, tmp_path):
+        import infra.{{agent_app_name}}_infra.base as base
+
+        monkeypatch.setattr(base, "project_dir", tmp_path)
+        assert base.check_a2a_unauthenticated_well_known_route_enabled() is False
+
+
 class TestBuildSharedAgentRuntimeParameters:
     def test_always_includes_gunicorn_timeout(self, monkeypatch):
         import infra.{{agent_app_name}}_infra.base as base

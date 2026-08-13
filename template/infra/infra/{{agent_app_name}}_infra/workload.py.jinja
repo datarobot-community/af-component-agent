@@ -71,6 +71,22 @@ DEFAULT_WORKLOAD_CPU: Final[str] = "1"
 # 1.5 GiB: room for an agent process (LLM client libraries, framework deps)
 # without over-provisioning every deployment by default.
 DEFAULT_WORKLOAD_MEMORY_BYTES: Final[int] = 1536 * 1024 * 1024
+A2A_UNAUTHENTICATED_WELL_KNOWN_ARTIFACT_ROUTE: Final[dict[str, str]] = {
+    "path": "/a2a/.well-known/agent-card.json",
+    "auth": "optional",
+}
+
+
+def _workload_artifact_routes() -> list[dict[str, str]]:
+    """Workload artifact routes derived from ``workflow.yaml`` A2A settings.
+
+    When ``enable_unauthenticated_well_known_route`` is truthy, the platform
+    must expose the well-known agent card path with optional auth so anonymous
+    callers can fetch a redacted card.
+    """
+    if base.IS_A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENABLED:
+        return [dict(A2A_UNAUTHENTICATED_WELL_KNOWN_ARTIFACT_ROUTE)]
+    return []
 
 
 def _require_env(name: str) -> str:
@@ -194,7 +210,7 @@ def _image_uri_artifact_args(
         "port": _resolve_container_port(),
         "imageUri": image_uri,
         "environmentVars": environment_vars,
-        "routes": [],
+        "routes": _workload_artifact_routes(),
         "readinessProbe": _readiness_probe().to_wire(),
     }
     if entrypoints is not None:
@@ -232,7 +248,7 @@ def _create_generated_image_artifact(
         container_name=WORKLOAD_CONTAINER_NAME,
         container_port=_resolve_container_port(),
         environment_vars=environment_vars,
-        routes=[],
+        routes=_workload_artifact_routes(),
         source_hash=bundle_hash,
         build_timeout_s=build_timeout_s,
         readiness_probe=dataclasses.asdict(_readiness_probe()),

@@ -249,6 +249,31 @@ class TestImageUriArtifactArgs:
         assert container["environmentVars"] == [{"source": "api-key"}]
         assert container["readinessProbe"]["path"] == "/health"
 
+    def test_routes_empty_by_default(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(
+            workload.base,
+            "IS_A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENABLED",
+            False,
+        )
+        _, container = self._container(workload)
+        assert container["routes"] == []
+
+    def test_routes_include_well_known_when_enabled(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(
+            workload.base,
+            "IS_A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENABLED",
+            True,
+        )
+        _, container = self._container(workload)
+        assert container["routes"] == [
+            {
+                "path": "/a2a/.well-known/agent-card.json",
+                "auth": "optional",
+            }
+        ]
+
     def test_entrypoints_omitted_when_unset(self, monkeypatch):
         """Omitting the key keeps the image's own CMD/entrypoint."""
         workload = _workload_module(monkeypatch)
@@ -471,6 +496,27 @@ class TestProvisionWorkloadAgentSourceBundleScenarios:
             "failure_threshold": 6,
             "scheme": "HTTP",
         }
+
+    def test_well_known_route_passed_to_generated_image_artifact(
+        self, monkeypatch, tmp_path
+    ):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
+        monkeypatch.setattr(
+            workload.base,
+            "IS_A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENABLED",
+            True,
+        )
+
+        workload.provision_workload_agent([])
+
+        _, kwargs = workload.WorkloadGeneratedImageArtifact.call_args
+        assert kwargs["routes"] == [
+            {
+                "path": "/a2a/.well-known/agent-card.json",
+                "auth": "optional",
+            }
+        ]
 
 
 class TestProvisionWorkloadAgentExports:
