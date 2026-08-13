@@ -1,10 +1,12 @@
 ---
 # https://taskfile.dev
 version: '3'
+
 env:
   # Opt out of NeMo Agent Toolkit anonymous CLI telemetry and skip its interactive
   # [Y/n] consent prompt, which otherwise blocks non-interactive `nat dragent` runs.
-  NAT_TELEMETRY_ENABLED: 'false'
+  NAT_TELEMETRY_ENABLED: "false"
+
 vars:
   # Cross-platform environment cleaning - uses 'env -u' on Unix systems, falls back to empty string on Windows
   UV_CMD:
@@ -29,18 +31,23 @@ tasks:
     desc: 🛠️ Install agent uv dependencies
     cmds:
       - echo "Updating local dependencies for {{ agent_app_name }}"
-      - '{% raw %}{{.UV_CMD}}{% endraw %} sync --extra dev'
+      - "{% raw %}{{.UV_CMD}}{% endraw %} sync --extra dev"
       - if [ -f pyproject.toml ] && [ -d docker_context ]; then cp pyproject.toml docker_context/pyproject.toml; fi
       - if [ -f uv.lock ] && [ -d docker_context ]; then cp uv.lock docker_context/uv.lock; fi
-    aliases: [req]
+    aliases:
+      - req
+
   update:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
     # desc: 🛠️ Update local dependencies (refresh uv locks)
-    cmds: [echo "Updating local dependencies for {{ agent_app_name }}", '{% raw %}{{.UV_CMD}}{% endraw %} sync --extra dev -U']
+    cmds:
+      - echo "Updating local dependencies for {{ agent_app_name }}"
+      - "{% raw %}{{.UV_CMD}}{% endraw %} sync --extra dev -U"
     silent: true
+
   auth-check:
     silent: true
-    desc: 🔐 Check authentication prerequisites
+    desc: "🔐 Check authentication prerequisites"
     cmds:
       - |
         if command -v dr &> /dev/null && dr auth help 2>&1 | grep -q "check"; then
@@ -49,39 +56,47 @@ tasks:
         else
           echo "ℹ️  Skipping auth check (not available)"
         fi
+
   add-dependency:
     desc: 🛠️ Add provided packages as a new dependency to an agent
     cmds:
       - echo "Adding new dependency for {{ agent_app_name }} into 'extras' dependency group"
-      - '{% raw %}{{.UV_CMD}}{% endraw %} add --no-upgrade --group extras {% raw %}{{.CLI_ARGS}}{% endraw %}'
+      - "{% raw %}{{.UV_CMD}}{% endraw %} add --no-upgrade --group extras {% raw %}{{.CLI_ARGS}}{% endraw %}"
     silent: true
+
   lint:
-    desc: 🧹 Run linters
+    desc: "🧹 Run linters"
     cmds:
       - task: req
       - echo "Linting the codebase"
-      - '{% raw %}{{.UV_CMD}}{% endraw %} run ruff check . --fix'
-      - '{% raw %}{{.UV_CMD}}{% endraw %} run ruff format .'
-      - '{% raw %}{{.UV_CMD}}{% endraw %} run mypy --pretty .'
-      - '{% raw %}{{.UV_CMD}}{% endraw %} run yamlfix *.yaml *.yml agent tests'
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff check . --fix"
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff format ."
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run mypy --pretty ."
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run yamlfix *.yaml *.yml agent tests"
     silent: true
+
   lint-check:
-    desc: 🧹 Check whether the codebase is linted
+    desc: "🧹 Check whether the codebase is linted"
     cmds:
       - task: req
       - echo "Checking linting"
-      - '{% raw %}{{.UV_CMD}}{% endraw %} run ruff format --check --diff .'
-      - '{% raw %}{{.UV_CMD}}{% endraw %} run ruff check --diff .'
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff format --check --diff ."
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run ruff check --diff ."
       - echo "Checking type hints"
-      - '{% raw %}{{.UV_CMD}}{% endraw %} run mypy --pretty .'
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run mypy --pretty ."
     silent: true
+
   test:
-    desc: 🧪 Run tests
-    cmds: [echo "Running pytest on tests", '{% raw %}{{.UV_CMD}}{% endraw %} run pytest -vv ./tests/']
+    desc: "🧪 Run tests"
+    cmds:
+      - echo "Running pytest on tests"
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run pytest -vv ./tests/"
     silent: true
+
   eval:
-    desc: 📊 Run NAT batch evaluation (pass eval config path as CLI_ARGS)
-    deps: [auth-check]
+    desc: "📊 Run NAT batch evaluation (pass eval config path as CLI_ARGS)"
+    deps:
+      - auth-check
     cmds:
       - |
         set -- {% raw %}{{.CLI_ARGS}}{% endraw %}
@@ -91,16 +106,19 @@ tasks:
         echo "Running nat eval with config $1"
         {% raw %}{{.UV_CMD}}{% endraw %} run nat eval --config_file "$1"
     silent: true
+
   test-coverage:
     # Hidden to avoid showing in task list, run `task --list-all` to see it
     # desc: 🧪 Run tests with coverage
     cmds:
       - echo "Running pytest on tests"
-      - '{% raw %}{{.UV_CMD}}{% endraw %} run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/'
+      - "{% raw %}{{.UV_CMD}}{% endraw %} run pytest -vv --cov --cov-report=html --cov-report=term --cov-report xml:.coverage.xml ./tests/"
     silent: true
+
   cli:
     desc: 🖥️ Run the CLI with provided arguments
-    deps: [auth-check]
+    deps:
+      - auth-check
     cmds:
       - echo "Running CLI {% raw %}{{.CLI_ARGS}}{% endraw %}"
       - |
@@ -119,9 +137,11 @@ tasks:
         esac
         exit $?
     silent: true
+
   dev:
     desc: 🔨 Run the development server
-    deps: [auth-check]
+    deps:
+      - auth-check
     cmds:
       - |
         (cd .. && dr --skip-plugin-update-check xp --plain-output) &
@@ -129,16 +149,18 @@ tasks:
         trap "kill $DR_XP_PID 2>/dev/null || true" EXIT
         {% raw %}{{.UV_CMD}}{% endraw %} run nat dragent serve --config_file workflow.yaml --reload true --port {% raw %}{{.AGENT_PORT}}{% endraw %}
     silent: true
+
   dev-stop:
     desc: 🛑 Stop the development server
     cmds:
       - |
         echo "Stopping development server"
         pkill -f 'nat dragent serve' 2>/dev/null || echo "No development server process found"
+
   create-docker-context:
     desc: 🐳 Create the template for a local docker_context image
     vars:
-      BRANCH: '{% raw %}{{.BRANCH}}{% endraw %}'
+      BRANCH: "{% raw %}{{.BRANCH}}{% endraw %}"
     cmds:
       - echo "Creating docker_context folder inside agent."
       - rm -rf ./docker_context
@@ -164,14 +186,17 @@ tasks:
       - mv ./docker_context/Dockerfile ./docker_context/Dockerfile.prod
       - mv ./docker_context/Dockerfile.local ./docker_context/Dockerfile
       - echo "Docker context created inside {{ agent_app_name }}/docker_context"
+
   build-docker-image:
     # desc: 🐳 Build the Docker image
-    deps: [install]
+    deps:
+      - install
     cmds:
       - echo "Building Docker image"
       - cp pyproject.toml docker_context/pyproject.toml
       - cp uv.lock docker_context/uv.lock
       - cd docker_context && docker build --platform linux/amd64 -f Dockerfile -t {{ agent_app_name }}:latest .
+
   build-docker-context:
     desc: 🐳 Build the Docker image
     cmds:
