@@ -12,7 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Pulumi dynamic resources for Workload API image-build artifacts."""
+"""Pulumi dynamic resources for Workload API image-build artifacts.
+
+DO NOT move this package inside the ``infra`` package (or any package whose
+``__init__`` has import side effects). Pulumi serializes a dynamic provider
+**by reference** — the pickled ``__provider`` input is just this module's dotted
+path plus the class name — and unpickles it in a *separate provider process*, on
+a gRPC worker thread. Unpickling therefore imports this module and every parent
+package of it. ``infra/__init__.py`` constructs a ``UseCase`` at module scope,
+and registering a Pulumi resource off the main thread fails with::
+
+    RuntimeError: There is no current event loop in thread 'ThreadPoolExecutor-0_0'
+
+which the engine reports as a failure of the artifact resource, on every deploy
+and every preview. Keeping this package top-level keeps the import chain pure.
+There is a unit test asserting exactly this; it fails if the package moves.
+"""
 
 from __future__ import annotations
 

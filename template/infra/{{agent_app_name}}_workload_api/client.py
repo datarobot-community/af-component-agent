@@ -15,7 +15,7 @@
 """Workload API wire models, HTTP client, and image-build orchestration.
 
 The HTTP client covers the platform-built-image path only: the pre-built-image
-path needs no client at all, since ``../workload.py`` hands its payload straight
+path needs no client at all, since the agent's ``workload.py`` hands its payload straight
 to ``pulumi_datarobot.Artifact``. The wire models here are shared by both paths.
 Source upload for image builds lives in ``artifact_code.py`` (stand-in for
 native Pulumi ``ArtifactCode`` support).
@@ -70,7 +70,7 @@ def _to_wire(value: Any) -> Any:
     """Serialize spec dataclasses to the camelCase wire format, dropping None fields.
 
     Dicts are already in wire format and pass through untouched: container env
-    vars are built that way by ``../workload.py`` so they reach the platform
+    vars are built that way by the agent's ``workload.py`` so they reach the platform
     verbatim.
     """
     if dataclasses.is_dataclass(value) and not isinstance(value, type):
@@ -107,7 +107,7 @@ class ReadinessProbe:
         """camelCase form, for payloads assembled outside this module.
 
         Nested probes are serialized by ``_to_wire`` along with their container;
-        this is for the pre-built-image payload, which ``../workload.py`` builds
+        this is for the pre-built-image payload, which the agent's ``workload.py`` builds
         as a plain dict.
         """
         return dict(_to_wire(self))

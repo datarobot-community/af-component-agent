@@ -1,9 +1,9 @@
 # gitignore-syntax exclusions for Workload API source upload (see
 # docs/agent/deployment-runtimes.md).
 #
-# Read by the agent's `workload_api/artifact_code.py` (under the agent package
-# in `infra/infra/`) when Pulumi archives and
-# uploads agent source for the C2W scenario with a platform-generated Dockerfile.
+# Read by `artifact_code.py` in the agent's `*_workload_api` package (a
+# top-level package in the Pulumi project) when Pulumi archives and uploads
+# agent source for the C2W scenario with a platform-generated Dockerfile.
 # The replace-on-change hash is computed from the same archived bytes, so this
 # file is the single source of truth for what counts as agent source.
 tests/

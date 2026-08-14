@@ -20,18 +20,19 @@ anywhere in this module (Playground for this runtime is an explicit, deferred
 follow-up; see docs/agent/deployment-runtimes.md). Selects one of two
 deployment scenarios based on env vars; see ``provision_workload_agent()``'s
 docstring for the exact precedence. Self-contained: everything specific to
-this runtime lives here or in the ``workload_api/`` subpackage (HTTP client and
-Pulumi dynamic provider only, no deployment decisions). Never checks
-``ENABLE_AGENT_ON_WORKLOAD_API`` itself — the entry router is the only place
-that branches on it.
+this runtime lives here or in the ``{{agent_app_name}}_workload_api`` package
+(HTTP client and Pulumi dynamic provider only, no deployment decisions — and it
+must stay a top-level sibling of this ``infra`` package, see its ``resources``
+module). Never checks ``ENABLE_AGENT_ON_WORKLOAD_API`` itself — the entry router
+is the only place that branches on it.
 
 The payloads the platform receives are assembled here: the container env vars
 and, for the pre-built-image scenario, the whole artifact payload — which needs
 no client at all, since ``pulumi_datarobot.Artifact`` posts it for us. Both are
 built in the Workload API's own wire format (camelCase) because they are
 forwarded verbatim. Source upload for the C2W scenario is handled by
-``workload_api.artifact_code`` (a stand-in until native Pulumi ``ArtifactCode``
-support ships).
+``{{agent_app_name}}_workload_api.artifact_code`` (a stand-in until
+``datarobot_artifact``'s native source-upload support ships).
 """
 
 from __future__ import annotations
@@ -45,13 +46,14 @@ import pulumi
 import pulumi_datarobot
 from datarobot_pulumi_utils.pulumi import export
 
-from . import base
-from .workload_api import (
+from {{agent_app_name}}_workload_api import (
     WORKLOAD_ARTIFACT_TYPE,
     ReadinessProbe,
     WorkloadGeneratedImageArtifact,
     source_hash,
 )
+
+from . import base
 
 WORKLOAD_CONTAINER_NAME: Final[str] = "{{ agent_app_name | replace('_', '-') }}"
 DEFAULT_WORKLOAD_CONTAINER_PORT: Final[int] = 8080

@@ -11,12 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests for infra.{{agent_app_name}}_infra.workload_api: HTTP client + Pulumi plumbing.
+"""Tests for {{agent_app_name}}_workload_api: HTTP client + Pulumi plumbing.
 
 The package itself has no Jinja-conditional content; this file is templated only
 because its import paths run through the agent package name.
 """
 
+import subprocess
+import sys
+import textwrap
 import zipfile
 from io import BytesIO
 from pathlib import Path
@@ -24,13 +27,14 @@ from unittest.mock import MagicMock
 
 import pytest
 import requests
+from pulumi.dynamic.dynamic import serialize_provider
 
-from infra.{{agent_app_name}}_infra.workload_api.artifact_code import (
+from {{agent_app_name}}_workload_api.artifact_code import (
     source_archive,
     source_hash,
     upload_source,
 )
-from infra.{{agent_app_name}}_infra.workload_api.client import (
+from {{agent_app_name}}_workload_api.client import (
     DATAROBOT_API_TOKEN_ENV,
     CodeRef,
     CodeRefDatarobot,
@@ -44,15 +48,15 @@ from infra.{{agent_app_name}}_infra.workload_api.client import (
     build_artifact_with_generated_dockerfile,
     datarobot_api_token,
 )
-from infra.{{agent_app_name}}_infra.workload_api.resources import (
+from {{agent_app_name}}_workload_api.resources import (
     WorkloadGeneratedImageArtifactProvider,
     _readiness_probe_from_props,
     _GENERATED_TRACKED_KEYS,
 )
 
-_CLIENT_MODULE = "infra.{{agent_app_name}}_infra.workload_api.client"
-_ARTIFACT_CODE_MODULE = "infra.{{agent_app_name}}_infra.workload_api.artifact_code"
-_RESOURCES_MODULE = "infra.{{agent_app_name}}_infra.workload_api.resources"
+_CLIENT_MODULE = "{{agent_app_name}}_workload_api.client"
+_ARTIFACT_CODE_MODULE = "{{agent_app_name}}_workload_api.artifact_code"
+_RESOURCES_MODULE = "{{agent_app_name}}_workload_api.resources"
 
 
 class _FakeResponse:
@@ -162,7 +166,7 @@ class TestBuildArtifactWithDockerfile:
             build_timeout_s=100,
         )
         assert artifact_id == "artifact-2"
-        from infra.{{agent_app_name}}_infra.workload_api.client import (
+        from {{agent_app_name}}_workload_api.client import (
             _create_and_build_artifact,
         )
 
@@ -464,6 +468,62 @@ class TestWorkloadClient:
             )
 
 
+class TestProviderSerialization:
+    """Guards the constraint documented at the top of `resources.py`.
+
+    Pulumi pickles a dynamic provider **by reference** (module path + class name)
+    and unpickles it in a separate provider process on a gRPC worker thread. If
+    this package ever moves under a package whose `__init__` has import side
+    effects -- notably `infra`, which constructs a `UseCase` at module scope --
+    unpickling registers a Pulumi resource off the main thread and every deploy
+    and preview on this runtime dies with "There is no current event loop in
+    thread 'ThreadPoolExecutor-0_0'".
+    """
+
+    def test_provider_is_pickled_as_a_top_level_module_reference(self):
+        module = WorkloadGeneratedImageArtifactProvider.__module__
+        assert module == "{{agent_app_name}}_workload_api.resources", module
+        assert not module.startswith("infra"), (
+            "The dynamic provider moved under the `infra` package; unpickling it "
+            "in the provider process will execute `infra/__init__.py`. See the "
+            "note at the top of resources.py."
+        )
+
+    def test_provider_unpickles_off_the_main_thread(self):
+        """End-to-end check of the real failure mode.
+
+        Runs in a subprocess because `infra` is already imported in this process,
+        so an in-process `dill.loads` would hit `sys.modules` and never re-execute
+        `infra/__init__.py`. cwd is the Pulumi project dir, which is what the
+        provider process uses as `sys.path[0]`.
+        """
+        payload = serialize_provider(WorkloadGeneratedImageArtifactProvider())
+        program_dir = Path(__file__).resolve().parents[2]
+        script = textwrap.dedent(
+            """
+            import base64, sys
+            import dill
+            from concurrent.futures import ThreadPoolExecutor
+
+            payload = base64.b64decode(sys.stdin.read())
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                pool.submit(dill.loads, payload).result()
+            """
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            input=payload,
+            cwd=program_dir,
+            text=True,
+            capture_output=True,
+        )
+        assert result.returncode == 0, (
+            "Unpickling the dynamic provider failed off the main thread -- this is "
+            "exactly what breaks `pulumi preview`/`up` on the Workload API "
+            f"runtime:\n{result.stderr}"
+        )
+
+
 class TestWorkloadArtifactProviders:
     def test_readiness_probe_from_props_reconstructs_dataclass(self):
         probe = _readiness_probe_from_props(
@@ -503,7 +563,7 @@ class TestWorkloadArtifactProviders:
         )
         assert result.id == "artifact-1"
 
-        from infra.{{agent_app_name}}_infra.workload_api.resources import (
+        from {{agent_app_name}}_workload_api.resources import (
             build_artifact_with_generated_dockerfile as mocked_build,
         )
 
@@ -534,7 +594,7 @@ class TestWorkloadArtifactProviders:
             }
         )
 
-        from infra.{{agent_app_name}}_infra.workload_api.resources import (
+        from {{agent_app_name}}_workload_api.resources import (
             build_artifact_with_generated_dockerfile as mocked_build,
         )
 
