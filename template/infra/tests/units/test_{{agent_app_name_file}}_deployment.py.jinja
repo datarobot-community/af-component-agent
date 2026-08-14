@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for infra.{{agent_app_name}}_infra.deployment: the Custom Models runtime (default)."""
 
+import asyncio
 import sys
 import importlib
 from pathlib import Path
@@ -29,6 +30,10 @@ RuntimeParam = namedtuple(
 
 @pytest.fixture(autouse=True)
 def deployment_mocks(monkeypatch, tmp_path):
+    # Python 3.14+ no longer auto-creates an event loop on the main thread,
+    # but Pulumi resource registration needs one when infra is first imported.
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     monkeypatch.setenv("PULUMI_STACK_CONTEXT", "unittest")
     monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
     monkeypatch.setattr("datarobot_pulumi_utils.pulumi.export", MagicMock())
@@ -153,6 +158,8 @@ def deployment_mocks(monkeypatch, tmp_path):
 
     yield
     patcher.stop()
+    loop.close()
+    asyncio.set_event_loop(None)
 
 
 def _reload_deployment():

@@ -18,6 +18,7 @@ and test_{{agent_app_name_file}}_workload.py.jinja; this file only proves the
 ENABLE_AGENT_ON_WORKLOAD_API branch picks the right one and never both.
 """
 
+import asyncio
 import sys
 import importlib
 from pathlib import Path
@@ -63,6 +64,10 @@ def _result_dict(tag: str, *, runtime: str = "generic") -> dict[str, Any]:
 
 @pytest.fixture(autouse=True)
 def router_mocks(monkeypatch, tmp_path):
+    # Python 3.14+ no longer auto-creates an event loop on the main thread,
+    # but Pulumi resource registration needs one when infra is first imported.
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     monkeypatch.setenv("PULUMI_STACK_CONTEXT", "unittest")
     monkeypatch.setattr("datarobot_pulumi_utils.pulumi.export", MagicMock())
     monkeypatch.setattr("pulumi.export", MagicMock())
@@ -116,6 +121,8 @@ def router_mocks(monkeypatch, tmp_path):
     monkeypatch.setattr(workload, "provision_workload_agent", workload_mock)
 
     yield deployment_mock, workload_mock
+    loop.close()
+    asyncio.set_event_loop(None)
 
 
 def _reload_router():

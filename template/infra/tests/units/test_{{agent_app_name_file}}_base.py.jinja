@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for infra.{{agent_app_name}}_infra.base: shared config used by both runtimes."""
 
+import asyncio
 import sys
 from pathlib import Path
 import pytest
@@ -27,6 +28,10 @@ AGENT_MEMORY_TTL_DAYS = "AGENT_MEMORY_TTL_DAYS"
 
 @pytest.fixture(autouse=True)
 def base_mocks(monkeypatch, tmp_path):
+    # Python 3.14+ no longer auto-creates an event loop on the main thread,
+    # but Pulumi resource registration needs one when infra is first imported.
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     monkeypatch.setenv("PULUMI_STACK_CONTEXT", "unittest")
     monkeypatch.setattr("datarobot_pulumi_utils.pulumi.export", MagicMock())
 
@@ -133,6 +138,8 @@ def base_mocks(monkeypatch, tmp_path):
 
     yield
     patcher.stop()
+    loop.close()
+    asyncio.set_event_loop(None)
 
 
 class TestResolveAgentExecutionEnvironment:
@@ -760,7 +767,59 @@ class TestMemorySpaceLlmRouting:
             "llm_base_url": "https://app.datarobot.com/api/v2/deployments/deployment-123",
         }
 
+    def test_routing_uses_agent_deployment_with_placeholder_model(self, monkeypatch):
+        """A deployed agent LLM reports the `datarobot-deployed-llm` placeholder."""
+        import infra.{{agent_app_name}}_infra.base as base
+
+        captured: dict = {}
+
+        def _capture(space_id, **kwargs):
+            captured.update(kwargs)
+            return space_id
+
+        monkeypatch.setattr(base, "_configure_memory_space_llm", _capture)
+        monkeypatch.setattr(
+            "datarobot_pulumi_utils.common.get_datarobot_url",
+            lambda: "https://app.datarobot.com/api/v2",
+        )
+        base._configure_memory_space_llm_routing(
+            "test-space-id",
+            agent_default_model="datarobot-deployed-llm",
+            agent_deployment_id="deployment-123",
+        )
+        assert captured == {
+            "llm_model_name": "datarobot-deployed-llm",
+            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/deployment-123",
+        }
+
     def test_routing_override_model_name(self, monkeypatch):
+        """A model override still routes through the agent's deployment."""
+        import infra.{{agent_app_name}}_infra.base as base
+
+        captured: dict = {}
+
+        def _capture(space_id, **kwargs):
+            captured.update(kwargs)
+            return space_id
+
+        monkeypatch.setattr(base, "_configure_memory_space_llm", _capture)
+        monkeypatch.setattr(
+            "datarobot_pulumi_utils.common.get_datarobot_url",
+            lambda: "https://app.datarobot.com/api/v2",
+        )
+        base._configure_memory_space_llm_routing(
+            "test-space-id",
+            agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
+            agent_deployment_id="deployment-123",
+            override_model_name="datarobot/anthropic/claude-opus-4-20250514",
+        )
+        assert captured == {
+            "llm_model_name": "anthropic/claude-opus-4-20250514",
+            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/deployment-123",
+        }
+
+    def test_routing_override_model_name_gateway_only(self, monkeypatch):
+        """With no deployment anywhere, a model override routes via the gateway."""
         import infra.{{agent_app_name}}_infra.base as base
 
         captured: dict = {}
@@ -773,10 +832,78 @@ class TestMemorySpaceLlmRouting:
         base._configure_memory_space_llm_routing(
             "test-space-id",
             agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
-            agent_deployment_id="deployment-123",
             override_model_name="datarobot/anthropic/claude-opus-4-20250514",
         )
         assert captured == {"llm_model_name": "anthropic/claude-opus-4-20250514"}
+
+    def test_routing_override_deployment_id_wins_over_agent_deployment(
+        self, monkeypatch
+    ):
+        import infra.{{agent_app_name}}_infra.base as base
+
+        captured: dict = {}
+
+        def _capture(space_id, **kwargs):
+            captured.update(kwargs)
+            return space_id
+
+        monkeypatch.setattr(base, "_configure_memory_space_llm", _capture)
+        monkeypatch.setattr(
+            "datarobot_pulumi_utils.common.get_datarobot_url",
+            lambda: "https://app.datarobot.com/api/v2",
+        )
+        base._configure_memory_space_llm_routing(
+            "test-space-id",
+            agent_default_model="datarobot-deployed-llm",
+            agent_deployment_id="agent-deployment-123",
+            override_deployment_id="memory-deployment-456",
+        )
+        assert captured == {
+            "llm_model_name": "datarobot-deployed-llm",
+            "llm_base_url": "https://app.datarobot.com/api/v2/deployments/memory-deployment-456",
+        }
+
+    def test_routing_override_base_url_bypasses_deployment(self, monkeypatch):
+        import infra.{{agent_app_name}}_infra.base as base
+
+        captured: dict = {}
+
+        def _capture(space_id, **kwargs):
+            captured.update(kwargs)
+            return space_id
+
+        def _unexpected(_deployment_id):
+            raise AssertionError(
+                "_deployment_llm_base_url must not be called when "
+                "AGENT_MEMORY_LLM_BASE_URL is set"
+            )
+
+        monkeypatch.setattr(base, "_configure_memory_space_llm", _capture)
+        monkeypatch.setattr(base, "_deployment_llm_base_url", _unexpected)
+        base._configure_memory_space_llm_routing(
+            "test-space-id",
+            agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
+            agent_deployment_id="deployment-123",
+            override_base_url="https://custom.example.com/v1",
+        )
+        assert captured == {
+            "llm_model_name": "azure/gpt-5-mini-2025-08-07",
+            "llm_base_url": "https://custom.example.com/v1",
+        }
+
+    def test_routing_rejects_base_url_and_deployment_together(self):
+        import infra.{{agent_app_name}}_infra.base as base
+
+        with pytest.raises(
+            ValueError,
+            match="Set only one of AGENT_MEMORY_LLM_BASE_URL or AGENT_MEMORY_LLM_DEPLOYMENT_ID.",
+        ):
+            base._configure_memory_space_llm_routing(
+                "test-space-id",
+                agent_default_model="datarobot/azure/gpt-5-mini-2025-08-07",
+                override_base_url="https://custom.example.com/v1",
+                override_deployment_id="memory-deployment-456",
+            )
 {%- endif %}
 {{ "\n" if use_agent_memory in ['mem0', 'datarobot_memory_service'] else "" }}
 class TestEnableAgentHAMode:

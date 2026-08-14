@@ -13,6 +13,7 @@
 # limitations under the License.
 """Tests for infra.{{agent_app_name}}_infra.workload: the Workload API runtime."""
 
+import asyncio
 import sys
 from pathlib import Path
 from typing import Any
@@ -56,6 +57,10 @@ def _fake_resource(**attrs: Any) -> MagicMock:
 
 @pytest.fixture(autouse=True)
 def workload_env_mocks(monkeypatch, tmp_path):
+    # Python 3.14+ no longer auto-creates an event loop on the main thread,
+    # but Pulumi resource registration needs one when infra is first imported.
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
     monkeypatch.setenv("PULUMI_STACK_CONTEXT", "unittest")
     monkeypatch.setenv("DATAROBOT_API_TOKEN", "test-token")
     monkeypatch.setenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2")
@@ -117,6 +122,8 @@ def workload_env_mocks(monkeypatch, tmp_path):
 
     yield
     patcher.stop()
+    loop.close()
+    asyncio.set_event_loop(None)
 
 
 def _workload_module(monkeypatch):

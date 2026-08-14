@@ -70,7 +70,8 @@ agent/
 | `agent/agent/register.py` | Framework-specific. NAT registration module used by DRAgent. Wires LLM, MCP tools, workflow tools, and the agent together. |
 | `agent/workflow.yaml` | Framework-specific. Declarative NAT workflow configuration: front-end type, A2A metadata, LLM component, workflow type, middleware, and memory wrappers. Loaded by DRAgent for every framework. |
 
-**Note:** The files `myagent.py`, `register.py`, and `workflow.yaml` are generated from framework-specific templates during project setup. Their content depends on the chosen agent framework (LangGraph, CrewAI, LlamaIndex, NAT, or Base).
+> [!NOTE]
+> The files `myagent.py`, `register.py`, and `workflow.yaml` are generated from framework-specific templates during project setup. Their content depends on the chosen agent framework (LangGraph, CrewAI, LlamaIndex, NAT, or Base).
 
 ## Agent class implementation (`myagent.py`)
 
@@ -119,7 +120,7 @@ Agents can combine tools from multiple sources. LangGraph, CrewAI, and LlamaInde
 
 ### MCP tools
 
-MCP tools are loaded in `register.py` by calling `mcp_tools_context()` from the framework-specific adapter in `datarobot_genai` (e.g. `datarobot_genai.langgraph.mcp`, `datarobot_genai.crewai.mcp`). This call happens **outside** `MyAgent`, not inside `invoke()`. See [MCP server](../mcp-server.md) for MCP server configuration.
+MCP tools are loaded in `register.py` by calling `mcp_tools_context()` from the framework-specific adapter in `datarobot_genai` (e.g. `datarobot_genai.langgraph.mcp`, `datarobot_genai.crewai.mcp`). This call happens outside `MyAgent`, not inside `invoke()`. See [MCP server](../mcp-server.md) for MCP server configuration and optional co-deployment behavior.
 
 ```python
 async with mcp_tools_context(mcp_config) as mcp_tools:

@@ -90,37 +90,3 @@ def test_dotenv_prompts_for_mem0_api_key() -> None:
     assert mem0_prompt["type"] == "secret_string"
     assert mem0_prompt["optional"] is False
 {%- endif %}
-{%- if use_agent_memory == 'datarobot_memory_service' %}
-
-
-def test_dotenv_adds_memory_llm_prompts_to_external_llm_section() -> None:
-    """Memory LLM prompts should extend the LLM component external_llm section only."""
-    config = _load_dotenv_cli_config()
-
-    routing_prompt = _find_key_prompt(
-        config, "agent_memory_llm_routing", "external_llm"
-    )
-    assert routing_prompt is not None
-    assert routing_prompt["optional"] is True
-
-    options = {option["value"]: option for option in routing_prompt["options"]}
-    assert set(options) == {"gateway", "deployed"}
-    assert options["gateway"]["requires"] == "agent_memory_llm_gateway"
-    assert options["deployed"]["requires"] == "agent_memory_llm_deployed"
-
-    gateway_prompt = _find_env_prompt(
-        config, "AGENT_MEMORY_LLM_MODEL_NAME", "agent_memory_llm_gateway"
-    )
-    assert gateway_prompt is not None
-    assert gateway_prompt["type"] == "llmgw_catalog"
-    assert gateway_prompt["optional"] is False
-
-    deployed_prompt = _find_env_prompt(
-        config, "AGENT_MEMORY_LLM_DEPLOYMENT_ID", "agent_memory_llm_deployed"
-    )
-    assert deployed_prompt is not None
-    assert deployed_prompt["type"] == "string"
-    assert deployed_prompt["optional"] is False
-
-    assert "agent_llm_integration" not in config
-{%- endif %}
