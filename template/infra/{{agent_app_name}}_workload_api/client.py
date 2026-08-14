@@ -145,7 +145,10 @@ class Container:
     port: int
     image_build_config: ImageBuildConfig
     environment_vars: list[dict[str, str]] = field(default_factory=list)
-    routes: list[dict[str, str]] = field(default_factory=list)
+    # None omits the key. Clusters with route configuration disabled reject a
+    # spec that carries `routes` at all -- an empty list is not equivalent to
+    # omitting it. See `_workload_routes()` in the agent's `workload.py`.
+    routes: list[dict[str, str]] | None = None
     readiness_probe: ReadinessProbe | None = None
 
 
@@ -312,7 +315,7 @@ def _image_build_spec(
     container_name: str,
     container_port: int,
     environment_vars: list[dict[str, str]],
-    routes: list[dict[str, str]],
+    routes: list[dict[str, str]] | None,
     code_ref: CodeRef,
     readiness_probe: ReadinessProbe | None = None,
 ) -> WorkloadArtifactSpecFromImageBuildConfig:
@@ -345,7 +348,7 @@ def build_artifact_with_generated_dockerfile(
     container_name: str,
     container_port: int,
     environment_vars: list[dict[str, str]],
-    routes: list[dict[str, str]],
+    routes: list[dict[str, str]] | None,
     build_timeout_s: int,
     readiness_probe: ReadinessProbe | None = None,
 ) -> str:

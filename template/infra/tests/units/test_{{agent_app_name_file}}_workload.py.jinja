@@ -256,6 +256,34 @@ class TestImageUriArtifactArgs:
         assert container["environmentVars"] == [{"source": "api-key"}]
         assert container["readinessProbe"]["path"] == "/health"
 
+    def test_routes_omitted_by_default(self, monkeypatch):
+        """Omitted, not `[]`: a cluster with route configuration disabled rejects
+        an artifact that carries the key at all (403 "Route configuration is
+        disabled on this cluster")."""
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(
+            workload.base,
+            "IS_A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENABLED",
+            False,
+        )
+        _, container = self._container(workload)
+        assert "routes" not in container
+
+    def test_routes_include_well_known_when_enabled(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(
+            workload.base,
+            "IS_A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENABLED",
+            True,
+        )
+        _, container = self._container(workload)
+        assert container["routes"] == [
+            {
+                "path": "/a2a/.well-known/agent-card.json",
+                "auth": "optional",
+            }
+        ]
+
     def test_entrypoints_omitted_when_unset(self, monkeypatch):
         """Omitting the key keeps the image's own CMD/entrypoint."""
         workload = _workload_module(monkeypatch)
@@ -539,3 +567,55 @@ class TestProvisionWorkloadAgentExports:
             "{{ agent_app_name | upper }}_WORKLOAD_ID",
             "{{ agent_app_name | upper }}_ENDPOINT",
         }
+
+
+class TestWorkloadArtifactRoutes:
+    def _opt_in(self, monkeypatch, workload, enabled):
+        monkeypatch.setattr(
+            workload.base,
+            "IS_A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENABLED",
+            enabled,
+        )
+
+    def test_none_when_disabled(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        self._opt_in(monkeypatch, workload, False)
+        assert workload._workload_artifact_routes() is None
+
+    def test_well_known_route_when_enabled(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        self._opt_in(monkeypatch, workload, True)
+        assert workload._workload_artifact_routes() == [
+            {
+                "path": "/a2a/.well-known/agent-card.json",
+                "auth": "optional",
+            }
+        ]
+
+    def test_does_not_mutate_the_shared_constant(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        self._opt_in(monkeypatch, workload, True)
+        workload._workload_artifact_routes()[0]["path"] = "/mutated"
+        assert (
+            workload.A2A_UNAUTHENTICATED_WELL_KNOWN_ARTIFACT_ROUTE["path"]
+            == "/a2a/.well-known/agent-card.json"
+        )
+
+    def test_generated_image_artifact_omits_routes_by_default(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        self._opt_in(monkeypatch, workload, False)
+        workload.provision_workload_agent([])
+        _, kwargs = workload.WorkloadGeneratedImageArtifact.call_args
+        assert kwargs["routes"] is None
+
+    def test_well_known_route_passed_to_generated_image_artifact(self, monkeypatch):
+        workload = _workload_module(monkeypatch)
+        self._opt_in(monkeypatch, workload, True)
+        workload.provision_workload_agent([])
+        _, kwargs = workload.WorkloadGeneratedImageArtifact.call_args
+        assert kwargs["routes"] == [
+            {
+                "path": "/a2a/.well-known/agent-card.json",
+                "auth": "optional",
+            }
+        ]

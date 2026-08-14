@@ -117,6 +117,16 @@ This runtime is serving-only. Compared with Custom Models, these are not created
 
 ---
 
+## Anonymous agent-card discovery
+
+Setting `enable_unauthenticated_well_known_route` under `general.front_end.a2a` in `workflow.yaml` does two things on this runtime. Inside the container, `datarobot_genai` serves a redacted agent card to anonymous callers instead of `401`. And on the platform, the artifact spec gains a route for `/a2a/.well-known/agent-card.json` with `auth: optional` — anonymous callers get through, and an authenticating caller's identity headers still arrive, so they receive the full card.
+
+The route is requested **only** when you opt in. Nothing is sent otherwise, not even an empty `routes` list, because clusters can have route configuration disabled and reject any artifact that carries the key at all. On such a cluster, opting in fails the deploy with `403 Route configuration is disabled on this cluster`; ask an administrator to enable unauthenticated routing.
+
+Route configuration lives in the artifact spec, so flipping this flag means a new artifact and a fresh image build — see [What changes trigger a rebuild](#what-changes-trigger-a-rebuild).
+
+---
+
 ## Switching runtimes
 
 Switching is a supported, one-variable change in both directions — flip `ENABLE_AGENT_ON_WORKLOAD_API` and redeploy with `dr run deploy`. Pulumi reconciles the existing stack in place, creating the incoming runtime's resources and deleting the outgoing runtime's; you do not need a fresh stack.
@@ -142,3 +152,4 @@ Two things to plan for either way:
 | Replicas never become ready | The container is not answering `/health` on `WORKLOAD_CONTAINER_PORT`. With your own image, confirm it serves that path on that port; with C2W, check the workload logs for a startup error. |
 | `ValueError` on `WORKLOAD_MEMORY` | The value must be integer bytes, not a Kubernetes quantity. Use `2147483648`, not `2Gi`. |
 | `pulumi destroy` fails with a missing token | `DATAROBOT_API_TOKEN` is never stored in Pulumi state, so it must be set in the environment for destroy as well as deploy. |
+| `403 Route configuration is disabled on this cluster` | The artifact asked the platform to configure a route on a cluster where that is switched off. Only `enable_unauthenticated_well_known_route` in `workflow.yaml` requests one; unset it, or ask an administrator to enable unauthenticated routing on the cluster. |

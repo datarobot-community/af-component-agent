@@ -108,6 +108,20 @@ class TestToWire:
         assert "readinessProbe" not in wire
         assert "codeRef" not in wire["imageBuildConfig"]
 
+    def test_omits_routes_when_none(self):
+        """`routes: None` must drop the key, not send `[]`.
+
+        A cluster with route configuration disabled rejects an artifact spec that
+        carries `routes` at all with 403 "Route configuration is disabled on this
+        cluster", so an empty list is not a safe stand-in for omitting it.
+        """
+        wire = _to_wire(_container(routes=None))
+        assert "routes" not in wire
+
+    def test_keeps_routes_when_requested(self):
+        wire = _to_wire(_container(routes=[{"path": "/a2a/.well-known"}]))
+        assert wire["routes"] == [{"path": "/a2a/.well-known"}]
+
     def test_serializes_nested_readiness_probe(self):
         wire = _to_wire(_container(readiness_probe=ReadinessProbe(port=9090)))
         assert wire["readinessProbe"]["port"] == 9090
@@ -162,7 +176,7 @@ class TestBuildArtifactWithDockerfile:
             container_name="agent",
             container_port=8080,
             environment_vars=[],
-            routes=[],
+            routes=None,
             build_timeout_s=100,
         )
         assert artifact_id == "artifact-2"
@@ -351,7 +365,7 @@ class TestWorkloadClient:
             container_name="c",
             container_port=8080,
             environment_vars=[],
-            routes=[],
+            routes=None,
             code_ref=CodeRef(
                 datarobot=CodeRefDatarobot(catalog_id="cat", catalog_version_id="ver")
             ),
@@ -556,7 +570,7 @@ class TestWorkloadArtifactProviders:
                 "container_name": "agent",
                 "container_port": 8080,
                 "environment_vars": [],
-                "routes": [],
+                "routes": None,
                 "build_timeout_s": 100,
                 "readiness_probe": {"path": "/health", "port": 8080},
             }
@@ -589,7 +603,7 @@ class TestWorkloadArtifactProviders:
                 "container_name": "agent",
                 "container_port": 8080,
                 "environment_vars": [],
-                "routes": [],
+                "routes": None,
                 "build_timeout_s": 100,
             }
         )

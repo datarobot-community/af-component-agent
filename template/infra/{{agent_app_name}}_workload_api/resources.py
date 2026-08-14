@@ -106,7 +106,7 @@ class WorkloadGeneratedImageArtifactProvider(ResourceProvider):
             container_name=inputs["container_name"],
             container_port=inputs["container_port"],
             environment_vars=inputs["environment_vars"],
-            routes=inputs["routes"],
+            routes=inputs.get("routes"),
             build_timeout_s=inputs["build_timeout_s"],
             readiness_probe=_readiness_probe_from_props(inputs),
         )
@@ -138,7 +138,7 @@ class WorkloadGeneratedImageArtifact(Resource):
         container_name: str,
         container_port: int,
         environment_vars: list[dict[str, str]],
-        routes: list[dict[str, str]],
+        routes: list[dict[str, str]] | None,
         source_hash: str,
         build_timeout_s: int = 6000,
         readiness_probe: dict[str, Any] | None = None,
