@@ -15,13 +15,22 @@
 set -eu
 
 AGENT_PKG_DIR="/tmp/agent-pkgs"
-mkdir -p "$AGENT_PKG_DIR"
+# Must match egg_base in workload/build.cfg, which setuptools requires to exist.
+AGENT_BUILD_DIR="/tmp/agent-build"
+mkdir -p "$AGENT_PKG_DIR" "$AGENT_BUILD_DIR"
 
 echo "Installing agent"
 # No root access in the dropin execution environment at deploy time, and no
 # writable uv cache there either -- UV_NO_CACHE=1 plus an explicit --target
 # avoid both. --no-deps is safe: all other dependencies were already
 # installed into the image at build time from uv.lock.
+#
+# The application root is read-only as well, so setuptools cannot put its
+# egg_info metadata and build/ scratch next to pyproject.toml the way it does by
+# default. DIST_EXTRA_CONFIG hands it workload/build.cfg, which redirects both
+# into $AGENT_BUILD_DIR; without it the build fails with
+# "could not create 'agent.egg-info': Permission denied".
+DIST_EXTRA_CONFIG=workload/build.cfg \
 UV_NO_CACHE=1 uv pip install --no-deps \
     --python /app/.venv/bin/python \
     --target "$AGENT_PKG_DIR" \

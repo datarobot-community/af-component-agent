@@ -16,6 +16,10 @@ tests/
 __pycache__/
 .pytest_cache/
 .uv/
+# Created on your machine when you install the agent locally. It describes your
+# checkout rather than the agent, so uploading it makes identical code produce
+# different uploads and triggers an image rebuild for no reason.
+*.egg-info/
 docker_context/
 docker_context.tar.gz
 .env
