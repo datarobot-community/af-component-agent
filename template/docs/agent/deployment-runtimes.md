@@ -150,6 +150,7 @@ Two things to plan for either way:
 | First deploy is unexpectedly slow | An execution environment is being built. Set `DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT` to a value containing `Python 3.11 GenAI Agents` to use the drop-in instead. |
 | Deploy fails waiting on the image build | The build exceeded `WORKLOAD_BUILD_TIMEOUT_S` (default `9000`). Raise it, or trim dependencies in `pyproject.toml`. |
 | Replicas never become ready | The container is not answering `/health` on `WORKLOAD_CONTAINER_PORT`. With your own image, confirm it serves that path on that port; with C2W, check the workload logs for a startup error. |
+| Deploy fails with `Could not read a [nat.plugins] entry point` | The container resolves the agent's workflow through that entry point, and the deploy generates the metadata carrying it from `pyproject.toml`. Declare one under `[project.entry-points.'nat.plugins']`. |
 | `ValueError` on `WORKLOAD_MEMORY` | The value must be integer bytes, not a Kubernetes quantity. Use `2147483648`, not `2Gi`. |
 | `pulumi destroy` fails with a missing token | `DATAROBOT_API_TOKEN` is never stored in Pulumi state, so it must be set in the environment for destroy as well as deploy. |
 | `403 Route configuration is disabled on this cluster` | The artifact asked the platform to configure a route on a cluster where that is switched off. Only `enable_unauthenticated_well_known_route` in `workflow.yaml` requests one; unset it, or ask an administrator to enable unauthenticated routing on the cluster. |

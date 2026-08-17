@@ -225,6 +225,27 @@ class TestArtifactCode:
         assert ".env" not in names
         assert "tests/test_x.py" not in names
 
+    def test_shipped_wapiignore_uploads_dist_info_but_not_egg_info(self, tmp_path):
+        """The container resolves the workflow through the generated `.dist-info`, so
+        it must ship. A local `*.egg-info` must not: it is a second distribution of
+        the same name, and importlib.metadata resolves whichever it sees first."""
+        shipped = (
+            Path(__file__).resolve().parents[3] / "{{agent_app_name}}" / ".wapiignore"
+        )
+        assert shipped.is_file(), f"expected the agent's .wapiignore at {shipped}"
+        (tmp_path / ".wapiignore").write_text(shipped.read_text())
+        for name in ("{{agent_app_name}}-0.1.0.dist-info", "{{agent_app_name}}.egg-info"):
+            (tmp_path / name).mkdir()
+            (tmp_path / name / "entry_points.txt").write_text(
+                "[nat.plugins]\nbase_agent = agent.register\n"
+            )
+
+        with zipfile.ZipFile(BytesIO(source_archive(tmp_path))) as zf:
+            names = set(zf.namelist())
+
+        assert "{{agent_app_name}}-0.1.0.dist-info/entry_points.txt" in names
+        assert "{{agent_app_name}}.egg-info/entry_points.txt" not in names
+
     def test_upload_source_sync_response(self, monkeypatch, tmp_path):
         (tmp_path / "main.py").write_text("print('hi')\n")
         mock_post = MagicMock(

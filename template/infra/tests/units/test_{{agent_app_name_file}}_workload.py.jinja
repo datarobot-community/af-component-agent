@@ -126,9 +126,12 @@ def workload_env_mocks(monkeypatch, tmp_path):
     asyncio.set_event_loop(None)
 
 
-def _workload_module(monkeypatch):
+def _workload_module(monkeypatch, *, stub_ensure_entrypoint=True):
     """Import infra.{{agent_app_name}}_infra.workload with its workload_api
     subpackage collaborators and pulumi_datarobot.Artifact/Workload stubbed out.
+
+    Pass ``stub_ensure_entrypoint=False`` to keep the real
+    ``_ensure_agent_has_entrypoint`` in place.
 
     No reload needed: workload.py has no env-dependent module-level constants
     (all env reads happen inside functions), unlike deployment.py's HA-mode ones.
@@ -141,6 +144,10 @@ def _workload_module(monkeypatch):
         MagicMock(return_value=_fake_resource(artifact_id="generated-artifact-id")),
     )
     monkeypatch.setattr(workload, "source_hash", MagicMock(return_value="hash123"))
+    # Stubbed by default: most tests aim the application path at an empty tmp_path,
+    # which has no pyproject.toml for the real thing to read.
+    if stub_ensure_entrypoint:
+        monkeypatch.setattr(workload, "_ensure_agent_has_entrypoint", MagicMock())
 
     # _fake_resource so the real pulumi.ResourceOptions(depends_on=[...])
     # validation (which requires actual Resource instances) accepts these stubs.
@@ -445,7 +452,137 @@ class TestProvisionWorkloadAgentImageUriScenario:
         assert container["entrypoints"] == ["python", "main.py"]
 
 
+class TestEnsureAgentHasEntrypoint:
+    """Nothing installs the agent inside the C2W image, so it resolves the workflow
+    through a `.dist-info` generated here from pyproject.toml and uploaded with the
+    source.
+    """
+
+    PYPROJECT = """\
+[project]
+name = "agent"
+version = "0.1.0"
+
+[project.entry-points.'nat.plugins']
+base_agent = "agent.register"
+"""
+
+    @staticmethod
+    def _write_pyproject(application_path, body):
+        (application_path / "pyproject.toml").write_text(body, encoding="utf-8")
+
+    def test_writes_dist_info_from_pyproject(self, monkeypatch, tmp_path):
+        workload = _workload_module(monkeypatch, stub_ensure_entrypoint=False)
+        self._write_pyproject(tmp_path, self.PYPROJECT)
+
+        workload._ensure_agent_has_entrypoint(tmp_path)
+
+        dist_info = tmp_path / "agent-0.1.0.dist-info"
+        assert (dist_info / "entry_points.txt").read_text() == (
+            "[nat.plugins]\nbase_agent = agent.register\n"
+        )
+        metadata = (dist_info / "METADATA").read_text()
+        assert "Name: agent" in metadata and "Version: 0.1.0" in metadata
+
+    def test_is_byte_stable_across_runs(self, monkeypatch, tmp_path):
+        """Churning bytes here would change the source hash and force a rebuild."""
+        workload = _workload_module(monkeypatch, stub_ensure_entrypoint=False)
+        self._write_pyproject(tmp_path, self.PYPROJECT)
+        entry_points = tmp_path / "agent-0.1.0.dist-info" / "entry_points.txt"
+
+        workload._ensure_agent_has_entrypoint(tmp_path)
+        first = entry_points.read_bytes()
+        workload._ensure_agent_has_entrypoint(tmp_path)
+
+        assert entry_points.read_bytes() == first
+
+    def test_tracks_pyproject_changes(self, monkeypatch, tmp_path):
+        """Regenerated every deploy, so an edited entry point cannot go stale."""
+        workload = _workload_module(monkeypatch, stub_ensure_entrypoint=False)
+        self._write_pyproject(tmp_path, self.PYPROJECT)
+        workload._ensure_agent_has_entrypoint(tmp_path)
+
+        self._write_pyproject(
+            tmp_path, self.PYPROJECT.replace("base_agent", "renamed_agent")
+        )
+        workload._ensure_agent_has_entrypoint(tmp_path)
+
+        entry_points = (tmp_path / "agent-0.1.0.dist-info" / "entry_points.txt").read_text()
+        assert "renamed_agent = agent.register" in entry_points
+
+    def test_removes_dist_info_from_a_previous_version(self, monkeypatch, tmp_path):
+        """Two same-named distributions on sys.path resolve unpredictably."""
+        workload = _workload_module(monkeypatch, stub_ensure_entrypoint=False)
+        stale = tmp_path / "agent-0.0.9.dist-info"
+        stale.mkdir()
+        (stale / "entry_points.txt").write_text("[nat.plugins]\nold = agent.old\n")
+        self._write_pyproject(tmp_path, self.PYPROJECT)
+
+        workload._ensure_agent_has_entrypoint(tmp_path)
+
+        assert not stale.exists()
+        assert (tmp_path / "agent-0.1.0.dist-info").is_dir()
+
+    def test_keeps_all_declared_entry_point_groups(self, monkeypatch, tmp_path):
+        workload = _workload_module(monkeypatch, stub_ensure_entrypoint=False)
+        self._write_pyproject(
+            tmp_path,
+            self.PYPROJECT + "\n[project.entry-points.'other.group']\nx = \"agent.x\"\n",
+        )
+
+        workload._ensure_agent_has_entrypoint(tmp_path)
+
+        body = (tmp_path / "agent-0.1.0.dist-info" / "entry_points.txt").read_text()
+        assert "[nat.plugins]" in body and "[other.group]" in body
+
+    def test_raises_when_no_nat_entry_point_declared(self, monkeypatch, tmp_path):
+        """Not recoverable: only pyproject.toml can say what the workflow module is."""
+        workload = _workload_module(monkeypatch, stub_ensure_entrypoint=False)
+        self._write_pyproject(
+            tmp_path,
+            '[project]\nname = "agent"\nversion = "0.1.0"\n'
+            "\n[project.entry-points.'console_scripts']\nfoo = \"agent.cli:main\"\n",
+        )
+
+        with pytest.raises(RuntimeError, match="nat.plugins"):
+            workload._ensure_agent_has_entrypoint(tmp_path)
+
+    def test_raises_when_pyproject_missing(self, monkeypatch, tmp_path):
+        workload = _workload_module(monkeypatch, stub_ensure_entrypoint=False)
+
+        with pytest.raises(RuntimeError, match="pyproject.toml"):
+            workload._ensure_agent_has_entrypoint(tmp_path)
+
+    def test_raises_when_pyproject_is_malformed(self, monkeypatch, tmp_path):
+        workload = _workload_module(monkeypatch, stub_ensure_entrypoint=False)
+        self._write_pyproject(tmp_path, "[project\nname = ")
+
+        with pytest.raises(RuntimeError, match="pyproject.toml"):
+            workload._ensure_agent_has_entrypoint(tmp_path)
+
+
 class TestProvisionWorkloadAgentSourceBundleScenarios:
+    def test_generated_dockerfile_ensures_entrypoint(self, monkeypatch, tmp_path):
+        """Only this scenario uploads source and imports the agent out of it."""
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
+
+        workload.provision_workload_agent([])
+
+        workload._ensure_agent_has_entrypoint.assert_called_once_with(tmp_path)
+
+    def test_prebuilt_image_skips_entrypoint_check(self, monkeypatch, tmp_path):
+        """Nothing is uploaded there, so local metadata is irrelevant."""
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
+        monkeypatch.setenv(
+            "WORKLOAD_AGENT_IMAGE_URI", "registry.example.com/agent:latest"
+        )
+
+        workload.provision_workload_agent([])
+
+        workload._ensure_agent_has_entrypoint.assert_not_called()
+
     def test_generated_dockerfile_scenario(self, monkeypatch, tmp_path):
         workload = _workload_module(monkeypatch)
         monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)

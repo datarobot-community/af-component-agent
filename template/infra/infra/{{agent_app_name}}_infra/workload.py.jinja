@@ -40,6 +40,9 @@ from __future__ import annotations
 import dataclasses
 import json
 import os
+import shutil
+import tomllib
+from pathlib import Path
 from typing import Any, Final
 
 import pulumi
@@ -77,6 +80,8 @@ A2A_UNAUTHENTICATED_WELL_KNOWN_ARTIFACT_ROUTE: Final[dict[str, str]] = {
     "path": "/a2a/.well-known/agent-card.json",
     "auth": "optional",
 }
+# Entry-point group NAT resolves the agent's workflow through.
+NAT_PLUGIN_ENTRY_POINT_GROUP: Final[str] = "nat.plugins"
 
 
 def _require_env(name: str) -> str:
@@ -441,6 +446,58 @@ def _provision_from_image_uri(
     }
 
 
+def _render_entry_points(groups: dict[str, dict[str, str]]) -> str:
+    """Entry-point groups as the `entry_points.txt` INI that importlib.metadata reads."""
+    lines = []
+    for group, entries in sorted(groups.items()):
+        lines.append(f"[{group}]")
+        lines += [f"{name} = {target}" for name, target in sorted(entries.items())]
+        lines.append("")
+    return "\n".join(lines)
+
+
+def _ensure_agent_has_entrypoint(application_path: Path) -> None:
+    """Write the entry-point metadata the container resolves the workflow through.
+
+    Nothing installs the agent inside the image and the application root is
+    read-only at run time, so ``importlib.metadata`` needs a ``.dist-info`` sitting
+    next to the package; ``run_server.sh`` puts the root on ``PYTHONPATH``.
+
+    Rewritten from ``pyproject.toml`` on every deploy, so it cannot go stale, and
+    byte-identical for unchanged input, so it does not disturb the source hash.
+    """
+    pyproject = application_path / "pyproject.toml"
+    try:
+        project = tomllib.loads(pyproject.read_text(encoding="utf-8"))["project"]
+        name, version = project["name"], project["version"]
+        entry_points = project["entry-points"]
+        if NAT_PLUGIN_ENTRY_POINT_GROUP not in entry_points:
+            raise KeyError(NAT_PLUGIN_ENTRY_POINT_GROUP)
+    except (OSError, KeyError, tomllib.TOMLDecodeError) as exc:
+        message = (
+            f"Could not read a [{NAT_PLUGIN_ENTRY_POINT_GROUP}] entry point from "
+            f"{pyproject}: {exc!r}. The workload resolves the agent's workflow "
+            f"through it, so declare one under "
+            f"[project.entry-points.'{NAT_PLUGIN_ENTRY_POINT_GROUP}']."
+        )
+        pulumi.error(message)
+        raise RuntimeError(message) from exc
+
+    dist_info = application_path / f"{name}-{version}.dist-info"
+    # A version bump would otherwise leave a second distribution of the same name
+    # on sys.path, and importlib.metadata resolves whichever it sees first.
+    for stale in application_path.glob(f"{name}-*.dist-info"):
+        if stale != dist_info:
+            shutil.rmtree(stale)
+    dist_info.mkdir(exist_ok=True)
+    (dist_info / "METADATA").write_text(
+        f"Metadata-Version: 2.1\nName: {name}\nVersion: {version}\n", encoding="utf-8"
+    )
+    (dist_info / "entry_points.txt").write_text(
+        _render_entry_points(entry_points), encoding="utf-8"
+    )
+
+
 def _provision_from_source_bundle(
     datarobot_endpoint: str,
     shared_runtime_parameters: list[
@@ -451,6 +508,8 @@ def _provision_from_source_bundle(
         "Workload scenario: C2W with platform-generated Dockerfile "
         "(dropin execution environment)."
     )
+
+    _ensure_agent_has_entrypoint(base.{{agent_app_name}}_application_path)
 
     bundle_hash = source_hash(base.{{agent_app_name}}_application_path)
 
