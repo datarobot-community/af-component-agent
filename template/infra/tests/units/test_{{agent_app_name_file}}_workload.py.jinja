@@ -507,7 +507,9 @@ base_agent = "agent.register"
         )
         workload._ensure_agent_has_entrypoint(tmp_path)
 
-        entry_points = (tmp_path / "agent-0.1.0.dist-info" / "entry_points.txt").read_text()
+        entry_points = (
+            tmp_path / "agent-0.1.0.dist-info" / "entry_points.txt"
+        ).read_text()
         assert "renamed_agent = agent.register" in entry_points
 
     def test_removes_dist_info_from_a_previous_version(self, monkeypatch, tmp_path):
@@ -527,7 +529,8 @@ base_agent = "agent.register"
         workload = _workload_module(monkeypatch, stub_ensure_entrypoint=False)
         self._write_pyproject(
             tmp_path,
-            self.PYPROJECT + "\n[project.entry-points.'other.group']\nx = \"agent.x\"\n",
+            self.PYPROJECT
+            + "\n[project.entry-points.'other.group']\nx = \"agent.x\"\n",
         )
 
         workload._ensure_agent_has_entrypoint(tmp_path)

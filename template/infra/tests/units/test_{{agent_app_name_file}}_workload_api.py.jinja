@@ -229,9 +229,7 @@ class TestArtifactCode:
         """The container resolves the workflow through the generated `.dist-info`, so
         it must ship. A local `*.egg-info` must not: it is a second distribution of
         the same name, and importlib.metadata resolves whichever it sees first."""
-        shipped = (
-            Path(__file__).resolve().parents[3] / "{{agent_app_name}}" / ".wapiignore"
-        )
+        shipped = Path(__file__).resolve().parents[3] / "{{agent_app_name}}" / ".wapiignore"
         assert shipped.is_file(), f"expected the agent's .wapiignore at {shipped}"
         (tmp_path / ".wapiignore").write_text(shipped.read_text())
         for name in ("{{agent_app_name}}-0.1.0.dist-info", "{{agent_app_name}}.egg-info"):
