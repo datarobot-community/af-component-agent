@@ -15,35 +15,39 @@
 import pytest
 
 from .helpers import (
+    ALL_FRAMEWORKS,
     require_datarobot_env,
     require_e2e_enabled,
     should_run_framework,
 )
 from .workload_e2e import run_workload_agent_e2e
 
-# One framework, not a matrix. The Workload API code path has no
-# framework-specific branching -- `workload.py` and `workload_api/` never look at
-# the framework, and only the agent's dependency set differs -- so the other four
-# would cost 5x (including 5x platform image builds) for no extra signal. `base`
-# has the smallest dependency set, hence the fastest C2W build.
-WORKLOAD_FRAMEWORK = "base"
+# A matrix, same knob as test_agent_e2e.py's Custom Models one: unset
+# E2E_AGENT_FRAMEWORKS runs all five, or set it (e.g. "base,crewai") to run a
+# subset. CI's dedicated job pins E2E_WORKLOAD_FRAMEWORK=base (see the
+# workflow), which maps to E2E_AGENT_FRAMEWORKS=base for this test -- the
+# Workload API code path has no framework-specific branching (`workload.py`
+# and `workload_api/` never look at the framework, only the agent's dependency
+# set differs), so one framework is enough signal there and the other four
+# would just cost 4 extra platform image builds per CI run.
 
 
 @pytest.mark.e2e
-def test_e2e_agent_workload_api() -> None:
+@pytest.mark.parametrize("framework", ALL_FRAMEWORKS, ids=list(ALL_FRAMEWORKS))
+def test_e2e_agent_workload_api(framework: str) -> None:
     """Workload API runtime: plan on every run, real deploy when CI asks for it.
 
     See `workload_e2e.run_workload_agent_e2e` for the two tiers and the
     `RUN_AGENT_WORKLOAD_DEPLOY_TESTS` gate.
     """
     require_e2e_enabled()
-    if not should_run_framework(WORKLOAD_FRAMEWORK):
+    if not should_run_framework(framework):
         pytest.skip("Skipping due to E2E_AGENT_FRAMEWORKS selection")
 
     datarobot_endpoint, datarobot_api_token = require_datarobot_env()
 
     run_workload_agent_e2e(
-        agent_framework=WORKLOAD_FRAMEWORK,
+        agent_framework=framework,
         datarobot_endpoint=datarobot_endpoint,
         datarobot_api_token=datarobot_api_token,
     )
