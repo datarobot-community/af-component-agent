@@ -5,7 +5,7 @@ description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
 {% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% else %}requires-python = ">=3.11, <3.14"{% endif %}
 dependencies = [
-    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, auth]{% elif agent_template_framework == 'crewai' %}[crewai, dragent, auth]{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent, auth]{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent, auth]{% elif agent_template_framework == 'base' %}[dragent, auth]{% elif agent_template_framework == 'nat' %}[dragent, auth]{% else %}[core, auth]{% endif %}==0.27.10",
+    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, auth]{% elif agent_template_framework == 'crewai' %}[crewai, dragent, auth]{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent, auth]{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent, auth]{% elif agent_template_framework == 'base' %}[dragent, auth]{% elif agent_template_framework == 'nat' %}[dragent, auth]{% else %}[core, auth]{% endif %}==0.27.11",
     "datarobot-mlops==11.1.28",
     "datarobot[core]>=3.17.0,<4.0.0",  # We use getenv to load runtime parameter values, and there are important bugfixes in 3.17
     "gunicorn>=25.0.0",  # We require this to run dragent workers in deployments
@@ -251,7 +251,7 @@ constraint-dependencies = [
     "python-multipart>=0.0.31",
     "joserfc>=1.6.8",
     "soupsieve>=2.8.4",
-    "pypdf>=6.14.2",
+    "pypdf>=6.15.0",
     "pyarrow>=23.0.1",
     "pillow>=12.3.0",
     "banks>=2.4.2",
@@ -272,6 +272,8 @@ constraint-dependencies = [
     "tornado>=6.5.7",
     "transformers>=5.5.0",
     "urllib3>=2.7.0",
+    "h2>=4.4.1",
+    "pymdown-extensions>=11.0.1",
 ]
 override-dependencies = [
     "crewai>=1.11.0",
