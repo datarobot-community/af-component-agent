@@ -22,14 +22,10 @@ from .helpers import (
 )
 from .workload_e2e import run_workload_agent_e2e
 
-# A matrix, same knob as test_agent_e2e.py's Custom Models one: unset
-# E2E_AGENT_FRAMEWORKS runs all five, or set it (e.g. "base,crewai") to run a
-# subset. CI's dedicated job pins E2E_WORKLOAD_FRAMEWORK=base (see the
-# workflow), which maps to E2E_AGENT_FRAMEWORKS=base for this test -- the
-# Workload API code path has no framework-specific branching (`workload.py`
-# and `workload_api/` never look at the framework, only the agent's dependency
-# set differs), so one framework is enough signal there and the other four
-# would just cost 4 extra platform image builds per CI run.
+# A matrix, same knob and same coverage as test_agent_e2e.py's Custom Models
+# one: unset E2E_AGENT_FRAMEWORKS runs all five, or set it (e.g. "base,crewai")
+# to run a subset. CI's `e2e-workload-api` job uses the same resolved matrix as
+# `e2e-custom-models` -- full five on push, path-narrowed on PRs.
 
 
 @pytest.mark.e2e
