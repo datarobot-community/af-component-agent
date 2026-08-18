@@ -12,7 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from datarobot_genai.core.config import register_config_provider
+
 from agent.config import Config
-{% if agent_template_framework != "nat" %}from agent.myagent import MyAgent
+
+# Hand agent/config.py to datarobot-genai as the authoritative application config: from
+# here on the library resolves the DataRobot connection and every LLM through Config
+# instead of reading the environment on its own. Importing this package is what puts it
+# in place, and NAT imports it during plugin discovery, before it builds the workflow.
+register_config_provider(Config, default_llm_name="{{ _external_data.llm.llm_app_name|replace("-", "_") }}")
+{% if agent_template_framework != "nat" %}
+# Imported after the call above, because agent code may build an LLM at import time.
+from agent.myagent import MyAgent  # noqa: E402
 {% endif %}
 __all__ = [{% if agent_template_framework != "nat" %}"MyAgent", {% endif %}"Config"]

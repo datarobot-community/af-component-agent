@@ -5,9 +5,14 @@ description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
 {% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% else %}requires-python = ">=3.11, <3.14"{% endif %}
 dependencies = [
-    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, auth]{% elif agent_template_framework == 'crewai' %}[crewai, dragent, auth]{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent, auth]{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent, auth]{% elif agent_template_framework == 'base' %}[dragent, auth]{% elif agent_template_framework == 'nat' %}[dragent, auth]{% else %}[core, auth]{% endif %}==0.27.11",
+    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, auth]{% elif agent_template_framework == 'crewai' %}[crewai, dragent, auth]{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent, auth]{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent, auth]{% elif agent_template_framework == 'base' %}[dragent, auth]{% elif agent_template_framework == 'nat' %}[dragent, auth]{% else %}[core, auth]{% endif %}==0.28.0",
     "datarobot-mlops==11.1.28",
-    "datarobot[core]>=3.17.0,<4.0.0",  # We use getenv to load runtime parameter values, and there are important bugfixes in 3.17
+    # datarobot.core.config gives us getenv-based runtime parameter loading, plus the
+    # DataRobotAppFrameworkBaseSettings and LLMConfig classes that agent/config.py and
+    # datarobot-genai both build on. 3.18 is the first release carrying those LLM config
+    # pieces. The auth and fs extras are asked for explicitly because datarobot-genai asks
+    # for them through datarobot-early-access, which is excluded below.
+    "datarobot[core, auth, fs]>=3.18.0,<4.0.0",
     "gunicorn>=25.0.0",  # We require this to run dragent workers in deployments
 
     # Keep this in sync with the ag-ui-protocol version in fastapi_server/pyproject.toml of the
@@ -231,7 +236,14 @@ exclude-dependencies = [
     # deepeval — CLI / reporting stack pulled in via datarobot-moderations[all]; not used at runtime
     "pyfiglet",                 # ASCII banner renderer for deepeval CLI; not used
     "wheel",                    # build-time packaging tool; not a runtime dependency
-    "datarobot-early-access",   # randomly overlaps the core `datarobot`
+    # datarobot-early-access installs over the same `datarobot` import path as the
+    # stable package, and install order decides which one wins. datarobot-genai depends
+    # on the early access build; excluding it keeps exactly one copy of `datarobot` in
+    # this app, the stable one pinned above. The only thing left behind is the
+    # deprecation fallback for the pre-rename LLM parameters (NIM_DEPLOYMENT_ID,
+    # USE_DATAROBOT_LLM_GATEWAY). This template does not emit those names; the LLM
+    # component sets the namespaced ones.
+    "datarobot-early-access",
 ]
 # Managed by cve-sync from policy/. Do not hand-edit between the markers below:
 # `cve-sync sync` regenerates both keys wholesale from policy and drops anything

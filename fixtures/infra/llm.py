@@ -11,7 +11,7 @@ custom_model_runtime_parameters: list[
     # Enable DataRobot LLM Gateway for all agents (required for nat, helpful for others)
     # Uses "1" to match templates repo convention
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-        key="USE_DATAROBOT_LLM_GATEWAY",
+        key="LLM_USE_DATAROBOT_LLM_GATEWAY",
         type="string",
         value="1",
     ),
