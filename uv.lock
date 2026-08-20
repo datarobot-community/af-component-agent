@@ -49,7 +49,6 @@ constraints = [
     { name = "transformers", specifier = ">=5.5.0" },
     { name = "urllib3", specifier = ">=2.7.0" },
 ]
-overrides = [{ name = "datarobot-early-access", marker = "sys_platform == 'never'" }]
 
 [[package]]
 name = "af-component-agent"
@@ -75,7 +74,7 @@ dev = [
 requires-dist = [
     { name = "backoff", marker = "extra == 'dev'", specifier = ">=2.0.0" },
     { name = "datarobot", extras = ["core"], marker = "extra == 'dev'", specifier = ">=3.18.0,<4.0.0" },
-    { name = "datarobot-genai", marker = "extra == 'dev'", specifier = "==0.28.0" },
+    { name = "datarobot-genai", marker = "extra == 'dev'", specifier = "==0.28.3" },
     { name = "jinja-cli", specifier = ">=1.2.2" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "openai", marker = "extra == 'dev'", specifier = ">=1.0.0" },
@@ -264,11 +263,11 @@ core = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.28.0"
+version = "0.28.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/8a/65/8f440873e6749cc0c7245fcde980b25e9849ef068bf7ae959abafcff3a9f/datarobot_genai-0.28.0.tar.gz", hash = "sha256:4058c140c6977d705f01756f58956c3091c1baa7cb82c6f2b01db4219fa9ed10", size = 593569, upload-time = "2026-08-18T14:04:44.647Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ed/78/55a5b5ff564dcd1a0422232fd82277cf35d646b14a2a4e7223b897905fe9/datarobot_genai-0.28.3.tar.gz", hash = "sha256:2a439346864b65752d48b9faae90298324f629b0303cfa8fcf68ce00fe1430d5", size = 598394, upload-time = "2026-08-20T15:19:02.215Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/85/15/5e1d6d6f9d5e38d4bf6c41b6ad9f181c7dc044c0b0a018568ba0fd5b8924/datarobot_genai-0.28.0-py3-none-any.whl", hash = "sha256:8fb86d62c38a9d85da6a11bb8b641cd69e85b9dc14aa6b3cd559fc3f4b6bb15e", size = 838658, upload-time = "2026-08-18T14:04:42.413Z" },
+    { url = "https://files.pythonhosted.org/packages/15/66/89a5f0a4ed82a8700539a724a1c2414fcde4f818cde30df6108fb068bf0a/datarobot_genai-0.28.3-py3-none-any.whl", hash = "sha256:234290910ad737e49ac68234ee3a7bb633bc4528e6cd790b58640df4839e595f", size = 844569, upload-time = "2026-08-20T15:18:59.957Z" },
 ]
 
 [[package]]
