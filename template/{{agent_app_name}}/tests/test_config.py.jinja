@@ -11,10 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Tests that agent/config.py is the configuration the whole application runs on.
+"""Tests that agent/config.py is the configuration the agent actually runs on.
 
 These guard the contract behind `agent/__init__.py`: `datarobot-genai` must resolve
-this app's `Config`, and every LLM setting it uses must come off that class. If these
+this agent's `Config`, and every LLM setting it uses must come off that class. If these
 fail, the library has fallen back to reading the environment on its own and the values
 in `agent/config.py` are being ignored.
 """
@@ -31,23 +31,23 @@ from datarobot_genai.core.config import (
 from agent import Config
 
 
-def test_genai_resolves_the_app_config() -> None:
-    """The library must hand back this app's Config, not its own."""
+def test_genai_resolves_the_agent_config() -> None:
+    """The library must hand back this agent's Config, not its own."""
     resolved = resolve_config()
 
     assert isinstance(resolved, Config)
-    # This app's Config stands on its own. Inheriting the library's config class would
+    # This agent's Config stands on its own. Inheriting the library's config class would
     # hand ownership of the fields back to the library.
     assert not isinstance(resolved, GenAIConfig)
 
 
-def test_genai_resolves_the_app_llm_instance_name() -> None:
-    """Call sites with no LLM name of their own must target this app's LLM component."""
+def test_genai_resolves_the_agent_llm_instance_name() -> None:
+    """A call site with no LLM name of its own must target this agent's LLM."""
     assert registered_default_llm_name() == "{{ _external_data.llm.llm_app_name|replace("-", "_") }}"
 
 
-def test_llm_config_is_built_from_app_config_fields() -> None:
-    """The resolved LLM config must be built from the app's own fields."""
+def test_llm_config_is_built_from_agent_config_fields() -> None:
+    """The resolved LLM config must be built from the agent's own fields."""
     config = Config(
         datarobot_endpoint="https://example.datarobot.com/api/v2",
         datarobot_api_token="token",
@@ -65,7 +65,7 @@ def test_llm_config_is_built_from_app_config_fields() -> None:
     assert llm_config.get_llm_type() == LLMType.DEPLOYMENT
 
 
-def test_library_reads_the_app_config_runtime_defaults() -> None:
+def test_library_reads_the_agent_config_runtime_defaults() -> None:
     """What the library resolves must equal what agent/config.py declares.
 
     These two settings are still read off the library's own config class rather than

@@ -13,11 +13,11 @@
 # limitations under the License.
 # ------------------------------------------------------------------------------
 """
-All configuration for the agent application. The config class handles
+All configuration for the agent component. The config class handles
 loading variables from environment, .env files, Pulumi outputs, and
 DataRobot credentials automatically.
 
-This is the authoritative configuration for the application. `datarobot-genai`
+This is the authoritative configuration for the agent component. `datarobot-genai`
 resolves the DataRobot connection and every LLM setting through this class instead
 of its own defaults, so whatever is set here is what the agent runs with. Adding a
 field here is all it takes to make it available; nothing needs to be registered.

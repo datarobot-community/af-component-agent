@@ -377,7 +377,7 @@ For detailed Base agent documentation, see [docs/agent/frameworks/base.md](../do
 
 ## Configuration
 
-All configuration lives in `{{ agent_app_name }}/agent/config.py`. The `Config` class there is the authority for the whole application: `datarobot-genai` resolves the DataRobot connection and every LLM setting through it instead of reading the environment on its own. `agent/__init__.py` hands the class to the library on import, which is the only registration involved.
+All configuration lives in `{{ agent_app_name }}/agent/config.py`. The `Config` class there is the authority for this agent component: `datarobot-genai` resolves the DataRobot connection and every LLM setting through it instead of reading the environment on its own. `agent/__init__.py` hands the class to the library on import, which is the only registration involved.
 
 - Add a setting by adding a field to `Config`. A field named `foo_bar` is read from `FOO_BAR` (environment variable, runtime parameter, `.env`, file secret, or Pulumi output).
 - Get one LLM's connection details with `Config().resolve_llm_config(name="{{ _external_data.llm.llm_app_name|replace("-", "_") }}")`. Nothing is registered per LLM.
@@ -414,9 +414,9 @@ Refer to [Custom metrics](../docs/agent/custom-metrics.md) page for how to set u
 
 ## Migrations
 
-### Application config authority
+### Agent config authority
 
-`agent/config.py` is now the authoritative configuration for the application, `datarobot-genai` included, and the per-LLM settings are namespaced by the LLM component's name. See [application config authority migration](../docs/agent/migration-config-authority.md).
+`agent/config.py` is now the authoritative configuration for the agent component, `datarobot-genai` included, and the per-LLM settings are namespaced by the LLM component's name. See [agent config authority migration](../docs/agent/migration-config-authority.md).
 
 ### 11.9.3 — `workflow.yaml` location
 
@@ -434,4 +434,4 @@ If you are upgrading an existing agent from a version prior to 11.8.8, follow th
 - [Base agent migration](../docs/agent/frameworks/migration-to-11.8.8-base.md)
 - [NAT agent migration](../docs/agent/frameworks/migration-to-11.8.8-nat.md)
 - [workflow.yaml path migration (11.9.3)](../docs/agent/migration-workflow-yaml-path.md)
-- [application config authority migration](../docs/agent/migration-config-authority.md)
+- [agent config authority migration](../docs/agent/migration-config-authority.md)

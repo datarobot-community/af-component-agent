@@ -152,7 +152,7 @@ DRAgent automatically resolves the authorization context for tools that require 
 
 Agent configuration is managed by the `Config` class in `agent/config.py`, which extends `DataRobotAppFrameworkBaseSettings`. It loads values in the following priority order: environment variables (including runtime parameters), `.env` files, file secrets, then Pulumi output variables.
 
-`Config` is the authority for the whole application, `datarobot-genai` included. The library resolves the DataRobot connection and every LLM setting through this class rather than reading the environment itself, so a default changed in `agent/config.py` is the default the agent runs with. `agent/__init__.py` hands the class to the library on import; there is nothing else to register.
+`Config` is the authority for this agent component, `datarobot-genai` included. The library resolves the DataRobot connection and every LLM setting through this class rather than reading the environment itself, so a default changed in `agent/config.py` is the default the agent runs with. `agent/__init__.py` hands the class to the library on import; there is nothing else to register.
 
 | Variable | Description | Default |
 |---|---|---|
@@ -206,9 +206,9 @@ All agent types use the same `datarobot_genai` package for LLM configuration, re
 
 ## Migrations
 
-### Application config authority
+### Agent config authority
 
-`agent/config.py` is the authoritative configuration for the application, and the per-LLM settings are namespaced by the LLM component's name. Projects created before this change need their config fields, runtime parameters, and `datarobot-llm-router` blocks renamed. See [application config authority migration](./migration-config-authority.md).
+`agent/config.py` is the authoritative configuration for the agent component, and the per-LLM settings are namespaced by the LLM component's name. Projects created before this change need their config fields, runtime parameters, and `datarobot-llm-router` blocks renamed. See [agent config authority migration](./migration-config-authority.md).
 
 ### 11.9.3 — `workflow.yaml` location
 
@@ -228,7 +228,7 @@ Migration guides per framework:
 | Base | [migration-to-11.8.8-base.md](./frameworks/migration-to-11.8.8-base.md) |
 | NAT | [migration-to-11.8.8-nat.md](./frameworks/migration-to-11.8.8-nat.md) |
 | All frameworks | [`workflow.yaml` path (11.9.3)](./migration-workflow-yaml-path.md) |
-| All frameworks | [application config authority](./migration-config-authority.md) |
+| All frameworks | [agent config authority](./migration-config-authority.md) |
 
 ## Further reading
 
