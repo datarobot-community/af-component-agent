@@ -49,13 +49,6 @@ import pulumi
 import pulumi_datarobot
 from datarobot_pulumi_utils.pulumi import export
 
-from {{agent_app_name}}_workload_api import (
-    WORKLOAD_ARTIFACT_TYPE,
-    ReadinessProbe,
-    WorkloadGeneratedImageArtifact,
-    source_hash,
-)
-
 from . import base
 
 WORKLOAD_CONTAINER_NAME: Final[str] = "{{ agent_app_name | replace('_', '-') }}"
@@ -123,9 +116,12 @@ def _resolve_container_port() -> int:
     )
 
 
-def _readiness_probe() -> ReadinessProbe:
+def _readiness_probe() -> pulumi_datarobot.ArtifactSpecContainerGroupContainerReadinessProbeArgs:
     """Readiness probe for the agent's ``/health`` endpoint, on the resolved container port."""
-    return ReadinessProbe(path="/health", port=_resolve_container_port())
+    return pulumi_datarobot.ArtifactSpecContainerGroupContainerReadinessProbeArgs(
+        path="/health",
+        port=_resolve_container_port()
+    )
 
 
 def _workload_artifact_routes() -> list[dict[str, str]] | None:
@@ -205,13 +201,13 @@ def _workload_environment_vars(
     ]
 
 
-def _image_uri_artifact_args(
+def _create_image_uri_artifact(
     *,
-    artifact_name: str,
+    asset_name: str,
     image_uri: str,
     environment_vars: list[dict[str, Any]],
     entrypoints: list[str] | None,
-) -> dict[str, Any]:
+) -> pulumi_datarobot.Artifact:
     """Build the ``pulumi_datarobot.Artifact`` arguments for a pre-built image.
 
     The pre-built-image scenario reaches the platform entirely through the
@@ -219,57 +215,84 @@ def _image_uri_artifact_args(
     no artifact build to wait on. Keys are the Workload API's own wire format
     and are forwarded by the provider as-is (see the module docstring).
     """
-    container: dict[str, Any] = {
-        "name": WORKLOAD_CONTAINER_NAME,
-        "primary": True,
-        "port": _resolve_container_port(),
-        "imageUri": image_uri,
-        "environmentVars": environment_vars,
-        "readinessProbe": _readiness_probe().to_wire(),
-    }
-    routes = _workload_artifact_routes()
-    if routes is not None:
-        container["routes"] = routes
-    if entrypoints is not None:
-        # Omitting the key entirely keeps the image's own CMD/entrypoint.
-        container["entrypoints"] = entrypoints
-    return {
-        "name": artifact_name,
-        "type": WORKLOAD_ARTIFACT_TYPE,
-        "spec": {"containerGroups": [{"containers": [container]}]},
-    }
+    pulumi.info(
+        f"Workload image build: pre-built image from personal registry {image_uri}"
+    )
+    return pulumi_datarobot.Artifact(
+        asset_name + " Workload Artifact [Image URI]",
+        name=asset_name,
+        description=f"Agent workload artifact built from pre-built image {image_uri}",
+        type="agent",
+        status="locked",
+        spec=pulumi_datarobot.ArtifactSpecArgs(
+            a2aEnabled=True,
+            container_groups=[
+                pulumi_datarobot.ArtifactSpecContainerGroupArgs(
+                    containers=[
+                        pulumi_datarobot.ArtifactSpecContainerGroupContainerArgs(
+                            name=WORKLOAD_CONTAINER_NAME,
+                            primary=True,
+                            image_uri=image_uri,
+                            entrypoints=entrypoints,
+                            port=_resolve_container_port(),
+                            routes=_workload_artifact_routes(),
+                            environment_vars=environment_vars,
+                            readiness_probe=_readiness_probe()
+                        )
+                    ]
+                )
+            ]
+        )
+    )
 
 
 def _create_generated_image_artifact(
     *,
     asset_name: str,
-    workload_api_endpoint: str,
     application_path: str,
-    bundle_hash: str,
     environment_vars: list[dict[str, Any]],
-    build_timeout_s: int,
     execution_environment: pulumi_datarobot.ExecutionEnvironment,
-) -> WorkloadGeneratedImageArtifact:
+) -> pulumi_datarobot.Artifact:
     pulumi.info(
         "Workload image build: platform-generated Dockerfile "
         "(execution environment aligned with the Custom Models runtime)"
     )
-    return WorkloadGeneratedImageArtifact(
+    return pulumi_datarobot.Artifact(
         asset_name + " Workload Artifact [Generated Dockerfile]",
-        workload_api_endpoint=workload_api_endpoint,
-        artifact_name=asset_name,
-        application_path=application_path,
-        execution_environment_id=execution_environment.id,
-        execution_environment_version_id=execution_environment.version_id,
-        entrypoint=_resolve_generated_entrypoint(),
-        container_name=WORKLOAD_CONTAINER_NAME,
-        container_port=_resolve_container_port(),
-        environment_vars=environment_vars,
-        routes=_workload_artifact_routes(),
-        source_hash=bundle_hash,
-        build_timeout_s=build_timeout_s,
-        readiness_probe=dataclasses.asdict(_readiness_probe()),
+        name=asset_name,
+        description="Agent workload artifact built from local source via generated Dockerfile",
+        type="agent",
+        status="locked",
+        source=pulumi_datarobot.ArtifactSourceArgs(
+            dir=application_path,
+            # wait_for_build defaults to True
+        ),
         opts=pulumi.ResourceOptions(depends_on=[execution_environment]),
+        spec=pulumi_datarobot.ArtifactSpecArgs(
+            a2aEnabled=True,
+            container_groups=[
+                pulumi_datarobot.ArtifactSpecContainerGroupArgs(
+                    containers=[
+                        pulumi_datarobot.ArtifactSpecContainerGroupContainerArgs(
+                            name=WORKLOAD_CONTAINER_NAME,
+                            primary=True,
+                            port=_resolve_container_port(),
+                            routes=_workload_artifact_routes(),
+                            environment_vars=environment_vars,
+                            image_build_config=pulumi_datarobot.ArtifactSpecContainerGroupContainerImageBuildConfigArgs(
+                                dockerfile=pulumi_datarobot.ArtifactSpecContainerGroupContainerImageBuildConfigDockerfileArgs(
+                                    source="generated",
+                                    execution_environment_id=execution_environment.id,
+                                    execution_environment_version_id=execution_environment.version_id,
+                                    entrypoints=_resolve_generated_entrypoint(),
+                                ),
+                            ),
+                            readiness_probe=_readiness_probe()
+                        )
+                    ]
+                )
+            ]
+        )
     )
 
 
@@ -284,34 +307,28 @@ def _create_workload(
         name=asset_name,
         artifact_id=artifact_id,
         importance=os.getenv("WORKLOAD_IMPORTANCE", "high"),
-        runtime={
-            "container_groups": [
-                {
-                    "replica_count": int(os.getenv("WORKLOAD_REPLICA_COUNT", "1")),
-                    "containers": [
-                        {
-                            "name": WORKLOAD_CONTAINER_NAME,
-                            "resource_allocation": {
-                                "cpu": float(
-                                    os.getenv("WORKLOAD_CPU", DEFAULT_WORKLOAD_CPU)
-                                ),
-                                "memory": int(
-                                    os.getenv(
-                                        "WORKLOAD_MEMORY",
-                                        str(DEFAULT_WORKLOAD_MEMORY_BYTES),
-                                    )
-                                ),
-                            },
-                        }
-                    ],
-                }
+        runtime=pulumi_datarobot.WorkloadRuntimeArgs(
+            container_groups=[
+                pulumi_datarobot.WorkloadRuntimeContainerGroupArgs(
+                    replica_count=int(os.getenv("WORKLOAD_REPLICA_COUNT", "1")),
+                    resource_bundles=["cpu.xlarge"],
+                    containers=[
+                        pulumi_datarobot.WorkloadRuntimeContainerGroupContainerArgs(
+                            name=WORKLOAD_CONTAINER_NAME,
+                            resource_allocation=pulumi_datarobot.WorkloadRuntimeContainerGroupContainerResourceAllocationArgs(
+                                cpu=float(os.getenv("WORKLOAD_CPU", DEFAULT_WORKLOAD_CPU)),
+                                memory=int(os.getenv("WORKLOAD_MEMORY", str(DEFAULT_WORKLOAD_MEMORY_BYTES)))
+                            )
+                        )
+                    ]
+                )
             ]
-        },
+        ),
         opts=pulumi.ResourceOptions(
             depends_on=depends_on,
             delete_before_replace=False,
             retain_on_delete=False,
-        ),
+        )
     )
 
 
@@ -402,15 +419,11 @@ def _provision_from_image_uri(
         f"Workload scenario: pre-built image from personal registry ({image_uri})."
     )
 
-    artifact = pulumi_datarobot.Artifact(
-        base.{{agent_app_name}}_asset_name + " Workload Artifact [Image URI]",
-        **_image_uri_artifact_args(
-            artifact_name=base.{{agent_app_name}}_asset_name,
-            image_uri=image_uri,
-            environment_vars=_workload_environment_vars(shared_runtime_parameters),
-            # Only override the image's own CMD/entrypoint when explicitly configured.
-            entrypoints=_explicit_workload_entrypoint(),
-        ),
+    artifact = _create_image_uri_artifact(
+        asset_name=base.{{agent_app_name}}_asset_name,
+        image_uri=image_uri,
+        environment_vars=_workload_environment_vars(shared_runtime_parameters),
+        entrypoints=_explicit_workload_entrypoint()
     )
 
     workload = _create_workload(
@@ -499,7 +512,6 @@ def _ensure_agent_has_entrypoint(application_path: Path) -> None:
 
 
 def _provision_from_source_bundle(
-    datarobot_endpoint: str,
     shared_runtime_parameters: list[
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs
     ],
@@ -510,8 +522,6 @@ def _provision_from_source_bundle(
     )
 
     _ensure_agent_has_entrypoint(base.{{agent_app_name}}_application_path)
-
-    bundle_hash = source_hash(base.{{agent_app_name}}_application_path)
 
     # use_cases=["customModel"] only: this EE is used purely as the base
     # image for the generated Dockerfile build, never for Playground's
@@ -524,13 +534,8 @@ def _provision_from_source_bundle(
 
     artifact = _create_generated_image_artifact(
         asset_name=base.{{agent_app_name}}_asset_name,
-        workload_api_endpoint=datarobot_endpoint,
         application_path=str(base.{{agent_app_name}}_application_path),
-        bundle_hash=bundle_hash,
         environment_vars=_workload_environment_vars(shared_runtime_parameters),
-        build_timeout_s=int(
-            os.getenv("WORKLOAD_BUILD_TIMEOUT_S", str(DEFAULT_BUILD_TIMEOUT_S))
-        ),
         execution_environment=execution_environment,
     )
 
@@ -596,9 +601,8 @@ def provision_workload_agent(
     intentionally not implemented here and is not a supported path.
     """
     _require_env("DATAROBOT_API_TOKEN")
-    datarobot_endpoint = _require_env("DATAROBOT_ENDPOINT")
 
     image_uri = os.getenv("WORKLOAD_AGENT_IMAGE_URI", "").strip()
     if image_uri:
         return _provision_from_image_uri(image_uri, shared_runtime_parameters)
-    return _provision_from_source_bundle(datarobot_endpoint, shared_runtime_parameters)
+    return _provision_from_source_bundle(shared_runtime_parameters)
