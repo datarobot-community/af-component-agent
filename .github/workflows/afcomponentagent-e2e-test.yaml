@@ -235,22 +235,14 @@ jobs:
   e2e-workload-api:
     name: "E2E / workload-api / ${{ matrix.framework }}"
     needs: setup
-    # Same fork guard as `e2e-custom-models`: `pulumi preview` performs real provider reads
-    # (the execution environment is resolved via `ExecutionEnvironment.get`), so
-    # this job needs the integration secrets too.
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
     runs-on: "ubuntu-latest"
     environment: integration
-    # Single source of truth for the stack name so the Run step and the teardown
-    # net can never drift apart and orphan a stack. The `wapi` discriminator
-    # keeps it distinct from the framework matrix's stacks above — and since
-    # PROJECT_NAME is the stack name, it also namespaces every DataRobot asset
-    # this run creates as `[<stack>] [agent]`.
     env:
       E2E_PULUMI_STACK: af-component-agent-e2e-wapi-${{ matrix.framework }}-${{ github.run_id }}-${{ github.run_attempt }}
     container:
       image: ghcr.io/astral-sh/uv:python3.11-trixie
-    timeout-minutes: 75
+    timeout-minutes: 90 # bumped from 75: the from-source provider build adds time
     strategy:
       fail-fast: false
       matrix:
@@ -265,7 +257,8 @@ jobs:
           cache-key-suffix: e2e-workload-api-${{ matrix.framework }}
       - name: Install pulumi
         # Same pin and SHA-256 verification as the `e2e-custom-models` job
-        # above; bump both together.
+        # above; bump both together. This installs the pulumi CLI/engine —
+        # separate from the resource-datarobot *plugin* built below.
         shell: bash
         env:
           PULUMI_VERSION: "3.249.0"
@@ -279,21 +272,82 @@ jobs:
           echo "${PULUMI_SHA256}  ${workdir}/${tarball}" | sha256sum -c -
           tar -xzf "${workdir}/${tarball}" -C "${workdir}"
           echo "${workdir}/pulumi" >> "$GITHUB_PATH"
+
+      # --- NEW: build pulumi-datarobot against the unreleased TF branch ---
+      - name: Install build tooling for local pulumi-datarobot
+        shell: bash
+        run: |
+          set -euo pipefail
+          apt-get update
+          apt-get install -y --no-install-recommends git make curl ca-certificates
+          GO_VERSION="1.22.5"
+          curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" -o /tmp/go.tgz
+          tar -C /usr/local -xzf /tmp/go.tgz
+          echo "/usr/local/go/bin" >> "$GITHUB_PATH"
+
+      - name: Build pulumi-datarobot from unreleased branch
+        shell: bash
+        env:
+          # TODO: confirm clone URLs / add auth if these repos are private.
+          TF_PROVIDER_REPO: "https://github.com/datarobot-community/terraform-provider-datarobot.git"
+          TF_BRANCH: "brunoromano-dr/RAPTOR-19287-run-agent-app-wapi"
+          PULUMI_PROVIDER_REPO: "https://github.com/datarobot-community/pulumi-datarobot.git"
+          PULUMI_PROVIDER_REF: "main"
+        run: |
+          set -euo pipefail
+          export PATH="/usr/local/go/bin:${PATH}"
+          BUILD_WORKSPACE="$(mktemp -d)"
+          TF_PROVIDER="${BUILD_WORKSPACE}/terraform-provider-datarobot"
+          PULUMI_PROVIDER="${BUILD_WORKSPACE}/pulumi-datarobot"
+
+          # 1. Terraform provider branch (mirrors guide section 1)
+          git clone --depth 1 --branch "${TF_BRANCH}" "${TF_PROVIDER_REPO}" "${TF_PROVIDER}"
+          (cd "${TF_PROVIDER}" && go mod tidy && go build -o terraform-provider-datarobot .)
+
+          # 2. Pulumi provider + Python SDK built against that TF checkout
+          #    (mirrors guide section 2)
+          git clone --depth 1 --branch "${PULUMI_PROVIDER_REF}" "${PULUMI_PROVIDER_REPO}" "${PULUMI_PROVIDER}"
+          VERSION="$(cd "${PULUMI_PROVIDER}" && make -np 2>/dev/null | awk '/^VERSION := /{print $3; exit}')"
+          echo "Building pulumi-datarobot ${VERSION} against TF branch ${TF_BRANCH}"
+
+          (cd "${PULUMI_PROVIDER}/provider" \
+            && go mod edit -replace "github.com/datarobot-community/terraform-provider-datarobot=${TF_PROVIDER}" \
+            && go mod tidy)
+          (cd "${PULUMI_PROVIDER}" && make provider && make build_python)
+          # Drop the replace so nothing machine-local leaks into any commit
+          # this checkout might accidentally produce.
+          (cd "${PULUMI_PROVIDER}/provider" \
+            && go mod edit -dropreplace github.com/datarobot-community/terraform-provider-datarobot \
+            && go mod tidy)
+
+          rm -rf ~/.pulumi/plugins/resource-datarobot*
+          pulumi plugin install resource datarobot "${VERSION}" \
+            -f "${PULUMI_PROVIDER}/bin/pulumi-resource-datarobot"
+          pulumi plugin ls | grep datarobot
+
+          # Shadow the uv.lock-pinned pulumi_datarobot with the local build.
+          # Install from sdk/python/bin only (sdk/python itself stays 0.0.0).
+          uv sync --all-extras --frozen
+          uv pip install --python .venv/bin/python \
+            -e "${PULUMI_PROVIDER}/sdk/python/bin" --reinstall-package pulumi_datarobot
+          .venv/bin/python -c "from pulumi_datarobot import ArtifactSourceArgs; print('OK', ArtifactSourceArgs)"
+      # --- END NEW ---
+
       - name: Run Workload API E2E
         shell: bash
         env:
           UV_CACHE_DIR: /.uv_cache
           RUN_E2E: "1"
           E2E_AGENT_FRAMEWORKS: ${{ matrix.framework }}
-          # Real `pulumi up` + platform image build + chat call only on push to
-          # main (merges); PRs stop after the plan assertions, which create
-          # nothing and take a few minutes.
           RUN_AGENT_WORKLOAD_DEPLOY_TESTS: ${{ github.event_name == 'push' && '1' || '0' }}
           LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"
           DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
           DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
         run: |
-          uv run --all-extras pytest --import-mode=importlib -vv -s \
+          # --no-sync (was --all-extras) so uv doesn't re-resolve against
+          # uv.lock and silently reinstall the released pulumi_datarobot,
+          # undoing the override installed above.
+          uv run --no-sync pytest --import-mode=importlib -vv -s \
             ./tests/e2e/test_agent_workload_e2e.py 2>&1 | tee "e2e-workload-api-${{ matrix.framework }}.log"
       - name: Tear down E2E resources
         if: always()
@@ -302,9 +356,10 @@ jobs:
           DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
           DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
         run: |
-          # Same net as the `e2e-custom-models` job: destroy this run's resources on
-          # success, failure, or cancellation. The test's own `finally` covers a
-          # normal exit; this additionally covers the cancelled/killed case.
+          # Unchanged from the original job — see the plugin-discovery
+          # caveat at the top of this file if teardown's `pulumi cancel`/
+          # `task destroy` calls fail to find the resource-datarobot plugin
+          # under this run's fresh PULUMI_HOME.
           stack="${E2E_PULUMI_STACK}"
           rendered="./.rendered/agent_${{ matrix.framework }}"
           infra="${rendered}/infra"
@@ -315,10 +370,6 @@ jobs:
           export PULUMI_CONFIG_PASSPHRASE=123
           export PULUMI_HOME="${rendered}/.pulumi_home"
           mkdir -p "$PULUMI_HOME"
-          # Re-materialize creds in case the test's finally already removed .env.
-          # DATAROBOT_API_TOKEN is load-bearing on this runtime: the artifact's
-          # dynamic provider reads it from the environment inside delete(), and
-          # it is deliberately never stored in Pulumi state.
           {
             echo "DATAROBOT_ENDPOINT=${DATAROBOT_ENDPOINT}"
             echo "DATAROBOT_API_TOKEN=${DATAROBOT_API_TOKEN}"
@@ -327,16 +378,9 @@ jobs:
             echo "PULUMI_CONFIG_PASSPHRASE=123"
             echo "PULUMI_HOME=${PULUMI_HOME}"
           } > "${rendered}/.env"
-          # Trace teardown commands only — kept below the cred-file write so the
-          # token and (unmasked) endpoint are never echoed into the step log.
           set -x
           (cd "$infra" && uv run pulumi login --local) || true
-          # More load-bearing here than on the Custom Models path: a `pulumi up`
-          # killed during a multi-minute image build leaves a stack lock behind.
           (cd "$infra" && uv run pulumi cancel --yes --stack "$stack") || true
-          # Destroys the Workload before its Artifact (the workload depends_on
-          # the artifact); the platform refuses to delete an artifact that still
-          # backs a live workload.
           (cd "$rendered" && uvx --from go-task-bin task destroy -- --yes --skip-preview) || true
           (cd "$infra" && uv run pulumi stack rm -f -y "$stack") || true
       - name: Upload E2E logs
