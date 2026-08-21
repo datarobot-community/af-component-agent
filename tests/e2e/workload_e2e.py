@@ -498,15 +498,16 @@ def run_workload_agent_e2e(
     local_plugin_version = os.environ.get("LOCAL_DATAROBOT_PLUGIN_VERSION")
 
     if local_plugin_binary and local_plugin_version:
-        plugin_dir = pulumi_home / "plugins" / f"resource-datarobot-v{local_plugin_version}"
+        normalized_version = local_plugin_version.removeprefix("v")
+        plugin_dir = (pulumi_home / "plugins" / f"resource-datarobot-v{normalized_version}")
         plugin_dir.mkdir(parents=True, exist_ok=True)
         dest = plugin_dir / "pulumi-resource-datarobot"
         shutil.copy2(local_plugin_binary, dest)
         dest.chmod(dest.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
         fprint(
-            f"Using local pulumi-datarobot plugin {local_plugin_version} "
-            f"from {local_plugin_binary} (installed into {plugin_dir})"
-        )
+                f"Using local pulumi-datarobot plugin {local_plugin_version} "
+    f"from {local_plugin_binary} (installed into {plugin_dir})"
+    )
     # --------------------------------------------------------------------
 
     # Step 4: Write the rendered project's `.env` file (Taskfile loads this).
