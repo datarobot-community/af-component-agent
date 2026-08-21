@@ -37,6 +37,8 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
+import stat
 import time
 import uuid
 from pathlib import Path
@@ -477,6 +479,35 @@ def run_workload_agent_e2e(
     # Step 3: Create an isolated Pulumi home under the rendered project to avoid shared state.
     pulumi_home = rendered_dir / ".pulumi_home"
     pulumi_home.mkdir(parents=True, exist_ok=True)
+
+    # --- Local/unreleased pulumi-datarobot plugin override ------------------
+    # Opt-in hook for validating an unreleased pulumi-datarobot build (e.g. a
+    # branch built against an unreleased terraform-provider-datarobot
+    # branch, per the pulumi-datarobot repo's local-dev guide). CI sets
+    # LOCAL_DATAROBOT_PLUGIN_BINARY/_VERSION when it built the provider from
+    # source in an earlier workflow step; this is a complete no-op on every
+    # normal run where those vars are unset.
+    #
+    # Needed because `pulumi_home` above is freshly created per test run --
+    # a `pulumi plugin install -f ...` done in an earlier CI step (which
+    # only reaches the default `~/.pulumi`) never lands here, and the engine
+    # looks for the plugin specifically under *this* PULUMI_HOME. Without
+    # this, Pulumi falls back to auto-downloading the plugin from GitHub,
+    # which 404s for a version that only exists as a local build.
+    local_plugin_binary = os.environ.get("LOCAL_DATAROBOT_PLUGIN_BINARY")
+    local_plugin_version = os.environ.get("LOCAL_DATAROBOT_PLUGIN_VERSION")
+
+    if local_plugin_binary and local_plugin_version:
+        plugin_dir = pulumi_home / "plugins" / f"resource-datarobot-v{local_plugin_version}"
+        plugin_dir.mkdir(parents=True, exist_ok=True)
+        dest = plugin_dir / "pulumi-resource-datarobot"
+        shutil.copy2(local_plugin_binary, dest)
+        dest.chmod(dest.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+        fprint(
+            f"Using local pulumi-datarobot plugin {local_plugin_version} "
+            f"from {local_plugin_binary} (installed into {plugin_dir})"
+        )
+    # --------------------------------------------------------------------
 
     # Step 4: Write the rendered project's `.env` file (Taskfile loads this).
     # `write_testing_env` sets DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT to the
