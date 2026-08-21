@@ -106,7 +106,7 @@ jobs:
           fi
           echo "Resolved matrix: $MATRIX"
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
-  e2e:
+  e2e-custom-models:
     name: "E2E / ${{ matrix.framework }}"
     needs: setup
     # Skip on fork PRs so integration secrets are never reachable from
@@ -225,4 +225,222 @@ jobs:
             ./.rendered/agent_${{ matrix.framework }}/**/*.log
           # The tee'd console log is always written on failure, so a missing
           # file here signals something went wrong with capture — warn, not ignore.
+          if-no-files-found: warn
+
+  # The Workload API runtime (ENABLE_AGENT_ON_WORKLOAD_API=true). Separate job,
+  # not folded into the matrix above: verification is entirely different (no
+  # Playground — it POSTs to the workload's chat endpoint instead). Same matrix
+  # and the same push/PR split as `e2e-custom-models` -- full coverage on every
+  # push, path-narrowed on PRs.
+  e2e-workload-api:
+    name: "E2E / workload-api / ${{ matrix.framework }}"
+    needs: setup
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+    runs-on: "ubuntu-latest"
+    environment: integration
+    env:
+      E2E_PULUMI_STACK: af-component-agent-e2e-wapi-${{ matrix.framework }}-${{ github.run_id }}-${{ github.run_attempt }}
+    container:
+      image: ghcr.io/astral-sh/uv:python3.11-trixie
+    timeout-minutes: 90 # bumped from 75: the from-source provider build adds time
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: ${{ fromJSON(needs.setup.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: "actions/checkout@v6"
+      - name: Setup caching
+        uses: ./.github/actions/setup-caching
+        with:
+          python-version: python3.11
+          cache-key-suffix: e2e-workload-api-${{ matrix.framework }}
+      - name: Install pulumi
+        # Same pin and SHA-256 verification as the `e2e-custom-models` job
+        # above; bump both together. This installs the pulumi CLI/engine —
+        # separate from the resource-datarobot *plugin* built below.
+        shell: bash
+        env:
+          PULUMI_VERSION: "3.249.0"
+          PULUMI_SHA256: "0c4acfac957f578e406a3ae9f7042c57f05c4ad9e4b1c83ba0fcf3395e2a0b74"
+        run: |
+          set -euo pipefail
+          workdir="$(mktemp -d)"
+          tarball="pulumi-v${PULUMI_VERSION}-linux-x64.tar.gz"
+          curl -fsSL -o "${workdir}/${tarball}" \
+            "https://github.com/pulumi/pulumi/releases/download/v${PULUMI_VERSION}/${tarball}"
+          echo "${PULUMI_SHA256}  ${workdir}/${tarball}" | sha256sum -c -
+          tar -xzf "${workdir}/${tarball}" -C "${workdir}"
+          echo "${workdir}/pulumi" >> "$GITHUB_PATH"
+
+      # --- NEW: build pulumi-datarobot against the unreleased TF branch ---
+      - name: Install build tooling for local pulumi-datarobot
+        shell: bash
+        run: |
+          set -euo pipefail
+          apt-get update
+          apt-get install -y --no-install-recommends git make curl ca-certificates jq
+          GO_VERSION="1.22.5"
+          curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" -o /tmp/go.tgz
+          tar -C /usr/local -xzf /tmp/go.tgz
+          echo "/usr/local/go/bin" >> "$GITHUB_PATH"
+
+      - name: Build pulumi-datarobot from unreleased branch
+        shell: bash
+        env:
+          # TODO: confirm clone URLs / add auth if these repos are private.
+          TF_PROVIDER_REPO: "https://github.com/datarobot-community/terraform-provider-datarobot.git"
+          TF_BRANCH: "brunoromano-dr/RAPTOR-19287-run-agent-app-wapi"
+          PULUMI_PROVIDER_REPO: "https://github.com/datarobot-community/pulumi-datarobot.git"
+          PULUMI_PROVIDER_REF: "main"
+          # Deliberately higher than any real release (latest on PyPI is
+          # 0.10.45 as of writing). Every real dependent only lower-bounds
+          # pulumi-datarobot (>=0.10.27 direct, >=0.10.30 via
+          # datarobot-pulumi-utils), so this wins uv's resolver everywhere
+          # without needing to match any exact pin.
+          FAKE_VERSION: "0.999.0"
+        run: |
+          set -euo pipefail
+          export PATH="/usr/local/go/bin:${PATH}"
+          BUILD_WORKSPACE="$(mktemp -d)"
+          TF_PROVIDER="${BUILD_WORKSPACE}/terraform-provider-datarobot"
+          PULUMI_PROVIDER="${BUILD_WORKSPACE}/pulumi-datarobot"
+ 
+          # 1. Terraform provider branch (mirrors guide section 1)
+          git clone --depth 1 --branch "${TF_BRANCH}" "${TF_PROVIDER_REPO}" "${TF_PROVIDER}"
+          (cd "${TF_PROVIDER}" && go mod tidy && go build -o terraform-provider-datarobot .)
+ 
+          # 2. Pulumi provider + Python SDK built against that TF checkout
+          #    (mirrors guide section 2). Tag HEAD with the fake version so
+          #    whatever version-detection the Makefile uses (git describe /
+          #    pulumictl get-version) picks it up without needing to know
+          #    the Makefile's internals.
+          git clone --branch "${PULUMI_PROVIDER_REF}" "${PULUMI_PROVIDER_REPO}" "${PULUMI_PROVIDER}"
+          git -C "${PULUMI_PROVIDER}" tag "v${FAKE_VERSION}"
+ 
+          (cd "${PULUMI_PROVIDER}/provider" \
+            && go mod edit -replace "github.com/datarobot-community/terraform-provider-datarobot=${TF_PROVIDER}" \
+            && go mod tidy)
+          (cd "${PULUMI_PROVIDER}" && make provider && make build_python)
+          # Drop the replace so nothing machine-local leaks into any commit
+          # this checkout might accidentally produce.
+          (cd "${PULUMI_PROVIDER}/provider" \
+            && go mod edit -dropreplace github.com/datarobot-community/terraform-provider-datarobot \
+            && go mod tidy)
+ 
+          VERSION="$(cd "${PULUMI_PROVIDER}" && make -np 2>/dev/null | awk '/^VERSION := /{print $3; exit}')"
+          echo "Resolved build VERSION=${VERSION} (expected ${FAKE_VERSION})"
+          if [ "${VERSION}" != "${FAKE_VERSION}" ]; then
+            echo "::warning::VERSION=${VERSION} does not match FAKE_VERSION=${FAKE_VERSION} — the git-tag override wasn't honored. Find how this Makefile derives VERSION and set it directly, or the plugin/SDK version pairing below may be inconsistent."
+          fi
+ 
+          # Register the plugin under whatever VERSION was actually
+          # computed, so the SDK (which embeds the same VERSION at build
+          # time) finds it locally instead of downloading a mismatched
+          # version from GitHub.
+          rm -rf ~/.pulumi/plugins/resource-datarobot*
+          pulumi plugin install resource datarobot "${VERSION}" \
+            -f "${PULUMI_PROVIDER}/bin/pulumi-resource-datarobot"
+          pulumi plugin ls | grep datarobot
+ 
+          # Fail fast and cheap (seconds, right here) instead of expensive
+          # and late (~40min into a real `pulumi preview`, per the
+          # ArtifactSpecContainerGroupContainerArgs `routes` TypeError seen
+          # in CI): confirm the fields agent code depends on actually made
+          # it into this branch's generated schema before spending a full
+          # E2E run finding out otherwise. Extend this list as new
+          # unreleased-branch fields get consumed elsewhere in infra code.
+          echo "Checking generated SDK for fields consumed by infra code..."
+          for expected_field in routes; do
+            if grep -rq "\b${expected_field}\b" "${PULUMI_PROVIDER}/sdk/python/bin/pulumi_datarobot/_inputs.py"; then
+              echo "OK: '${expected_field}' present in generated _inputs.py"
+            else
+              echo "::warning::Generated SDK from ${TF_BRANCH} (pulumi-datarobot @ ${PULUMI_PROVIDER_REF}) has no '${expected_field}' field in _inputs.py — infra code expecting it will fail deep into pulumi preview/up, not here. Confirm this branch actually carries that change before re-running the full E2E."
+            fi
+          done
+ 
+          # The default ~/.pulumi install above is NOT what `task preview`
+          # actually uses: tests/e2e/workload_e2e.py creates a fresh,
+          # isolated PULUMI_HOME under `.rendered/agent_<framework>/.pulumi_home`
+          # per run (Step 3 in run_workload_agent_e2e), so the engine never
+          # sees this plugin there and falls back to auto-downloading it
+          # from GitHub — which 404s for a version that only exists locally.
+          # Export the binary path + version so the workload_e2e.py.patch
+          # hook (applied below) can copy it into that per-run PULUMI_HOME
+          # once it exists.
+          echo "LOCAL_DATAROBOT_PLUGIN_BINARY=${PULUMI_PROVIDER}/bin/pulumi-resource-datarobot" >> "$GITHUB_ENV"
+          echo "LOCAL_DATAROBOT_PLUGIN_VERSION=${VERSION}" >> "$GITHUB_ENV"
+ 
+          # Build an installable wheel from the local SDK (sdk/python/bin
+          # only — sdk/python itself stays at 0.0.0 per the guide) and
+          # expose it to every later `uv` call in this job, including the
+          # one Pulumi's uv-toolchain runs internally inside
+          # .rendered/agent_*/infra when it materializes that project's venv.
+          LOCAL_WHEELS="$(mktemp -d)"
+          uv build --wheel --out-dir "${LOCAL_WHEELS}" "${PULUMI_PROVIDER}/sdk/python/bin"
+          ls "${LOCAL_WHEELS}"
+          echo "UV_FIND_LINKS=${LOCAL_WHEELS}" >> "$GITHUB_ENV"
+          echo "UV_INDEX_STRATEGY=unsafe-best-match" >> "$GITHUB_ENV"
+      # --- END NEW ---
+
+      - name: Run Workload API E2E
+        shell: bash
+        env:
+          UV_CACHE_DIR: /.uv_cache
+          RUN_E2E: "1"
+          E2E_AGENT_FRAMEWORKS: ${{ matrix.framework }}
+          RUN_AGENT_WORKLOAD_DEPLOY_TESTS: ${{ github.event_name == 'push' && '1' || '0' }}
+          LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"
+          DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
+          DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
+        run: |
+          # Unchanged from the original job — UV_FIND_LINKS/UV_INDEX_STRATEGY
+          # from the previous step (propagated via GITHUB_ENV) make this
+          # `uv run --all-extras`, and the `uv sync` Pulumi's toolchain runs
+          # inside .rendered/agent_*/infra, both resolve pulumi-datarobot to
+          # the local build automatically.
+          uv run --all-extras pytest --import-mode=importlib -vv -s \
+            ./tests/e2e/test_agent_workload_e2e.py 2>&1 | tee "e2e-workload-api-${{ matrix.framework }}.log"
+      - name: Tear down E2E resources
+        if: always()
+        shell: bash
+        env:
+          DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
+          DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
+        run: |
+          # Unchanged from the original job — see the plugin-discovery
+          # caveat at the top of this file if teardown's `pulumi cancel`/
+          # `task destroy` calls fail to find the resource-datarobot plugin
+          # under this run's fresh PULUMI_HOME.
+          stack="${E2E_PULUMI_STACK}"
+          rendered="./.rendered/agent_${{ matrix.framework }}"
+          infra="${rendered}/infra"
+          if [ ! -d "$infra" ]; then
+            echo "No rendered infra dir for ${stack}; nothing to clean."
+            exit 0
+          fi
+          export PULUMI_CONFIG_PASSPHRASE=123
+          export PULUMI_HOME="${rendered}/.pulumi_home"
+          mkdir -p "$PULUMI_HOME"
+          {
+            echo "DATAROBOT_ENDPOINT=${DATAROBOT_ENDPOINT}"
+            echo "DATAROBOT_API_TOKEN=${DATAROBOT_API_TOKEN}"
+            echo "ENABLE_AGENT_ON_WORKLOAD_API=true"
+            echo "PULUMI_STACK=${stack}"
+            echo "PULUMI_CONFIG_PASSPHRASE=123"
+            echo "PULUMI_HOME=${PULUMI_HOME}"
+          } > "${rendered}/.env"
+          set -x
+          (cd "$infra" && uv run pulumi login --local) || true
+          (cd "$infra" && uv run pulumi cancel --yes --stack "$stack") || true
+          (cd "$rendered" && uvx --from go-task-bin task destroy -- --yes --skip-preview) || true
+          (cd "$infra" && uv run pulumi stack rm -f -y "$stack") || true
+      - name: Upload E2E logs
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-logs-workload-api-${{ matrix.framework }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            e2e-workload-api-${{ matrix.framework }}.log
+            ./.rendered/agent_${{ matrix.framework }}/**/*.log
           if-no-files-found: warn

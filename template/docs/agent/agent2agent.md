@@ -31,6 +31,8 @@ Anonymous `GET /.well-known/agent-card.json` requests are opt-in. By default, un
 
 Platform administrators must also enable unauthenticated routing per cluster before the well-known route is reachable for anonymous callers on deployed agents.
 
+On the **Workload API** runtime (`ENABLE_AGENT_ON_WORKLOAD_API=true`), setting this flag also adds an optional-auth route for `/a2a/.well-known/agent-card.json` to the workload artifact specification during deploy. See [Deployment runtimes](./deployment-runtimes.md#anonymous-agent-card-discovery).
+
 ```yaml
 general:
   front_end:

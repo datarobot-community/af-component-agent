@@ -12,6 +12,7 @@ For the official DataRobot documentation on agent components, see [Agent compone
 | [Tool integration](#tool-integration) | How agents use tools via MCP, workflow tools, and custom local tools. |
 | [Configuration](#configuration) | Agent configuration management. |
 | [Front server](#front-server) | DRAgent — the only supported front server |
+| [Deployment runtimes](./deployment-runtimes.md) | Custom Models vs. Workload API: choosing one, deploying on the Workload API, `WORKLOAD_*` configuration, and switching later. |
 | [Agent types](#agent-types) | Supported agent frameworks and links to examples. |
 | [Debugging](./debugging.md) | Debug agents locally using the CLI, VS Code, and PyCharm. |
 | [Tracing and telemetry](./tracing.md) | OpenTelemetry tracing for DRAgent agents: how `register.py` and `workflow.yaml` are instrumented to export spans to DataRobot. |
@@ -19,6 +20,7 @@ For the official DataRobot documentation on agent components, see [Agent compone
 | [Agent memory](./agent-memory.md) | Persistent per-user memory via `use_agent_memory`: `streaming_memory_agent`, `dr_mem0_memory`, and provider configuration. |
 | [Chat history](./chat-history.md) | Multi-turn conversation context: how prior `messages` are injected across LangGraph, CrewAI, LlamaIndex, and NAT. |
 | [Local evaluation](./evaluation.md) | Evaluate agentic workflows locally with `nat eval` during development. |
+| [Custom metrics](./custom-metrics.md) | Create custom metrics on a DataRobot deployment and submit values to them. |
 | [Further reading](#further-reading) | Links to official DataRobot docs for troubleshooting, tracing, global tools, and more. |
 
 ## Features
@@ -179,6 +181,19 @@ DRAgent is required for [Agent-to-Agent (A2A)](./agent2agent.md), [agent memory]
 > [!NOTE]
 > All agents run on DRAgent. `ENABLE_DRAGENT_SERVER` is a legacy setting; if it is present, it must be set to `true` (or remove it entirely).
 
+## Deployment runtime
+
+The agent's Pulumi infrastructure (`infra/infra/agent.py`) supports two deployment runtimes, selected by the `ENABLE_AGENT_ON_WORKLOAD_API` environment variable:
+
+| Runtime | When | Provisions |
+|---|---|---|
+| **Custom Models** (default) | `ENABLE_AGENT_ON_WORKLOAD_API` unset or falsy | `CustomModel`, `Playground`, `LlmBlueprint`, and (when `ENABLE_AGENT_HA_MODE=true`) a `CustomModelDeployment`. |
+| **Workload API** | `ENABLE_AGENT_ON_WORKLOAD_API=true` | An `Artifact` (image build or reference) plus a `Workload`. Serving-only — no `CustomModel`/`Playground`/`LlmBlueprint` are created. |
+
+Custom Models is the default and needs no configuration. Setting `ENABLE_AGENT_ON_WORKLOAD_API=true` selects the Workload API, whose default scenario builds the image on the platform from your agent source and needs no Docker registry of your own.
+
+See [Deployment runtimes](./deployment-runtimes.md) for how to choose between them, a Workload API quick start, the full `WORKLOAD_*` configuration reference, and how to switch runtimes later.
+
 ## Agent types
 
 This template ships with a LangGraph-based agent by default, but the agent component supports multiple frameworks. Each framework uses a different approach to defining agents while following the same project structure, deployment pipeline, and file layout.
@@ -283,3 +298,5 @@ task agent:cli -- execute --user_prompt '{"topic":"Generative AI"}'
 ```sh
 task agent:cli -- execute-deployment --user_prompt "Your test prompt" --deployment_id DEPLOYMENT_ID
 ```
+
+This applies to the **Custom Models** runtime only. The Workload API runtime creates no deployment and therefore no deployment ID — POST to the workload's chat endpoint instead, as described in [Deployment runtimes](./deployment-runtimes.md#deploy-on-workload-api).

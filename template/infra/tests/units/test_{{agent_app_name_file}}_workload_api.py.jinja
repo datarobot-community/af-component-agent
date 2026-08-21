@@ -1,0 +1,681 @@
+# Copyright 2026 DataRobot, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Tests for {{agent_app_name}}_workload_api: HTTP client + Pulumi plumbing.
+
+The package itself has no Jinja-conditional content; this file is templated only
+because its import paths run through the agent package name.
+"""
+
+import subprocess
+import sys
+import textwrap
+import zipfile
+from io import BytesIO
+from pathlib import Path
+from unittest.mock import MagicMock
+
+import pytest
+import requests
+from pulumi.dynamic.dynamic import serialize_provider
+
+from {{agent_app_name}}_workload_api.artifact_code import (
+    source_archive,
+    source_hash,
+    upload_source,
+)
+from {{agent_app_name}}_workload_api.client import (
+    DATAROBOT_API_TOKEN_ENV,
+    CodeRef,
+    CodeRefDatarobot,
+    Container,
+    DockerfileGenerated,
+    ImageBuildConfig,
+    ReadinessProbe,
+    WorkloadClient,
+    _image_build_spec,
+    _to_wire,
+    build_artifact_with_generated_dockerfile,
+    datarobot_api_token,
+)
+from {{agent_app_name}}_workload_api.resources import (
+    WorkloadGeneratedImageArtifactProvider,
+    _readiness_probe_from_props,
+    _GENERATED_TRACKED_KEYS,
+)
+
+_CLIENT_MODULE = "{{agent_app_name}}_workload_api.client"
+_ARTIFACT_CODE_MODULE = "{{agent_app_name}}_workload_api.artifact_code"
+_RESOURCES_MODULE = "{{agent_app_name}}_workload_api.resources"
+
+
+class _FakeResponse:
+    def __init__(self, status_code=200, json_data=None, text="", method="GET", url=""):
+        self.status_code = status_code
+        self._json = json_data if json_data is not None else {}
+        self.text = text
+        self.reason = "error" if status_code >= 400 else "OK"
+        self.request = MagicMock(method=method)
+        self.url = url
+
+    def json(self):
+        return self._json
+
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            raise requests.HTTPError(f"{self.status_code} error", response=self)
+
+
+def _dockerfile():
+    return DockerfileGenerated(
+        execution_environment_id="ee-1",
+        execution_environment_version_id="ee-v1",
+        entrypoint=["sh", "run_server.sh"],
+    )
+
+
+def _container(**overrides):
+    return Container(
+        **{
+            "name": "agent",
+            "primary": True,
+            "port": 8080,
+            "image_build_config": ImageBuildConfig(dockerfile=_dockerfile()),
+            **overrides,
+        }
+    )
+
+
+class TestToWire:
+    def test_camel_cases_field_names(self):
+        wire = _to_wire(_dockerfile())
+        assert wire["executionEnvironmentId"] == "ee-1"
+        assert wire["executionEnvironmentVersionId"] == "ee-v1"
+        assert wire["source"] == "generated"
+
+    def test_drops_none_fields(self):
+        wire = _to_wire(_container())
+        assert "readinessProbe" not in wire
+        assert "codeRef" not in wire["imageBuildConfig"]
+
+    def test_omits_routes_when_none(self):
+        """`routes: None` must drop the key, not send `[]`.
+
+        A cluster with route configuration disabled rejects an artifact spec that
+        carries `routes` at all with 403 "Route configuration is disabled on this
+        cluster", so an empty list is not a safe stand-in for omitting it.
+        """
+        wire = _to_wire(_container(routes=None))
+        assert "routes" not in wire
+
+    def test_keeps_routes_when_requested(self):
+        wire = _to_wire(_container(routes=[{"path": "/a2a/.well-known"}]))
+        assert wire["routes"] == [{"path": "/a2a/.well-known"}]
+
+    def test_serializes_nested_readiness_probe(self):
+        wire = _to_wire(_container(readiness_probe=ReadinessProbe(port=9090)))
+        assert wire["readinessProbe"]["port"] == 9090
+        assert wire["readinessProbe"]["path"] == "/health"
+        assert wire["readinessProbe"]["initialDelaySeconds"] == 10
+
+    def test_passes_through_lists_and_dicts(self):
+        assert _to_wire([{"a": 1}, "x"]) == [{"a": 1}, "x"]
+        assert _to_wire({"a": 1}) == {"a": 1}
+        assert _to_wire("plain") == "plain"
+
+
+class TestReadinessProbeToWire:
+    def test_matches_nested_serialization(self):
+        """`to_wire()` must produce exactly what nesting the probe would."""
+        probe = ReadinessProbe(port=9090)
+        assert (
+            probe.to_wire()
+            == _to_wire(_container(readiness_probe=probe))["readinessProbe"]
+        )
+
+    def test_camel_cases_and_keeps_defaults(self):
+        assert ReadinessProbe().to_wire() == {
+            "path": "/health",
+            "port": 8080,
+            "initialDelaySeconds": 10,
+            "periodSeconds": 10,
+            "timeoutSeconds": 5,
+            "failureThreshold": 6,
+            "scheme": "HTTP",
+        }
+
+
+class TestBuildArtifactWithDockerfile:
+    def test_generated_dockerfile_builds_and_creates(self, monkeypatch):
+        monkeypatch.setattr(
+            f"{_CLIENT_MODULE}.upload_source",
+            MagicMock(return_value=("cat-2", "ver-2")),
+        )
+        monkeypatch.setattr(
+            f"{_CLIENT_MODULE}._create_and_build_artifact",
+            MagicMock(return_value="artifact-2"),
+        )
+        artifact_id = build_artifact_with_generated_dockerfile(
+            workload_api_endpoint="https://wapi.example.com",
+            workload_api_token="tok",
+            artifact_name="agent-artifact",
+            application_path=Path("/tmp/agent-app"),
+            execution_environment_id="ee-1",
+            execution_environment_version_id="ee-v1",
+            entrypoint=["sh", "run_server.sh"],
+            container_name="agent",
+            container_port=8080,
+            environment_vars=[],
+            routes=None,
+            build_timeout_s=100,
+        )
+        assert artifact_id == "artifact-2"
+        from {{agent_app_name}}_workload_api.client import (
+            _create_and_build_artifact,
+        )
+
+        spec = _create_and_build_artifact.call_args[0][1]
+        payload = spec.to_payload()
+        container = payload["spec"]["containerGroups"][0]["containers"][0]
+        assert container["imageBuildConfig"]["dockerfile"]["source"] == "generated"
+        assert container["imageBuildConfig"]["dockerfile"]["entrypoint"] == [
+            "sh",
+            "run_server.sh",
+        ]
+        assert container["imageBuildConfig"]["codeRef"]["datarobot"] == {
+            "catalogId": "cat-2",
+            "catalogVersionId": "ver-2",
+        }
+
+
+class TestArtifactCode:
+    def test_archive_is_deterministic(self, tmp_path):
+        (tmp_path / "b.py").write_text("b")
+        (tmp_path / "a.py").write_text("a")
+        assert source_archive(tmp_path) == source_archive(tmp_path)
+
+    def test_hash_changes_when_content_changes(self, tmp_path):
+        f1 = tmp_path / "a.py"
+        f1.write_text("print(1)")
+        original = source_hash(tmp_path)
+        f1.write_text("print(2)")
+        assert source_hash(tmp_path) != original
+
+    def test_wapiignore_excludes_files(self, tmp_path):
+        (tmp_path / ".wapiignore").write_text("tests/\n.env\n")
+        (tmp_path / "workflow.yaml").write_text("general: {}\n")
+        (tmp_path / ".env").write_text("SECRET=1\n")
+        (tmp_path / "tests").mkdir()
+        (tmp_path / "tests" / "test_x.py").write_text("")
+
+        archive = source_archive(tmp_path)
+        with zipfile.ZipFile(BytesIO(archive)) as zf:
+            names = set(zf.namelist())
+        assert "workflow.yaml" in names
+        assert ".env" not in names
+        assert "tests/test_x.py" not in names
+
+    def test_shipped_wapiignore_uploads_dist_info_but_not_egg_info(self, tmp_path):
+        """The container resolves the workflow through the generated `.dist-info`, so
+        it must ship. A local `*.egg-info` must not: it is a second distribution of
+        the same name, and importlib.metadata resolves whichever it sees first."""
+        shipped = Path(__file__).resolve().parents[3] / "{{agent_app_name}}" / ".wapiignore"
+        assert shipped.is_file(), f"expected the agent's .wapiignore at {shipped}"
+        (tmp_path / ".wapiignore").write_text(shipped.read_text())
+        for name in ("{{agent_app_name}}-0.1.0.dist-info", "{{agent_app_name}}.egg-info"):
+            (tmp_path / name).mkdir()
+            (tmp_path / name / "entry_points.txt").write_text(
+                "[nat.plugins]\nbase_agent = agent.register\n"
+            )
+
+        with zipfile.ZipFile(BytesIO(source_archive(tmp_path))) as zf:
+            names = set(zf.namelist())
+
+        assert "{{agent_app_name}}-0.1.0.dist-info/entry_points.txt" in names
+        assert "{{agent_app_name}}.egg-info/entry_points.txt" not in names
+
+    def test_upload_source_sync_response(self, monkeypatch, tmp_path):
+        (tmp_path / "main.py").write_text("print('hi')\n")
+        mock_post = MagicMock(
+            return_value=_FakeResponse(
+                status_code=201,
+                json_data={
+                    "catalogId": "cat-1",
+                    "catalogVersionId": "ver-1",
+                },
+            )
+        )
+        monkeypatch.setattr(f"{_ARTIFACT_CODE_MODULE}.requests.post", mock_post)
+
+        catalog_id, catalog_version_id = upload_source(
+            endpoint="https://wapi.example.com",
+            token="tok",
+            application_path=tmp_path,
+        )
+        assert catalog_id == "cat-1"
+        assert catalog_version_id == "ver-1"
+        mock_post.assert_called_once()
+        _, kwargs = mock_post.call_args
+        assert kwargs["files"]["file"][0] == "source.zip"
+
+    def test_upload_source_async_polls_to_completion(self, monkeypatch, tmp_path):
+        (tmp_path / "main.py").write_text("print('hi')\n")
+        monkeypatch.setattr(
+            f"{_ARTIFACT_CODE_MODULE}.requests.post",
+            MagicMock(
+                return_value=_FakeResponse(
+                    status_code=202,
+                    json_data={
+                        "catalogId": "cat-1",
+                        "catalogVersionId": "ver-1",
+                        "statusId": "status-1",
+                    },
+                )
+            ),
+        )
+        monkeypatch.setattr(
+            f"{_ARTIFACT_CODE_MODULE}.requests.get",
+            MagicMock(return_value=_FakeResponse(status_code=303)),
+        )
+
+        catalog_id, catalog_version_id = upload_source(
+            endpoint="https://wapi.example.com",
+            token="tok",
+            application_path=tmp_path,
+            sleep=lambda _s: None,
+            now=lambda: 0,
+        )
+        assert catalog_id == "cat-1"
+        assert catalog_version_id == "ver-1"
+
+    def test_upload_source_raises_on_failed_status(self, monkeypatch, tmp_path):
+        (tmp_path / "main.py").write_text("print('hi')\n")
+        monkeypatch.setattr(
+            f"{_ARTIFACT_CODE_MODULE}.requests.post",
+            MagicMock(
+                return_value=_FakeResponse(
+                    status_code=202,
+                    json_data={
+                        "catalogId": "cat-1",
+                        "catalogVersionId": "ver-1",
+                        "statusId": "status-1",
+                    },
+                )
+            ),
+        )
+        monkeypatch.setattr(
+            f"{_ARTIFACT_CODE_MODULE}.requests.get",
+            MagicMock(
+                return_value=_FakeResponse(
+                    status_code=200,
+                    json_data={"status": "ERROR", "message": "bad archive"},
+                )
+            ),
+        )
+
+        with pytest.raises(RuntimeError, match="bad archive"):
+            upload_source(
+                endpoint="https://wapi.example.com",
+                token="tok",
+                application_path=tmp_path,
+                sleep=lambda _s: None,
+                now=lambda: 0,
+            )
+
+    def test_upload_source_times_out(self, monkeypatch, tmp_path):
+        (tmp_path / "main.py").write_text("print('hi')\n")
+        monkeypatch.setattr(
+            f"{_ARTIFACT_CODE_MODULE}.requests.post",
+            MagicMock(
+                return_value=_FakeResponse(
+                    status_code=202,
+                    json_data={
+                        "catalogId": "cat-1",
+                        "catalogVersionId": "ver-1",
+                        "statusId": "status-1",
+                    },
+                )
+            ),
+        )
+        monkeypatch.setattr(
+            f"{_ARTIFACT_CODE_MODULE}.requests.get",
+            MagicMock(
+                return_value=_FakeResponse(
+                    status_code=200, json_data={"status": "INITIALIZED"}
+                )
+            ),
+        )
+        times = iter([0, 0, 700])
+
+        with pytest.raises(TimeoutError):
+            upload_source(
+                endpoint="https://wapi.example.com",
+                token="tok",
+                application_path=tmp_path,
+                poll_timeout_s=600,
+                sleep=lambda _s: None,
+                now=lambda: next(times),
+            )
+
+
+class TestWorkloadClient:
+    def _client(self):
+        return WorkloadClient(endpoint="https://wapi.example.com", token="tok")
+
+    def test_create_artifact_posts_payload(self):
+        client = self._client()
+        client._session = MagicMock()
+        client._session.post.return_value = _FakeResponse(
+            status_code=200, json_data={"id": "artifact-1"}
+        )
+        spec = _image_build_spec(
+            artifact_name="a",
+            dockerfile=_dockerfile(),
+            container_name="c",
+            container_port=8080,
+            environment_vars=[],
+            routes=None,
+            code_ref=CodeRef(
+                datarobot=CodeRefDatarobot(catalog_id="cat", catalog_version_id="ver")
+            ),
+        )
+        assert client.create_artifact(spec) == "artifact-1"
+        _, kwargs = client._session.post.call_args
+        assert kwargs["json"]["name"] == "a"
+
+    def test_delete_artifact_swallows_404(self):
+        client = self._client()
+        client._session = MagicMock()
+        client._session.delete.return_value = _FakeResponse(status_code=404)
+        client.delete_artifact("artifact-1")  # must not raise
+
+    def test_delete_artifact_swallows_409_retained_by_live_workload(self):
+        client = self._client()
+        client._session = MagicMock()
+        client._session.delete.return_value = _FakeResponse(status_code=409)
+        client.delete_artifact("artifact-1")  # must not raise
+
+    def test_delete_artifact_raises_on_other_errors(self):
+        client = self._client()
+        client._session = MagicMock()
+        client._session.delete.return_value = _FakeResponse(
+            status_code=500,
+            text="internal error",
+            method="DELETE",
+            url="https://x/artifacts/1",
+        )
+        with pytest.raises(requests.HTTPError, match="internal error"):
+            client.delete_artifact("artifact-1")
+
+    def test_trigger_build_reads_build_ids(self):
+        client = self._client()
+        client._session = MagicMock()
+        client._session.post.return_value = _FakeResponse(
+            status_code=200, json_data={"buildIds": ["build-1"]}
+        )
+        assert client.trigger_build("artifact-1") == ["build-1"]
+
+    def test_wait_for_build_succeeds(self):
+        client = self._client()
+        client.get_build = MagicMock(return_value={"status": "COMPLETED"})
+        result = client.wait_for_build(
+            "artifact-1",
+            "build-1",
+            timeout_s=100,
+            interval_s=1,
+            sleep=lambda s: None,
+            now=lambda: 0,
+        )
+        assert result == "COMPLETED"
+
+    def test_wait_for_build_raises_on_failure_with_logs(self):
+        client = self._client()
+        client.get_build = MagicMock(return_value={"status": "FAILED"})
+        client.get_build_logs = MagicMock(return_value="boom trace")
+        with pytest.raises(RuntimeError, match="FAILED"):
+            client.wait_for_build(
+                "artifact-1",
+                "build-1",
+                timeout_s=100,
+                interval_s=1,
+                sleep=lambda s: None,
+                now=lambda: 0,
+            )
+
+    def test_wait_for_build_times_out(self):
+        client = self._client()
+        client.get_build = MagicMock(return_value={"status": "RUNNING"})
+        times = iter([0, 0, 200])
+        with pytest.raises(TimeoutError):
+            client.wait_for_build(
+                "artifact-1",
+                "build-1",
+                timeout_s=100,
+                interval_s=1,
+                sleep=lambda s: None,
+                now=lambda: next(times),
+            )
+
+    def test_wait_for_build_tolerates_transient_failures(self):
+        client = self._client()
+        call_count = {"n": 0}
+
+        def flaky_get_build(artifact_id, build_id):
+            call_count["n"] += 1
+            if call_count["n"] < 3:
+                raise requests.ConnectionError("transient")
+            return {"status": "COMPLETED"}
+
+        client.get_build = flaky_get_build
+        result = client.wait_for_build(
+            "artifact-1",
+            "build-1",
+            timeout_s=100,
+            interval_s=1,
+            sleep=lambda s: None,
+            now=lambda: 0,
+        )
+        assert result == "COMPLETED"
+
+    def test_wait_for_build_raises_after_max_transient_failures(self):
+        client = self._client()
+        client.get_build = MagicMock(side_effect=requests.ConnectionError("down"))
+        with pytest.raises(requests.ConnectionError):
+            client.wait_for_build(
+                "artifact-1",
+                "build-1",
+                timeout_s=100,
+                interval_s=1,
+                sleep=lambda s: None,
+                now=lambda: 0,
+            )
+
+
+class TestProviderSerialization:
+    """Guards the constraint documented at the top of `resources.py`.
+
+    Pulumi pickles a dynamic provider **by reference** (module path + class name)
+    and unpickles it in a separate provider process on a gRPC worker thread. If
+    this package ever moves under a package whose `__init__` has import side
+    effects -- notably `infra`, which constructs a `UseCase` at module scope --
+    unpickling registers a Pulumi resource off the main thread and every deploy
+    and preview on this runtime dies with "There is no current event loop in
+    thread 'ThreadPoolExecutor-0_0'".
+    """
+
+    def test_provider_is_pickled_as_a_top_level_module_reference(self):
+        module = WorkloadGeneratedImageArtifactProvider.__module__
+        assert module == "{{agent_app_name}}_workload_api.resources", module
+        assert not module.startswith("infra"), (
+            "The dynamic provider moved under the `infra` package; unpickling it "
+            "in the provider process will execute `infra/__init__.py`. See the "
+            "note at the top of resources.py."
+        )
+
+    def test_provider_unpickles_off_the_main_thread(self):
+        """End-to-end check of the real failure mode.
+
+        Runs in a subprocess because `infra` is already imported in this process,
+        so an in-process `dill.loads` would hit `sys.modules` and never re-execute
+        `infra/__init__.py`. cwd is the Pulumi project dir, which is what the
+        provider process uses as `sys.path[0]`.
+        """
+        payload = serialize_provider(WorkloadGeneratedImageArtifactProvider())
+        program_dir = Path(__file__).resolve().parents[2]
+        script = textwrap.dedent(
+            """
+            import base64, sys
+            import dill
+            from concurrent.futures import ThreadPoolExecutor
+
+            payload = base64.b64decode(sys.stdin.read())
+            with ThreadPoolExecutor(max_workers=1) as pool:
+                pool.submit(dill.loads, payload).result()
+            """
+        )
+        result = subprocess.run(
+            [sys.executable, "-c", script],
+            input=payload,
+            cwd=program_dir,
+            text=True,
+            capture_output=True,
+        )
+        assert result.returncode == 0, (
+            "Unpickling the dynamic provider failed off the main thread -- this is "
+            "exactly what breaks `pulumi preview`/`up` on the Workload API "
+            f"runtime:\n{result.stderr}"
+        )
+
+
+class TestWorkloadArtifactProviders:
+    def test_readiness_probe_from_props_reconstructs_dataclass(self):
+        probe = _readiness_probe_from_props(
+            {"readiness_probe": {"path": "/health", "port": 9090}}
+        )
+        assert isinstance(probe, ReadinessProbe)
+        assert probe.port == 9090
+
+    def test_readiness_probe_from_props_none_when_absent(self):
+        assert _readiness_probe_from_props({}) is None
+
+    def test_generated_tracked_keys_include_readiness_probe(self):
+        assert "readiness_probe" in _GENERATED_TRACKED_KEYS
+
+    def test_generated_provider_create_passes_readiness_probe(self, monkeypatch):
+        monkeypatch.setenv(DATAROBOT_API_TOKEN_ENV, "tok")
+        monkeypatch.setattr(
+            f"{_RESOURCES_MODULE}.build_artifact_with_generated_dockerfile",
+            MagicMock(return_value="artifact-1"),
+        )
+        provider = WorkloadGeneratedImageArtifactProvider()
+        result = provider.create(
+            {
+                "workload_api_endpoint": "https://wapi.example.com",
+                "artifact_name": "agent",
+                "application_path": "/tmp/agent-app",
+                "execution_environment_id": "ee-1",
+                "execution_environment_version_id": "ee-v1",
+                "entrypoint": ["sh", "run_server.sh"],
+                "container_name": "agent",
+                "container_port": 8080,
+                "environment_vars": [],
+                "routes": None,
+                "build_timeout_s": 100,
+                "readiness_probe": {"path": "/health", "port": 8080},
+            }
+        )
+        assert result.id == "artifact-1"
+
+        from {{agent_app_name}}_workload_api.resources import (
+            build_artifact_with_generated_dockerfile as mocked_build,
+        )
+
+        _, kwargs = mocked_build.call_args
+        assert isinstance(kwargs["readiness_probe"], ReadinessProbe)
+        assert kwargs["readiness_probe"].port == 8080
+
+    def test_generated_provider_create_without_readiness_probe(self, monkeypatch):
+        monkeypatch.setenv(DATAROBOT_API_TOKEN_ENV, "tok")
+        monkeypatch.setattr(
+            f"{_RESOURCES_MODULE}.build_artifact_with_generated_dockerfile",
+            MagicMock(return_value="artifact-1"),
+        )
+        provider = WorkloadGeneratedImageArtifactProvider()
+        provider.create(
+            {
+                "workload_api_endpoint": "https://wapi.example.com",
+                "artifact_name": "agent",
+                "application_path": "/tmp/agent-app",
+                "execution_environment_id": "ee-1",
+                "execution_environment_version_id": "ee-v1",
+                "entrypoint": ["sh", "run_server.sh"],
+                "container_name": "agent",
+                "container_port": 8080,
+                "environment_vars": [],
+                "routes": None,
+                "build_timeout_s": 100,
+            }
+        )
+
+        from {{agent_app_name}}_workload_api.resources import (
+            build_artifact_with_generated_dockerfile as mocked_build,
+        )
+
+        _, kwargs = mocked_build.call_args
+        assert kwargs["readiness_probe"] is None
+
+    def test_generated_provider_diff_replaces_on_tracked_change(self):
+        provider = WorkloadGeneratedImageArtifactProvider()
+        result = provider.diff(
+            "id",
+            {"execution_environment_id": "ee-1"},
+            {"execution_environment_id": "ee-2"},
+        )
+        assert result.changes is True
+        assert result.replaces == ["*"]
+
+    def test_generated_provider_diff_no_change(self):
+        provider = WorkloadGeneratedImageArtifactProvider()
+        olds = {key: "same" for key in _GENERATED_TRACKED_KEYS}
+        news = dict(olds)
+        result = provider.diff("id", olds, news)
+        assert result.changes is False
+
+    def test_provider_delete_calls_delete_artifact(self, monkeypatch):
+        monkeypatch.setenv(DATAROBOT_API_TOKEN_ENV, "tok")
+        mock_client = MagicMock()
+        monkeypatch.setattr(
+            f"{_RESOURCES_MODULE}.WorkloadClient",
+            MagicMock(return_value=mock_client),
+        )
+        provider = WorkloadGeneratedImageArtifactProvider()
+        provider.delete(
+            "artifact-1", {"workload_api_endpoint": "https://wapi.example.com"}
+        )
+        mock_client.delete_artifact.assert_called_once_with("artifact-1")
+
+
+class TestCredentials:
+    def test_returns_token_from_env(self, monkeypatch):
+        monkeypatch.setenv(DATAROBOT_API_TOKEN_ENV, "my-token")
+        assert datarobot_api_token() == "my-token"
+
+    def test_raises_when_unset(self, monkeypatch):
+        monkeypatch.delenv(DATAROBOT_API_TOKEN_ENV, raising=False)
+        with pytest.raises(RuntimeError, match=DATAROBOT_API_TOKEN_ENV):
+            datarobot_api_token()
+
+    def test_raises_when_blank(self, monkeypatch):
+        monkeypatch.setenv(DATAROBOT_API_TOKEN_ENV, "   ")
+        with pytest.raises(RuntimeError, match=DATAROBOT_API_TOKEN_ENV):
+            datarobot_api_token()
