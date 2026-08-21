@@ -279,7 +279,7 @@ jobs:
         run: |
           set -euo pipefail
           apt-get update
-          apt-get install -y --no-install-recommends git make curl ca-certificates
+          apt-get install -y --no-install-recommends git make curl ca-certificates jq
           GO_VERSION="1.22.5"
           curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" -o /tmp/go.tgz
           tar -C /usr/local -xzf /tmp/go.tgz
@@ -299,17 +299,17 @@ jobs:
           BUILD_WORKSPACE="$(mktemp -d)"
           TF_PROVIDER="${BUILD_WORKSPACE}/terraform-provider-datarobot"
           PULUMI_PROVIDER="${BUILD_WORKSPACE}/pulumi-datarobot"
-
+ 
           # 1. Terraform provider branch (mirrors guide section 1)
           git clone --depth 1 --branch "${TF_BRANCH}" "${TF_PROVIDER_REPO}" "${TF_PROVIDER}"
           (cd "${TF_PROVIDER}" && go mod tidy && go build -o terraform-provider-datarobot .)
-
+ 
           # 2. Pulumi provider + Python SDK built against that TF checkout
           #    (mirrors guide section 2)
           git clone --depth 1 --branch "${PULUMI_PROVIDER_REF}" "${PULUMI_PROVIDER_REPO}" "${PULUMI_PROVIDER}"
           VERSION="$(cd "${PULUMI_PROVIDER}" && make -np 2>/dev/null | awk '/^VERSION := /{print $3; exit}')"
           echo "Building pulumi-datarobot ${VERSION} against TF branch ${TF_BRANCH}"
-
+ 
           (cd "${PULUMI_PROVIDER}/provider" \
             && go mod edit -replace "github.com/datarobot-community/terraform-provider-datarobot=${TF_PROVIDER}" \
             && go mod tidy)
@@ -319,12 +319,12 @@ jobs:
           (cd "${PULUMI_PROVIDER}/provider" \
             && go mod edit -dropreplace github.com/datarobot-community/terraform-provider-datarobot \
             && go mod tidy)
-
+ 
           rm -rf ~/.pulumi/plugins/resource-datarobot*
           pulumi plugin install resource datarobot "${VERSION}" \
             -f "${PULUMI_PROVIDER}/bin/pulumi-resource-datarobot"
           pulumi plugin ls | grep datarobot
-
+ 
           # Shadow the uv.lock-pinned pulumi_datarobot with the local build.
           # Install from sdk/python/bin only (sdk/python itself stays 0.0.0).
           uv sync --all-extras --frozen
