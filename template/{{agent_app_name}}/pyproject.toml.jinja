@@ -5,9 +5,13 @@ description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
 {% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% else %}requires-python = ">=3.11, <3.14"{% endif %}
 dependencies = [
-    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, auth]{% elif agent_template_framework == 'crewai' %}[crewai, dragent, auth]{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent, auth]{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent, auth]{% elif agent_template_framework == 'base' %}[dragent, auth]{% elif agent_template_framework == 'nat' %}[dragent, auth]{% else %}[core, auth]{% endif %}==0.27.11",
+    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, auth]{% elif agent_template_framework == 'crewai' %}[crewai, dragent, auth]{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent, auth]{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent, auth]{% elif agent_template_framework == 'base' %}[dragent, auth]{% elif agent_template_framework == 'nat' %}[dragent, auth]{% else %}[core, auth]{% endif %}==0.28.3",
     "datarobot-mlops==11.1.28",
-    "datarobot[core]>=3.17.0,<4.0.0",  # We use getenv to load runtime parameter values, and there are important bugfixes in 3.17
+    # datarobot.core.config gives us getenv-based runtime parameter loading, plus the
+    # DataRobotAppFrameworkBaseSettings and LLMConfig classes that agent/config.py and
+    # datarobot-genai both build on. 3.18 is the first release carrying those LLM config
+    # pieces. datarobot-genai brings the auth and fs extras along with its own.
+    "datarobot[core]>=3.18.0,<4.0.0",
     "gunicorn>=25.0.0",  # We require this to run dragent workers in deployments
 
     # Keep this in sync with the ag-ui-protocol version in fastapi_server/pyproject.toml of the

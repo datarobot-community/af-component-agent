@@ -310,7 +310,7 @@ def run_agent_e2e(
     )
 
     # Step 2: Prepare E2E-specific runtime env (written into rendered project's `.env`).
-    extra_env: dict[str, str] = {"USE_DATAROBOT_LLM_GATEWAY": "1"}
+    extra_env: dict[str, str] = {"LLM_USE_DATAROBOT_LLM_GATEWAY": "1"}
     if agent_framework == "crewai":
         extra_env["CREWAI_TESTING"] = "true"
 
