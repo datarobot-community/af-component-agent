@@ -342,7 +342,32 @@ jobs:
           pulumi plugin install resource datarobot "${VERSION}" \
             -f "${PULUMI_PROVIDER}/bin/pulumi-resource-datarobot"
           pulumi plugin ls | grep datarobot
-          
+ 
+          # Fail fast and cheap (seconds, right here) instead of expensive
+          # and late (~40min into a real `pulumi preview`, per the
+          # ArtifactSpecContainerGroupContainerArgs `routes` TypeError seen
+          # in CI): confirm the fields agent code depends on actually made
+          # it into this branch's generated schema before spending a full
+          # E2E run finding out otherwise. Extend this list as new
+          # unreleased-branch fields get consumed elsewhere in infra code.
+          echo "Checking generated SDK for fields consumed by infra code..."
+          for expected_field in routes; do
+            if grep -rq "\b${expected_field}\b" "${PULUMI_PROVIDER}/sdk/python/bin/pulumi_datarobot/_inputs.py"; then
+              echo "OK: '${expected_field}' present in generated _inputs.py"
+            else
+              echo "::warning::Generated SDK from ${TF_BRANCH} (pulumi-datarobot @ ${PULUMI_PROVIDER_REF}) has no '${expected_field}' field in _inputs.py — infra code expecting it will fail deep into pulumi preview/up, not here. Confirm this branch actually carries that change before re-running the full E2E."
+            fi
+          done
+ 
+          # The default ~/.pulumi install above is NOT what `task preview`
+          # actually uses: tests/e2e/workload_e2e.py creates a fresh,
+          # isolated PULUMI_HOME under `.rendered/agent_<framework>/.pulumi_home`
+          # per run (Step 3 in run_workload_agent_e2e), so the engine never
+          # sees this plugin there and falls back to auto-downloading it
+          # from GitHub — which 404s for a version that only exists locally.
+          # Export the binary path + version so the workload_e2e.py.patch
+          # hook (applied below) can copy it into that per-run PULUMI_HOME
+          # once it exists.
           echo "LOCAL_DATAROBOT_PLUGIN_BINARY=${PULUMI_PROVIDER}/bin/pulumi-resource-datarobot" >> "$GITHUB_ENV"
           echo "LOCAL_DATAROBOT_PLUGIN_VERSION=${VERSION}" >> "$GITHUB_ENV"
  
