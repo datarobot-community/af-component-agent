@@ -342,6 +342,9 @@ jobs:
           pulumi plugin install resource datarobot "${VERSION}" \
             -f "${PULUMI_PROVIDER}/bin/pulumi-resource-datarobot"
           pulumi plugin ls | grep datarobot
+          
+          echo "LOCAL_DATAROBOT_PLUGIN_BINARY=${PULUMI_PROVIDER}/bin/pulumi-resource-datarobot" >> "$GITHUB_ENV"
+          echo "LOCAL_DATAROBOT_PLUGIN_VERSION=${VERSION}" >> "$GITHUB_ENV"
  
           # Build an installable wheel from the local SDK (sdk/python/bin
           # only — sdk/python itself stays at 0.0.0 per the guide) and
