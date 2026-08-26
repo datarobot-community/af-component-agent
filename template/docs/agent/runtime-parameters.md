@@ -1,18 +1,14 @@
 # Runtime parameters
 
-Runtime parameters are the mechanism DataRobot uses to configure a deployed custom model without changing code. This page explains what they are, which ones this agent component ships by default, how to override their values, and how to add your own.
+Runtime parameters are the mechanism DataRobot uses to configure a deployed custom model without changing code. They consist of a key/value entry declared in the custom model's `model-metadata.yaml`, under `runtimeParameterDefinitions`. This file is generated automatically&mdash;you never hand-edit it&mdash;by `_generate_metadata_yaml()` in `infra/infra/<agent_app_name>.py` from the list of `pulumi_datarobot.CustomModelRuntimeParameterValueArgs` entries built during `dr run deploy`.
 
-## What is a runtime parameter?
-
-A runtime parameter is a key/value entry declared in the custom model's `model-metadata.yaml`, under `runtimeParameterDefinitions`. This file is generated automatically&mdash;you never hand-edit it&mdash;by `_generate_metadata_yaml()` in `infra/infra/<agent_app_name>.py` from the list of `pulumi_datarobot.CustomModelRuntimeParameterValueArgs` entries built during `dr run deploy`.
-
-Each entry has a `type`:
+Each entry has a `type` that determines how it's exposed to the running deployment:
 
 | Type | Description |
 |---|---|
-| `string` | A plain text value, exposed to the running deployment as an environment variable. |
-| `numeric` | A numeric value, also exposed as an environment variable. |
-| `credential` | A value backed by a DataRobot credential object (for example an `ApiTokenCredential`) rather than a plain string. Used for secrets so they aren't stored as raw text on the custom model. |
+| `string` | A plain text value, exposed to the running deployment as an environment variable named after the runtime parameter's key. |
+| `numeric` | A numeric value, also exposed as an environment variable named after the runtime parameter's key. |
+| `credential` | A value backed by a DataRobot credential object (for example an `ApiTokenCredential`) rather than a plain string. Used for secrets so they aren't stored as raw text on the custom model, and are exposed as a DataRobot credential ID rather than a raw string value. |
 
 Once deployed, a runtime parameter's value can be viewed and edited directly on the registered model or deployment in DataRobot&mdash;no redeploy of code is required to change it. This is what distinguishes a runtime parameter from a plain environment variable that only exists in your local shell or `.env` file, or a Python-level default baked into the build.
 
@@ -58,7 +54,7 @@ Some environment variables only control what `infra/infra/<agent_app_name>.py` d
 
 Adding your own runtime parameter has two parts: a `Config` field so your agent code can read it, and an infra registration so it's declared on the deployed custom model.
 
-1. **Add a field to `Config`** in `agent/config.py`. A field named `foo_bar` is read from `FOO_BAR` (environment variable, runtime parameter, `.env`, file secret, or Pulumi output):
+1. Add a field to `Config` in `agent/config.py`. A field named `foo_bar` is read from `FOO_BAR` (environment variable, runtime parameter, `.env`, file secret, or Pulumi output):
 
    ```python
    class Config(DataRobotAppFrameworkBaseSettings):
@@ -66,7 +62,7 @@ Adding your own runtime parameter has two parts: a `Config` field so your agent 
        foo_bar: str | None = None
    ```
 
-2. **Register it in infra** so it's included in `model-metadata.yaml` and provisioned by Pulumi. In `infra/infra/<agent_app_name>.py`, append to `agent_runtime_parameter_values`.
+2. Register it in infra so it's included in `model-metadata.yaml` and provisioned by Pulumi. In `infra/infra/<agent_app_name>.py`, append to `agent_runtime_parameter_values`.
 
    A plain string value:
 
@@ -97,6 +93,6 @@ Adding your own runtime parameter has two parts: a `Config` field so your agent 
        )
    ```
 
-   If the value is safe to publish as a default (not a secret, and meaningful without deploy-time context), add its key to `SERVER_PARAMS_WITH_DEFAULTS` so it's written into `model-metadata.yaml`'s `defaultValue`.
+   If the value is safe to publish as a default (not a secret, and meaningful without deploy-time context), add its key to `SERVER_PARAMS_WITH_DEFAULTS` so it's written into `model-metadata.yaml`'s `defaultValue`. This allows you to set a default value for the runtime parameter that will be used if no value is provided at deploy time.
 
 For a complete worked example of a conditional, feature-gated runtime parameter (including a `credential`-type one), see the memory space and Mem0 provisioning in [Agent memory: Infrastructure provisioning](./agent-memory.md#infrastructure-provisioning).
