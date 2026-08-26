@@ -161,7 +161,7 @@ Both providers use the same `dr_mem0_memory` workflow type and `streaming_memory
 | Credential | `MEM0_API_KEY` runtime parameter (API token credential) | None&mdash;uses the DataRobot API identity of the deployment |
 | Space ID | Managed by Mem0 | `AGENT_MEMORY_SPACE_ID` runtime parameter (string) |
 | Backend LLM | Managed by Mem0 | Memory space LLM&mdash;defaults to the agent LLM component, configurable independently (see [Memory space LLM (DataRobot Memory Service)](#memory-space-llm-datarobot-memory-service)) |
-| Feature flag | None | `ENABLE_AGENTIC_MEMORY_API: true` in deployment feature flags (also required for A2A agent card registry L2 cache) |
+| Feature flag | None | `ENABLE_AGENTIC_MEMORY_API: true` in deployment feature flags |
 | Infra action | Stores Mem0 API key from `MEM0_API_KEY` env at deploy time | Creates a `MemorySpace` Pulumi resource, configures its LLM routing, and injects its ID |
 
 Choose Mem0 for teams already using Mem0 or preferring a third-party memory service. Choose DataRobot Memory Service to keep memory entirely within the DataRobot environment, with no external API key.
