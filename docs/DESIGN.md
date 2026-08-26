@@ -1,8 +1,8 @@
-# Template Design
+# Template design
 
 ## Overview
 
-This repository is a [Copier](https://copier.readthedocs.io/) template that generates DataRobot agent applications. It supports five agentic framework flavours
+This repository is a [Copier](https://copier.readthedocs.io/) template that generates DataRobot agent applications. It supports five agentic framework flavors
 — **base**, **crewai**, **langgraph**, **llamaindex**, and **nat** (NVIDIA NeMo Agent Toolkit). The user selects a framework at generation time
 via the `agent_template_framework` Copier variable, and the template renders a ready-to-run Python project under `<agent_app_name>/`.
 
@@ -13,7 +13,7 @@ Defined in `copier.yml`:
 | Variable | Purpose |
 |---|---|
 | `agent_app_name` | Name and root folder of the generated project. Must be a valid Python identifier. |
-| `agent_template_framework` | Framework flavour: `base`, `crewai`, `langgraph`, `llamaindex`, or `nat`. |
+| `agent_template_framework` | Framework flavor: `base`, `crewai`, `langgraph`, `llamaindex`, or `nat`. |
 | `use_low_code_interface` | When `true`, forces `agent_template_framework=nat`. |
 | `use_agent_memory` | Agent memory provider choice: `none`, `mem0`, or `datarobot_memory_service`. |
 | `base_answers_file`, `llm_answers_file` | Paths to DataRobot component answer files consumed via `_external_data`. |
@@ -22,7 +22,9 @@ The `_exclude` directive in `copier.yml` ensures that `*.j2` partials and `*_tem
 
 ## File-system layout
 
-```
+The following tree shows the generated project layout:
+
+```text
 template/{{agent_app_name}}/
 ├── agent/                          # Core agent package
 │   ├── __init__.py                 # Exports MyAgent, Config
@@ -75,8 +77,8 @@ template/{{agent_app_name}}/
 
 Every polymorphic source file uses a **router → partial** pattern:
 
-1. **Router** (`.jinja`): a thin file that inspects `agent_template_framework` and `{% include %}` the appropriate partial.
-2. **Partial** (`.j2` inside a `*_templates/` directory): the actual code for that framework.
+1. **Router** (`.jinja`): A thin file that inspects `agent_template_framework` and `{% include %}` the appropriate partial.
+2. **Partial** (`.j2` inside a `*_templates/` directory): The actual code for that framework.
 
 Example — `myagent.py.jinja`:
 
@@ -87,13 +89,13 @@ Example — `myagent.py.jinja`:
 {% else %}{% include '.../agent_base.py.j2' %}{% endif -%}
 ```
 
-The `_exclude` directive in `copier.yml` strips the routers' `*.j2` extension after rendering and prevents `*_templates/` directories from appearing in the output.
+The `_exclude` directive in `copier.yml` strips the `*.j2` extension from the routers and prevents `*_templates/` directories from appearing in the output.
 
-### When "default" vs framework-specific partials exist
+### When *default* vs framework-specific partials exist
 
 Most routers have a binary split:
 
-- **`nat`** gets its own partial (different runtime behaviour — see below).
+- **`nat`** gets its own partial (different runtime behavior — see [Runtime architecture](#runtime-architecture)).
 - Everything else falls through to a `*_default.py.j2` partial.
 
 Some routers (like `myagent.py.jinja` and `test_agent.py.jinja`) have a dedicated partial per framework.
@@ -102,13 +104,13 @@ Some routers (like `myagent.py.jinja` and `test_agent.py.jinja`) have a dedicate
 
 The generated project has a well-defined call chain:
 
-```
+```text
 register.py  →  agent/myagent.py  →  MyAgent
 ```
 
 **Default frameworks** (base, crewai, langgraph, llamaindex):
 
-```
+```text
 forwarded_headers ─► MCPConfig ─► mcp_tools_factory (= lambda: mcp_tools_context(mcp_config))
                                          │
 MyAgent(forwarded_headers=...) ◄─────────┘ via agent_chat_completion_wrapper
@@ -119,7 +121,7 @@ The default pattern constructs `MyAgent` without tools, then passes an `mcp_tool
 
 **DRAgent path** (in `register.py`):
 
-```
+```text
 forwarded_headers ─► MCPConfig ─► async with mcp_tools_context(mcp_config) ─► mcp_tools
 workflow_tools ────────────────────────────────────────────────────┘
                                          │
@@ -135,7 +137,7 @@ Tests mirror the router/partial pattern. Each `test_*.py.jinja` router selects t
 | Test file | What it covers |
 |---|---|
 | `test_agentic_workflow.py` | End-to-end `load_model` / `chat` round-trip |
-| `test_agent.py` | Framework-specific agent unit tests (e.g. CrewAI crew construction) |
+| `test_agent.py` | Framework-specific agent unit tests (for example, CrewAI crew construction) |
 | `test_mcp.py` | MCP tool integration (crewai, langgraph, llamaindex only) |
 | `test_cli_dragent.py`, `test_register_dragent.py` | CLI and DR registration tests |
 
@@ -147,7 +149,7 @@ The `test_authorization_context_threading` tests are split because NAT and defau
 |---|---|---|
 | Mock target | `agent.myagent.mcp_tools_context` | `agent.myagent.MCPConfig` |
 | Header assertions | Checked on `MCPConfig` object passed to `mcp_tools_context` | Checked on `MyAgent` constructor kwargs (merged headers) |
-| Agent receives | Only the whitelisted `forwarded_headers` | Whitelisted headers merged with MCP `server_config` headers |
+| Agent receives | Only the allowlisted `forwarded_headers` | Allowlisted headers merged with MCP `server_config` headers |
 | No server config | Not applicable (tools context handles it) | Agent receives `{}` (empty dict) |
 
 ## Development workflow
@@ -155,13 +157,15 @@ The `test_authorization_context_threading` tests are split because NAT and defau
 See `docs/development.md` for full instructions. The short loop:
 
 1. Edit files under `template/{{agent_app_name}}/`.
-2. Run `SKIP_INFRA=1 task test-<framework>` (e.g. `task test-nat`).
+2. Run `SKIP_INFRA=1 task test-<framework>` (for example, `task test-nat`).
 3. Fix failures and re-run until green.
 4. Commit.
 
 The test task renders the template with `uvx copier copy`, installs dependencies, runs linting + type checking, and executes pytest with coverage.
 
-## Adding a new framework
+## Add a new framework
+
+Adding a new framework requires the following steps:
 
 1. Add a partial in each `*_templates/` directory (agent, test, workflow, register, uvlock).
 2. Update the corresponding `.jinja` router to include the new partial.
