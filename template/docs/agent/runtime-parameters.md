@@ -48,7 +48,7 @@ Some environment variables only control what `infra/infra/<agent_app_name>.py` d
 
 Override the value of a runtime parameter depending on when the change needs to take effect:
 
-- **Local development** — set the variable in the project `.env` file. `Config` picks it up directly; no deploy is needed.
+- **Local development** — set the variable in the project `.env` file. It takes effect immediately, the same way it does after deployment, with no deploy needed.
 - **At deploy time** — this works only when the infra registration reads the variable from `os.environ`. Set such variables in the environment that `dr run deploy` (Pulumi) runs in; examples include `AGENT_MEMORY_TTL_DAYS`, `MEM0_API_KEY`, `SESSION_SECRET_KEY`, `IDP_AGENT_ID`, and `IDP_AGENT_PRIVATE_KEY_JWK`. Parameters registered from constants, such as `AGENT_GUNICORN_WORKER_TIMEOUT`, require an infra code change before deployment.
 - **After deployment** — edit the value directly on the registered model or deployment in DataRobot. This updates the runtime parameter without requiring a code change or redeploy, and is the fastest way to tune something like `AGENT_GUNICORN_WORKER_TIMEOUT` in a live environment.
 
