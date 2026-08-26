@@ -168,7 +168,7 @@ Choose Mem0 when you already use Mem0 or want a third-party memory service. Choo
 
 ## Configuration and runtime parameters
 
-Memory-related settings are loaded through `agent/config.py` and standard DataRobot runtime parameters (for provider credentials and space ID).
+Memory-related settings are loaded through `agent/config.py` and standard DataRobot runtime parameters (for provider credentials and space ID). For the general runtime parameter mechanism, see [Runtime parameters](./runtime-parameters.md).
 
 ### TTL (time to live)
 

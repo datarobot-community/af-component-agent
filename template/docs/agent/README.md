@@ -11,6 +11,7 @@ For the official DataRobot documentation on agent components, see [Agent compone
 | [Agent class implementation](#agent-class-implementation-myagentpy) | Agent class and its framework-specific implementation. |
 | [Tool integration](#tool-integration) | How agents use tools via MCP, workflow tools, and custom local tools. |
 | [Configuration](#configuration) | Agent configuration management. |
+| [Runtime parameters](./runtime-parameters.md) | Configuring runtime parameters: defaults this component ships, overriding values, and adding your own. |
 | [Front server](#front-server) | DRAgent — the only supported front server |
 | [Agent types](#agent-types) | Supported agent frameworks and links to examples. |
 | [Debugging](./debugging.md) | Debug agents locally using the CLI, VS Code, and PyCharm. |
@@ -153,6 +154,8 @@ DRAgent automatically resolves the authorization context for tools that require 
 Agent configuration is managed by the `Config` class in `agent/config.py`, which extends `DataRobotAppFrameworkBaseSettings`. It loads values in the following priority order: environment variables (including runtime parameters), `.env` files, file secrets, then Pulumi output variables.
 
 `Config` is the authority for this agent component, `datarobot-genai` included. The library resolves the DataRobot connection and every LLM setting through this class rather than reading the environment itself, so a default changed in `agent/config.py` is the default the agent runs with. `agent/__init__.py` hands the class to the library on import; there is nothing else to register.
+
+Runtime parameters are the deploy-time mechanism behind "environment variables (including runtime parameters)" above: key/value entries declared on the deployed custom model (`model-metadata.yaml`) that `Config` reads like any other environment variable, and that can be edited in DataRobot after deployment without a code change. See [Runtime parameters](./runtime-parameters.md) for the full list this component provisions, how to override a value locally versus at deploy time versus after deployment, and how to add your own.
 
 | Variable | Description | Default |
 |---|---|---|

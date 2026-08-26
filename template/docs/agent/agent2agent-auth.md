@@ -108,6 +108,8 @@ function_groups:
 
 ### Infrastructure: automatic runtime parameter provisioning
 
+For the general runtime parameter mechanism, see [Runtime parameters](./runtime-parameters.md).
+
 The infra module provisions `IDP_AGENT_ID` and `IDP_AGENT_PRIVATE_KEY_JWK` as runtime parameters automatically whenever the corresponding environment variables are set at `dr run deploy` time:
 
 - `IDP_AGENT_ID` — Injected as a plain string runtime parameter from the `IDP_AGENT_ID` environment variable.
