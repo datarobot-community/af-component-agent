@@ -2,6 +2,19 @@
 
 Runtime parameters are the mechanism DataRobot uses to configure a deployed custom model without changing code. They consist of a key/value entry declared under `runtimeParameterDefinitions` in `model-metadata.yaml` for the custom model. This file is generated automatically — never hand-edited — by `_generate_metadata_yaml()` in `infra/infra/<agent_app_name>_infra/deployment.py` from the list of `pulumi_datarobot.CustomModelRuntimeParameterValueArgs` entries built during `dr run deploy`.
 
+Example of how the runtime parameters can look like in `model-metadata.yaml`.
+
+```
+---
+name: agent
+type: inference
+targetType: agenticworkflow
+runtimeParameterDefinitions:
+- fieldName: CUSTOM_MODEL_WORKERS
+  type: numeric
+  defaultValue: '2'
+```
+
 Each entry has a `type` that determines how it is exposed to the running deployment:
 
 | Type | Description |
