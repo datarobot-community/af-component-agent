@@ -19,14 +19,17 @@ use_low_code_interface:
   help: "Do you want to use low-code YAML-based configuration (i.e. NeMo Agent Toolkit) for your agent? (default: no)"
   default: no
 
+# Provider selection lives in af-component-memory, not here. This only controls
+# whether the agent looks for a memory component's runtime parameters; which
+# backend those parameters describe is that component's business.
 use_agent_memory:
   type: str
-  help: "Choose an agent memory provider:"
+  help: "Consume agent memory from an af-component-memory component?"
   default: none
   choices:
-    None: none
-    "Datarobot Memory Service (requires ENABLE_AGENTIC_MEMORY_API feature flag)": datarobot_memory_service
-    Mem0: mem0
+    # Quoted: bare No/Yes are YAML 1.1 booleans and would become False/True labels.
+    "No": none
+    "Yes (requires the af-component-memory component)": memory_component
 
 agent_template_framework:
   type: str
@@ -250,4 +253,66 @@ _migrations:
           echo "      See docs/agent/migration-infra-split.md." >&2
           echo "" >&2
         done
+    when: "{{ _stage == 'before' and _copier_operation == 'update' }}"
+  # Migrate provider-specific memory answers to the memory-component choice.
+  #
+  # Memory providers moved out of this component into af-component-memory, so
+  # `mem0` / `datarobot_memory_service` are no longer valid answers here. Both
+  # become `memory_component`, which only means "look for a memory component's
+  # runtime parameters". Copier cannot add that component for us, so the note
+  # below tells the user to run `dr component add af-component-memory`.
+  #
+  # Answers already on `none` or `memory_component` are left alone, so this is
+  # idempotent.
+  - version: "11.12.0"
+    command:
+      - bash
+      - -lc
+      - |
+        set -euo pipefail
+        MIGRATED=""
+        for ANSWERS_FILE in .datarobot/answers/agent-*.yml; do
+          [ -f "$ANSWERS_FILE" ] || continue
+          PROVIDER="$(python3 - "$ANSWERS_FILE" <<'PY'
+        from pathlib import Path
+        import re
+        import sys
+
+        answers_file = Path(sys.argv[1])
+        text = answers_file.read_text(encoding="utf-8")
+        provider_answer = re.compile(
+            r"^(\s*use_agent_memory:\s*)(['\"]?)(mem0|datarobot_memory_service)\2(\s*(?:#.*)?)$",
+            re.MULTILINE,
+        )
+        match = provider_answer.search(text)
+        if match:
+            answers_file.write_text(
+                provider_answer.sub(r"\1memory_component\4", text), encoding="utf-8"
+            )
+            print(match.group(3))
+        PY
+        )"
+          [ -n "$PROVIDER" ] && MIGRATED="$MIGRATED $ANSWERS_FILE ($PROVIDER)"
+        done
+        if [ -n "$MIGRATED" ]; then
+          echo "" >&2
+          echo "NOTE: agent memory providers moved to af-component-memory." >&2
+          echo "      Rewrote use_agent_memory to 'memory_component' in:$MIGRATED" >&2
+          echo "" >&2
+          echo "      This agent no longer provisions a memory backend. To keep memory" >&2
+          echo "      working, add the component and pick the same provider:" >&2
+          echo "" >&2
+          echo "        dr component add af-component-memory" >&2
+          echo "" >&2
+          echo "      Provider settings move with it: MEM0_API_KEY and AGENT_MEMORY_*" >&2
+          echo "      are read per-instance first (<MEMORY_NAME>_<VAR>), with the" >&2
+          echo "      unprefixed names still honoured as a fallback." >&2
+          echo "" >&2
+          echo "      For datarobot_memory_service, the new component creates its OWN" >&2
+          echo "      memory space -- the one this agent used to manage is not reused" >&2
+          echo "      and its stored memories do not carry over." >&2
+          echo "" >&2
+          echo "      See docs/agent/agent-memory.md." >&2
+          echo "" >&2
+        fi
     when: "{{ _stage == 'before' and _copier_operation == 'update' }}"

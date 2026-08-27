@@ -16,7 +16,7 @@ For the official DataRobot documentation on agent components, see [Agent compone
 | [Debugging](./debugging.md) | Debug agents locally using the CLI, VS Code, and PyCharm. |
 | [Tracing and telemetry](./tracing.md) | OpenTelemetry tracing for DRAgent agents: how `register.py` and `workflow.yaml` are instrumented to export spans to DataRobot. |
 | [Moderation and guardrails](./moderation.md) | Configure runtime guardrails with `datarobot_moderation` middleware in `workflow.yaml`. |
-| [Agent memory](./agent-memory.md) | Persistent per-user memory via `use_agent_memory`: `streaming_memory_agent`, `dr_mem0_memory`, and provider configuration. |
+| [Agent memory](./agent-memory.md) | Persistent per-user memory: `streaming_memory_agent`, `dr_mem0_memory`, and wiring up a memory backend component. |
 | [Chat history](./chat-history.md) | Multi-turn conversation context: how prior `messages` are injected across LangGraph, CrewAI, LlamaIndex, and NAT. |
 | [Local evaluation](./evaluation.md) | Evaluate agentic workflows locally with `nat eval` during development. |
 | [Further reading](#further-reading) | Links to official DataRobot docs for troubleshooting, tracing, global tools, and more. |

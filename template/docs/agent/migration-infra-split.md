@@ -51,7 +51,7 @@ Anything that shows up here is a local customization that needs a new home.
 
 | What you customized | Where it lives now |
 |---|---|
-| Execution environment resolution, MCP wiring, memory space, credentials, shared runtime parameters | `<agent_app_name>_infra/base.py` |
+| Execution environment resolution, MCP wiring, memory discovery, credentials, shared runtime parameters | `<agent_app_name>_infra/base.py` |
 | Custom model, playground, LLM blueprint, prediction environment, deployment, resource bundle and replica sizing | `<agent_app_name>_infra/deployment.py` |
 | Which runtime is selected | `<agent_app_name>.py` (the router) |
 

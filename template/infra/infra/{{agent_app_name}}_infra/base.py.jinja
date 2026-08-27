@@ -16,9 +16,11 @@
 
 Owns everything that is identical regardless of ``ENABLE_AGENT_ON_WORKLOAD_API``:
 execution-environment resolution, LLM/MCP/memory/session/IDP runtime-parameter
-assembly, memory-space provisioning, and A2A detection. The only Pulumi
-resources created here are credentials and (when memory is
-``datarobot_memory_service``) the ``MemorySpace`` — both runtime-agnostic.
+assembly, and A2A detection. The only Pulumi resources created here are the
+session and IDP credentials — both runtime-agnostic. Memory resources are not
+created here at all: ``af-component-memory`` owns the provider and creates its
+own credential or ``MemorySpace``, and this module only forwards the runtime
+parameters that component exports (see ``get_memory_custom_model_runtime_parameters``).
 Runtime-specific resources (``CustomModel``/``Playground``/``LlmBlueprint`` for
 Custom Models; ``Artifact``/``Workload`` for Workload API) live in
 ``deployment.py``/``workload.py`` respectively, which never check the runtime
@@ -38,22 +40,11 @@ import pulumi
 import pulumi_datarobot
 import yaml  # type: ignore[import-untyped]
 from datarobot_pulumi_utils.pulumi import resolve_execution_environment_version
-{%- if use_agent_memory == 'datarobot_memory_service' %}
-from datarobot_pulumi_utils.pulumi import export
-{%- endif %}
 from datarobot_pulumi_utils.pulumi.stack import PROJECT_NAME
 from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 
-{%- if use_agent_memory == 'datarobot_memory_service' %}
-import datarobot as dr
-from datarobot_pulumi_utils.common import get_datarobot_url
-{%- endif %}
-
 from .. import project_dir
 from ..{{ _external_data.llm.llm_app_name }} import custom_model_runtime_parameters as llm_custom_model_runtime_parameters
-{%- if use_agent_memory == 'datarobot_memory_service' %}
-from ..{{ _external_data.llm.llm_app_name }} import default_model
-{%- endif %}
 
 logger = logging.getLogger(__name__)
 
@@ -76,19 +67,7 @@ ENABLE_AGENT_HA_MODE = os.environ.get("ENABLE_AGENT_HA_MODE", "false").lower() =
 # agent turns aren't killed mid-stream.
 DEFAULT_AGENT_GUNICORN_WORKER_TIMEOUT: Final[str] = "600"
 
-{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
-# Agent memory runtime parameters
-AGENT_MEMORY_SPACE_ID: Final[str] = "AGENT_MEMORY_SPACE_ID"
-AGENT_MEMORY_TTL_DAYS: Final[str] = "AGENT_MEMORY_TTL_DAYS"
-CONFIGURED_AGENT_MEMORY_TTL_DAYS: Final[str] = os.environ.get(
-    AGENT_MEMORY_TTL_DAYS, "30"
-)
-{% endif -%}
-
 SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
-{%- if use_agent_memory == 'mem0' %}
-MEM0_API_KEY: Final[str] = "MEM0_API_KEY"
-{%- endif %}
 IDP_AGENT_ID_PARAM: Final[str] = "IDP_AGENT_ID"
 PRIVATE_JWK_PARAM: Final[str] = "IDP_AGENT_PRIVATE_KEY_JWK"
 
@@ -112,6 +91,12 @@ EXCLUDE_PATTERNS = [
 
 # Co-deployed MCP is auto-wired by this name; renamed/extra MCP → env vars.
 MCP_MODULE_NAME: Final[str] = "mcp_server"
+{%- if use_agent_memory == 'memory_component' %}
+
+# af-component-memory is auto-wired by this export instead of by module name,
+# since the module is named after the memory instance. See find_memory_modules.
+MEMORY_PARAMETERS_EXPORT: Final[str] = "memory_custom_model_runtime_parameters"
+{%- endif %}
 
 # The co-deployed MCP module (if any) lives at infra/mcp_server.py, a sibling
 # of the infra.{{agent_app_name}}_infra package this module lives in -- not inside it.
@@ -349,119 +334,67 @@ def get_mcp_custom_model_runtime_parameters() -> list[
     if mcp_params is not None:
         return mcp_params
     return get_mcp_runtime_parameters_from_env()
+{% if use_agent_memory == 'memory_component' %}
 
-{%- if use_agent_memory == 'datarobot_memory_service' %}
+def find_memory_modules(infra_dir: Path | None = None) -> list[str]:
+    """Return the sibling infra modules that export memory runtime parameters.
 
+    af-component-memory names its module after the memory instance, and that
+    name varies by provider (`memory` for the DataRobot Memory Service,
+    `mem0_memory` for Mem0), so there is no single conventional name to look up
+    the way `mcp_server` is. Modules are matched on the export contract instead:
+    any `infra/<name>.py` defining `memory_custom_model_runtime_parameters`.
 
-def _llm_component_config_value(key: str) -> Any | None:
-    """Read a value from the LLM component's configuration export."""
-    for param in llm_custom_model_runtime_parameters:
-        param_key = param.key
-        if isinstance(param_key, str) and param_key == key:
-            value = param.value
-            if isinstance(value, str) and not value:
-                return None
-            return value
-    return None
-
-
-def _deployment_llm_base_url(deployment_id: str) -> str:
-    """Return the deployment base URL for memory-space LLM routing.
-
-    The DataRobot Memory Service appends ``/chat/completions`` when calling
-    the OpenAI-compatible client, so this must not include that suffix.
+    The agent's own module and package are skipped -- importing either from here
+    would be circular.
     """
-    return f"{get_datarobot_url().rstrip('/')}/deployments/{deployment_id}"
+    infra_dir = infra_dir or Path(__file__).resolve().parent.parent
+    self_names = {"{{agent_app_name_file}}", "{{agent_app_name}}_infra", "__init__"}
+
+    found: list[str] = []
+    for candidate in sorted(infra_dir.glob("*.py")):
+        name = candidate.stem
+        if name in self_names:
+            continue
+        if MEMORY_PARAMETERS_EXPORT not in candidate.read_text(encoding="utf-8"):
+            # Cheap text check first: never import a module that cannot be a
+            # memory module, since importing runs its Pulumi resource code.
+            continue
+        if maybe_import_from_module(name, MEMORY_PARAMETERS_EXPORT) is not None:
+            found.append(name)
+    return found
 
 
-def _normalize_optional_env(value: str | None) -> str | None:
-    """Return stripped env value, or None when unset or blank."""
-    if value is None:
-        return None
-    stripped = value.strip()
-    return stripped or None
+def get_memory_custom_model_runtime_parameters() -> list[
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs
+]:
+    """Load runtime parameters from the af-component-memory module, if present.
 
+    Returns an empty list when no memory component is installed, which is the
+    supported "agent renders, memory does not" state -- `streaming_memory_agent`
+    passes through when no backend is configured.
 
-def _gateway_model_name(model: str) -> str:
-    return model.removeprefix("datarobot/")
-
-
-def _configure_memory_space_llm(
-    space_id: str,
-    *,
-    llm_model_name: str | None = None,
-    llm_base_url: str | None = None,
-) -> str:
-    """Configure the memory space LLM settings via the DataRobot SDK.
-
-    Always set ``llm_model_name``. When routing to a deployed LLM, also set
-    ``llm_base_url``. Gateway-only routing clears any existing deployment URL.
+    No Pulumi resources are created here. The memory component owns its own
+    credential / ``MemorySpace``, so what arrives is already-resolved parameter
+    values (including credential IDs). That keeps memory runtime-agnostic: the
+    Custom Models and Workload API paths each consume the same list without
+    either creating, re-creating, or reaching into a memory credential.
     """
-    space = dr.MemorySpace.get(space_id)
-    update_kwargs: dict[str, str | None] = {}
-    if llm_model_name is not None:
-        if space.llm_model_name != llm_model_name:
-            update_kwargs["llm_model_name"] = llm_model_name
-    if llm_base_url is not None:
-        if space.llm_base_url != llm_base_url:
-            update_kwargs["llm_base_url"] = llm_base_url
-    elif llm_model_name is not None and space.llm_base_url is not None:
-        update_kwargs["llm_base_url"] = None
-    if update_kwargs:
-        space.update(**update_kwargs)
-    pulumi.info(f"Memory space configured: {space_id}")
-    return space_id
-
-
-def _configure_memory_space_llm_routing(
-    space_id: str,
-    *,
-    agent_default_model: str,
-    agent_deployment_id: str | None = None,
-    override_model_name: str | None = None,
-    override_deployment_id: str | None = None,
-    override_base_url: str | None = None,
-) -> str:
-    """Configure memory-space LLM routing from env overrides or agent LLM defaults.
-
-    ``llm_model_name`` selection:
-    1. ``AGENT_MEMORY_LLM_MODEL_NAME``
-    2. Agent LLM default model
-
-    ``deployment_id`` selection (only when ``AGENT_MEMORY_LLM_BASE_URL`` is unset):
-    1. ``AGENT_MEMORY_LLM_DEPLOYMENT_ID``
-    2. Agent LLM deployment ID
-
-    ``llm_base_url`` selection:
-    1. ``AGENT_MEMORY_LLM_BASE_URL`` — use as-is
-    2. selected deployment ID endpoint
-    3. Otherwise — LLM Gateway
-    """
-    if override_base_url and override_deployment_id:
+    modules = find_memory_modules()
+    if not modules:
+        logger.debug("No memory component module found; memory parameters omitted.")
+        return []
+    if len(modules) > 1:
         raise ValueError(
-            "Set only one of AGENT_MEMORY_LLM_BASE_URL or "
-            "AGENT_MEMORY_LLM_DEPLOYMENT_ID."
+            "Found more than one memory component module "
+            f"({', '.join(modules)}). Their runtime parameter keys collide, so "
+            "an agent can consume only one. Remove the extra memory components "
+            "from this project."
         )
-
-    model_name = override_model_name or agent_default_model
-    llm_base_url: str | None
-    if override_base_url:
-        # Explicit base URL bypasses deployment-based routing.
-        llm_base_url = override_base_url
-    else:
-        deployment_id = override_deployment_id or agent_deployment_id
-        llm_base_url = (
-            _deployment_llm_base_url(deployment_id) if deployment_id else None
-        )
-
-    model_name = _gateway_model_name(model_name)
-
-    config_kwargs: dict[str, str | None] = {"llm_model_name": model_name}
-    if llm_base_url is not None:
-        config_kwargs["llm_base_url"] = llm_base_url
-    return _configure_memory_space_llm(space_id, **config_kwargs)
-{%- endif %}
-
+    memory_params = maybe_import_from_module(modules[0], MEMORY_PARAMETERS_EXPORT)
+    pulumi.info(f"Agent memory configured from infra module: {modules[0]}")
+    return memory_params or []
+{% endif %}
 
 def build_shared_agent_runtime_parameters() -> list[
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs
@@ -475,9 +408,9 @@ def build_shared_agent_runtime_parameters() -> list[
     container env var (plain value, or a ``dr-credential`` reference for
     ``type="credential"`` entries — see ``workload.py``).
 
-    As a side effect, creates the session-secret / {% if use_agent_memory == 'mem0' %}Mem0-key / {% endif %}IDP-JWK
-    credentials{% if use_agent_memory == 'datarobot_memory_service' %} and the ``MemorySpace`` resource (configuring its LLM routing){% endif %} — all
-    runtime-agnostic. Excludes ``CUSTOM_MODEL_WORKERS``: that parameter is a
+    As a side effect, creates the session-secret and IDP-JWK credentials — both
+    runtime-agnostic.{% if use_agent_memory == 'memory_component' %} Memory parameters are forwarded from the memory
+    component, which creates any credential it needs itself.{% endif %} Excludes ``CUSTOM_MODEL_WORKERS``: that parameter is a
     DataRobot custom-model-container gunicorn-wrapper convention with no
     Workload-container equivalent, so it is added only by ``deployment.py``.
     """
@@ -494,15 +427,10 @@ def build_shared_agent_runtime_parameters() -> list[
             value=DEFAULT_AGENT_GUNICORN_WORKER_TIMEOUT,
         )
     )
-{% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}
-    params.append(
-        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-            key=AGENT_MEMORY_TTL_DAYS,
-            type="string",  # numeric is not compatible with DataRobotAppFrameworkBaseSettings
-            value=CONFIGURED_AGENT_MEMORY_TTL_DAYS,
-        )
-    )
-{% endif %}
+{%- if use_agent_memory == 'memory_component' %}
+    params += get_memory_custom_model_runtime_parameters()
+{%- endif %}
+
     # Handle session secret key credential
     if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
         pulumi.export(SESSION_SECRET_KEY, session_secret_key)
@@ -520,68 +448,6 @@ def build_shared_agent_runtime_parameters() -> list[
             ),
         )
 
-{%- if use_agent_memory == 'mem0' %}
-    # Handle Mem0 key credential
-    if mem0_api_key := os.environ.get(MEM0_API_KEY):
-        mem0_api_key_cred = pulumi_datarobot.ApiTokenCredential(
-            {{agent_app_name}}_asset_name + " Mem0 API Key",
-            args=pulumi_datarobot.ApiTokenCredentialArgs(api_token=str(mem0_api_key)),
-        )
-        params.append(
-            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-                type="credential",
-                key=MEM0_API_KEY,
-                value=mem0_api_key_cred.id,
-            ),
-        )
-{% endif %}
-{%- if use_agent_memory == 'datarobot_memory_service' %}
-    # Create the memory space and route its LLM at the agent's default model
-    # (or env overrides), independent of which runtime serves the agent itself.
-    {{agent_app_name}}_memory_space = pulumi_datarobot.MemorySpace(
-        {{agent_app_name}}_asset_name + " Memory Space"
-    )
-    _memory_llm_model = _normalize_optional_env(
-        os.environ.get("AGENT_MEMORY_LLM_MODEL_NAME")
-    )
-    _memory_llm_deployment = _normalize_optional_env(
-        os.environ.get("AGENT_MEMORY_LLM_DEPLOYMENT_ID")
-    )
-    _memory_llm_base_url = _normalize_optional_env(
-        os.environ.get("AGENT_MEMORY_LLM_BASE_URL")
-    )
-    _agent_llm_deployment = _llm_component_config_value("{{ _external_data.llm.llm_app_name|upper }}_DEPLOYMENT_ID")
-    if not isinstance(_agent_llm_deployment, pulumi.Output):
-        _agent_llm_deployment = pulumi.Output.from_input(_agent_llm_deployment or "")
-
-    def _apply_memory_space_llm_config(resolved: list[Any]) -> str:
-        space_id, agent_deployment_id = resolved
-        return _configure_memory_space_llm_routing(
-            space_id,
-            agent_default_model=default_model,
-            agent_deployment_id=agent_deployment_id or None,
-            override_model_name=_memory_llm_model,
-            override_deployment_id=_memory_llm_deployment,
-            override_base_url=_memory_llm_base_url,
-        )
-
-    {{agent_app_name}}_memory_space_ready = pulumi.Output.all(
-        {{agent_app_name}}_memory_space.id,
-        _agent_llm_deployment,
-    ).apply(_apply_memory_space_llm_config)
-    params.append(
-        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-            key=AGENT_MEMORY_SPACE_ID,
-            type="string",
-            value={{agent_app_name}}_memory_space_ready,
-        )
-    )
-    export(AGENT_MEMORY_SPACE_ID, {{agent_app_name}}_memory_space_ready)
-    pulumi.export(
-        "Agent Memory Space ID " + {{agent_app_name}}_asset_name,
-        {{agent_app_name}}_memory_space_ready,
-    )
-{% endif %}
     idp_agent_id = os.environ.get(IDP_AGENT_ID_PARAM, "")
     if idp_agent_id:
         params.append(

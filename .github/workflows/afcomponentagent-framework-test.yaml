@@ -35,12 +35,11 @@ jobs:
           - name: base
             agent_name: agent_generic_base
             use_memory: "none"
+          # Provider coverage lives in af-component-memory. This leg only proves
+          # the agent renders and behaves when told to consume a memory component.
           - name: base
             agent_name: agent_with_memory
-            use_memory: "mem0"
-          - name: base
-            agent_name: agent_with_dr_memory
-            use_memory: "datarobot_memory_service"
+            use_memory: "memory_component"
           - name: crewai
             agent_name: agent_crewai
             use_memory: "none"
