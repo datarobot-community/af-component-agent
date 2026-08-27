@@ -85,6 +85,8 @@ CONFIGURED_AGENT_MEMORY_TTL_DAYS: Final[str] = os.environ.get(
 )
 {% endif -%}
 
+AGENT_CARD_REGISTRY_MEMORY_SPACE_ID: Final[str] = "AGENT_CARD_REGISTRY_MEMORY_SPACE_ID"
+
 SESSION_SECRET_KEY: Final[str] = "SESSION_SECRET_KEY"
 {%- if use_agent_memory == 'mem0' %}
 MEM0_API_KEY: Final[str] = "MEM0_API_KEY"
@@ -144,14 +146,30 @@ def _is_truthy_yaml_value(value: object) -> bool:
     return bool(value)
 
 
-def check_a2a_server_enabled() -> bool:
+def _load_workflow_config() -> dict[str, Any]:
     workflow_yaml_path = _find_workflow_yaml()
     if workflow_yaml_path is None:
-        return False
+        return {}
     with open(workflow_yaml_path) as f:
-        workflow_config = yaml.safe_load(f) or {}
+        return yaml.safe_load(f) or {}
+
+
+def check_a2a_server_enabled() -> bool:
+    workflow_config = _load_workflow_config()
     a2a = ((workflow_config.get("general") or {}).get("front_end") or {}).get("a2a")
     return a2a is not None
+
+
+def _check_a2a_remote_client_enabled() -> bool:
+    """Return whether workflow.yaml declares remote A2A agent clients."""
+    function_groups = _load_workflow_config().get("function_groups") or {}
+    for fg_config in function_groups.values():
+        if (
+            isinstance(fg_config, dict)
+            and fg_config.get("_type") == "authenticated_a2a_client"
+        ):
+            return True
+    return False
 
 
 def check_a2a_unauthenticated_well_known_route_enabled() -> bool:
@@ -167,6 +185,7 @@ def check_a2a_unauthenticated_well_known_route_enabled() -> bool:
 
 
 IS_A2A_SERVER_ENABLED = check_a2a_server_enabled()
+IS_A2A_REMOTE_CLIENT_ENABLED = _check_a2a_remote_client_enabled()
 IS_A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENABLED = (
     check_a2a_unauthenticated_well_known_route_enabled()
 )
@@ -582,6 +601,25 @@ def build_shared_agent_runtime_parameters() -> list[
         {{agent_app_name}}_memory_space_ready,
     )
 {% endif %}
+
+    # Agent card registry L2 cache (shared across replicas via DataRobot MemorySpace)
+    if IS_A2A_REMOTE_CLIENT_ENABLED:
+        {{agent_app_name}}_registry_cache_memory_space = pulumi_datarobot.MemorySpace(
+            {{agent_app_name}}_asset_name + " Agent Card Registry Cache",
+        )
+        params.append(
+            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+                key=AGENT_CARD_REGISTRY_MEMORY_SPACE_ID,
+                type="string",
+                value={{agent_app_name}}_registry_cache_memory_space.id,
+            )
+        )
+        export(AGENT_CARD_REGISTRY_MEMORY_SPACE_ID, {{agent_app_name}}_registry_cache_memory_space.id)
+        pulumi.export(
+            "Agent Card Registry Cache Memory Space ID " + {{agent_app_name}}_asset_name,
+            {{agent_app_name}}_registry_cache_memory_space.id,
+        )
+
     idp_agent_id = os.environ.get(IDP_AGENT_ID_PARAM, "")
     if idp_agent_id:
         params.append(
