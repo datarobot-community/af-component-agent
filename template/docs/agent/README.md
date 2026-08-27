@@ -206,6 +206,10 @@ All agent types use the same `datarobot_genai` package for LLM configuration, re
 
 ## Migrations
 
+### 11.11.48 — Agent infra module split
+
+Agent component 11.11.48 split `infra/infra/<agent_app_name>.py` into an entry router plus `<agent_app_name>_infra/{base,deployment,workload}.py`. Behaviour and the module's public surface are unchanged, so this only affects projects that edited that file. See [agent infra split migration](./migration-infra-split.md).
+
 ### Agent config authority
 
 `agent/config.py` is the authoritative configuration for the agent component, and the per-LLM settings are namespaced by the LLM component's name. Projects created before this change need their config fields, runtime parameters, and `datarobot-llm-router` blocks renamed. See [agent config authority migration](./migration-config-authority.md).
@@ -229,6 +233,7 @@ Migration guides per framework:
 | NAT | [migration-to-11.8.8-nat.md](./frameworks/migration-to-11.8.8-nat.md) |
 | All frameworks | [`workflow.yaml` path (11.9.3)](./migration-workflow-yaml-path.md) |
 | All frameworks | [agent config authority](./migration-config-authority.md) |
+| All frameworks | [agent infra split (11.11.48)](./migration-infra-split.md) |
 
 ## Further reading
 
