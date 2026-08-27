@@ -50,7 +50,7 @@ Override the value of a runtime parameter depending on when the change needs to 
 
 - **Local development** — set the variable in the project `.env` file. It takes effect immediately, the same way it does after deployment, with no deploy needed.
 - **At deploy time** — this works only when the infra registration reads the variable from `os.environ`. Set such variables in the environment that `dr run deploy` (Pulumi) runs in; examples include `AGENT_MEMORY_TTL_DAYS`, `MEM0_API_KEY`, `SESSION_SECRET_KEY`, `IDP_AGENT_ID`, and `IDP_AGENT_PRIVATE_KEY_JWK`. Parameters registered from constants, such as `AGENT_GUNICORN_WORKER_TIMEOUT`, require an infra code change before deployment.
-- **After deployment** — edit the value directly on the registered model or deployment in DataRobot. This updates the runtime parameter without requiring a code change or redeploy, and is the fastest way to tune something like `AGENT_GUNICORN_WORKER_TIMEOUT` in a live environment.
+- **After deployment** — a runtime parameter can only be changed while its deployment is inactive. Edit the value on the registered model and replace the model on the deployment (no downtime), or deactivate the deployment, edit the value, and reactivate it. Either way, no code change or redeploy is required, making this the fastest way to tune something like `AGENT_GUNICORN_WORKER_TIMEOUT` in a live environment.
 
 ## Add a custom runtime parameter
 
