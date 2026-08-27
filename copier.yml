@@ -203,3 +203,51 @@ _migrations:
           rm -rf "$APP/.copier_migration_tmp_workflow"
         done
     when: "{{ _stage == 'after' and _copier_operation == 'update' }}"
+  # Preserve the pre-split agent infra module.
+  #
+  # The agent's Pulumi infra used to be one module, `infra/infra/<app>.py`.
+  # It is now an entry router plus `infra/infra/<app>_infra/{base,deployment,
+  # workload}.py`, so the update rewrites that file almost entirely and copier
+  # 3-way-merges it. The conflict is unavoidable -- deleting the file here
+  # first does not prevent it, since copier reconstructs the merge from its
+  # own recorded state -- and it surfaces as one small, routine-looking hunk
+  # that does not show local edits. A project that customized the module can
+  # therefore resolve in favour of the new router and silently lose its
+  # changes, because the code it patched now lives in base.py / deployment.py.
+  #
+  # There is no mechanical way to replay arbitrary local edits into the new
+  # layout, so keep a pristine copy of the old module beside it and say where
+  # the code went. Detection is by content, not filename, so this is
+  # idempotent and skips projects already on the new layout: only the
+  # pre-split module defines the Custom Models constants at module level.
+  # `infra/infra/*.py` is not recursive, so the new
+  # `<app>_infra/deployment.py` is never matched.
+  - version: "11.11.48"
+    command:
+      - bash
+      - -lc
+      - |
+        set -euo pipefail
+        for SRC in infra/infra/*.py; do
+          [ -f "$SRC" ] || continue
+          grep -q "DEFAULT_AGENT_RESOURCE_BUNDLE_ID" "$SRC" || continue
+
+          BACKUP="$SRC.pre-split.bak"
+          if [ -e "$BACKUP" ]; then
+            continue
+          fi
+          cp "$SRC" "$BACKUP"
+
+          MODULE="$(basename "$SRC" .py)"
+          echo "" >&2
+          echo "NOTE: $SRC is now only an entry router; its logic moved into" >&2
+          echo "      ${MODULE}_infra/{base,deployment,workload}.py." >&2
+          echo "      A copy of your current version was saved as $BACKUP." >&2
+          echo "      If you never edited that file, resolve the merge in favour of the new" >&2
+          echo "      version and delete the backup." >&2
+          echo "      If you did edit it, port those changes into ${MODULE}_infra/base.py or" >&2
+          echo "      ${MODULE}_infra/deployment.py -- edits left in the router have no effect." >&2
+          echo "      See docs/agent/migration-infra-split.md." >&2
+          echo "" >&2
+        done
+    when: "{{ _stage == 'before' and _copier_operation == 'update' }}"
