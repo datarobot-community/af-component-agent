@@ -223,7 +223,7 @@ To configure a memory space LLM that differs from the agent LLM component defaul
 
 ## Infrastructure provisioning
 
-When memory is enabled, `infra/infra/<agent_app_name>.py` adds runtime parameters to the agent custom model:
+When memory is enabled, `infra/infra/<agent_app_name>_infra/base.py` adds runtime parameters to the agent custom model:
 
 1. `AGENT_MEMORY_TTL_DAYS`&mdash;always added (string type, default `30`). Override at deploy time with the `AGENT_MEMORY_TTL_DAYS` environment variable in the Pulumi stack.
 
