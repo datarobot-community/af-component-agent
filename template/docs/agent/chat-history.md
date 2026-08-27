@@ -115,7 +115,7 @@ Parse the `data:` lines in the response for AG-UI text events. For deployed agen
 | | Chat history | [Agent memory](./agent-memory.md) |
 |---|---|---|
 | **Scope** | Messages in the current request | Facts stored across sessions per user |
-| **Configuration** | Built into `datarobot-genai` adapters | `use_agent_memory` at project generation + `workflow.yaml` |
+| **Configuration** | Built into `datarobot-genai` adapters | `workflow.yaml` wrapper + an af-component-memory backend |
 | **Use when** | The client sends the full or partial transcript | The agent should recall durable facts without the client resending them |
 
 Both can be enabled together: the client supplies recent turns as chat history while `streaming_memory_agent` retrieves long-term memories for the same user.

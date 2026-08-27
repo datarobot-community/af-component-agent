@@ -139,7 +139,7 @@ workflow:
 
 ### Agent memory workflows
 
-When agent memory (`mem0` or `datarobot_memory_service`) is enabled, the workflow type is `streaming_memory_agent` and the template does not add `datarobot_moderation` to the workflow's middleware list. Add it manually if you want runtime guardrails with memory-enabled agents.
+The workflow type is `streaming_memory_agent`, which wraps the framework agent whether or not a memory backend is configured. Moderation middleware is declared on that outer workflow like any other, so no memory-specific handling is needed.
 
 ## Configure guards
 

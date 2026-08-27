@@ -69,6 +69,12 @@ tasks:
       - cp ./fixtures/infra/pyproject.toml ./$RENDER_DIR/agent_{{.AGENT}}/infra/pyproject.toml
       - cp ./fixtures/infra/__init__.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/__init__.py
       - cp ./fixtures/infra/llm.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/llm.py
+      # Stands in for a rendered af-component-memory module so the agent's
+      # discovery path has something to find. Only for memory_component renders.
+      - |
+        if [ "{{.USE_MEMORY}}" = "memory_component" ]; then
+          cp ./fixtures/infra/memory.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/memory.py
+        fi
 
   render-template-e2e:
     desc: "Render template + inject test scaffolding used by E2E (Taskfiles + minimal infra entrypoint/files)"
@@ -166,22 +172,12 @@ tasks:
           SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
 
   test-memory:
-    desc: "Run tests for base agent with Mem0 memory enabled"
+    desc: "Run tests for base agent consuming an af-component-memory component"
     cmds:
       - task: test-agent
         vars:
           AGENT: base_memory
-          USE_MEMORY: mem0
-          SKIP_LINT: "{{.SKIP_LINT| default 0}}"
-          SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
-
-  test-datarobot-memory:
-    desc: "Run tests for base agent with DataRobot memory enabled"
-    cmds:
-      - task: test-agent
-        vars:
-          AGENT: base_memory
-          USE_MEMORY: datarobot_memory_service
+          USE_MEMORY: memory_component
           SKIP_LINT: "{{.SKIP_LINT| default 0}}"
           SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
 
@@ -253,7 +249,6 @@ tasks:
       - task: validate-windows-compatibility
       - task: test-base
       - task: test-memory
-      - task: test-datarobot-memory
       - task: test-crewai
       - task: test-langgraph
       - task: test-llamaindex
