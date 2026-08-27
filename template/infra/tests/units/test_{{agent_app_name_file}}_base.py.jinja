@@ -14,6 +14,7 @@
 """Tests for infra.{{agent_app_name}}_infra.base: shared config used by both runtimes."""
 
 import asyncio
+import os
 import sys
 from pathlib import Path
 import pytest
@@ -251,6 +252,28 @@ class TestResolveAgentExecutionEnvironment:
         assert kwargs["id"] == "Custom Execution Environment"
         assert kwargs["version_id"] is None
         base.pulumi_datarobot.ExecutionEnvironment.assert_not_called()
+
+
+def test_reset_environment_between_tests(monkeypatch, tmp_path):
+    """Guard that execution-environment env vars don't leak between tests.
+
+    Ported from the pre-split suite, where it reloaded the whole monolith. The
+    equivalent here is base's resolver: with no override set it must build a new
+    execution environment rather than look one up.
+    """
+    assert os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT") is None
+
+    import infra.{{agent_app_name}}_infra.base as base
+
+    base.pulumi_datarobot.ExecutionEnvironment.reset_mock()
+    base.resolve_agent_execution_environment(
+        asset_name="[unittest] [{{agent_app_name}}]",
+        application_path=tmp_path,
+        use_cases=["customModel", "notebook"],
+    )
+
+    base.pulumi_datarobot.ExecutionEnvironment.assert_called_once()
+    base.pulumi_datarobot.ExecutionEnvironment.get.assert_not_called()
 
 
 class TestResolveExecutionEnvironmentVersion:
@@ -616,6 +639,30 @@ class TestBuildSharedAgentRuntimeParameters:
         ttl_param = next(p for p in params if p.key == AGENT_MEMORY_TTL_DAYS)
         assert ttl_param.type == "string"
         assert ttl_param.value == "30"
+
+    def test_memory_ttl_env_override(self, monkeypatch):
+        """AGENT_MEMORY_TTL_DAYS is read at base's import time; reload to re-parse."""
+        import importlib
+        import infra.{{agent_app_name}}_infra.base as base
+
+        monkeypatch.setenv(AGENT_MEMORY_TTL_DAYS, "1")
+        importlib.reload(base)
+
+        params = base.build_shared_agent_runtime_parameters()
+        ttl_param = next(p for p in params if p.key == AGENT_MEMORY_TTL_DAYS)
+        assert ttl_param.type == "string"
+        assert ttl_param.value == "1"
+{% else %}
+    def test_memory_ttl_excluded_when_memory_disabled(self, monkeypatch):
+        """With memory off the TTL parameter is absent, even if the env var is set."""
+        import importlib
+        import infra.{{agent_app_name}}_infra.base as base
+
+        monkeypatch.setenv(AGENT_MEMORY_TTL_DAYS, "1")
+        importlib.reload(base)
+
+        params = base.build_shared_agent_runtime_parameters()
+        assert not any(p.key == AGENT_MEMORY_TTL_DAYS for p in params)
 {% endif %}
 {%- if use_agent_memory == 'mem0' %}
     def test_mem0_api_key_becomes_credential(self, monkeypatch):
@@ -720,6 +767,48 @@ class TestConfigureMemorySpaceLlm:
             llm_model_name="new-model", llm_base_url=deployment_url
         )
 
+    def test_updates_llm_base_url_for_deployed_llm(self, monkeypatch):
+        import infra.{{agent_app_name}}_infra.base as base
+
+        mock_space = MagicMock()
+        mock_space.llm_model_name = None
+        mock_space.llm_base_url = None
+        mock_get = MagicMock(return_value=mock_space)
+        monkeypatch.setattr("datarobot.MemorySpace.get", mock_get)
+
+        deployment_url = (
+            "https://app.datarobot.com/api/v2/deployments/abc123/chat/completions"
+        )
+        result = base._configure_memory_space_llm(
+            space_id="test-space-id",
+            llm_base_url=deployment_url,
+        )
+
+        mock_get.assert_called_once_with("test-space-id")
+        mock_space.update.assert_called_once_with(llm_base_url=deployment_url)
+        assert result == "test-space-id"
+
+    def test_skips_update_when_llm_base_url_matches(self, monkeypatch):
+        import infra.{{agent_app_name}}_infra.base as base
+
+        deployment_url = (
+            "https://app.datarobot.com/api/v2/deployments/abc123/chat/completions"
+        )
+        mock_space = MagicMock()
+        mock_space.llm_model_name = None
+        mock_space.llm_base_url = deployment_url
+        mock_get = MagicMock(return_value=mock_space)
+        monkeypatch.setattr("datarobot.MemorySpace.get", mock_get)
+
+        result = base._configure_memory_space_llm(
+            space_id="test-space-id",
+            llm_base_url=deployment_url,
+        )
+
+        mock_get.assert_called_once_with("test-space-id")
+        mock_space.update.assert_not_called()
+        assert result == "test-space-id"
+
 
 class TestMemorySpaceLlmRouting:
     def test_llm_component_config_value_reads_llm_exports(self):
@@ -747,6 +836,25 @@ class TestMemorySpaceLlmRouting:
             )
         ]
         assert base._llm_component_config_value("{{ _external_data.llm.llm_app_name|upper }}_DEPLOYMENT_ID") is None
+
+    def test_deployment_id_output_detected_without_boolean_coercion(self):
+        """A pulumi.Output deployment ID must survive as-is, not be truth-tested."""
+        import infra.{{agent_app_name}}_infra.base as base
+
+        deployment_output = MagicMock()
+        deployment_output.__class__ = base.pulumi.Output
+        RuntimeParam = namedtuple("RuntimeParam", ["key", "type", "value"])
+        base.llm_custom_model_runtime_parameters = [
+            RuntimeParam(
+                key="{{ _external_data.llm.llm_app_name|upper }}_DEPLOYMENT_ID",
+                type="string",
+                value=deployment_output,
+            )
+        ]
+
+        value = base._llm_component_config_value("{{ _external_data.llm.llm_app_name|upper }}_DEPLOYMENT_ID")
+        assert value is deployment_output
+        assert isinstance(value, base.pulumi.Output) or value
 
     def test_deployment_llm_base_url_uses_deployment_base_endpoint(self, monkeypatch):
         import infra.{{agent_app_name}}_infra.base as base
@@ -959,6 +1067,15 @@ class TestEnableAgentHAMode:
 
     def test_disabled_by_default(self, monkeypatch):
         monkeypatch.delenv("ENABLE_AGENT_HA_MODE", raising=False)
+        import importlib
+        import infra.{{agent_app_name}}_infra.base as base
+
+        importlib.reload(base)
+        assert base.ENABLE_AGENT_HA_MODE is False
+
+    def test_disabled_explicit_false(self, monkeypatch):
+        """'false' is disabled, same as unset -- only 'true' enables HA."""
+        monkeypatch.setenv("ENABLE_AGENT_HA_MODE", "false")
         import importlib
         import infra.{{agent_app_name}}_infra.base as base
 

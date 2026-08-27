@@ -277,6 +277,18 @@ class TestProvisionDeploymentAgent:
         assert kwargs["resource_bundle_id"] == "cpu.xlarge"
         assert kwargs["replicas"] == 1
 
+    def test_ha_derived_constants_explicit_false(self, monkeypatch):
+        """'false' is disabled, same as unset -- the HA-derived module constants
+        computed at deployment's import time must keep their non-HA values."""
+        monkeypatch.setenv("ENABLE_AGENT_HA_MODE", "false")
+        deployment = _reload_deployment()
+
+        assert deployment.base.ENABLE_AGENT_HA_MODE is False
+        assert deployment.DEFAULT_CUSTOM_MODEL_WORKERS == "2"
+        assert deployment.DEFAULT_AGENT_RESOURCE_BUNDLE_ID == "cpu.xlarge"
+        assert deployment.DEFAULT_AGENT_REPLICAS == 1
+        assert deployment.DEFAULT_AGENT_DEPLOYMENT_MAX_COMPUTES == 2
+
     def test_resource_bundle_and_replicas_ha_mode(self, monkeypatch):
         monkeypatch.setenv("ENABLE_AGENT_HA_MODE", "true")
         deployment = _reload_deployment()
