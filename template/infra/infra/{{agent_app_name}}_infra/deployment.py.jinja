@@ -252,7 +252,22 @@ def provision_deployment_agent(
     )
 
     agent_runtime_parameter_values = list(shared_runtime_parameters)
-    agent_runtime_parameter_values.append(
+    # CUSTOM_MODEL_WORKERS is a custom-model-container gunicorn-wrapper convention
+    # with no Workload equivalent, so base.py leaves it out. Insert it immediately
+    # before AGENT_GUNICORN_WORKER_TIMEOUT -- the position it held before the infra
+    # split -- so upgrading projects see no ordering change in
+    # runtime_parameter_values or in the generated model-metadata.yaml, and
+    # therefore no spurious custom model version on the next `pulumi up`.
+    workers_position = next(
+        (
+            index
+            for index, param in enumerate(agent_runtime_parameter_values)
+            if param.key == "AGENT_GUNICORN_WORKER_TIMEOUT"
+        ),
+        len(agent_runtime_parameter_values),
+    )
+    agent_runtime_parameter_values.insert(
+        workers_position,
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
             key="CUSTOM_MODEL_WORKERS",
             type="numeric",

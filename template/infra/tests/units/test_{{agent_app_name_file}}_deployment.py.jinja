@@ -205,6 +205,51 @@ class TestProvisionDeploymentAgent:
         assert result["playground"] is not None
         assert result["workload"] is None
 
+    def test_custom_model_workers_precedes_gunicorn_timeout(self, monkeypatch):
+        """CUSTOM_MODEL_WORKERS keeps the position it held before the infra split.
+
+        base.py leaves it out (no Workload-container equivalent), so deployment.py
+        has to put it back directly before AGENT_GUNICORN_WORKER_TIMEOUT rather than
+        append it after the credential/memory params. Appending would reorder the
+        runtimeParameterDefinitions block in the generated model-metadata.yaml and
+        cost every upgrading project a spurious custom model version.
+        """
+        deployment = _reload_deployment()
+        deployment.pulumi_datarobot.CustomModel.reset_mock()
+
+        shared_params = [
+            RuntimeParam(key="LLM_DEPLOYMENT_ID", type="string", value="llm-id"),
+            RuntimeParam(
+                key="AGENT_GUNICORN_WORKER_TIMEOUT", type="string", value="600"
+            ),
+            RuntimeParam(key="SESSION_SECRET_KEY", type="credential", value="cred-id"),
+        ]
+        deployment.provision_deployment_agent(shared_params)
+
+        _, kwargs = deployment.pulumi_datarobot.CustomModel.call_args
+        assert [p.key for p in kwargs["runtime_parameter_values"]] == [
+            "LLM_DEPLOYMENT_ID",
+            "CUSTOM_MODEL_WORKERS",
+            "AGENT_GUNICORN_WORKER_TIMEOUT",
+            "SESSION_SECRET_KEY",
+        ]
+
+    def test_custom_model_workers_appended_when_timeout_absent(self, monkeypatch):
+        """Falls back to appending when the shared list carries no timeout param."""
+        deployment = _reload_deployment()
+        deployment.pulumi_datarobot.CustomModel.reset_mock()
+
+        shared_params = [
+            RuntimeParam(key="LLM_DEPLOYMENT_ID", type="string", value="llm-id")
+        ]
+        deployment.provision_deployment_agent(shared_params)
+
+        _, kwargs = deployment.pulumi_datarobot.CustomModel.call_args
+        assert [p.key for p in kwargs["runtime_parameter_values"]] == [
+            "LLM_DEPLOYMENT_ID",
+            "CUSTOM_MODEL_WORKERS",
+        ]
+
     def test_execution_environment_id_passthrough(self, monkeypatch):
         deployment = _reload_deployment()
         mock_ee = MagicMock(id="default-id", version_id="69e2134aa5df12076d70afe7")
