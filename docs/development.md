@@ -10,7 +10,7 @@ agent. These commands are equivalent to the tests that run automatically when a 
 GitHub Actions runs the tests, and the results appear in the PR. For large changes that may significantly
 affect template installation or usage, also open a branch in [recipe-datarobot-agent-templates](https://github.com/datarobot/recipe-datarobot-agent-templates).
 
-> **Important:** After committing a PR, create a release in this repository to bump the version of the component.
+> **Important:** After merging a PR, create a release in this repository to bump the version of the component.
 > This is required to properly work with the `uvx copier` command and to ensure the changes are reflected in the
 > downstream repositories.
 

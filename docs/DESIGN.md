@@ -89,7 +89,7 @@ Example — `myagent.py.jinja`:
 {% else %}{% include '.../agent_base.py.j2' %}{% endif -%}
 ```
 
-The `_exclude` directive in `copier.yml` strips the `*.j2` extension from the routers and prevents `*_templates/` directories from appearing in the output.
+Copier strips the `.jinja` suffix from router filenames during rendering, while the `_exclude` directive in `copier.yml` prevents `*.j2` partials and `*_templates/` directories from appearing in the output.
 
 ### When *default* vs framework-specific partials exist
 

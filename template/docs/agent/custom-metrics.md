@@ -4,7 +4,7 @@ This template covers custom metrics in a DataRobot deployment: create a custom m
 
 ## Prerequisites
 
-The [DataRobot Python API Client](https://pypi.org/project/datarobot/) installed, and a DataRobot API endpoint and API token configured.
+Install the [DataRobot Python API Client](https://pypi.org/project/datarobot/) and configure a DataRobot API endpoint and API token.
 
 ## Steps to work with custom metrics
 

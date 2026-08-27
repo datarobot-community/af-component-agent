@@ -2,7 +2,7 @@
 
 Runtime parameters are the mechanism DataRobot uses to configure a deployed custom model without changing code. They consist of a key/value entry declared under `runtimeParameterDefinitions` in `model-metadata.yaml` for the custom model. This file is generated automatically — never hand-edited — by `_generate_metadata_yaml()` in `infra/infra/<agent_app_name>_infra/deployment.py` from the list of `pulumi_datarobot.CustomModelRuntimeParameterValueArgs` entries built during `dr run deploy`.
 
-Example of how the runtime parameters can look like in `model-metadata.yaml`.
+The following example shows how runtime parameters appear in `model-metadata.yaml`.
 
 ```
 ---
@@ -21,7 +21,7 @@ Each entry has a `type` that determines how it is exposed to the running deploym
 |---|---|
 | `string` | A plain text value, exposed to the running deployment as an environment variable named after the runtime parameter key. |
 | `numeric` | A numeric value, also exposed as an environment variable named after the runtime parameter key. |
-| `credential` | A value backed by a DataRobot credential object (for example, an `ApiTokenCredential`) rather than a plain string. Used for secrets so they aren't stored as raw text on the custom model, and are exposed as a DataRobot credential ID rather than a raw string value. |
+| `credential` | A value backed by a DataRobot credential object (for example, an `ApiTokenCredential`) rather than a plain string. Used for secrets so they aren't stored as raw text on the custom model. At runtime, DataRobot injects a single-field credential such as an API token under the runtime parameter's environment-variable name; multi-field credentials are unpacked into suffixed environment variables. |
 
 Once deployed, the value of a runtime parameter can be viewed and edited directly on the registered model or deployment in DataRobot — no redeploy of code is required to change it. This is what distinguishes a runtime parameter from a plain environment variable that only exists in the local shell or `.env` file, or a Python-level default baked into the build.
 
@@ -36,9 +36,9 @@ This component provisions the following runtime parameters automatically during 
 | `CUSTOM_MODEL_WORKERS` | numeric | `infra/infra/<agent_app_name>_infra/deployment.py` | Number of Gunicorn workers for the deployed agent. `2` by default, `5` when `ENABLE_AGENT_HA_MODE=true` is set at deploy time (see [Deploy-time infra variables are not runtime parameters](#deploy-time-infra-variables-are-not-runtime-parameters)). |
 | `AGENT_GUNICORN_WORKER_TIMEOUT` | string | `infra/infra/<agent_app_name>_infra/base.py` | Gunicorn worker timeout in seconds. Defaults to `600`, raised above Gunicorn's 30s default so long agent turns aren't killed mid-stream. |
 | `LLM_DEPLOYMENT_ID`, `LLM_DEFAULT_MODEL`, `LLM_NIM_DEPLOYMENT_ID`, `LLM_USE_DATAROBOT_LLM_GATEWAY` (namespaced per LLM component) | string | The `llm` component's own infra module | LLM routing configuration. See [Configuration](./README.md#configuration) for the full variable table and [LLM component](../llm.md) for details. |
-| `MCP_DEPLOYMENT_ID`, `EXTERNAL_MCP_URL`, `EXTERNAL_MCP_HEADERS`, `EXTERNAL_MCP_TRANSPORT` | string | `get_mcp_runtime_parameters_from_env()` in `infra/infra/<agent_app_name>_infra/base.py` | MCP server connection details, when an MCP deployment or external MCP URL is configured. See [MCP server](../mcp-server.md). |
+| `MCP_DEPLOYMENT_ID`, `EXTERNAL_MCP_URL`, `EXTERNAL_MCP_HEADERS`, `EXTERNAL_MCP_TRANSPORT` | string | The MCP component's infra module when present; otherwise `get_mcp_runtime_parameters_from_env()` in `infra/infra/<agent_app_name>_infra/base.py` | MCP server connection details. See [MCP server](../mcp-server.md). |
 
-The following are provisioned conditionally, depending on which optional features are enabled for the project. Their tables appear on the pages that document those features rather than being duplicated here:
+The following parameters are provisioned conditionally, depending on which optional features are enabled for the project. They are summarized here and documented in detail on their feature-specific pages:
 
 | Runtime parameter | Type | When provisioned | Documented in |
 |---|---|---|---|
@@ -63,7 +63,7 @@ Override the value of a runtime parameter depending on when the change needs to 
 
 - **Local development** — set the variable in the project `.env` file. It takes effect immediately, the same way it does after deployment, with no deploy needed.
 - **At deploy time** — this works only when the infra registration reads the variable from `os.environ`. Set such variables in the environment that `dr run deploy` (Pulumi) runs in; examples include `AGENT_MEMORY_TTL_DAYS`, `MEM0_API_KEY`, `SESSION_SECRET_KEY`, `IDP_AGENT_ID`, and `IDP_AGENT_PRIVATE_KEY_JWK`. Parameters registered from constants, such as `AGENT_GUNICORN_WORKER_TIMEOUT`, require an infra code change before deployment.
-- **After deployment** — a runtime parameter can only be changed while its deployment is inactive. Edit the value on the registered model and replace the model on the deployment (no downtime), or deactivate the deployment, edit the value, and reactivate it. Either way, no code change or redeploy is required, making this the fastest way to tune something like `AGENT_GUNICORN_WORKER_TIMEOUT` in a live environment.
+- **After deployment** — to update a value on the existing deployment, deactivate the deployment, edit the runtime parameter in **Settings > Resources**, and reactivate it. To avoid downtime, replace the active deployment's model version and set the runtime parameter values during replacement. Neither workflow requires an agent code change.
 
 ## Add a custom runtime parameter
 

@@ -155,7 +155,7 @@ See [AUTHORS](AUTHORS) and [LICENSE](LICENSE) for authorship and licensing infor
 
 Changelog entries are managed via [RELEASE.yaml](RELEASE.yaml). After merging a pull request, cut a release to publish the changelog and bump the component version.
 
-To contribute, fork the repository, make changes on a branch, and open a pull request. Ensure `task test` passes before submitting. For additional guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
+To contribute, fork the repository, make changes on a branch, and open a pull request. Ensure `task test` passes before submitting. For additional guidelines, see [CONTRIBUTING.md](.github/CONTRIBUTING.md).
 
 For support, see [Troubleshooting](#troubleshooting) or [contact DataRobot](https://docs.datarobot.com/en/docs/get-started/troubleshooting/general-help.html).
 
