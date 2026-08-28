@@ -20,6 +20,14 @@ Template `uv.lock` output is assembled by `uv.lock.jinja`, which includes the co
 
 Do not edit those partials by hand. Regenerate them with the root `Taskfile.yml` tasks: `update-lock-file` and `update-lock-file-all`.
 
+> **Use uv >= 0.11.25 to regenerate lock files.** Both this repo's root `pyproject.toml` and the
+> generated agent's `pyproject.toml.jinja` set `required-version = ">=0.11.25"`, so `uv lock` fails
+> fast with a clear error (`uv self update`) if your local `uv` is older. This floor exists because
+> every uv release through 0.11.24 writes a redundant `sys_platform == 'darwin' or sys_platform ==
+> 'linux' or sys_platform == 'win32'` marker onto packages required on every platform, while 0.11.25
+> onward omits it. Regenerating a lockfile with a uv version on the wrong side of that line adds or
+> strips hundreds of no-op marker lines, unrelated to whatever dependency change prompted the update.
+
 The `update-lock-file` task:
 
 1. Renders the Copier template into `.rendered/agent_<AGENT>/` (`render-template`).
