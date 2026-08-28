@@ -83,13 +83,12 @@ AGENT_MEMORY_TTL_DAYS: Final[str] = "AGENT_MEMORY_TTL_DAYS"
 CONFIGURED_AGENT_MEMORY_TTL_DAYS: Final[str] = os.environ.get(
     AGENT_MEMORY_TTL_DAYS, "30"
 )
-{% endif -%}
-{% if use_agent_memory == 'datarobot_memory_service' %}
 # The datarobot-genai memory client (>=0.29.12) prefers this over DATAROBOT_ENDPOINT
 # when resolving the DataRobot Memory Service host -- on-prem deployments often point
 # DATAROBOT_ENDPOINT at an internal address, so the externally-reachable one must be
-# forwarded explicitly for memory to work. Mem0 (SaaS) does not use this: it never
-# talks to the DataRobot API for its own backend host.
+# forwarded explicitly for the DataRobot Memory Service to work. Mem0 (SaaS) doesn't
+# require this (it never resolves a DataRobot API endpoint for its own backend host),
+# but forwarding it is harmless, so it's provisioned for either provider.
 DATAROBOT_PUBLIC_API_ENDPOINT_PARAM: Final[str] = "DATAROBOT_PUBLIC_API_ENDPOINT"
 {% endif -%}
 
@@ -510,6 +509,23 @@ def build_shared_agent_runtime_parameters() -> list[
             value=CONFIGURED_AGENT_MEMORY_TTL_DAYS,
         )
     )
+    # Always forward a public-reachable DataRobot API endpoint to the deployed
+    # container so the memory client can resolve the Memory Service host even when
+    # DATAROBOT_ENDPOINT is internal-only (on-prem). Prefer an explicit
+    # DATAROBOT_PUBLIC_API_ENDPOINT from the deploy environment; fall back to
+    # DATAROBOT_ENDPOINT so the parameter is set whenever one of the two is. Required
+    # for the DataRobot Memory Service provider; harmless (unused) for Mem0.
+    if datarobot_public_api_endpoint := (
+        os.environ.get(DATAROBOT_PUBLIC_API_ENDPOINT_PARAM)
+        or os.environ.get("DATAROBOT_ENDPOINT")
+    ):
+        params.append(
+            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+                key=DATAROBOT_PUBLIC_API_ENDPOINT_PARAM,
+                type="string",
+                value=datarobot_public_api_endpoint,
+            )
+        )
 {% endif %}
     # Handle session secret key credential
     if session_secret_key := os.environ.get(SESSION_SECRET_KEY):
@@ -544,23 +560,6 @@ def build_shared_agent_runtime_parameters() -> list[
         )
 {% endif %}
 {%- if use_agent_memory == 'datarobot_memory_service' %}
-    # Always forward a public-reachable DataRobot API endpoint to the deployed
-    # container so the memory client can resolve the Memory Service host even when
-    # DATAROBOT_ENDPOINT is internal-only (on-prem). Prefer an explicit
-    # DATAROBOT_PUBLIC_API_ENDPOINT from the deploy environment; fall back to
-    # DATAROBOT_ENDPOINT so the parameter is set whenever one of the two is.
-    if datarobot_public_api_endpoint := (
-        os.environ.get(DATAROBOT_PUBLIC_API_ENDPOINT_PARAM)
-        or os.environ.get("DATAROBOT_ENDPOINT")
-    ):
-        params.append(
-            pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-                key=DATAROBOT_PUBLIC_API_ENDPOINT_PARAM,
-                type="string",
-                value=datarobot_public_api_endpoint,
-            )
-        )
-
     # Create the memory space and route its LLM at the agent's default model
     # (or env overrides), independent of which runtime serves the agent itself.
     {{agent_app_name}}_memory_space = pulumi_datarobot.MemorySpace(
