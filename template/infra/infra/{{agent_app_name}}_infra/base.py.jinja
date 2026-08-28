@@ -611,7 +611,9 @@ def build_shared_agent_runtime_parameters() -> list[
                 value={{agent_app_name}}_registry_cache_memory_space.id,
             )
         )
-        export(AGENT_CARD_REGISTRY_MEMORY_SPACE_ID, {{agent_app_name}}_registry_cache_memory_space.id)
+        export(
+            AGENT_CARD_REGISTRY_MEMORY_SPACE_ID, {{agent_app_name}}_registry_cache_memory_space.id
+        )
         pulumi.export(
             "Agent Card Registry Cache Memory Space ID " + {{agent_app_name}}_asset_name,
             {{agent_app_name}}_registry_cache_memory_space.id,
