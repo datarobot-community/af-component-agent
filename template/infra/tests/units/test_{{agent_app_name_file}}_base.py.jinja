@@ -652,57 +652,6 @@ class TestBuildSharedAgentRuntimeParameters:
         ttl_param = next(p for p in params if p.key == AGENT_MEMORY_TTL_DAYS)
         assert ttl_param.type == "string"
         assert ttl_param.value == "1"
-
-    def test_public_api_endpoint_forwarded_when_explicitly_set(self, monkeypatch):
-        """The datarobot-genai memory client (>=0.29.12) prefers this env var."""
-        import infra.{{agent_app_name}}_infra.base as base
-
-        monkeypatch.setenv(
-            "DATAROBOT_PUBLIC_API_ENDPOINT", "https://public.example.com/api/v2"
-        )
-        monkeypatch.delenv("DATAROBOT_ENDPOINT", raising=False)
-        params = base.build_shared_agent_runtime_parameters()
-        endpoint_param = next(
-            p for p in params if p.key == base.DATAROBOT_PUBLIC_API_ENDPOINT_PARAM
-        )
-        assert endpoint_param.type == "string"
-        assert endpoint_param.value == "https://public.example.com/api/v2"
-
-    def test_public_api_endpoint_falls_back_to_datarobot_endpoint(self, monkeypatch):
-        """On-prem: DATAROBOT_ENDPOINT is internal, but the param must still be set."""
-        import infra.{{agent_app_name}}_infra.base as base
-
-        monkeypatch.delenv("DATAROBOT_PUBLIC_API_ENDPOINT", raising=False)
-        monkeypatch.setenv("DATAROBOT_ENDPOINT", "https://internal.example.com/api/v2")
-        params = base.build_shared_agent_runtime_parameters()
-        endpoint_param = next(
-            p for p in params if p.key == base.DATAROBOT_PUBLIC_API_ENDPOINT_PARAM
-        )
-        assert endpoint_param.value == "https://internal.example.com/api/v2"
-
-    def test_public_api_endpoint_prefers_explicit_value(self, monkeypatch):
-        import infra.{{agent_app_name}}_infra.base as base
-
-        monkeypatch.setenv(
-            "DATAROBOT_PUBLIC_API_ENDPOINT", "https://public.example.com/api/v2"
-        )
-        monkeypatch.setenv("DATAROBOT_ENDPOINT", "https://internal.example.com/api/v2")
-        params = base.build_shared_agent_runtime_parameters()
-        endpoint_param = next(
-            p for p in params if p.key == base.DATAROBOT_PUBLIC_API_ENDPOINT_PARAM
-        )
-        assert endpoint_param.value == "https://public.example.com/api/v2"
-
-    def test_public_api_endpoint_absent_when_neither_set(self, monkeypatch):
-        import infra.{{agent_app_name}}_infra.base as base
-
-        monkeypatch.delenv("DATAROBOT_PUBLIC_API_ENDPOINT", raising=False)
-        monkeypatch.delenv("DATAROBOT_ENDPOINT", raising=False)
-        params = base.build_shared_agent_runtime_parameters()
-        assert not any(
-            p.key == base.DATAROBOT_PUBLIC_API_ENDPOINT_PARAM for p in params
-        )
-
 {% else %}
     def test_memory_ttl_excluded_when_memory_disabled(self, monkeypatch):
         """With memory off the TTL parameter is absent, even if the env var is set."""
@@ -714,18 +663,6 @@ class TestBuildSharedAgentRuntimeParameters:
 
         params = base.build_shared_agent_runtime_parameters()
         assert not any(p.key == AGENT_MEMORY_TTL_DAYS for p in params)
-
-    def test_public_api_endpoint_excluded_when_memory_disabled(self, monkeypatch):
-        """With memory off, DATAROBOT_PUBLIC_API_ENDPOINT is never forwarded."""
-        import infra.{{agent_app_name}}_infra.base as base
-
-        monkeypatch.setenv(
-            "DATAROBOT_PUBLIC_API_ENDPOINT", "https://public.example.com/api/v2"
-        )
-        params = base.build_shared_agent_runtime_parameters()
-        assert not any(
-            p.key == "DATAROBOT_PUBLIC_API_ENDPOINT" for p in params
-        )
 {% endif %}
 {%- if use_agent_memory == 'mem0' %}
     def test_mem0_api_key_becomes_credential(self, monkeypatch):
@@ -737,7 +674,8 @@ class TestBuildSharedAgentRuntimeParameters:
         assert mem0_param.type == "credential"
         assert mem0_param.value is not None
 {%- endif %}
-{%- if use_agent_memory == 'datarobot_memory_service' %}    def test_memory_space_id_param_included(self, monkeypatch):
+{%- if use_agent_memory == 'datarobot_memory_service' %}
+    def test_memory_space_id_param_included(self, monkeypatch):
         import infra.{{agent_app_name}}_infra.base as base
 
         params = base.build_shared_agent_runtime_parameters()

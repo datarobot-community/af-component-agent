@@ -219,19 +219,6 @@ To configure a memory space LLM that differs from the agent LLM component defaul
 
 > **Important:** For the DataRobot Memory Service provider, do not create the memory space manually except to override infrastructure defaults. Pulumi creates the space, configures its LLM routing, and wires the ID into the agent deployment.
 
-### DataRobot API endpoint for memory (`DATAROBOT_PUBLIC_API_ENDPOINT`)
-
-This is required for the DataRobot Memory Service provider. Mem0 gets the same runtime parameter (it's provisioned whenever `use_agent_memory` is `mem0` or `datarobot_memory_service`), but doesn't need it&mdash;Mem0 talks to Mem0's own SaaS API (or `AGENT_MEMORY_LLM_BASE_URL`-style host overrides) and never resolves a DataRobot API endpoint for its backend, so the parameter is simply unused there.
-
-The memory client (`datarobot-genai` >= 0.29.12) reaches the DataRobot Memory Service at `{endpoint}/memory/{agent_memory_space_id}/`. It prefers `DATAROBOT_PUBLIC_API_ENDPOINT` over `DATAROBOT_ENDPOINT` when both are set, because on-prem deployments often point `DATAROBOT_ENDPOINT` at an internal, cluster-only address while `DATAROBOT_PUBLIC_API_ENDPOINT` holds the externally reachable one that the memory service actually requires.
-
-To make sure memory always has an endpoint it can use, `infra/infra/<agent_app_name>_infra/base.py` forwards `DATAROBOT_PUBLIC_API_ENDPOINT` as a runtime parameter whenever `use_agent_memory` is `mem0` or `datarobot_memory_service`. It is set from, in order:
-
-1. `DATAROBOT_PUBLIC_API_ENDPOINT` in the Pulumi deploy environment, if set.
-2. `DATAROBOT_ENDPOINT` in the Pulumi deploy environment, as a fallback so the parameter is still populated for typical SaaS setups where the two are the same value.
-
-For local development, `DATAROBOT_ENDPOINT` in `.env` (written by `dr start`) is enough&mdash;set `DATAROBOT_PUBLIC_API_ENDPOINT` explicitly in `.env` only when it needs to differ from `DATAROBOT_ENDPOINT` (for example, an on-prem instance).
-
 ---
 
 ## Infrastructure provisioning
@@ -240,9 +227,7 @@ When memory is enabled, `infra/infra/<agent_app_name>_infra/base.py` adds runtim
 
 1. `AGENT_MEMORY_TTL_DAYS`&mdash;always added (string type, default `30`). Override at deploy time with the `AGENT_MEMORY_TTL_DAYS` environment variable in the Pulumi stack.
 
-2. `DATAROBOT_PUBLIC_API_ENDPOINT`&mdash;added for either provider (string type) when either `DATAROBOT_PUBLIC_API_ENDPOINT` or `DATAROBOT_ENDPOINT` is set in the Pulumi deploy environment; required by DataRobot Memory Service, unused by Mem0 (see [DataRobot API endpoint for memory](#datarobot-api-endpoint-for-memory-datarobot_public_api_endpoint) above).
-
-3. Provider-specific parameter:
+2. Provider-specific parameter:
    - Mem0&mdash;`MEM0_API_KEY` credential, created when `MEM0_API_KEY` is set in the Pulumi environment.
    - DataRobot Memory Service&mdash;`AGENT_MEMORY_SPACE_ID` string, populated from a `pulumi_datarobot.MemorySpace` resource.
 

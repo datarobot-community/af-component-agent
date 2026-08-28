@@ -45,7 +45,6 @@ The following parameters are provisioned conditionally, depending on which optio
 | `AGENT_MEMORY_TTL_DAYS` | string | `use_agent_memory` is set to `mem0` or `datarobot_memory_service` | [Agent memory: Configuration and runtime parameters](./agent-memory.md#configuration-and-runtime-parameters) |
 | `AGENT_MEMORY_SPACE_ID` | string | `use_agent_memory: datarobot_memory_service` | [Agent memory: Configuration and runtime parameters](./agent-memory.md#configuration-and-runtime-parameters) |
 | `MEM0_API_KEY` | credential | `use_agent_memory: mem0`, and `MEM0_API_KEY` is set in the Pulumi environment | [Agent memory: Configuration and runtime parameters](./agent-memory.md#configuration-and-runtime-parameters) |
-| `DATAROBOT_PUBLIC_API_ENDPOINT` | string | `use_agent_memory` is `mem0` or `datarobot_memory_service`, and either `DATAROBOT_PUBLIC_API_ENDPOINT` or `DATAROBOT_ENDPOINT` is set in the Pulumi environment; required by DataRobot Memory Service, unused by Mem0 | [Agent memory: Configuration and runtime parameters](./agent-memory.md#configuration-and-runtime-parameters) |
 | `SESSION_SECRET_KEY` | credential | `SESSION_SECRET_KEY` is set in the Pulumi environment | `infra/infra/<agent_app_name>_infra/base.py` |
 | `IDP_AGENT_ID` | string | `IDP_AGENT_ID` is set in the Pulumi environment | [A2A Authentication: Infrastructure](./agent2agent-auth.md#infrastructure-automatic-runtime-parameter-provisioning) |
 | `IDP_AGENT_PRIVATE_KEY_JWK` | credential | `IDP_AGENT_PRIVATE_KEY_JWK` is set in the Pulumi environment | [A2A Authentication: Infrastructure](./agent2agent-auth.md#infrastructure-automatic-runtime-parameter-provisioning) |
@@ -63,7 +62,7 @@ Some environment variables only control what `infra/infra/<agent_app_name>_infra
 Override the value of a runtime parameter depending on when the change needs to take effect:
 
 - **Local development** — set the variable in the project `.env` file. It takes effect immediately, the same way it does after deployment, with no deploy needed.
-- **At deploy time** — this works only when the infra registration reads the variable from `os.environ`. Set such variables in the environment that `dr run deploy` (Pulumi) runs in; examples include `AGENT_MEMORY_TTL_DAYS`, `DATAROBOT_PUBLIC_API_ENDPOINT`, `MEM0_API_KEY`, `SESSION_SECRET_KEY`, `IDP_AGENT_ID`, and `IDP_AGENT_PRIVATE_KEY_JWK`. Parameters registered from constants, such as `AGENT_GUNICORN_WORKER_TIMEOUT`, require an infra code change before deployment.
+- **At deploy time** — this works only when the infra registration reads the variable from `os.environ`. Set such variables in the environment that `dr run deploy` (Pulumi) runs in; examples include `AGENT_MEMORY_TTL_DAYS`, `MEM0_API_KEY`, `SESSION_SECRET_KEY`, `IDP_AGENT_ID`, and `IDP_AGENT_PRIVATE_KEY_JWK`. Parameters registered from constants, such as `AGENT_GUNICORN_WORKER_TIMEOUT`, require an infra code change before deployment.
 - **After deployment** — to update a value on the existing deployment, deactivate the deployment, edit the runtime parameter in **Settings > Resources**, and reactivate it. To avoid downtime, replace the active deployment's model version and set the runtime parameter values during replacement. Neither workflow requires an agent code change.
 
 ## Add a custom runtime parameter
