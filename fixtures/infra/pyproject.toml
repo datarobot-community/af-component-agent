@@ -14,7 +14,6 @@ dependencies = [
     "pytz>=2024.1" # Temporary fix for datarobot pandas issue
 ]
 
-
 [project.optional-dependencies]
 dev = [
     "pytest-cov>=6.1.1",

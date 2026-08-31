@@ -44,6 +44,15 @@ tasks:
         if [ -n "${PULUMI_STACK:-}" ]; then
           {{.UV_CMD}} run pulumi stack select -c $PULUMI_STACK
         fi
+  preview:
+    desc: "👀 Preview the pulumi plan without creating anything"
+    # No AGENT_DEPLOY: the Workload API runtime ignores it entirely (it only
+    # sizes Custom Models resources), and callers that need it can pass it in.
+    cmds:
+      - task: install-pulumi-plugin
+      - task: select-env-stack
+      - "{{.UV_CMD}} run pulumi preview {{.PULUMI_STACK_COMMAND}} {{.CLI_ARGS}}"
+    silent: true
   build:
     desc: "🔵 Deploy only playground testing resources with pulumi"
     env:
