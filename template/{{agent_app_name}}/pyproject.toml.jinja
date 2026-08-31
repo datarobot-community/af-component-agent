@@ -198,21 +198,7 @@ type = "agent"
 # silently absent. Confirmed on 0.7.0, 0.8.0, 0.8.17 and 0.9.0; the hard failure
 # only starts somewhere in late 0.9.x. Because the guard cannot protect itself,
 # the image build asserts the uv version before syncing.
-#
-# The floor is 0.11.25, not 0.10.0, to stop uv.lock churn: verified empirically
-# (uv 0.7.0-0.12.7 against this project's exact dependency set) that every
-# release through 0.11.24 writes a redundant `sys_platform == 'darwin' or
-# sys_platform == 'linux' or sys_platform == 'win32'` marker on packages
-# required everywhere, while 0.11.25 onward omits it consistently. That
-# matches upstream's own changelog for 0.11.25: "Factor supported environments
-# out of lockfile markers" (astral-sh/uv#19969) and "Simplify dependency
-# markers under parent reachability" (astral-sh/uv#19971). Whichever side of
-# that line a developer's local uv falls on determines whether regenerating
-# the lockfile adds or strips ~900 lines of markers with no real dependency
-# change -- pin at or above 0.11.25 so `uv lock` output is deterministic
-# across machines. The CI image (astral-sh/uv:<python>-trixie) already floats
-# well above this.
-required-version = ">=0.11.25"
+required-version = ">=0.10.0"
 # Packages a generated agent is verified not to need at runtime. Dropping a
 # package is a judgement about this project, so it is deliberately NOT org-wide
 # CVE policy and lives outside the cve-sync markers, where cve-sync leaves it
