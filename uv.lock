@@ -229,19 +229,11 @@ core = [
 
 [[package]]
 name = "datarobot-genai"
-<<<<<<< Updated upstream
 version = "0.29.12"
 source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/4b/ef/fc1bac11c73e46481295ac569fa1b133ae0b26da82b683184c1bf62df034/datarobot_genai-0.29.12.tar.gz", hash = "sha256:744225d03cec9d8ed9d3350d0e0ff7659c9809c1f9f06d1c8ae621ae953d257c", size = 617400, upload-time = "2026-08-28T17:34:46.87Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/80/de/c52d6c325a41acef89f6c8357bc307d071eff45750c234b207e299e5af4b/datarobot_genai-0.29.12-py3-none-any.whl", hash = "sha256:07370317578459f739b4944074563540aa016751df83ed83ae27174a8594a976", size = 869786, upload-time = "2026-08-28T17:34:44.859Z" },
-=======
-version = "0.26.2"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/bc/1e/4738cf16914d8be6dd90b7ac4e007e06cc07cc989f4370c2a452b1c94d9d/datarobot_genai-0.26.2.tar.gz", hash = "sha256:894641969b5b0698ac5106d2a660de9dcabde950ff01e813d16ae2c1716029cd", size = 507657, upload-time = "2026-07-21T11:51:51.064Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/d4/6b/19950e06651604afd5f94f6b053aa3fa7e352aa3c355bdf98673295f5949/datarobot_genai-0.26.2-py3-none-any.whl", hash = "sha256:38259058ac9b4a396e8025fe915ed9f05ff95f3831e71376af65b6f4ebe7741b", size = 726367, upload-time = "2026-07-21T11:51:48.998Z" },
->>>>>>> Stashed changes
 ]
 
 [[package]]
