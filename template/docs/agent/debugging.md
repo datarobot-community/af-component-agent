@@ -22,6 +22,24 @@ dr task run agent:dev
 
 Then send requests from a second terminal using the CLI.
 
+### Local agent card
+
+During local development (`task agent:dev`), `GET /.well-known/agent-card.json` returns `401 Unauthorized` by default when the request has no gateway identity headers—the same behavior as a deployed agent (`datarobot-genai` 0.27.0+).
+
+To fetch the card locally:
+
+- Full card — include either gateway identity header on the request. Any value is sufficient for local testing.
+- Redacted card — set `enable_unauthenticated_well_known_route: true` under `general.front_end.a2a` in `workflow.yaml`. Anonymous callers then receive a redacted card (for example, `"skills": []`). Deployed agents also require platform-level opt-in per cluster. See [Agent-to-Agent (A2A) → Unauthenticated agent card access](./agent2agent.md#unauthenticated-agent-card-access).
+
+To inspect the full card locally, include either header on the request:
+
+```sh
+curl -s http://localhost:8842/a2a/.well-known/agent-card.json \
+  -H 'X-DataRobot-User-Id: local-dev-user' | jq .
+```
+
+Alternatively, use `X-DataRobot-Authorization-Context` when exercising auth-context flows.
+
 ## Testing with the CLI
 
 The agent CLI provides commands for testing against both local and deployed agents. Under DRAgent, `execute` runs the workflow in-process via `nat dragent run` and does not require a running server.
@@ -56,7 +74,7 @@ task agent:cli -- execute-deployment --user_prompt "Artificial Intelligence" --d
 | `--file` | Path to a text file whose contents are used as the prompt. |
 | `--deployment_id` | Target a deployed agent instead of running locally. |
 
-For **multi-turn** requests, POST a full AG-UI payload (including prior `messages`) to the dev server's `/generate/stream` endpoint. See [Chat history](../chat-history.md#testing-locally).
+For **multi-turn** requests, send a `POST` request with a full AG-UI payload (including prior `messages`) to the `/generate/stream` endpoint on the dev server. See [Chat history](./chat-history.md#testing-locally).
 
 ## Debugging in VS Code
 
@@ -88,21 +106,21 @@ The launch config runs `agent/dev.py`, which starts the DRAgent server (`nat dra
 
 ### Debug workflow
 
-1. Set breakpoints in your agent code (e.g. `agent/agent/myagent.py`).
+1. Set breakpoints in the agent code (for example, `agent/agent/myagent.py`).
 2. Open the **Run and Debug** view and select **Python Debugger: Agent**.
-3. Press **F5** to start the development server under the debugger.
+3. Press `F5` to start the development server under the debugger.
 4. Wait for the `Running development server on http://localhost:8842` message.
 5. In a separate terminal, run a CLI command:
    ```sh
    task agent:cli -- execute --user_prompt "Artificial Intelligence"
    ```
-6. VS Code pauses at your breakpoints. Use the debug toolbar to step through code, inspect variables, and evaluate expressions.
+6. VS Code pauses at the breakpoints. Use the debug toolbar to step through code, inspect variables, and evaluate expressions.
 
-`justMyCode` is set to `false` so you can step into `datarobot_genai` and framework code when needed.
+`justMyCode` is set to `false` to allow stepping into `datarobot_genai` and framework code when needed.
 
 ## Debugging in PyCharm
 
-This repository includes a pre-configured **Run Agent** run/debug configuration in `.idea/runConfigurations/Run_Agent.xml`.
+This repository includes a pre-configured Run Agent run/debug configuration in `.idea/runConfigurations/Run_Agent.xml`.
 
 ### Setup
 
@@ -111,23 +129,23 @@ This repository includes a pre-configured **Run Agent** run/debug configuration 
 
 ### Debug workflow
 
-1. Set breakpoints in your agent code (e.g. `agent/agent/myagent.py`).
+1. Set breakpoints in the agent code (for example, `agent/agent/myagent.py`).
 2. Select **Run Agent** from the configuration dropdown.
-3. Click the **Debug** icon (or press **Shift+F9**).
+3. Click the **Debug** icon (or press `Shift+F9`).
 4. Wait for the development server to start.
 5. In a separate terminal, run:
    ```sh
    task agent:cli -- execute --user_prompt "Artificial Intelligence"
    ```
-6. PyCharm pauses at your breakpoints. Use the **Threads & Variables** pane to inspect state and the **Evaluate Expression** dialog to test code in context.
+6. PyCharm pauses at the breakpoints. Use the Threads & Variables pane to inspect state and the Evaluate Expression dialog to test code in context.
 
-The **Run Agent** configuration points to `agent/dev.py`, sets the working directory to `agent/`, and loads environment variables from `.env`.
+The Run Agent configuration points to `agent/dev.py`, sets the working directory to `agent/`, and loads environment variables from `.env`.
 
 ## Enable verbose logging
 
 Set `verbose=True` when instantiating `MyAgent` to get detailed logging of agent execution, LLM calls, and tool invocations. In the template, verbosity defaults to `True` when the agent is built in `register.py`.
 
-You can also enable verbose mode via the CLI completion JSON by adding `"verbose": true` to the `extra_body` field.
+Enable verbose mode via the CLI completion JSON by adding `"verbose": true` to the `extra_body` field.
 
 ### NAT log level
 
@@ -144,44 +162,48 @@ Supported values: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`. Defaults to `
 
 ### Development server not starting
 
-**Symptom:** `task agent:dev` fails or the server doesn't respond.
+**Symptom**: `task agent:dev` fails or the server doesn't respond.
 
-**Fix:** Verify `.env` exists with `DATAROBOT_API_TOKEN` and `DATAROBOT_ENDPOINT`. Re-run `dr task run agent:install` to ensure dependencies are up to date.
+**Fix**: Verify `.env` exists with `DATAROBOT_API_TOKEN` and `DATAROBOT_ENDPOINT`. Re-run `dr task run agent:install` to ensure dependencies are up to date.
+
+### Agent card returns 401 or empty skills
+
+During local development, `GET /.well-known/agent-card.json` returns `401` when unauthenticated access is disabled (the default), or `"skills": []` when `enable_unauthenticated_well_known_route: true` is set and the request has no identity headers. See [Local agent card](#local-agent-card) above.
 
 ### Breakpoints not hit
 
-**Symptom:** The CLI command completes but the debugger never pauses.
+**Symptom**: The CLI command completes but the debugger never pauses.
 
-**Fix:**
-- Ensure you started the server in **Debug** mode, not regular Run.
+**Fix**:
+- Ensure you started the server in Debug mode, not regular Run.
 - Confirm the breakpoint is on a line that actually executes for your prompt.
-- Re-run the CLI command after the debugger is fully attached&mdash;the dev server handles one request at a time.
+- Re-run the CLI command after the debugger is fully attached—the dev server handles one request at a time.
 - Launch the server via `dev.py` (the shipped configs do this), not `nat dragent serve --reload`. Reload runs the workflow in a separate process, so breakpoints in agent code won't bind.
 
 ### Import errors in `myagent.py`
 
-**Symptom:** Imports to files in the same directory fail silently.
+**Symptom**: Imports to files in the same directory fail silently.
 
-**Fix:** Use relative imports (e.g. `from .tools import my_tool`) instead of package imports (e.g. `from agent.tools import my_tool`).
+**Fix**: Use relative imports (for example, `from .tools import my_tool`) instead of package imports (for example, `from agent.tools import my_tool`).
 
 ### Wrong Python interpreter
 
-**Symptom:** `ModuleNotFoundError` for `datarobot_genai` or framework packages.
+**Symptom**: `ModuleNotFoundError` for `datarobot_genai` or framework packages.
 
-**Fix:** Ensure your IDE is using `agent/.venv/bin/python` and not a system Python. Re-run `dr task run agent:install` if the virtual environment was recreated.
+**Fix**: Confirm the IDE uses `agent/.venv/bin/python`, not a system Python. Re-run `dr task run agent:install` if the virtual environment was recreated.
 
 ### Environment variables not loaded
 
-**Symptom:** Agent fails with missing `DATAROBOT_API_TOKEN`.
+**Symptom**: Agent fails with missing `DATAROBOT_API_TOKEN`.
 
-**Fix:** Confirm `envFile` in VS Code or **Paths to ".env" files** in PyCharm points to the `.env` at the repository root.
+**Fix**: Confirm `envFile` in VS Code or Paths to ".env" files in PyCharm points to the `.env` at the repository root.
 
 ## Debugging deployed agents
 
-For agents deployed to DataRobot, you can:
+For agents deployed to DataRobot:
 
-- **View logs**&mdash;on the deployment's **Activity log** tab, click **Logs** to see OpenTelemetry-format logs with level filtering and time-period selection.
-- **View traces**&mdash;on the **Service health** tab, click **Show tracing** to see end-to-end request traces including LLM calls, tool invocations, and agent actions.
-- **Test via CLI**&mdash;use `task agent:cli -- execute-deployment` to send test prompts to a deployed agent and inspect the response.
+- View logs—on the deployment Activity log tab, click **Logs** to see OpenTelemetry-format logs with level filtering and time-period selection.
+- View traces—on the Service health tab, click **Show tracing** to see end-to-end request traces including LLM calls, tool invocations, and agent actions.
+- Test via CLI—use `task agent:cli -- execute-deployment` to send test prompts to a deployed agent and inspect the response.
 
 For more on deployed agent observability, see the [DataRobot tracing documentation](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-tracing-code.html).

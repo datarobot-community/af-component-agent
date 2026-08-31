@@ -1,0 +1,46 @@
+# Copyright 2026 DataRobot, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+"""Agent provisioning via the Workload API runtime.
+
+Placeholder. The Workload API runtime is not implemented yet -- this module
+exists so the entry router has a second branch to dispatch to, and so the
+implementation lands as a single self-contained follow-up. Until then,
+``ENABLE_AGENT_ON_WORKLOAD_API`` must be unset or falsy.
+
+The contract is fixed: ``provision_workload_agent()`` takes the shared runtime
+parameters from ``base.build_shared_agent_runtime_parameters()`` and returns
+the same export dict as ``deployment.provision_deployment_agent()``. Never
+checks ``ENABLE_AGENT_ON_WORKLOAD_API`` itself -- the entry router is the only
+place that branches on it.
+"""
+
+from __future__ import annotations
+
+from typing import Any
+
+import pulumi_datarobot
+
+
+def provision_workload_agent(
+    shared_runtime_parameters: list[
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs
+    ],
+) -> dict[str, Any]:
+    """Not implemented yet -- the Workload API runtime lands in a follow-up PR."""
+    message = (
+        "ENABLE_AGENT_ON_WORKLOAD_API is set, but the Workload API runtime is not "
+        "implemented yet. Unset it to deploy on the Custom Models runtime."
+    )
+    raise NotImplementedError(message)

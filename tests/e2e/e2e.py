@@ -23,7 +23,6 @@ import os
 import time
 import uuid
 from pathlib import Path
-from typing import cast
 
 import backoff
 import datarobot as dr
@@ -34,9 +33,6 @@ from datarobot.models.genai.comparison_chat import ComparisonChat
 from datarobot.models.genai.comparison_prompt import ComparisonPrompt
 from datarobot.models.genai.llm_blueprint import LLMBlueprint
 from datarobot.rest import RESTClientObject
-from openai.types.chat import ChatCompletion
-
-from datarobot_genai.core.cli import AgentEnvironment
 
 from .helpers import (
     ALL_FRAMEWORKS,
@@ -46,7 +42,6 @@ from .helpers import (
     require_datarobot_env,
     require_e2e_enabled,
     should_run_framework,
-    verify_openai_response,
     write_testing_env,
 )
 from ._process import (
@@ -62,6 +57,10 @@ from ._process import (
 # Span every framework emits when the agent workflow runs (NAT's WORKFLOW_COMPONENT_NAME).
 # Its presence in a trace proves the agent ran, regardless of the trace's root span.
 _AGENT_WORKFLOW_SPAN = "<workflow>"
+
+# Bridge span in the use-case view when a Playground prompt runs against a DEPLOYED agent
+# (deployment path only). This plus _AGENT_WORKFLOW_SPAN in one trace = nested, not fragmented.
+_DEPLOYMENT_BRIDGE_SPAN = "chat_completion_deployment"
 
 
 # backoff giveup: retry transient statuses and transport blips, stop on the rest.
@@ -112,10 +111,11 @@ def _assert_agent_workflow_trace(
     client: RESTClientObject,
     traces_path: str,
     entity: str,
+    required_spans: frozenset[str] = frozenset({_AGENT_WORKFLOW_SPAN}),
     timeout_s: int = 300,
     poll_s: int = 15,
 ) -> None:
-    """Poll an OTel traces endpoint until a non-probe trace has _AGENT_WORKFLOW_SPAN."""
+    """Poll an OTel traces endpoint until one non-probe trace contains all required_spans."""
     start_time = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=2)).strftime(
         "%Y-%m-%dT%H:%M:%SZ"
     )
@@ -131,15 +131,16 @@ def _assert_agent_workflow_trace(
         fprint(f"{entity}: {len(traces)} traces, {len(candidates)} candidate(s)")
         for t in candidates:
             trace_id = t.get("traceId")
-            if trace_id and _AGENT_WORKFLOW_SPAN in _trace_span_names(
-                client, f"{traces_path}{trace_id}"
-            ):
-                fprint(f"{entity}: found {_AGENT_WORKFLOW_SPAN} in trace {trace_id}")
+            if not trace_id:
+                continue
+            names = set(_trace_span_names(client, f"{traces_path}{trace_id}"))
+            if required_spans.issubset(names):
+                fprint(f"{entity}: found {sorted(required_spans)} in trace {trace_id}")
                 return
         if time.monotonic() >= deadline:
             pytest.fail(
-                f"No agent trace with {_AGENT_WORKFLOW_SPAN} for {entity} after {timeout_s}s "
-                f"({traces_path}). Roots seen: {sorted(roots_seen)}."
+                f"No agent trace with {sorted(required_spans)} for {entity} after "
+                f"{timeout_s}s ({traces_path}). Roots seen: {sorted(roots_seen)}."
             )
         time.sleep(poll_s)
 
@@ -173,20 +174,19 @@ def _assert_comparison_prompt_completed(prompt: ComparisonPrompt) -> None:
             )
 
 
-def _verify_codespace_run(
+def _verify_playground_run(
     *,
     playground_id: str,
     use_case_id: str,
     user_prompt: str,
     datarobot_endpoint: str,
     datarobot_api_token: str,
+    required_spans: frozenset[str] = frozenset({_AGENT_WORKFLOW_SPAN}),
+    run_label: str = "codespace",
 ) -> None:
-    """Run the agent via a playground ComparisonPrompt, then assert it completed and
-    traced to the use-case OTel view (a ComparisonPrompt traces there; a direct chat
-    endpoint call does not).
-    """
+    """Run a Playground ComparisonPrompt and assert its use-case trace contains required_spans."""
     client = dr.Client(endpoint=datarobot_endpoint, token=datarobot_api_token)
-    fprint("Verifying codespace (agentic-playground) run + traces")
+    fprint(f"Verifying {run_label} (agentic-playground) run + use-case traces")
     fprint("=====================================================")
     blueprints = LLMBlueprint.list(playground=playground_id)
     if not blueprints:
@@ -206,38 +206,14 @@ def _verify_codespace_run(
         _assert_agent_workflow_trace(
             client=client,
             traces_path=f"otel/use_case/{use_case_id}/traces/",
-            entity=f"Codespace use_case {use_case_id}",
+            entity=f"{run_label} use_case {use_case_id}",
+            required_spans=required_spans,
         )
     finally:
         try:
             chat.delete()
         except Exception as e:
             fprint(f"Best-effort ComparisonChat cleanup failed (ignored): {e}")
-
-
-def _verify_deployment_run(
-    *,
-    user_prompt: str,
-    deployment_id: str,
-    datarobot_endpoint: str,
-    datarobot_api_token: str,
-) -> None:
-    fprint("Running deployed agent execution")
-    fprint("================================")
-    client = dr.Client(endpoint=datarobot_endpoint, token=datarobot_api_token)
-    kernel = AgentEnvironment(
-        api_token=datarobot_api_token, base_url=datarobot_endpoint
-    ).interface
-    completion = cast(
-        ChatCompletion,
-        kernel.deployment(deployment_id=deployment_id, user_prompt=user_prompt),
-    )
-    verify_openai_response(completion)
-    _assert_agent_workflow_trace(
-        client=client,
-        traces_path=f"otel/deployment/{deployment_id}/traces/",
-        entity=f"Deployment {deployment_id}",
-    )
 
 
 def _cleanup_e2e(
@@ -334,7 +310,7 @@ def run_agent_e2e(
     )
 
     # Step 2: Prepare E2E-specific runtime env (written into rendered project's `.env`).
-    extra_env: dict[str, str] = {"USE_DATAROBOT_LLM_GATEWAY": "1"}
+    extra_env: dict[str, str] = {"LLM_USE_DATAROBOT_LLM_GATEWAY": "1"}
     if agent_framework == "crewai":
         extra_env["CREWAI_TESTING"] = "true"
 
@@ -388,12 +364,13 @@ def run_agent_e2e(
         use_case_id = extract_id_from_url(playground_url, marker="usecases")
         fprint(f"Playground ID: {playground_id}  Use case ID: {use_case_id}")
         retry(
-            lambda: _verify_codespace_run(
+            lambda: _verify_playground_run(
                 playground_id=playground_id,
                 use_case_id=use_case_id,
                 user_prompt=user_prompt,
                 datarobot_endpoint=datarobot_endpoint,
                 datarobot_api_token=datarobot_api_token,
+                run_label="codespace",
             ),
             max_retries=3,
             delay_seconds=60,
@@ -408,34 +385,28 @@ def run_agent_e2e(
                 cwd=rendered_dir,
             )
 
-            # Step 10: Fetch the Deployment endpoint from Pulumi stack outputs.
-            deployment_chat_endpoint = pulumi_stack_output_value(
-                infra_dir=infra_dir,
-                pulumi_stack=pulumi_stack,
-                pulumi_home=pulumi_home,
-                contains="Deployment Chat Endpoint",
-            )
-            deployment_id = extract_id_from_url(
-                deployment_chat_endpoint, marker="deployments"
-            )
-            fprint(f"Deployment ID: {deployment_id}")
-
-            # Step 11: Run the deployed agent and verify its reply + trace.
+            # Step 10: Run the deployed agent through the Playground; assert the use-case
+            # trace carries both the bridge and workflow spans (nested, not fragmented).
             retry(
-                lambda: _verify_deployment_run(
+                lambda: _verify_playground_run(
+                    playground_id=playground_id,
+                    use_case_id=use_case_id,
                     user_prompt=user_prompt,
-                    deployment_id=deployment_id,
                     datarobot_endpoint=datarobot_endpoint,
                     datarobot_api_token=datarobot_api_token,
+                    required_spans=frozenset(
+                        {_DEPLOYMENT_BRIDGE_SPAN, _AGENT_WORKFLOW_SPAN}
+                    ),
+                    run_label="deployed agent",
                 ),
                 max_retries=3,
-                delay_seconds=30,
-                label="Deployment execution",
+                delay_seconds=60,
+                label="Deployment playground trace verification",
             )
 
         fprint("Agent execution completed successfully")
     finally:
-        # Step 12: Cleanup (Pulumi cancel + destroy + stack rm, and delete rendered `.env`).
+        # Step 11: Cleanup (Pulumi cancel + destroy + stack rm, and delete rendered `.env`).
         _cleanup_e2e(
             rendered_dir=rendered_dir,
             infra_dir=infra_dir,
