@@ -108,21 +108,87 @@ tasks:
         vars:
           AGENT: "{{.AGENT}}"
 
+  # datarobot-user-models carries more than one genai-agents drop-in environment,
+  # each locked against a different Python. python311_genai_agents is the pinned
+  # 3.11 one; python3_genai_agents ("Python 3") tracks the current Python and is
+  # 3.13 today. Both are generated from the same template, so VERSION selects
+  # which interpreter the render, the lock, and the requirements.txt are built
+  # for. Get VERSION and AGENT_PATH out of step and you rewrite an environment's
+  # requires-python and relock it against the wrong interpreter, so the task
+  # echoes both before it touches anything.
   docker_update_reqs:
-    desc: "Update Docker requirements pyproject.toml from jinja template"
+    desc: "Update a drop-in environment's pyproject.toml, uv.lock and requirements.txt from the jinja template (AGENT_PATH=<env dir> VERSION=3.11|3.13)"
     vars:
-      genai_agents_path: "{{.AGENT_PATH}}"
+      # Defaults to 3.11 so the long-standing python311_genai_agents invocation
+      # keeps working without a VERSION argument.
+      PYTHON_VERSION: '{{.VERSION | default "3.11"}}'
     cmds:
       - |
         if [ -z "{{.AGENT_PATH}}" ]; then
-          echo "AGENT_PATH is not set. Please set AGENT_PATH to the path of the genai-agents repository."
-          echo "task docker_update_reqs AGENT_PATH=/path/to/datarobot-user-models/public_dropin_environments/python311_genai_agents"
+          echo "AGENT_PATH is not set. Please set AGENT_PATH to the drop-in environment directory to update."
+          echo "  task docker_update_reqs AGENT_PATH=/path/to/datarobot-user-models/public_dropin_environments/python311_genai_agents VERSION=3.11"
+          echo "  task docker_update_reqs AGENT_PATH=/path/to/datarobot-user-models/public_dropin_environments/python3_genai_agents VERSION=3.13"
           exit 1
         fi
-      - uv run jinja -D agent_app_name DockerContext -D agent_template_framework docker template/{{"{{"}}agent_app_name{{"}}"}}/pyproject.toml.jinja -o {{.AGENT_PATH}}/pyproject.toml
-      - cd {{.AGENT_PATH}} && uv lock --no-upgrade && uv sync
+        if [ ! -d "{{.AGENT_PATH}}" ]; then
+          echo "AGENT_PATH does not exist: {{.AGENT_PATH}}"
+          exit 1
+        fi
+      - |
+        # Keep this list in step with the version map in pyproject.toml.jinja. An
+        # unlisted value renders a `requires-python = ">=X, <None"` that uv then
+        # rejects with a confusing parse error, so reject it here instead.
+        case "{{.PYTHON_VERSION}}" in
+          3.11|3.12|3.13) ;;
+          *)
+            echo "VERSION={{.PYTHON_VERSION}} is not supported. Use one of: 3.11, 3.12, 3.13"
+            echo "Adding a version means extending both this case and the version map at the top of template/{{"{{"}}agent_app_name{{"}}"}}/pyproject.toml.jinja."
+            exit 1
+            ;;
+        esac
+        echo "Updating {{.AGENT_PATH}} for Python {{.PYTHON_VERSION}}"
+      - uv run jinja -D agent_app_name DockerContext -D agent_template_framework docker -D python_version {{.PYTHON_VERSION}} template/{{"{{"}}agent_app_name{{"}}"}}/pyproject.toml.jinja -o {{.AGENT_PATH}}/pyproject.toml
+      - |
+        # The template's `default("3.11")` is load-bearing for real copier runs, so
+        # a dropped or misspelled `-D python_version` does not fail the render: it
+        # silently emits 3.11. For python3_genai_agents that would relock against
+        # the wrong interpreter and still look entirely plausible. The version map
+        # only catches a value that is wrong, never one that never arrived, so
+        # check the artifact rather than trusting the inputs.
+        EXPECTED='requires-python = ">={{.PYTHON_VERSION}}, <'
+        RENDERED=$(grep -m1 '^requires-python' "{{.AGENT_PATH}}/pyproject.toml")
+        case "$RENDERED" in
+          "$EXPECTED"*) echo "Render honors VERSION={{.PYTHON_VERSION}}: $RENDERED" ;;
+          *)
+            echo "Render did not honor VERSION={{.PYTHON_VERSION}}."
+            echo "  expected to start with: $EXPECTED"
+            echo "  got:                    $RENDERED"
+            exit 1
+            ;;
+        esac
+      - |
+        # `uv lock` probes the project's .venv as an interpreter candidate and
+        # hard-errors if it cannot query it, so a venv built against a different
+        # Python blocks the whole task before resolution even starts. This bites
+        # the first time an environment changes VERSION, and it bit
+        # python3_genai_agents, whose directory was seeded by copying the 3.11 one
+        # and so carried a 3.11 venv pointing at an interpreter that no longer
+        # exists. The venv is a gitignored artifact that the `uv sync` below
+        # recreates, so drop it instead of making the operator work it out from a
+        # dyld error about a missing libpython dylib.
+        VENV="{{.AGENT_PATH}}/.venv"
+        if [ -n "{{.AGENT_PATH}}" ] && [ -d "$VENV" ] && \
+           ! "$VENV/bin/python" -c "import sys; sys.exit(0 if '.'.join(map(str, sys.version_info[:2])) == '{{.PYTHON_VERSION}}' else 1)" 2>/dev/null; then
+          echo "Removing $VENV: not a working Python {{.PYTHON_VERSION}} environment"
+          rm -rf "$VENV"
+        fi
+      # --no-upgrade on purpose. Packages move when datarobot-genai bumps them or a
+      # cve-sync constraint/override forces them higher, never just because a newer
+      # release exists: the agentic packages iterate fast enough that a free
+      # re-resolve is a reliable way to break the environment.
+      - cd {{.AGENT_PATH}} && uv lock --python={{.PYTHON_VERSION}} --no-upgrade && uv sync --python={{.PYTHON_VERSION}}
       # This command is temporary. It is using pip compile to produce a truncated requirements.txt without dependencies to avoid overloading the HHI installer.
-      - cd {{.AGENT_PATH}} && uv pip compile --python=3.11 --python-platform=x86_64-manylinux_2_28 --no-header --no-annotate --no-deps --extra agentic_playground --output-file=requirements.txt pyproject.toml
+      - cd {{.AGENT_PATH}} && uv pip compile --python={{.PYTHON_VERSION}} --python-platform=x86_64-manylinux_2_28 --no-header --no-annotate --no-deps --extra agentic_playground --output-file=requirements.txt pyproject.toml
       # Need to extend support for larger requirements.txt files to enable this.
       # - cd {{.AGENT_PATH}} && uv pip freeze > {{.AGENT_PATH}}/requirements.txt
       # - cat {{.AGENT_PATH}}/requirements.txt
