@@ -290,7 +290,7 @@ jobs:
         env:
           # TODO: confirm clone URLs / add auth if these repos are private.
           TF_PROVIDER_REPO: "https://github.com/datarobot-community/terraform-provider-datarobot.git"
-          TF_BRANCH: "brunoromano-dr/RAPTOR-19287-run-agent-app-wapi"
+          TF_BRANCH: "main"
           PULUMI_PROVIDER_REPO: "https://github.com/datarobot-community/pulumi-datarobot.git"
           PULUMI_PROVIDER_REF: "main"
           # Deliberately higher than any real release (latest on PyPI is

@@ -232,7 +232,7 @@ def _create_image_uri_artifact(
         type="service",
         status="locked",
         spec=pulumi_datarobot.ArtifactSpecArgs(
-            # a2aEnabled=True,
+            # a2a_enabled=True,
             container_groups=[
                 pulumi_datarobot.ArtifactSpecContainerGroupArgs(
                     containers=[
@@ -242,7 +242,7 @@ def _create_image_uri_artifact(
                             image_uri=image_uri,
                             entrypoints=entrypoints,
                             port=_resolve_container_port(),
-                            # routes=_workload_artifact_routes(),
+                            routes=_workload_artifact_routes(),
                             environment_vars=environment_vars,
                             readiness_probe=_readiness_probe(),
                         )
@@ -279,7 +279,7 @@ def _create_generated_image_artifact(
         ),
         opts=pulumi.ResourceOptions(depends_on=[execution_environment]),
         spec=pulumi_datarobot.ArtifactSpecArgs(
-            # a2aEnabled=True,
+            # a2a_enabled=True,
             container_groups=[
                 pulumi_datarobot.ArtifactSpecContainerGroupArgs(
                     containers=[
@@ -287,7 +287,7 @@ def _create_generated_image_artifact(
                             name=WORKLOAD_CONTAINER_NAME,
                             primary=True,
                             port=_resolve_container_port(),
-                            # routes=_workload_artifact_routes(),
+                            routes=_workload_artifact_routes(),
                             environment_vars=environment_vars,
                             image_build_config=pulumi_datarobot.ArtifactSpecContainerGroupContainerImageBuildConfigArgs(
                                 dockerfile=pulumi_datarobot.ArtifactSpecContainerGroupContainerImageBuildConfigDockerfileArgs(
