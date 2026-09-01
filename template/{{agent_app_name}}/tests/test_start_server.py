@@ -34,10 +34,10 @@ pytestmark = pytest.mark.skipif(
 )
 
 # Stands in for `uv`. `uv venv` writes the venv the script then sources, but
-# reads the shared cache first: execution environment versions that leave it
-# root-owned fail exactly like this, which is what took a deployment down
-# (BUZZOK-31991). `broken_cache` replays that, and `always_fails` the case where
-# even the retry cannot produce a venv.
+# reads the shared cache first, so an execution environment that leaves that
+# cache root-owned fails here and takes the deployment down with it.
+# `broken_cache` replays that failure; `always_fails` covers the case where even
+# the retry cannot produce a venv.
 FAKE_UV = """#!/bin/sh
 echo "$@" >> "{log}"
 if [ "$1" = venv ]; then
