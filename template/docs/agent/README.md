@@ -52,6 +52,8 @@ agent/
 │   ├── config.py           # Configuration management
 │   └── register.py         # DRAgent/NAT registration (framework-specific)
 ├── workflow.yaml           # DRAgent/NAT orchestration config (framework-specific; see note below)
+├── start_server.sh         # Custom model entrypoint: starts the DRAgent front server
+├── run_agent.py            # Entrypoint used by the DataRobot agentic playground / codespaces
 ├── tests/                  # Agent tests
 │   ├── conftest.py
 │   ├── test_agent.py
@@ -69,6 +71,8 @@ agent/
 | `agent/agent/config.py` | Manages configuration loading from environment variables, runtime parameters, and DataRobot credentials. |
 | `agent/agent/register.py` | Framework-specific. NAT registration module used by DRAgent. Wires LLM, MCP tools, workflow tools, and the agent together. |
 | `agent/workflow.yaml` | Framework-specific. Declarative NAT workflow configuration: front-end type, A2A metadata, LLM component, workflow type, middleware, and memory wrappers. Loaded by DRAgent for every framework. |
+| `agent/start_server.sh` | Entrypoint the deployed custom model runs at container start: syncs `uv.lock` into the runtime venv and execs `nat dragent serve` against `workflow.yaml`. Overrides the copy baked into the execution environment image. |
+| `agent/run_agent.py` | Entrypoint the DataRobot agentic playground and codespaces run for a single chat completion: bootstraps the venv, sets up OpenTelemetry tracing, and executes the agent inline. |
 
 > **Note:** The files `myagent.py`, `register.py`, and `workflow.yaml` are generated from framework-specific templates during project setup. Their content depends on the chosen agent framework (LangGraph, CrewAI, LlamaIndex, NAT, or Base).
 
