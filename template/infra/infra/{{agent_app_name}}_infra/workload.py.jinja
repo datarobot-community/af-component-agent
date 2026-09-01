@@ -445,6 +445,8 @@ def _provision_from_image_uri(
         entrypoints=_explicit_workload_entrypoint(),
     )
 
+    artifact.artifact_id.apply(lambda v: pulumi.log.info(f"DEBUG: artifact_id resolved to {v!r}"))
+
     workload = _create_workload(
         asset_name=base.{{agent_app_name}}_asset_name,
         artifact_id=artifact.artifact_id,
