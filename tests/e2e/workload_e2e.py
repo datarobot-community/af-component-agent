@@ -655,7 +655,7 @@ def run_workload_agent_e2e(
         # trigger -> build poll -> workload create.
         run_cmd(
             # task_cmd("deploy", "--", "--yes", "--skip-preview"),
-            task_cmd("deploy", "--", "--yes", "--skip-preview", "-v=9", "--logtostderr"),
+            task_cmd("deploy", "--", "--yes", "--skip-preview", "-v=3", "--logtostderr"),
             cwd=rendered_dir,
             timeout_seconds=PULUMI_UP_TIMEOUT_S,
         )
