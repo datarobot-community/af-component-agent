@@ -13,17 +13,16 @@
 # limitations under the License.
 
 """
-Tests for MCP LangGraph integration - verifying the register.py agent function
-loads MCP tools and injects them into the agent.
+Tests for MCP LangGraph integration - verifying that the MCP servers declared in
+agent/config.py become tools on the agent.
 """
 
-from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, MagicMock, Mock
 
 import pytest
-from datarobot_genai.core.mcp import MCPConfig
 
-from agent.register import LanggraphAgentConfig, langgraph_agent
+from agent.config import Config
+from agent.register import LanggraphAgentConfig, get_config_tools, langgraph_agent
 
 
 @pytest.fixture
@@ -40,38 +39,70 @@ def agent_config():
     return LanggraphAgentConfig(llm_name="datarobot_llm", description="Test agent")
 
 
-class TestMCPIntegration:
-    """Test MCP tool integration for LangGraph agents via the register.py agent function."""
+class TestGetConfigTools:
+    """Test the shim that turns MCP config into tools."""
 
-    async def test_agent_function_injects_mcp_tools(
+    async def test_no_servers_configured_means_no_tools(self):
+        """A Config with no *_mcp_url set contributes nothing, and connects to nothing."""
+        assert await get_config_tools(Config()) == []
+
+    async def test_one_connection_per_configured_server(self, monkeypatch):
+        """Each declared server is connected to with the values from its own fields."""
+        connections = []
+
+        async def fake_load_mcp_tools(session, connection):
+            connections.append(connection)
+            return [MagicMock(name=f"tool_{len(connections)}")]
+
+        monkeypatch.setattr(
+            "langchain_mcp_adapters.tools.load_mcp_tools", fake_load_mcp_tools
+        )
+
+        config = Config(
+            datarobot_api_token="tok",
+            datarobot_mcp_url="https://app.datarobot.com/api/v2/deployments/abc/mcp",
+            weather_mcp_url="https://weather.example.com/mcp",
+            weather_mcp_headers={"X-Api-Key": "wx-key"},
+        )
+        tools = await get_config_tools(config, forwarded_headers={"X-Trace-Id": "t1"})
+
+        assert len(tools) == 2
+
+        # The DataRobot-hosted server gets the API token as a bearer token.
+        assert connections[0]["url"].endswith("/deployments/abc/mcp")
+        assert connections[0]["headers"]["Authorization"] == "Bearer tok"
+
+        # The third-party server gets its own header, and neither gets the token
+        # of the other. Request headers are forwarded to both.
+        assert connections[1]["headers"]["X-Api-Key"] == "wx-key"
+        assert "Authorization" not in connections[1]["headers"]
+        assert connections[1]["headers"]["X-Trace-Id"] == "t1"
+
+
+class TestMCPIntegration:
+    """Test that the tools from agent/config.py reach the agent."""
+
+    async def test_agent_function_injects_config_tools(
         self, mock_builder, agent_config, mock_agent_response, monkeypatch
     ):
-        """The agent function loads MCP tools and passes them to MyAgent alongside workflow tools."""
-        mcp_tool = MagicMock(name="mcp_tool")
-        captured: dict[str, MCPConfig] = {}
+        """Config tools are passed to MyAgent alongside the workflow tools."""
+        config_tool = MagicMock(name="config_tool")
 
-        @asynccontextmanager
-        async def fake_mcp_tools_context(mcp_config):
-            captured["mcp_config"] = mcp_config
-            yield [mcp_tool]
+        async def fake_get_config_tools(config, forwarded_headers=None):
+            return [config_tool]
 
         mock_agent_instance = MagicMock()
         mock_agent_instance.invoke = Mock(return_value=mock_agent_response)
         mock_agent_class = MagicMock(return_value=mock_agent_instance)
 
-        monkeypatch.setattr(
-            "datarobot_genai.langgraph.mcp.mcp_tools_context", fake_mcp_tools_context
-        )
+        monkeypatch.setattr("agent.register.get_config_tools", fake_get_config_tools)
         monkeypatch.setattr("agent.myagent.MyAgent", mock_agent_class)
 
         async with langgraph_agent(agent_config, mock_builder) as func_info:
             async for _ in func_info.stream_fn(MagicMock()):
                 pass
 
-        # MCP tools were loaded with a request-scoped MCPConfig ...
-        assert isinstance(captured["mcp_config"], MCPConfig)
-        # ... and injected into the agent alongside the workflow tools.
         mock_agent_class.assert_called_once()
         tools = mock_agent_class.call_args.kwargs["tools"]
-        assert mcp_tool in tools
+        assert config_tool in tools
         assert len(tools) == 2

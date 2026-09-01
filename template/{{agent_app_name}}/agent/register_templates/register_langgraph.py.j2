@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from collections.abc import AsyncGenerator
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any
 
 from ag_ui.core import RunAgentInput
 from datarobot_genai.core.telemetry.agent import instrument
@@ -27,6 +27,47 @@ from nat.data_models.component_ref import FunctionGroupRef
 # INSTRUMENTATION CALL IS REQUIRED TO SETUP TRACING AND TELEMETRY FOR AGENTS
 instrument()
 instrument_langgraph()
+
+if TYPE_CHECKING:
+    from langchain.tools import BaseTool
+
+    from agent.config import Config
+
+
+async def get_config_tools(
+    config: "Config", forwarded_headers: dict[str, str] | None = None
+) -> list["BaseTool"]:
+    """Load the MCP tools for every server declared in agent/config.py.
+
+    This is the whole MCP path. `resolve_all_mcp_configs()` returns one MCPConfig per
+    "{name}_mcp_url" field on Config, each already carrying the URL, transport, headers
+    and timeouts for its server, so all that is left here is picking the connection type
+    and asking it for its tools.
+
+    Imports are local so that importing this module during NAT plugin discovery does not
+    pull in LangChain or the agent package.
+    """
+    from datarobot.core.config import MCPTransport
+    from langchain_mcp_adapters.sessions import SSEConnection, StreamableHttpConnection
+    from langchain_mcp_adapters.tools import load_mcp_tools
+
+    tools: list["BaseTool"] = []
+    for mcp_config in config.resolve_all_mcp_configs():
+        params = mcp_config.to_connection_params()
+        # Request headers first, so a header the config sets explicitly wins.
+        params["headers"] = {**(forwarded_headers or {}), **params["headers"]}
+
+        if mcp_config.mcp_transport is MCPTransport.SSE:
+            connection = SSEConnection(**params)
+        else:
+            connection = StreamableHttpConnection(**params)
+
+        # session=None makes load_mcp_tools open a short-lived session just to list the
+        # tools; each returned tool then opens its own session per call. That is why no
+        # `async with` has to stay open around the agent run.
+        tools.extend(await load_mcp_tools(session=None, connection=connection))
+
+    return tools
 
 
 class LanggraphAgentConfig(AgentBaseConfig, name="langgraph_agent"):  # type: ignore[call-arg, misc]
@@ -48,17 +89,15 @@ class LanggraphAgentConfig(AgentBaseConfig, name="langgraph_agent"):  # type: ig
 async def langgraph_agent(
     config: LanggraphAgentConfig, builder: Builder
 ) -> AsyncGenerator[Any, None]:
-    from datarobot_genai.core.mcp import MCPConfig
     from datarobot_genai.dragent.context import (
-        extract_authorization_from_context,
         extract_datarobot_headers_from_context,
     )
     from datarobot_genai.dragent.frontends.converters import (
         aggregate_dragent_event_responses,
     )
-    from datarobot_genai.langgraph.mcp import mcp_tools_context
     from nat.builder.function_info import FunctionInfo, Streaming
 
+    from agent.config import Config
     from agent.myagent import MyAgent
 
     llm = await builder.get_llm(
@@ -80,28 +119,25 @@ async def langgraph_agent(
     ]:
         # Agent should have access to request-specific headers and authorization context
         forwarded_headers = extract_datarobot_headers_from_context()
-        authorization_context = extract_authorization_from_context()
-        mcp_config = MCPConfig(
-            forwarded_headers=forwarded_headers,
-            authorization_context=authorization_context,
-        )
-        async with mcp_tools_context(mcp_config) as mcp_tools:
-            tools = workflow_tools + mcp_tools
-            agent = MyAgent(
-                llm=llm,
-                verbose=config.verbose,
-                forwarded_headers=forwarded_headers,
-                tools=tools,
-            )
 
-            async for event, pipeline_interactions, usage_metrics in agent.invoke(
-                input_message
-            ):
-                yield DRAgentEventResponse(
-                    events=[event],
-                    usage_metrics=usage_metrics,
-                    pipeline_interactions=pipeline_interactions,
-                )
+        # Tools from the MCP servers declared in agent/config.py.
+        config_tools = await get_config_tools(Config(), forwarded_headers)
+
+        agent = MyAgent(
+            llm=llm,
+            verbose=config.verbose,
+            forwarded_headers=forwarded_headers,
+            tools=workflow_tools + config_tools,
+        )
+
+        async for event, pipeline_interactions, usage_metrics in agent.invoke(
+            input_message
+        ):
+            yield DRAgentEventResponse(
+                events=[event],
+                usage_metrics=usage_metrics,
+                pipeline_interactions=pipeline_interactions,
+            )
 
     yield FunctionInfo.from_fn(
         _response_fn,
