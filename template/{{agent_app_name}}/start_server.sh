@@ -31,7 +31,25 @@ export UV_PROJECT_ENVIRONMENT="${VENV_DIR:-/opt/venv}"
 export UV_COMPILE_BYTECODE=0  # Disable compilation
 export UV_CACHE_DIR="${UV_CACHE_DIR:-/tmp/uv-cache}"
 
-uv venv "${UV_PROJECT_ENVIRONMENT}"
+# Create the runtime venv. Prefer the execution environment's pre-warmed uv
+# cache, which makes the sync below much faster, but never let the state of that
+# cache decide whether the agent starts: some execution environment versions
+# leave ${UV_CACHE_DIR} owned by the image build user, and uv then aborts with
+# "sdists-v9/.git: Permission denied" for the deployment user. Those versions
+# ship a start_server.sh that disables the cache outright, so retry that way
+# rather than failing.
+if ! uv venv "${UV_PROJECT_ENVIRONMENT}"; then
+    echo "uv venv failed; retrying with the shared uv cache disabled"
+    export UV_NO_CACHE=1
+    uv venv "${UV_PROJECT_ENVIRONMENT}"
+fi
+
+# Sourcing a missing activate script aborts this shell, reporting the missing
+# file rather than whatever stopped uv from creating it. Say what happened.
+if [ ! -f "${UV_PROJECT_ENVIRONMENT}/bin/activate" ]; then
+    echo "Error: could not create a virtual environment at ${UV_PROJECT_ENVIRONMENT}" >&2
+    exit 1
+fi
 # shellcheck disable=SC1091
 . "${UV_PROJECT_ENVIRONMENT}/bin/activate"
 
