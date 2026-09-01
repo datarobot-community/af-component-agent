@@ -1,0 +1,4 @@
+# Shell scripts here are executed by /bin/sh inside Linux containers. Git for
+# Windows checks them out with CRLF by default, which makes them unparseable
+# there ("then<CR>" is not the keyword "then"), so pin them to LF everywhere.
+*.sh text eol=lf
