@@ -155,19 +155,6 @@ jobs:
           echo "${PULUMI_SHA256}  ${workdir}/${tarball}" | sha256sum -c -
           tar -xzf "${workdir}/${tarball}" -C "${workdir}"
           echo "${workdir}/pulumi" >> "$GITHUB_PATH"
-      - name: Diagnose network path to DataRobot
-        shell: bash
-        env:
-          DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
-        run: |
-          set -x
-          host="$(python3 -c "from urllib.parse import urlparse; print(urlparse('${DATAROBOT_ENDPOINT}').hostname)")"
-          echo "Resolving: ${host}"
-          python3 -c "import socket; print(socket.gethostbyname('${host}'))" || true
-          echo "Probing HTTPS reachability:"
-          curl -v --max-time 20 -o /dev/null "https://${host}/" || true
-          echo "Runner egress IP (what DataRobot's WAF/allowlist would see):"
-          curl -s --max-time 10 https://ifconfig.me || true
       - name: Run E2E
         shell: bash
         env:
@@ -306,6 +293,7 @@ jobs:
           LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"
           DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
           DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
+          WORKLOAD_AGENT_IMAGE_URI: otkachnlp/fastapi-server-example:latest
         run: |
           uv run --all-extras pytest --import-mode=importlib -vv -s \
             ./tests/e2e/test_agent_workload_e2e.py 2>&1 | tee "e2e-workload-api-${{ matrix.framework }}.log"
