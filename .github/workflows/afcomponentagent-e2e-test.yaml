@@ -155,6 +155,19 @@ jobs:
           echo "${PULUMI_SHA256}  ${workdir}/${tarball}" | sha256sum -c -
           tar -xzf "${workdir}/${tarball}" -C "${workdir}"
           echo "${workdir}/pulumi" >> "$GITHUB_PATH"
+      - name: Diagnose network path to DataRobot
+        shell: bash
+        env:
+          DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
+        run: |
+          set -x
+          host="$(python3 -c "from urllib.parse import urlparse; print(urlparse('${DATAROBOT_ENDPOINT}').hostname)")"
+          echo "Resolving: ${host}"
+          python3 -c "import socket; print(socket.gethostbyname('${host}'))" || true
+          echo "Probing HTTPS reachability:"
+          curl -v --max-time 20 -o /dev/null "https://${host}/" || true
+          echo "Runner egress IP (what DataRobot's WAF/allowlist would see):"
+          curl -s --max-time 10 https://ifconfig.me || true
       - name: Run E2E
         shell: bash
         env:
