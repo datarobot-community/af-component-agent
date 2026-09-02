@@ -286,12 +286,9 @@ class TestImageUriArtifactArgs:
             True,
         )
         _, container = self._container(workload)
-        assert container["routes"] == [
-            {
-                "path": "/a2a/.well-known/agent-card.json",
-                "auth": "optional",
-            }
-        ]
+        assert len(container["routes"]) == 1
+        assert container["routes"][0].path == "/a2a/.well-known/agent-card.json"
+        assert container["routes"][0].auth == "optional"
 
     def test_entrypoints_omitted_when_unset(self, monkeypatch):
         """Omitting the key keeps the image's own CMD/entrypoint."""
@@ -797,21 +794,10 @@ class TestWorkloadArtifactRoutes:
     def test_well_known_route_when_enabled(self, monkeypatch):
         workload = _workload_module(monkeypatch)
         self._opt_in(monkeypatch, workload, True)
-        assert workload._workload_artifact_routes() == [
-            {
-                "path": "/a2a/.well-known/agent-card.json",
-                "auth": "optional",
-            }
-        ]
-
-    def test_does_not_mutate_the_shared_constant(self, monkeypatch):
-        workload = _workload_module(monkeypatch)
-        self._opt_in(monkeypatch, workload, True)
-        workload._workload_artifact_routes()[0]["path"] = "/mutated"
-        assert (
-            workload.A2A_UNAUTHENTICATED_WELL_KNOWN_ARTIFACT_ROUTE["path"]
-            == "/a2a/.well-known/agent-card.json"
-        )
+        routes = workload._workload_artifact_routes()
+        assert len(routes) == 1
+        assert routes[0].path == "/a2a/.well-known/agent-card.json"
+        assert routes[0].auth == "optional"
 
     def test_generated_image_artifact_omits_routes_by_default(self, monkeypatch):
         workload = _workload_module(monkeypatch)
@@ -825,9 +811,6 @@ class TestWorkloadArtifactRoutes:
         self._opt_in(monkeypatch, workload, True)
         workload.provision_workload_agent([])
         _, kwargs = workload.WorkloadGeneratedImageArtifact.call_args
-        assert kwargs["routes"] == [
-            {
-                "path": "/a2a/.well-known/agent-card.json",
-                "auth": "optional",
-            }
-        ]
+        assert len(kwargs["routes"]) == 1
+        assert kwargs["routes"][0].path == "/a2a/.well-known/agent-card.json"
+        assert kwargs["routes"][0].auth == "optional"

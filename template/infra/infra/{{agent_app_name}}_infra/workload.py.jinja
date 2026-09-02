@@ -121,7 +121,9 @@ def _readiness_probe() -> (
     )
 
 
-def _workload_artifact_routes() -> list[dict[str, str]] | None:
+def _workload_artifact_routes() -> (
+    list[pulumi_datarobot.ArtifactSpecContainerGroupContainerRouteArgs] | None
+):
     """Workload artifact routes derived from ``workflow.yaml`` A2A settings.
 
     When ``enable_unauthenticated_well_known_route`` is truthy, the platform must
@@ -137,7 +139,12 @@ def _workload_artifact_routes() -> list[dict[str, str]] | None:
     so an empty list is not a safe stand-in for omitting it.
     """
     if base.IS_A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_ENABLED:
-        return [dict(A2A_UNAUTHENTICATED_WELL_KNOWN_ARTIFACT_ROUTE)]
+        return [
+            pulumi_datarobot.ArtifactSpecContainerGroupContainerRouteArgs(
+                path=A2A_UNAUTHENTICATED_WELL_KNOWN_ARTIFACT_ROUTE["path"],
+                auth=A2A_UNAUTHENTICATED_WELL_KNOWN_ARTIFACT_ROUTE["auth"],
+            )
+        ]
     return None
 
 
@@ -270,7 +277,7 @@ def _create_image_uri_artifact(
                         )
                     ]
                 ),
-            ]
+            ],
         ),
     )
 
@@ -322,7 +329,7 @@ def _create_generated_image_artifact(
                         )
                     ]
                 )
-            ]
+            ],
         ),
     )
 
