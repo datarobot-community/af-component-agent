@@ -657,7 +657,6 @@ def run_workload_agent_e2e(
             task_cmd("deploy", "--", "--yes", "--skip-preview"),
             cwd=rendered_dir,
             timeout_seconds=PULUMI_UP_TIMEOUT_S,
-            env={"PULUMI_DEBUG_GRPC": "/dev/stdout"},
         )
 
         # Step 9: Assert the exported outputs. Cheap, so it runs before the slow

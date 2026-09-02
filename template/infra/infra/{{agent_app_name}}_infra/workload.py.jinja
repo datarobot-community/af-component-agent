@@ -228,11 +228,10 @@ def _create_image_uri_artifact(
         asset_name + " Workload Artifact [Image URI]",
         name=asset_name,
         description=f"Agent workload artifact built from pre-built image {image_uri}",
-        # type="agent",
-        type="service",
+        type="agent",
         status="locked",
         spec=pulumi_datarobot.ArtifactSpecArgs(
-            # a2a_enabled=True,
+            a2a_enabled=True,
             container_groups=[
                 pulumi_datarobot.ArtifactSpecContainerGroupArgs(
                     containers=[
@@ -270,8 +269,7 @@ def _create_generated_image_artifact(
         asset_name + " Workload Artifact [Generated Dockerfile]",
         name=asset_name,
         description="Agent workload artifact built from local source via generated Dockerfile",
-        # type="agent",
-        type="service",
+        type="agent",
         status="locked",
         source=pulumi_datarobot.ArtifactSourceArgs(
             dir=application_path,
@@ -279,7 +277,7 @@ def _create_generated_image_artifact(
         ),
         opts=pulumi.ResourceOptions(depends_on=[execution_environment]),
         spec=pulumi_datarobot.ArtifactSpecArgs(
-            # a2a_enabled=True,
+            a2a_enabled=True,
             container_groups=[
                 pulumi_datarobot.ArtifactSpecContainerGroupArgs(
                     containers=[
@@ -444,8 +442,6 @@ def _provision_from_image_uri(
         environment_vars=_workload_environment_vars(shared_runtime_parameters),
         entrypoints=_explicit_workload_entrypoint(),
     )
-
-    artifact.artifact_id.apply(lambda v: pulumi.log.info(f"DEBUG: artifact_id resolved to {v!r}"))
 
     workload = _create_workload(
         asset_name=base.{{agent_app_name}}_asset_name,
