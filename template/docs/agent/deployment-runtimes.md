@@ -104,7 +104,7 @@ Environment variables landing in the first group is the surprising one: they are
 
 The workload itself is not recreated in either case. Pulumi relinks it to the new artifact, so it keeps its ID and endpoint and callers stay pointed at the right place across rebuilds.
 
-What counts as "agent source" is decided by the `.wapiignore` file at the agent app root — the same archived bytes are both uploaded and hashed, so editing an ignored file changes nothing. Read that file for the default exclusions.
+What counts as "agent source" is decided by the `.drignore` file at the agent app root — the same archived bytes are both uploaded and hashed, so editing an ignored file changes nothing. Read that file for the default exclusions.
 
 ---
 
