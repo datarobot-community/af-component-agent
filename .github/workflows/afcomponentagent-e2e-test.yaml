@@ -288,8 +288,7 @@ jobs:
           # Real `pulumi up` + platform image build + chat call only on push to
           # main (merges); PRs stop after the plan assertions, which create
           # nothing and take a few minutes.
-#          RUN_AGENT_WORKLOAD_DEPLOY_TESTS: ${{ github.event_name == 'push' && '1' || '0' }}
-          RUN_AGENT_WORKLOAD_DEPLOY_TESTS: '1'
+          RUN_AGENT_WORKLOAD_DEPLOY_TESTS: ${{ github.event_name == 'push' && '1' || '0' }}
           LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"
           DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
           DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
