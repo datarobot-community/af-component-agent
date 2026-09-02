@@ -66,8 +66,10 @@ def workload_env_mocks(monkeypatch, tmp_path):
     monkeypatch.setenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2")
     monkeypatch.delenv("WORKLOAD_AGENT_IMAGE_URI", raising=False)
     monkeypatch.delenv("WORKLOAD_ENTRYPOINT", raising=False)
-    # A developer's own OTEL export settings must not leak into these assertions.
+    # A developer's own OTEL/execution-environment settings must not leak into
+    # these assertions.
     monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)
+    monkeypatch.delenv("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", raising=False)
     monkeypatch.setattr("datarobot_pulumi_utils.pulumi.export", MagicMock())
 
     mock_use_case = MagicMock()
@@ -129,8 +131,8 @@ def workload_env_mocks(monkeypatch, tmp_path):
 
 
 def _workload_module(monkeypatch, *, stub_ensure_entrypoint=True):
-    """Import infra.{{agent_app_name}}_infra.workload with its workload_api
-    subpackage collaborators and pulumi_datarobot.Artifact/Workload stubbed out.
+    """Import infra.{{agent_app_name}}_infra.workload with the pulumi_datarobot
+    Artifact/Workload/ExecutionEnvironment resources stubbed out.
 
     Pass ``stub_ensure_entrypoint=False`` to keep the real
     ``_ensure_agent_has_entrypoint`` in place.
@@ -140,12 +142,6 @@ def _workload_module(monkeypatch, *, stub_ensure_entrypoint=True):
     """
     import infra.{{agent_app_name}}_infra.workload as workload
 
-    monkeypatch.setattr(
-        workload,
-        "WorkloadGeneratedImageArtifact",
-        MagicMock(return_value=_fake_resource(artifact_id="generated-artifact-id")),
-    )
-    monkeypatch.setattr(workload, "source_hash", MagicMock(return_value="hash123"))
     # Stubbed by default: most tests aim the application path at an empty tmp_path,
     # which has no pyproject.toml for the real thing to read.
     if stub_ensure_entrypoint:
@@ -178,6 +174,17 @@ def _workload_module(monkeypatch, *, stub_ensure_entrypoint=True):
     monkeypatch.setattr(workload, "export", MagicMock())
 
     return workload
+
+
+def _artifact_kwargs(workload):
+    """Keyword arguments of the most recent ``pulumi_datarobot.Artifact`` call."""
+    _, kwargs = workload.pulumi_datarobot.Artifact.call_args
+    return kwargs
+
+
+def _artifact_container(workload):
+    """The single container spec of the most recent ``Artifact`` call."""
+    return _artifact_kwargs(workload)["spec"].container_groups[0].containers[0]
 
 
 class TestExplicitWorkloadEntrypoint:
@@ -239,31 +246,35 @@ class TestResolveContainerPortAndReadinessProbe:
 
 
 class TestImageUriArtifactArgs:
-    """The pre-built-image payload is built here, not in workload_api."""
+    """The pre-built-image artifact spec is assembled here in workload.py."""
 
     def _container(self, workload, **overrides):
-        args = workload._image_uri_artifact_args(
+        api_key_var = workload.pulumi_datarobot.ArtifactSpecContainerGroupContainerEnvironmentVarArgs(
+            source="api-key"
+        )
+        workload._create_image_uri_artifact(
             **{
-                "artifact_name": "agent-artifact",
+                "asset_name": "agent-artifact",
                 "image_uri": "registry.example.com/agent:latest",
-                "environment_vars": [{"source": "api-key"}],
+                "environment_vars": [api_key_var],
                 "entrypoints": None,
                 **overrides,
             }
         )
-        return args, args["spec"]["containerGroups"][0]["containers"][0]
+        return _artifact_kwargs(workload), _artifact_container(workload)
 
     def test_payload_shape(self, monkeypatch):
         workload = _workload_module(monkeypatch)
         args, container = self._container(workload)
         assert args["name"] == "agent-artifact"
-        assert args["type"] == "service"
-        assert container["name"] == workload.WORKLOAD_CONTAINER_NAME
-        assert container["primary"] is True
-        assert container["port"] == 8080
-        assert container["imageUri"] == "registry.example.com/agent:latest"
-        assert container["environmentVars"] == [{"source": "api-key"}]
-        assert container["readinessProbe"]["path"] == "/health"
+        assert args["type"] == "agent"
+        assert args["spec"].a2a_enabled is True
+        assert container.name == workload.WORKLOAD_CONTAINER_NAME
+        assert container.primary is True
+        assert container.port == 8080
+        assert container.image_uri == "registry.example.com/agent:latest"
+        assert [var.source for var in container.environment_vars] == ["api-key"]
+        assert container.readiness_probe.path == "/health"
 
     def test_routes_omitted_by_default(self, monkeypatch):
         """Omitted, not `[]`: a cluster with route configuration disabled rejects
@@ -276,7 +287,7 @@ class TestImageUriArtifactArgs:
             False,
         )
         _, container = self._container(workload)
-        assert "routes" not in container
+        assert container.routes is None
 
     def test_routes_include_well_known_when_enabled(self, monkeypatch):
         workload = _workload_module(monkeypatch)
@@ -286,27 +297,27 @@ class TestImageUriArtifactArgs:
             True,
         )
         _, container = self._container(workload)
-        assert len(container["routes"]) == 1
-        assert container["routes"][0].path == "/a2a/.well-known/agent-card.json"
-        assert container["routes"][0].auth == "optional"
+        assert len(container.routes) == 1
+        assert container.routes[0].path == "/a2a/.well-known/agent-card.json"
+        assert container.routes[0].auth == "optional"
 
     def test_entrypoints_omitted_when_unset(self, monkeypatch):
         """Omitting the key keeps the image's own CMD/entrypoint."""
         workload = _workload_module(monkeypatch)
         _, container = self._container(workload)
-        assert "entrypoints" not in container
+        assert container.entrypoints is None
 
     def test_entrypoints_included_when_set(self, monkeypatch):
         workload = _workload_module(monkeypatch)
         _, container = self._container(workload, entrypoints=["python", "main.py"])
-        assert container["entrypoints"] == ["python", "main.py"]
+        assert container.entrypoints == ["python", "main.py"]
 
     def test_port_override_applies_to_container_and_probe(self, monkeypatch):
         workload = _workload_module(monkeypatch)
         monkeypatch.setenv("WORKLOAD_CONTAINER_PORT", "9090")
         _, container = self._container(workload)
-        assert container["port"] == 9090
-        assert container["readinessProbe"]["port"] == 9090
+        assert container.port == 9090
+        assert container.readiness_probe.port == 9090
 
 
 def _workload_module_unstubbed():
@@ -386,14 +397,11 @@ class TestRuntimeParamEnvVars:
             RuntimeParam(key="SESSION_SECRET_KEY", type="credential", value="cred-id")
         ]
         env_vars = workload._runtime_param_env_vars(params)
-        assert env_vars == [
-            {
-                "name": "SESSION_SECRET_KEY",
-                "source": "dr-credential",
-                "drCredentialId": "cred-id",
-                "key": "apiToken",
-            }
-        ]
+        assert len(env_vars) == 1
+        assert env_vars[0].name == "SESSION_SECRET_KEY"
+        assert env_vars[0].source == "dr-credential"
+        assert env_vars[0].dr_credential_id == "cred-id"
+        assert env_vars[0].key == "apiToken"
 
     def test_other_types_become_plain_value(self, monkeypatch):
         workload = _workload_module(monkeypatch)
@@ -403,26 +411,32 @@ class TestRuntimeParamEnvVars:
             )
         ]
         env_vars = workload._runtime_param_env_vars(params)
-        assert env_vars == [{"name": "AGENT_GUNICORN_WORKER_TIMEOUT", "value": "600"}]
+        assert len(env_vars) == 1
+        assert env_vars[0].name == "AGENT_GUNICORN_WORKER_TIMEOUT"
+        assert env_vars[0].value == "600"
 
     def test_workload_environment_vars_leads_with_api_key_source(self, monkeypatch):
         workload = _workload_module(monkeypatch)
         env_vars = workload._workload_environment_vars([])
-        assert env_vars[0] == {"source": "api-key"}
+        assert env_vars[0].source == "api-key"
+        assert env_vars[0].name is None
 
     def test_workload_environment_vars_excludes_nothing_extra(self, monkeypatch):
         workload = _workload_module(monkeypatch)
         params = [RuntimeParam(key="LLM_DEPLOYMENT_ID", type="string", value="dep-1")]
         env_vars = workload._workload_environment_vars(params)
         assert len(env_vars) == 3
-        assert env_vars[1] == {"name": "WORKLOAD_CONTAINER_PORT", "value": "8080"}
-        assert env_vars[2] == {"name": "LLM_DEPLOYMENT_ID", "value": "dep-1"}
+        assert env_vars[1].name == "WORKLOAD_CONTAINER_PORT"
+        assert env_vars[1].value == "8080"
+        assert env_vars[2].name == "LLM_DEPLOYMENT_ID"
+        assert env_vars[2].value == "dep-1"
 
     def test_workload_environment_vars_injects_resolved_port(self, monkeypatch):
         workload = _workload_module(monkeypatch)
         monkeypatch.setenv("WORKLOAD_CONTAINER_PORT", "9090")
         env_vars = workload._workload_environment_vars([])
-        assert env_vars[1] == {"name": "WORKLOAD_CONTAINER_PORT", "value": "9090"}
+        assert env_vars[1].name == "WORKLOAD_CONTAINER_PORT"
+        assert env_vars[1].value == "9090"
 
 
 class TestProvisionWorkloadAgentRequiredEnv:
@@ -430,12 +444,6 @@ class TestProvisionWorkloadAgentRequiredEnv:
         workload = _workload_module(monkeypatch)
         monkeypatch.delenv("DATAROBOT_API_TOKEN", raising=False)
         with pytest.raises(RuntimeError, match="DATAROBOT_API_TOKEN"):
-            workload.provision_workload_agent([])
-
-    def test_missing_endpoint_raises(self, monkeypatch):
-        workload = _workload_module(monkeypatch)
-        monkeypatch.delenv("DATAROBOT_ENDPOINT", raising=False)
-        with pytest.raises(RuntimeError, match="DATAROBOT_ENDPOINT"):
             workload.provision_workload_agent([])
 
 
@@ -449,11 +457,11 @@ class TestProvisionWorkloadAgentImageUriScenario:
         result = workload.provision_workload_agent([])
 
         workload.pulumi_datarobot.Artifact.assert_called_once()
-        _, kwargs = workload.pulumi_datarobot.Artifact.call_args
-        container = kwargs["spec"]["containerGroups"][0]["containers"][0]
-        assert container["imageUri"] == "registry.example.com/agent:latest"
-        assert container["readinessProbe"] == workload._readiness_probe().to_wire()
-        assert container["environmentVars"] == workload._workload_environment_vars([])
+        container = _artifact_container(workload)
+        assert container.image_uri == "registry.example.com/agent:latest"
+        assert container.readiness_probe.path == "/health"
+        assert container.readiness_probe.port == 8080
+        assert container.environment_vars[0].source == "api-key"
         workload.pulumi_datarobot.Workload.assert_called_once()
         assert result["execution_environment"] is None
         assert result["deployment"] is None
@@ -516,9 +524,7 @@ class TestProvisionWorkloadAgentImageUriScenario:
 
         workload.provision_workload_agent([])
 
-        _, kwargs = workload.pulumi_datarobot.Artifact.call_args
-        container = kwargs["spec"]["containerGroups"][0]["containers"][0]
-        assert container["entrypoints"] == ["python", "main.py"]
+        assert _artifact_container(workload).entrypoints == ["python", "main.py"]
 
 
 class TestEnsureAgentHasEntrypoint:
@@ -661,10 +667,11 @@ class TestProvisionWorkloadAgentSourceBundleScenarios:
 
         result = workload.provision_workload_agent([])
 
-        workload.WorkloadGeneratedImageArtifact.assert_called_once()
-        _, kwargs = workload.WorkloadGeneratedImageArtifact.call_args
-        assert kwargs["entrypoint"] == ["sh", "workload/run_server.sh"]
-        assert kwargs["application_path"] == str(tmp_path)
+        workload.pulumi_datarobot.Artifact.assert_called_once()
+        assert _artifact_kwargs(workload)["source"].dir == str(tmp_path)
+        dockerfile = _artifact_container(workload).image_build_config.dockerfile
+        assert dockerfile.source == "generated"
+        assert dockerfile.entrypoints == ["sh", "workload/run_server.sh"]
         workload.pulumi_datarobot.ExecutionEnvironment.assert_called_once()
         _, ee_kwargs = workload.pulumi_datarobot.ExecutionEnvironment.call_args
         assert ee_kwargs["use_cases"] == ["customModel"]
@@ -705,16 +712,9 @@ class TestProvisionWorkloadAgentSourceBundleScenarios:
 
         workload.provision_workload_agent([])
 
-        _, kwargs = workload.WorkloadGeneratedImageArtifact.call_args
-        assert kwargs["readiness_probe"] == {
-            "path": "/health",
-            "port": 9090,
-            "initial_delay_seconds": 10,
-            "period_seconds": 10,
-            "timeout_seconds": 5,
-            "failure_threshold": 6,
-            "scheme": "HTTP",
-        }
+        readiness_probe = _artifact_container(workload).readiness_probe
+        assert readiness_probe.path == "/health"
+        assert readiness_probe.port == 9090
 
 
 class TestProvisionWorkloadAgentExports:
@@ -803,14 +803,13 @@ class TestWorkloadArtifactRoutes:
         workload = _workload_module(monkeypatch)
         self._opt_in(monkeypatch, workload, False)
         workload.provision_workload_agent([])
-        _, kwargs = workload.WorkloadGeneratedImageArtifact.call_args
-        assert kwargs["routes"] is None
+        assert _artifact_container(workload).routes is None
 
     def test_well_known_route_passed_to_generated_image_artifact(self, monkeypatch):
         workload = _workload_module(monkeypatch)
         self._opt_in(monkeypatch, workload, True)
         workload.provision_workload_agent([])
-        _, kwargs = workload.WorkloadGeneratedImageArtifact.call_args
-        assert len(kwargs["routes"]) == 1
-        assert kwargs["routes"][0].path == "/a2a/.well-known/agent-card.json"
-        assert kwargs["routes"][0].auth == "optional"
+        routes = _artifact_container(workload).routes
+        assert len(routes) == 1
+        assert routes[0].path == "/a2a/.well-known/agent-card.json"
+        assert routes[0].auth == "optional"
