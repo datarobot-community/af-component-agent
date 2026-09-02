@@ -1,6 +1,6 @@
 #!/bin/sh
 # Entrypoint for the Workload API C2W scenario, invoked with the application root
-# as the working directory (see infra/{{agent_app_name}}_infra/workload.py).
+# as the working directory (see infra/*_infra/workload.py).
 # Not used by the Custom Models path.
 #
 # The agent package is not installed in this image and cannot be: the build
@@ -12,10 +12,13 @@
 set -eu
 
 export PYTHONPATH="${PWD}${PYTHONPATH:+:${PYTHONPATH}}"
-{% if agent_template_framework == "crewai" %}
-# CREWAI_STORAGE_DIR needs to be in a writable directory, and by default is $HOME, which to this user is not writable
-export HOME=/tmp/home
-mkdir -p "$HOME/.local/share"
-{% endif %}
+
+# HOME points at the image user's home directory, which this container, running
+# as a different user, cannot write to. Any library that keeps state or caches
+# under the home directory fails as a result; CrewAI's memory storage is one.
+# Redirect HOME to a writable location.
+export HOME="${TMPDIR:-/tmp}/agent-home"
+mkdir -p "$HOME"
+
 echo "Running nat dragent serve"
 exec nat dragent serve --config_file workflow.yaml --host 0.0.0.0 --port "${WORKLOAD_CONTAINER_PORT:-8080}" --use_gunicorn true
