@@ -19,7 +19,7 @@ tasks:
     silent: true
   install:
     cmds:
-#      - task: agent:install
+      - task: agent:install
       - task: infra:install
   preview:
     cmds:
