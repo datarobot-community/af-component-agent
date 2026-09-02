@@ -66,6 +66,8 @@ def workload_env_mocks(monkeypatch, tmp_path):
     monkeypatch.setenv("DATAROBOT_ENDPOINT", "https://app.datarobot.com/api/v2")
     monkeypatch.delenv("WORKLOAD_AGENT_IMAGE_URI", raising=False)
     monkeypatch.delenv("WORKLOAD_ENTRYPOINT", raising=False)
+    # A developer's own OTEL export settings must not leak into these assertions.
+    monkeypatch.delenv("OTEL_EXPORTER_OTLP_ENDPOINT", raising=False)
     monkeypatch.setattr("datarobot_pulumi_utils.pulumi.export", MagicMock())
 
     mock_use_case = MagicMock()
@@ -308,6 +310,76 @@ class TestImageUriArtifactArgs:
         _, container = self._container(workload)
         assert container["port"] == 9090
         assert container["readinessProbe"]["port"] == 9090
+
+
+def _workload_module_unstubbed():
+    """workload.py with nothing stubbed out.
+
+    Enough for the pure env-reading helpers, which build plain spec args and
+    touch no Pulumi resource, so these tests do not depend on which artifact
+    collaborators the module happens to expose.
+    """
+    import infra.{{agent_app_name}}_infra.workload as workload
+
+    return workload
+
+
+class TestOtelEndpointEnvVar:
+    """OTEL_EXPORTER_OTLP_ENDPOINT reaches the container only when set locally."""
+
+    def test_empty_when_unset(self, monkeypatch):
+        workload = _workload_module_unstubbed()
+        assert workload._otel_endpoint_env_var() == []
+
+    def test_endpoint_forwarded_when_set(self, monkeypatch):
+        workload = _workload_module_unstubbed()
+        monkeypatch.setenv(
+            "OTEL_EXPORTER_OTLP_ENDPOINT", "https://app.datarobot.com/otel"
+        )
+        env_vars = workload._otel_endpoint_env_var()
+        assert len(env_vars) == 1
+        assert env_vars[0].name == "OTEL_EXPORTER_OTLP_ENDPOINT"
+        assert env_vars[0].value == "https://app.datarobot.com/otel"
+
+    def test_surrounding_whitespace_stripped(self, monkeypatch):
+        workload = _workload_module_unstubbed()
+        monkeypatch.setenv(
+            "OTEL_EXPORTER_OTLP_ENDPOINT", "  https://app.datarobot.com/otel  "
+        )
+        assert (
+            workload._otel_endpoint_env_var()[0].value
+            == "https://app.datarobot.com/otel"
+        )
+
+    def test_blank_value_is_not_forwarded(self, monkeypatch):
+        workload = _workload_module_unstubbed()
+        monkeypatch.setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "   ")
+        assert workload._otel_endpoint_env_var() == []
+
+    def test_lands_in_container_env_vars_before_runtime_params(self, monkeypatch):
+        workload = _workload_module_unstubbed()
+        monkeypatch.setenv(
+            "OTEL_EXPORTER_OTLP_ENDPOINT", "https://app.datarobot.com/otel"
+        )
+        params = [RuntimeParam(key="LLM_DEPLOYMENT_ID", type="string", value="dep-1")]
+        names = [
+            getattr(var, "name", None)
+            for var in workload._workload_environment_vars(params)
+        ]
+        assert names == [
+            None,  # source="api-key"
+            "WORKLOAD_CONTAINER_PORT",
+            "OTEL_EXPORTER_OTLP_ENDPOINT",
+            "LLM_DEPLOYMENT_ID",
+        ]
+
+    def test_omitted_from_container_env_vars_when_unset(self, monkeypatch):
+        workload = _workload_module_unstubbed()
+        names = [
+            getattr(var, "name", None)
+            for var in workload._workload_environment_vars([])
+        ]
+        assert "OTEL_EXPORTER_OTLP_ENDPOINT" not in names
 
 
 class TestRuntimeParamEnvVars:

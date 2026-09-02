@@ -69,6 +69,8 @@ A2A_UNAUTHENTICATED_WELL_KNOWN_ARTIFACT_ROUTE: Final[dict[str, str]] = {
 }
 # Entry-point group NAT resolves the agent's workflow through.
 NAT_PLUGIN_ENTRY_POINT_GROUP: Final[str] = "nat.plugins"
+# OTel collector base URL, forwarded from the deploy environment when set.
+OTEL_ENDPOINT_ENV_VAR: Final[str] = "OTEL_EXPORTER_OTLP_ENDPOINT"
 
 
 def _require_env(name: str) -> str:
@@ -186,6 +188,26 @@ def _runtime_param_env_vars(
     return env_vars
 
 
+def _otel_endpoint_env_var() -> list[
+    pulumi_datarobot.ArtifactSpecContainerGroupContainerEnvironmentVarArgs
+]:
+    """``OTEL_EXPORTER_OTLP_ENDPOINT`` as a container env var, when set locally.
+
+    The platform configures no OTel on a workload, and moderation guard metrics
+    read this variable directly. Empty when unset. Auth headers are not
+    forwarded -- they carry the API token, and the container builds its own.
+    """
+    endpoint = os.getenv(OTEL_ENDPOINT_ENV_VAR, "").strip()
+    if not endpoint:
+        return []
+    pulumi.info(f"Workload container telemetry: {OTEL_ENDPOINT_ENV_VAR}={endpoint}")
+    return [
+        pulumi_datarobot.ArtifactSpecContainerGroupContainerEnvironmentVarArgs(
+            name=OTEL_ENDPOINT_ENV_VAR, value=endpoint
+        )
+    ]
+
+
 def _workload_environment_vars(
     shared_runtime_parameters: list[
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs
@@ -201,6 +223,7 @@ def _workload_environment_vars(
         pulumi_datarobot.ArtifactSpecContainerGroupContainerEnvironmentVarArgs(
             name="WORKLOAD_CONTAINER_PORT", value=str(_resolve_container_port())
         ),
+        *_otel_endpoint_env_var(),
         *_runtime_param_env_vars(shared_runtime_parameters),
     ]
 
