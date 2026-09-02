@@ -1,5 +1,7 @@
 .idea/
+.claude/
 .rendered/
 .python-version
 .env*
 __pycache__/
+.DS_Store

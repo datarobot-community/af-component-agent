@@ -21,6 +21,9 @@ tasks:
     cmds:
       - task: agent:install
       - task: infra:install
+  preview:
+    cmds:
+      - task: infra:preview
   build:
     cmds:
       - task: infra:build

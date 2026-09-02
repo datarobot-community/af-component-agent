@@ -106,7 +106,7 @@ jobs:
           fi
           echo "Resolved matrix: $MATRIX"
           echo "matrix=$MATRIX" >> "$GITHUB_OUTPUT"
-  e2e:
+  e2e-custom-models:
     name: "E2E / ${{ matrix.framework }}"
     needs: setup
     # Skip on fork PRs so integration secrets are never reachable from
@@ -225,4 +225,126 @@ jobs:
             ./.rendered/agent_${{ matrix.framework }}/**/*.log
           # The tee'd console log is always written on failure, so a missing
           # file here signals something went wrong with capture — warn, not ignore.
+          if-no-files-found: warn
+
+  # The Workload API runtime (ENABLE_AGENT_ON_WORKLOAD_API=true). Separate job,
+  # not folded into the matrix above: verification is entirely different (no
+  # Playground — it POSTs to the workload's chat endpoint instead). Same matrix
+  # and the same push/PR split as `e2e-custom-models` -- full coverage on every
+  # push, path-narrowed on PRs.
+  e2e-workload-api:
+    name: "E2E / workload-api / ${{ matrix.framework }}"
+    needs: setup
+    # Same fork guard as `e2e-custom-models`: `pulumi preview` performs real provider reads
+    # (the execution environment is resolved via `ExecutionEnvironment.get`), so
+    # this job needs the integration secrets too.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+    runs-on: "ubuntu-latest"
+    environment: integration
+    # Single source of truth for the stack name so the Run step and the teardown
+    # net can never drift apart and orphan a stack. The `wapi` discriminator
+    # keeps it distinct from the framework matrix's stacks above — and since
+    # PROJECT_NAME is the stack name, it also namespaces every DataRobot asset
+    # this run creates as `[<stack>] [agent]`.
+    env:
+      E2E_PULUMI_STACK: af-component-agent-e2e-wapi-${{ matrix.framework }}-${{ github.run_id }}-${{ github.run_attempt }}
+    container:
+      image: ghcr.io/astral-sh/uv:python3.11-trixie
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        framework: ${{ fromJSON(needs.setup.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: "actions/checkout@v6"
+      - name: Setup caching
+        uses: ./.github/actions/setup-caching
+        with:
+          python-version: python3.11
+          cache-key-suffix: e2e-workload-api-${{ matrix.framework }}
+      - name: Install pulumi
+        # Same pin and SHA-256 verification as the `e2e-custom-models` job
+        # above; bump both together.
+        shell: bash
+        env:
+          PULUMI_VERSION: "3.249.0"
+          PULUMI_SHA256: "0c4acfac957f578e406a3ae9f7042c57f05c4ad9e4b1c83ba0fcf3395e2a0b74"
+        run: |
+          set -euo pipefail
+          workdir="$(mktemp -d)"
+          tarball="pulumi-v${PULUMI_VERSION}-linux-x64.tar.gz"
+          curl -fsSL -o "${workdir}/${tarball}" \
+            "https://github.com/pulumi/pulumi/releases/download/v${PULUMI_VERSION}/${tarball}"
+          echo "${PULUMI_SHA256}  ${workdir}/${tarball}" | sha256sum -c -
+          tar -xzf "${workdir}/${tarball}" -C "${workdir}"
+          echo "${workdir}/pulumi" >> "$GITHUB_PATH"
+      - name: Run Workload API E2E
+        shell: bash
+        env:
+          UV_CACHE_DIR: /.uv_cache
+          RUN_E2E: "1"
+          E2E_AGENT_FRAMEWORKS: ${{ matrix.framework }}
+          # Real `pulumi up` + platform image build + chat call only on push to
+          # main (merges); PRs stop after the plan assertions, which create
+          # nothing and take a few minutes.
+          RUN_AGENT_WORKLOAD_DEPLOY_TESTS: ${{ github.event_name == 'push' && '1' || '0' }}
+          LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"
+          DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
+          DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
+        run: |
+          uv run --all-extras pytest --import-mode=importlib -vv -s \
+            ./tests/e2e/test_agent_workload_e2e.py 2>&1 | tee "e2e-workload-api-${{ matrix.framework }}.log"
+      - name: Tear down E2E resources
+        if: always()
+        shell: bash
+        env:
+          DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
+          DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
+        run: |
+          # Same net as the `e2e-custom-models` job: destroy this run's resources on
+          # success, failure, or cancellation. The test's own `finally` covers a
+          # normal exit; this additionally covers the cancelled/killed case.
+          stack="${E2E_PULUMI_STACK}"
+          rendered="./.rendered/agent_${{ matrix.framework }}"
+          infra="${rendered}/infra"
+          if [ ! -d "$infra" ]; then
+            echo "No rendered infra dir for ${stack}; nothing to clean."
+            exit 0
+          fi
+          export PULUMI_CONFIG_PASSPHRASE=123
+          export PULUMI_HOME="${rendered}/.pulumi_home"
+          mkdir -p "$PULUMI_HOME"
+          # Re-materialize creds in case the test's finally already removed .env.
+          # DATAROBOT_API_TOKEN is load-bearing on this runtime: the artifact's
+          # dynamic provider reads it from the environment inside delete(), and
+          # it is deliberately never stored in Pulumi state.
+          {
+            echo "DATAROBOT_ENDPOINT=${DATAROBOT_ENDPOINT}"
+            echo "DATAROBOT_API_TOKEN=${DATAROBOT_API_TOKEN}"
+            echo "ENABLE_AGENT_ON_WORKLOAD_API=true"
+            echo "PULUMI_STACK=${stack}"
+            echo "PULUMI_CONFIG_PASSPHRASE=123"
+            echo "PULUMI_HOME=${PULUMI_HOME}"
+          } > "${rendered}/.env"
+          # Trace teardown commands only — kept below the cred-file write so the
+          # token and (unmasked) endpoint are never echoed into the step log.
+          set -x
+          (cd "$infra" && uv run pulumi login --local) || true
+          # More load-bearing here than on the Custom Models path: a `pulumi up`
+          # killed during a multi-minute image build leaves a stack lock behind.
+          (cd "$infra" && uv run pulumi cancel --yes --stack "$stack") || true
+          # Destroys the Workload before its Artifact (the workload depends_on
+          # the artifact); the platform refuses to delete an artifact that still
+          # backs a live workload.
+          (cd "$rendered" && uvx --from go-task-bin task destroy -- --yes --skip-preview) || true
+          (cd "$infra" && uv run pulumi stack rm -f -y "$stack") || true
+      - name: Upload E2E logs
+        if: failure() || cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-logs-workload-api-${{ matrix.framework }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            e2e-workload-api-${{ matrix.framework }}.log
+            ./.rendered/agent_${{ matrix.framework }}/**/*.log
           if-no-files-found: warn
