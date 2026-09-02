@@ -203,11 +203,11 @@ The agent's Pulumi infrastructure (`infra/infra/agent.py`) supports two deployme
 | Runtime | When | Provisions |
 |---|---|---|
 | **Custom Models** (default) | `ENABLE_AGENT_ON_WORKLOAD_API` unset or falsy | `CustomModel`, `Playground`, `LlmBlueprint`, and (when `ENABLE_AGENT_HA_MODE=true`) a `CustomModelDeployment`. |
-| **Workload API** (experimental) | `ENABLE_AGENT_ON_WORKLOAD_API=true` | An `Artifact` (image build or reference) plus a `Workload`. Serving-only — no `CustomModel`/`Playground`/`LlmBlueprint` are created. |
+| **Workload API** | `ENABLE_AGENT_ON_WORKLOAD_API=true` | An `Artifact` (image build or reference) plus a `Workload`. Serving-only — no `CustomModel`/`Playground`/`LlmBlueprint` are created. |
 
 Custom Models is the default and needs no configuration. Setting `ENABLE_AGENT_ON_WORKLOAD_API=true` selects the Workload API, whose default scenario builds the image on the platform from your agent source and needs no Docker registry of your own.
 
-The Workload API runtime is experimental and requires two DataRobot feature flags on your account, `ENABLE_WORKLOAD_API_CODE` and `ENABLE_WORKLOAD_API_AGENT`.
+Automated deployment of agents onto the Workload API runtime is experimental and requires two DataRobot feature flags on your account, `ENABLE_WORKLOAD_API_CODE` and `ENABLE_WORKLOAD_API_AGENT`.
 
 See [Deployment runtimes](./deployment-runtimes.md) for how to choose between them, a Workload API quick start, the full `WORKLOAD_*` configuration reference, and how to switch runtimes later.
 

@@ -3,7 +3,7 @@
 The agent's Pulumi infrastructure can deploy the agent onto one of two runtimes: **Custom Models** (the default) or the **Workload API**. They differ mainly in how long a deploy takes and what surrounding DataRobot resources you get. This page covers picking one, deploying on the Workload API, tuning it, and switching later.
 
 > [!IMPORTANT]
-> The Workload API runtime is **experimental**, and it needs two DataRobot feature flags enabled on your account: `ENABLE_WORKLOAD_API_CODE` and `ENABLE_WORKLOAD_API_AGENT`. Ask your DataRobot administrator to enable both before switching. Custom Models needs neither.
+> Automated deployment of agents onto the Workload API runtime is **experimental**, and it needs two DataRobot feature flags enabled on your account: `ENABLE_WORKLOAD_API_CODE` and `ENABLE_WORKLOAD_API_AGENT`. Ask your DataRobot administrator to enable both before switching. Custom Models needs neither.
 
 ---
 
