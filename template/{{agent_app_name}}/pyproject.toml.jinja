@@ -5,7 +5,7 @@ description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
 {% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% else %}requires-python = ">=3.11, <3.14"{% endif %}
 dependencies = [
-    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, auth]{% elif agent_template_framework == 'crewai' %}[crewai, dragent, auth]{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent, auth]{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent, auth]{% elif agent_template_framework == 'base' %}[dragent, auth]{% elif agent_template_framework == 'nat' %}[dragent, auth]{% else %}[core, auth]{% endif %}==0.29.20",
+    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, auth]{% elif agent_template_framework == 'crewai' %}[crewai, dragent, auth]{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent, auth]{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent, auth]{% elif agent_template_framework == 'base' %}[dragent, auth]{% elif agent_template_framework == 'nat' %}[dragent, auth]{% else %}[core, auth]{% endif %}==0.29.26.dev1523",
     "datarobot-mlops==11.1.28",
     # datarobot.core.config gives us getenv-based runtime parameter loading, plus the
     # DataRobotAppFrameworkBaseSettings and LLMConfig classes that agent/config.py and
@@ -314,6 +314,14 @@ environments = [
 # [[tool.uv.index]]
 # name = "mirror"
 # url = "https://mirror_url/"
+
+[tool.uv.sources]
+datarobot-genai = { index = "test-pypi" }
+
+[[tool.uv.index]]
+name = "test-pypi"
+url = "https://test.pypi.org/simple/"
+explicit = true
 
 [dependency-groups]
 extras = []
