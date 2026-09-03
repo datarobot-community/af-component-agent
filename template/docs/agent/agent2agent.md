@@ -9,7 +9,7 @@ To expose an agent via A2A:
 To connect an agent to a remote agent via A2A:
 
 - Uncomment the `function_groups` and `workflow.tool_names` blocks in `workflow.yaml`.
-- Run `task deploy-dev` (or `dr start`) so Pulumi provisions a MemorySpace for the agent card registry L2 cache and injects `AGENT_CARD_REGISTRY_MEMORY_SPACE_ID`. See [Central registry (`registry`)](#central-registry-registry).
+- Deploy the agent. On a hosted deployment, `datarobot-genai` provisions the agent card registry L2 MemorySpace automatically on the enclave (no `task deploy-dev` step). See [Central registry (`registry`)](#central-registry-registry).
 
 Enable the `ENABLE_RUNTIME_PARAMETERS_IMPROVEMENTS` feature flag in DataRobot to use environment variables in `workflow.yaml` files.
 
@@ -77,10 +77,14 @@ Registry lookups use a two-tier cache:
 | L1 | In-process memory | Single worker / replica |
 | L2 | DataRobot MemorySpace (`AGENT_CARD_REGISTRY_MEMORY_SPACE_ID`) | Shared across replicas and pod restarts |
 
+The L2 cache uses the MemorySpace Session API, which is covered by `ENABLE_GENAI_EXPERIMENTATION` (already enabled for agent deployments). It does not require `ENABLE_AGENTIC_MEMORY_API` — that flag is only for mem0-compatible [agent memory](./agent-memory.md).
+
+On hosted deployments (custom model or workload), `datarobot-genai` creates or adopts a MemorySpace for the registry L2 cache at agent startup when `AGENT_CARD_REGISTRY_MEMORY_SPACE_ID` is unset. The space is scoped to the deployment or workload via a `deduplication_key`, so replicas share one cache without Pulumi wiring. Locally, only in-process L1 caching is used unless you set `AGENT_CARD_REGISTRY_MEMORY_SPACE_ID` yourself.
+
 When `AGENT_CARD_REGISTRY_MEMORY_SPACE_ID` is set, resolved agent cards are written through to the MemorySpace-backed L2 cache so every replica shares the same registry snapshot. If a registry refresh fails, a card may still be served from cache while it remains within `AGENT_CARD_REGISTRY_CACHE_TTL` (stale-if-error).
 
 > [!IMPORTANT]
-> When you connect to remote agents via A2A (`authenticated_a2a_client` in `function_groups`), Pulumi provisions a dedicated MemorySpace for the registry L2 cache and injects `AGENT_CARD_REGISTRY_MEMORY_SPACE_ID` as a runtime parameter. Run `task deploy-dev` (or `dr start`) after uncommenting remote A2A client blocks so the space is created and the ID is written to `.env`. This cache is separate from [agent memory](./agent-memory.md) (`AGENT_MEMORY_SPACE_ID`).
+> When you connect to remote agents via A2A (`authenticated_a2a_client` in `function_groups`), the registry L2 MemorySpace is provisioned automatically on deploy. This cache is separate from [agent memory](./agent-memory.md) (`AGENT_MEMORY_SPACE_ID`), which Pulumi still provisions when `use_agent_memory` is `datarobot_memory_service`.
 
 Lookup by deployment ID — use when the DataRobot deployment ID of the remote agent is known:
 
@@ -117,7 +121,7 @@ The registry lookup honors the following environment variables:
 | `AGENT_CARD_REGISTRY_CACHE_TTL` | No | Cache TTL in seconds. Default `86400` (24 hours). Set to `0` to disable caching. |
 | `AGENT_CARD_REGISTRY_TIMEOUT` | No | HTTP timeout in seconds for registry requests. Default `30`. |
 | `AGENT_CARD_REGISTRY_ON_DUPLICATE` | No | Resolution strategy when multiple cards share the same external ID: `first` (default) keeps the earliest registered card, `last` keeps the most recently registered card, `error` raises an exception. `first` is recommended for stability — `last` and `error` may alter agent behavior if a duplicate is introduced later. |
-| `AGENT_CARD_REGISTRY_MEMORY_SPACE_ID` | No | DataRobot MemorySpace ID for the registry L2 cache. Provisioned automatically when remote A2A clients are configured in `workflow.yaml`; shared across replicas. When unset, only in-process L1 caching is used. |
+| `AGENT_CARD_REGISTRY_MEMORY_SPACE_ID` | No | DataRobot MemorySpace ID for the registry L2 cache. Provisioned automatically on hosted deployments when unset; optional override for local testing. When unset locally, only in-process L1 caching is used. |
 
 
 ## Configuration reference
