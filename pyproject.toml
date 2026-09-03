@@ -36,6 +36,14 @@ constraint-dependencies = [
 ]
 # cve-sync:end
 
+[tool.uv.sources]
+datarobot-genai = { index = "test-pypi" }
+
+[[tool.uv.index]]
+name = "test-pypi"
+url = "https://test.pypi.org/simple/"
+explicit = true
+
 [tool.pytest.ini_options]
 markers = [
     "e2e: end-to-end tests that require external services (DataRobot, Pulumi, etc.)",
