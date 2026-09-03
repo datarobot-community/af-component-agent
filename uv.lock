@@ -6,6 +6,16 @@ resolution-markers = [
     "python_full_version < '3.12'",
 ]
 
+[manifest]
+constraints = [
+    { name = "idna", specifier = ">=3.15" },
+    { name = "openai", specifier = ">=2.30.0" },
+    { name = "pygments", specifier = ">=2.20.0" },
+    { name = "pytest", specifier = ">=9.0.3" },
+    { name = "requests", specifier = ">=2.33.0" },
+    { name = "urllib3", specifier = ">=2.7.0" },
+]
+
 [[package]]
 name = "af-component-agent"
 version = "0.1.0"
