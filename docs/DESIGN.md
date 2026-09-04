@@ -65,8 +65,8 @@ template/{{agent_app_name}}/
 │       └── test_register_dragent.py.j2
 ├── pyproject.toml.jinja
 ├── uv.lock.jinja
-├── uvlock_templates/
-│   └── uvlock_<framework>.j2
+├── locks/                          # Pre-baked uv.lock, one per distinct resolution
+│   └── <variant>/uv.lock           #   (base, crewai, langgraph, llamaindex)
 ├── Taskfile.yml.jinja
 ├── cli.py.jinja
 ├── dev.py                          # Local development entry point (static)
@@ -167,8 +167,11 @@ The test task renders the template with `uvx copier copy`, installs dependencies
 
 Adding a new framework requires the following steps:
 
-1. Add a partial in each `*_templates/` directory (agent, test, workflow, register, uvlock).
+1. Add a partial in each `*_templates/` directory (agent, test, workflow, register).
 2. Update the corresponding `.jinja` router to include the new partial.
+   Also point `uv.lock.jinja` at a lock. Add a new one under `locks/` only if the
+   framework's dependency graph actually differs; otherwise reuse an existing
+   variant, as `nat` reuses `base`.
 3. Add the framework to `copier.yml` choices.
 4. Add a `task test-<newframework>` entry in `Taskfile.yml`.
 5. Run the test loop until green.

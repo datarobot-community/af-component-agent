@@ -63,14 +63,18 @@ tasks:
     desc: "Render template"
     vars:
       USE_MEMORY: '{{.USE_MEMORY| default "none"}}'
+      # The rendered app folder and `[project].name`. Defaults to copier's own
+      # default so every existing caller renders exactly where it did before.
+      # `update-lock-file` overrides it, and only it: see LOCK_APP_NAME there.
+      APP_NAME: '{{.APP_NAME | default "agent"}}'
       AGENT_TEMPLATE_FRAMEWORK: '{{ trimSuffix "_memory" .AGENT }}'
     cmds:
-      - echo "Rendering template {{.AGENT}}"
+      - echo "Rendering template {{.AGENT}} as {{.APP_NAME}}"
       # Clean up the existing rendered directory except for .venv to speed up rendering and avoid conflict checks
       - cd ./$RENDER_DIR/agent_{{.AGENT}}/ && [ -d . ] && find . -mindepth 1 -maxdepth 1 ! -name '.venv' -exec rm -rf {} + || true
       - mkdir -p ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/
       - cp ./fixtures/.datarobot/answers/llm-llm.yml ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/llm-llm.yml
-      - uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_template_framework={{.AGENT_TEMPLATE_FRAMEWORK}} --data use_agent_memory={{.USE_MEMORY}} --vcs-ref=HEAD
+      - uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_app_name={{.APP_NAME}} --data agent_template_framework={{.AGENT_TEMPLATE_FRAMEWORK}} --data use_agent_memory={{.USE_MEMORY}} --vcs-ref=HEAD
       - cp ./fixtures/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/Taskfile.yml
       - mkdir -p ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra
       - cp ./fixtures/infra/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/infra/Taskfile.yml
@@ -272,31 +276,72 @@ tasks:
       # - task: test-cli-streaming
 
   update-lock-file:
-    desc: "Update lock file for {{.AGENT}}"
+    desc: "Regenerate the pre-baked uv.lock for {{.AGENT}} (base, crewai, langgraph, llamaindex)"
+    vars:
+      # Render under the placeholder name so `uv lock` writes the placeholder into
+      # the lock itself and the artifact can be copied out verbatim.
+      #
+      # This replaces a `sed 's/^name = "agent"$/.../'` over the finished lock.
+      # That anchored on a package name, not on the root project, so it would have
+      # rewritten any third-party package called `agent` as well -- and `agent` is
+      # a real name on PyPI. Nothing is rewritten now, so there is nothing to
+      # mis-target.
+      #
+      # uv normalises `[project].name` when it writes a lock, so the underscore
+      # here lands as `af-agent-placeholder` in the file. uv.lock.jinja swaps that
+      # exact string for the customer's normalised name.
+      LOCK_APP_NAME: af_agent_placeholder
+      # The app folder copier renders is named after the app, so this follows
+      # LOCK_APP_NAME rather than repeating it.
+      LOCK_DIR: '$RENDER_DIR/agent_{{.AGENT}}/{{.LOCK_APP_NAME}}'
     cmds:
       - echo "Updating lock file for {{.AGENT}}"
       - task: render-template
         vars:
           AGENT: "{{.AGENT}}"
+          APP_NAME: "{{.LOCK_APP_NAME}}"
           USE_MEMORY: '{{.USE_MEMORY| default "none"}}'
       - |
           if [ "$UPGRADE_LOCK" = "1" ]; then
-            uv lock -U --directory $RENDER_DIR/agent_{{.AGENT}}/agent
+            uv lock -U --directory {{.LOCK_DIR}}
           else
-            uv lock --directory $RENDER_DIR/agent_{{.AGENT}}/agent
+            uv lock --directory {{.LOCK_DIR}}
           fi
-      - cat $RENDER_DIR/agent_{{.AGENT}}/agent/uv.lock | sed 's/^name = "agent"$/name = "{{`{{agent_app_name}}`}}"/' > template/{{`{{agent_app_name}}`}}/uvlock_templates/uvlock_{{.AGENT}}.j2
+      # Copied verbatim. The artifact under locks/ is a real uv.lock, not a
+      # template, and uv.lock.jinja includes it through jinja -- so a stray
+      # delimiter in it would either fail the render or silently eat content.
+      # Assert there is none rather than trusting that a lock never grows one.
+      # (Built as a shell variable to keep a literal `{{` out of this taskfile,
+      # which go-task would try to expand itself.)
+      - |
+          set -eu
+          SRC="{{.LOCK_DIR}}/uv.lock"
+          DEST="template/{{`{{agent_app_name}}`}}/locks/{{.AGENT}}/uv.lock"
+          BRACE='{'
+          if grep -q "$BRACE$BRACE" "$SRC" || grep -q "$BRACE%" "$SRC"; then
+            echo "ERROR: $SRC contains a jinja delimiter; locks/ artifacts must be literal TOML." >&2
+            exit 1
+          fi
+          if ! grep -q '^name = "af-agent-placeholder"$' "$SRC"; then
+            echo "ERROR: $SRC has no af-agent-placeholder root package name." >&2
+            echo "       uv.lock.jinja has nothing to substitute; check LOCK_APP_NAME." >&2
+            exit 1
+          fi
+          mkdir -p "$(dirname "$DEST")"
+          cp "$SRC" "$DEST"
+          echo "Wrote $DEST"
 
   update-lock-file-all:
-    desc: "Update lock file for all agents"
+    desc: "Regenerate every pre-baked uv.lock"
+    # One entry per distinct resolution, not per framework. `nat` resolves
+    # identically to `base`, and the memory providers add no dependencies, so both
+    # share base's lock -- see the header of uv.lock.jinja. Do not add an entry
+    # back without first confirming the graph actually differs; the copies this
+    # replaced had drifted apart on their own.
     cmds:
       - task: update-lock-file
         vars:
           AGENT: "base"
-      - task: update-lock-file
-        vars:
-          AGENT: "base_memory"
-          USE_MEMORY: "mem0"
       - task: update-lock-file
         vars:
           AGENT: "crewai"
@@ -306,9 +351,6 @@ tasks:
       - task: update-lock-file
         vars:
           AGENT: "llamaindex"
-      - task: update-lock-file
-        vars:
-          AGENT: "nat"
 
   run-cli:
     desc: "Run CLI"

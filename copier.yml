@@ -73,6 +73,11 @@ _answers_file: ".datarobot/answers/agent-{{ agent_app_name }}.yml"
 _exclude:
     - "*.j2"
     - "*_templates"
+    # Pre-baked uv.lock artifacts, one per distinct resolution. uv.lock.jinja
+    # includes the matching one and renders it to the project's uv.lock, so the
+    # directory itself must never be copied out. Excluding from the copy does not
+    # hide them from jinja's loader, which is what makes that include work.
+    - "locks"
     # NAT agents are defined declaratively in workflow.yaml, not in code, so
     # there is no agent implementation module to generate.
     - "{% if agent_template_framework == 'nat' %}myagent.py{% endif %}"
