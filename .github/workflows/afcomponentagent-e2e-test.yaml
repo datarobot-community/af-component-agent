@@ -49,19 +49,22 @@ jobs:
           filters: |
             base:
               - 'template/**/*_base.*'
-              - 'template/**/uvlock_base*.j2'
+              - 'template/**/locks/base/**'
             crewai:
               - 'template/**/*_crewai.*'
-              - 'template/**/uvlock_crewai*.j2'
+              - 'template/**/locks/crewai/**'
             langgraph:
               - 'template/**/*_langgraph.*'
-              - 'template/**/uvlock_langgraph*.j2'
+              - 'template/**/locks/langgraph/**'
             llamaindex:
               - 'template/**/*_llamaindex.*'
-              - 'template/**/uvlock_llamaindex*.j2'
+              - 'template/**/locks/llamaindex/**'
             nat:
               - 'template/**/*_nat.*'
-              - 'template/**/uvlock_nat*.j2'
+              # nat has no lock of its own: it resolves identically to base and
+              # shares that file, so a change there is a change to nat's
+              # dependencies and has to run this leg too.
+              - 'template/**/locks/base/**'
             core:
               - 'template/**/*.jinja'
               # Shared multi-framework partials (e.g. custom_default.py.j2 renders

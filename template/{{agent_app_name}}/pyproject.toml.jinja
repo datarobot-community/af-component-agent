@@ -1,3 +1,30 @@
+{#-
+datarobot-genai extras per framework, as a map rather than an inline if/elif
+chain. Adding a framework is one row, and the dependency line below stays short
+enough to read.
+
+Deliberately a jinja `{% set %}` and not a copier question or a computed answer.
+cve-sync renders this file with plain jinja2 under StrictUndefined and knows
+nothing about copier, so every *variable* this template reads has to be declared
+in cve-sync's `policy/copier.yaml` before this repo can merge -- that is the
+cve-sync-then-here merge order we already pay for `agent_app_name` and
+`agent_template_framework`. Names bound by `{% set %}` are not variables to
+jinja's undeclared-variable check, so this costs no new cross-repo ordering.
+Keep new template logic on this side of that line.
+
+`core` is the fallback rather than a map entry on purpose: it covers any framework
+value that reaches here without its own row, including one added to copier.yml
+before this map.
+-#}
+{%- set GENAI_EXTRAS = {
+      'docker':     ['crewai', 'dragent', 'drmcp', 'drtools', 'langgraph', 'llamaindex', 'auth'],
+      'crewai':     ['crewai', 'dragent', 'auth'],
+      'langgraph':  ['langgraph', 'dragent', 'auth'],
+      'llamaindex': ['llamaindex', 'dragent', 'auth'],
+      'base':       ['dragent', 'auth'],
+      'nat':        ['dragent', 'auth'],
+    } -%}
+{%- set genai_extras = GENAI_EXTRAS.get(agent_template_framework, ['core', 'auth']) -%}
 [project]
 name = "{{ agent_app_name }}"
 version = "0.1.0"
@@ -5,7 +32,7 @@ description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
 {% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% else %}requires-python = ">=3.11, <3.14"{% endif %}
 dependencies = [
-    "datarobot-genai{% if agent_template_framework == 'docker' %}[crewai, dragent, drmcp, drtools, langgraph, llamaindex, auth]{% elif agent_template_framework == 'crewai' %}[crewai, dragent, auth]{% elif agent_template_framework == 'langgraph' %}[langgraph, dragent, auth]{% elif agent_template_framework == 'llamaindex' %}[llamaindex, dragent, auth]{% elif agent_template_framework == 'base' %}[dragent, auth]{% elif agent_template_framework == 'nat' %}[dragent, auth]{% else %}[core, auth]{% endif %}==0.29.20",
+    "datarobot-genai[{{ genai_extras | join(', ') }}]==0.29.20",
     "datarobot-mlops==11.1.28",
     # datarobot.core.config gives us getenv-based runtime parameter loading, plus the
     # DataRobotAppFrameworkBaseSettings and LLMConfig classes that agent/config.py and
