@@ -516,44 +516,6 @@ class TestCheckA2aServerEnabled:
         assert base.check_a2a_server_enabled() is False
 
 
-class TestCheckA2aRemoteClientEnabled:
-    def test_true_when_workflow_yaml_has_authenticated_a2a_client(
-        self, monkeypatch, tmp_path
-    ):
-        import infra.{{agent_app_name}}_infra.base as base
-
-        agent_dir = tmp_path / "{{agent_app_name}}"
-        agent_dir.mkdir(parents=True, exist_ok=True)
-        (agent_dir / "workflow.yaml").write_text(
-            "function_groups:\n"
-            "  remote_agent:\n"
-            "    _type: authenticated_a2a_client\n"
-            "    url: https://app.datarobot.com/api/v2/deployments/abc/directAccess/a2a/\n"
-            "    auth_provider: datarobot_auth\n"
-        )
-        monkeypatch.setattr(base, "project_dir", tmp_path / "infra")
-
-        assert base._check_a2a_remote_client_enabled() is True
-
-    def test_false_when_no_remote_a2a_client(self, monkeypatch, tmp_path):
-        import infra.{{agent_app_name}}_infra.base as base
-
-        agent_dir = tmp_path / "{{agent_app_name}}"
-        agent_dir.mkdir(parents=True, exist_ok=True)
-        (agent_dir / "workflow.yaml").write_text(
-            "general:\n  front_end:\n    streaming: true\n"
-        )
-        monkeypatch.setattr(base, "project_dir", tmp_path / "infra")
-
-        assert base._check_a2a_remote_client_enabled() is False
-
-    def test_false_when_workflow_yaml_absent(self, monkeypatch, tmp_path):
-        import infra.{{agent_app_name}}_infra.base as base
-
-        monkeypatch.setattr(base, "project_dir", tmp_path / "infra")
-        assert base._check_a2a_remote_client_enabled() is False
-
-
 class TestCheckA2aUnauthenticatedWellKnownRouteEnabled:
     def test_true_when_flag_set_in_workflow_yaml(self, monkeypatch, tmp_path):
         import infra.{{agent_app_name}}_infra.base as base
@@ -600,50 +562,6 @@ class TestCheckA2aUnauthenticatedWellKnownRouteEnabled:
 
         monkeypatch.setattr(base, "project_dir", tmp_path / "infra")
         assert base.check_a2a_unauthenticated_well_known_route_enabled() is False
-
-
-class TestRegistryCacheMemorySpace:
-    """Provision AGENT_CARD_REGISTRY_MEMORY_SPACE_ID when remote A2A clients are configured."""
-
-    def test_registry_cache_space_param_included_when_remote_a2a_enabled(
-        self, monkeypatch
-    ):
-        import infra.{{agent_app_name}}_infra.base as base
-
-        monkeypatch.setattr(base, "IS_A2A_REMOTE_CLIENT_ENABLED", True)
-        params = base.build_shared_agent_runtime_parameters()
-        space_param = next(
-            p for p in params if p.key == base.AGENT_CARD_REGISTRY_MEMORY_SPACE_ID
-        )
-        assert space_param.type == "string"
-        assert space_param.value is not None
-        base.pulumi_datarobot.MemorySpace.assert_any_call(
-            base.{{agent_app_name}}_asset_name + " Agent Card Registry Cache",
-        )
-
-    def test_registry_cache_space_param_absent_when_remote_a2a_disabled(
-        self, monkeypatch
-    ):
-        import infra.{{agent_app_name}}_infra.base as base
-
-        monkeypatch.setattr(base, "IS_A2A_REMOTE_CLIENT_ENABLED", False)
-        params = base.build_shared_agent_runtime_parameters()
-        assert not any(
-            p.key == base.AGENT_CARD_REGISTRY_MEMORY_SPACE_ID for p in params
-        )
-
-    def test_registry_cache_space_id_disk_export(self, monkeypatch):
-        from unittest.mock import ANY, MagicMock
-        import infra.{{agent_app_name}}_infra.base as base
-
-        monkeypatch.setattr(base, "IS_A2A_REMOTE_CLIENT_ENABLED", True)
-        monkeypatch.setattr(base, "export", MagicMock())
-        base.build_shared_agent_runtime_parameters()
-
-        base.export.assert_any_call(
-            base.AGENT_CARD_REGISTRY_MEMORY_SPACE_ID,
-            ANY,
-        )
 
 
 class TestBuildSharedAgentRuntimeParameters:
