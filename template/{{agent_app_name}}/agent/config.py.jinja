@@ -49,8 +49,29 @@ class Config(DataRobotAppFrameworkBaseSettings):  # type: ignore[misc]
     {{ _external_data.llm.llm_app_name|replace("-", "_") }}_nim_deployment_id: str | None = None
     {{ _external_data.llm.llm_app_name|replace("-", "_") }}_use_datarobot_llm_gateway: bool = True
 
-    mcp_deployment_id: str | None = None
-    external_mcp_url: str | None = None
+    # MCP servers. Each server is one set of "{name}_mcp_*" fields, exactly like the LLM
+    # fields above. Declaring a "{name}_mcp_url" field is all it takes to add a server:
+    # `Config().resolve_all_mcp_configs()` finds every field with that suffix and hands
+    # back one MCPConfig per configured server. Nothing needs to be registered.
+    #
+    # Everything the connection needs is a field here, so changing a URL, a header, or a
+    # timeout means editing this file. Each field also still reads from its environment
+    # variable ({NAME}_MCP_URL and so on), so deployments can override without a code
+    # change, but the value in this file is what the agent runs with by default.
+
+    # An MCP server hosted inside DataRobot. `use_datarobot_auth` sends
+    # `datarobot_api_token` as a bearer token, which is what these servers expect.
+    datarobot_mcp_url: str | None = None
+    datarobot_mcp_use_datarobot_auth: bool = True
+
+    # A third-party MCP server, carrying its own credentials in its own headers. Set the
+    # URL to switch it on. Shown with the full field set; every field except the URL is
+    # optional and falls back to the MCPConfig default.
+    weather_mcp_url: str | None = None
+    weather_mcp_transport: str = "streamable-http"
+    weather_mcp_headers: dict[str, str] = Field(default_factory=dict)
+    weather_mcp_timeout: float = 30.0
+    weather_mcp_sse_read_timeout: float = 300.0
 {%- if use_agent_memory == 'mem0' %}
     mem0_api_key: str | None = None
 {%- endif %}
