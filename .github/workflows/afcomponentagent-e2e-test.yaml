@@ -238,7 +238,11 @@ jobs:
     # Same fork guard as `e2e-custom-models`: `pulumi preview` performs real provider reads
     # (the execution environment is resolved via `ExecutionEnvironment.get`), so
     # this job needs the integration secrets too.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+
+    # disable this job until prod has agent workload enabled
+    if: false
+#    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+
     runs-on: "ubuntu-latest"
     environment: integration
     # Single source of truth for the stack name so the Run step and the teardown
