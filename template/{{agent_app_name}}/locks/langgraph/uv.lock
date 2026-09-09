@@ -152,7 +152,7 @@ wheels = [
 ]
 
 [[package]]
-name = "{{agent_app_name}}"
+name = "af-agent-placeholder"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [

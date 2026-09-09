@@ -4,13 +4,13 @@ on:
   push:
     branches: ["main"]
     paths:
-      - "template/**/uvlock_templates/**"
+      - "template/**/locks/**"
       - "template/**/pyproject.toml.jinja"
       - ".github/workflows/afcomponentagent-docker-build.yaml"
   pull_request:
     branches: ["main"]
     paths:
-      - "template/**/uvlock_templates/**"
+      - "template/**/locks/**"
       - "template/**/pyproject.toml.jinja"
       - ".github/workflows/afcomponentagent-docker-build.yaml"
 concurrency:
