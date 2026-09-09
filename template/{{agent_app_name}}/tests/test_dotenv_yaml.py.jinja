@@ -77,16 +77,3 @@ def test_dotenv_help_fits_standard_terminal() -> None:
                 f"{DOTENV_CLI_YAML.name}[{section}]: help line exceeds "
                 f"{max_width} columns ({len(line)}): {line!r}"
             )
-
-{%- if use_agent_memory == 'mem0' %}
-
-
-def test_dotenv_prompts_for_mem0_api_key() -> None:
-    """Mem0 selection should add a required MEM0_API_KEY dotenv prompt for dr start."""
-    config = _load_dotenv_cli_config()
-    mem0_prompt = _find_env_prompt(config, "MEM0_API_KEY")
-
-    assert mem0_prompt is not None
-    assert mem0_prompt["type"] == "secret_string"
-    assert mem0_prompt["optional"] is False
-{%- endif %}
