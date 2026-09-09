@@ -129,7 +129,7 @@ tasks:
           AGENT: "{{.AGENT}}"
 
   docker_update_reqs:
-    desc: "Regenerate a genai-agents drop-in environment from the template (AGENT_PATH=<env dir> [VERSION=3.11])"
+    desc: "Regenerate a genai-agents drop-in environment from the template (AGENT_PATH=<env dir> [VERSION=3.11|3.13])"
     # datarobot-user-models ships one genai-agents environment per interpreter:
     # python311_genai_agents is pinned to 3.11, and python3_genai_agents ("Python
     # 3") tracks the current Python, which is 3.13 today. Both render from this

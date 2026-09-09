@@ -23,14 +23,18 @@ The docker environment is locked to one interpreter, chosen by
 `task docker_update_reqs` with `-D python_version`. Every other framework keeps
 the wide range, because a generated agent has to import under all of it.
 
-One row per supported interpreter, in the same style as the map above. Both
-values are spelled out rather than derived, so adding an interpreter is one row
-and an unsupported version fails the render by name instead of emitting a bound
-that only looks plausible.
+3.11 and 3.13 only, and 3.12 is deliberately absent rather than missing: CPython
+is no longer patching some of the CVEs that AI-assisted research is turning up on
+3.11 and 3.12, and is fixing them on 3.13+ only. Since CVE exposure is the whole
+reason we move interpreters, 3.12 buys nothing and we skip it outright. Do not
+add it back for symmetry.
+
+Both values are spelled out per row rather than derived, so an unsupported
+version fails the render by name instead of emitting a bound that only looks
+plausible.
 -#}
 {%- set DOCKER_PYTHON = {
       '3.11': {'requires': '>=3.11, <3.12', 'ruff': 'py311'},
-      '3.12': {'requires': '>=3.12, <3.13', 'ruff': 'py312'},
       '3.13': {'requires': '>=3.13, <3.14', 'ruff': 'py313'},
     } -%}
 {%- set docker_python = DOCKER_PYTHON[python_version | default('3.11')] -%}
