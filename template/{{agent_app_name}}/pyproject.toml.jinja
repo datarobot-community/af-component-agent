@@ -18,14 +18,27 @@ before this map.
       'nat':        ['dragent', 'auth'],
     } -%}
 {%- set genai_extras = GENAI_EXTRAS.get(agent_template_framework, ['core', 'auth']) -%}
+{#-
+The docker environment is locked to one interpreter, chosen by
+`task docker_update_reqs` with `-D python_version`. Every other framework keeps
+the wide range, because a generated agent has to import under all of it.
+
+3.11 and 3.13 only, and 3.12 is deliberately absent rather than missing: CVEs are
+only being fixed in 3.13+ now, so there is no reason to support 3.12.
+-#}
+{%- set DOCKER_PYTHON = {
+      '3.11': {'requires': '>=3.11, <3.12', 'ruff': 'py311'},
+      '3.13': {'requires': '>=3.13, <3.14', 'ruff': 'py313'},
+    } -%}
+{%- set docker_python = DOCKER_PYTHON[python_version | default('3.11')] -%}
 [project]
 name = "{{ agent_app_name }}"
 version = "0.1.0"
 description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
-{% if agent_template_framework == "docker" %}requires-python = ">=3.11, <3.12"{% else %}requires-python = ">=3.11, <3.14"{% endif %}
+{% if agent_template_framework == "docker" %}requires-python = "{{ docker_python.requires }}"{% else %}requires-python = ">=3.11, <3.14"{% endif %}
 dependencies = [
-    "datarobot-genai[{{ genai_extras | join(', ') }}]==0.29.31",
+    "datarobot-genai[{{ genai_extras | join(', ') }}]==0.29.34",
     "datarobot-mlops==11.1.28",
     # datarobot.core.config gives us getenv-based runtime parameter loading, plus the
     # DataRobotAppFrameworkBaseSettings and LLMConfig classes that agent/config.py and
@@ -111,7 +124,7 @@ exclude = [
 line-length = 88
 indent-width = 4
 
-target-version = "py311"
+target-version = "{% if agent_template_framework == "docker" %}{{ docker_python.ruff }}{% else %}py311{% endif %}"
 
 [tool.ruff.lint]
 # Enable Pyflakes (`F`) and a subset of the pycodestyle (`E`)  codes by default.
