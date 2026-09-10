@@ -129,20 +129,40 @@ tasks:
           AGENT: "{{.AGENT}}"
 
   docker_update_reqs:
-    desc: "Update Docker requirements pyproject.toml from jinja template"
+    desc: "Regenerate a genai-agents drop-in environment from the template (AGENT_PATH=<env dir> [VERSION=3.11|3.13])"
+    # datarobot-user-models ships one genai-agents environment per interpreter:
+    # python311_genai_agents is pinned to 3.11, and python3_genai_agents ("Python
+    # 3") tracks the current Python, which is 3.13 today. Both render from this
+    # repo's template, so VERSION picks the interpreter that the pyproject, the
+    # lock and the requirements.txt are all built against.
     vars:
-      genai_agents_path: "{{.AGENT_PATH}}"
+      PYTHON_VERSION: '{{.VERSION | default "3.11"}}'
+      TEMPLATE: 'template/{{"{{"}}agent_app_name{{"}}"}}/pyproject.toml.jinja'
+    requires:
+      vars: [AGENT_PATH]
+    preconditions:
+      - sh: 'test -d "{{.AGENT_PATH}}"'
+        msg: |
+          AGENT_PATH must be an existing drop-in environment directory:
+            task docker_update_reqs AGENT_PATH=/path/to/datarobot-user-models/public_dropin_environments/python311_genai_agents
+            task docker_update_reqs AGENT_PATH=/path/to/datarobot-user-models/public_dropin_environments/python3_genai_agents VERSION=3.13
     cmds:
-      - |
-        if [ -z "{{.AGENT_PATH}}" ]; then
-          echo "AGENT_PATH is not set. Please set AGENT_PATH to the path of the genai-agents repository."
-          echo "task docker_update_reqs AGENT_PATH=/path/to/datarobot-user-models/public_dropin_environments/python311_genai_agents"
-          exit 1
-        fi
-      - uv run jinja -D agent_app_name DockerContext -D agent_template_framework docker template/{{"{{"}}agent_app_name{{"}}"}}/pyproject.toml.jinja -o {{.AGENT_PATH}}/pyproject.toml
-      - cd {{.AGENT_PATH}} && uv lock --no-upgrade && uv sync
+      - echo "Updating {{.AGENT_PATH}} for Python {{.PYTHON_VERSION}}"
+      # An unsupported VERSION fails here: the template's DOCKER_PYTHON map is
+      # the list of interpreters this task can build for.
+      - uv run jinja -D agent_app_name DockerContext -D agent_template_framework docker -D python_version {{.PYTHON_VERSION}} {{.TEMPLATE}} -o {{.AGENT_PATH}}/pyproject.toml
+      # --no-upgrade on purpose. Packages move when datarobot-genai bumps them or
+      # a cve-sync floor forces them up, never just because a newer release
+      # exists: the agentic packages iterate fast enough that a free re-resolve is
+      # a reliable way to break the environment.
+      #
+      # --python is also the check on the render: uv refuses an interpreter that
+      # the rendered requires-python does not allow, so a VERSION that failed to
+      # reach the template cannot silently relock against the wrong Python. uv
+      # sync replaces a venv left behind by a different interpreter.
+      - cd {{.AGENT_PATH}} && uv lock --python={{.PYTHON_VERSION}} --no-upgrade && uv sync --python={{.PYTHON_VERSION}}
       # This command is temporary. It is using pip compile to produce a truncated requirements.txt without dependencies to avoid overloading the HHI installer.
-      - cd {{.AGENT_PATH}} && uv pip compile --python=3.11 --python-platform=x86_64-manylinux_2_28 --no-header --no-annotate --no-deps --extra agentic_playground --output-file=requirements.txt pyproject.toml
+      - cd {{.AGENT_PATH}} && uv pip compile --python={{.PYTHON_VERSION}} --python-platform=x86_64-manylinux_2_28 --no-header --no-annotate --no-deps --extra agentic_playground --output-file=requirements.txt pyproject.toml
       # Need to extend support for larger requirements.txt files to enable this.
       # - cd {{.AGENT_PATH}} && uv pip freeze > {{.AGENT_PATH}}/requirements.txt
       # - cat {{.AGENT_PATH}}/requirements.txt
