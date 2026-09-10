@@ -7,18 +7,18 @@ This is a template for DataRobot Agents.
 requires-python = ">=3.11"
 
 dependencies = [
-    "datarobot-pulumi-utils>=0.1.6",
-    "pulumi>=3.252.0",
-    "pulumi-datarobot>=0.11.1",
-    "jinja2>=3.1.5,<4.0",
-    "pytz>=2024.1" # Temporary fix for datarobot pandas issue
+    "datarobot-pulumi-utils>=0.1.8",
+    "pulumi>=3.261.0",
+    "pulumi-datarobot>=0.11.3",
+    "jinja2>=3.1.6,<4.0",
+    "pytz>=2026.3" # Temporary fix for datarobot pandas issue
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest-cov>=6.1.1",
-    "pytest>=7.4.0",
-    "mypy>=1.8.0",
-    "ruff>=0.3.0",
-    "types-PyYAML>=6.0.12"
+    "pytest-cov>=7.1.0",
+    "pytest>=9.1.1",
+    "mypy>=2.3.1",
+    "ruff>=0.16.6",
+    "types-PyYAML>=6.0.12.20260906"
 ]
