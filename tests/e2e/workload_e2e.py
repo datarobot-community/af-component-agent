@@ -133,6 +133,26 @@ _TERMINAL_WORKLOAD_STATUSES = frozenset({"failed", "error", "stopped", "deleted"
 _RUNNING_WORKLOAD_STATUSES = frozenset({"running", "active", "ready"})
 
 
+# --- Debug logging -----------------------------------------------------------
+
+
+def _pulumi_debug_flags() -> list[str]:
+    """`-v=<level> --logtostderr`, if `PULUMI_LOG_LEVEL` is set; `[]` otherwise.
+
+    TEMPORARY, for debugging the push-triggered workload deploy on this branch
+    (see the `on.push.branches` override in the E2E workflow). pulumi's CLI has
+    no `PULUMI_LOG_LEVEL` env var of its own -- verbosity is a `-v`/`--verbose`
+    flag, and `--logtostderr` is what actually surfaces it (plain `-v` alone
+    writes to a temp file and prints nothing). Translating the env var here
+    keeps the knob at the one place CI sets env vars, without silently no-oping
+    if someone reaches for `PULUMI_LOG_LEVEL` out of Terraform habit.
+    """
+    level = os.environ.get("PULUMI_LOG_LEVEL", "").strip()
+    if not level:
+        return []
+    return [f"-v={level}", "--logtostderr"]
+
+
 # --- Pulumi preview digest --------------------------------------------------
 
 
@@ -251,7 +271,7 @@ def _assert_no_pending_changes(digest: dict[str, Any]) -> None:
 def _run_preview(*, rendered_dir: Path, label: str) -> dict[str, Any]:
     fprint(f"Running `pulumi preview` ({label})")
     raw = run_cmd(
-        task_cmd("preview", "--", "--json"),
+        task_cmd("preview", "--", "--json", *_pulumi_debug_flags()),
         cwd=rendered_dir,
         capture=True,
         timeout_seconds=PREVIEW_TIMEOUT_S,
@@ -385,7 +405,9 @@ def _cleanup_workload_e2e(
             check=False,
         )
         run_cmd(
-            task_cmd("destroy", "--", "--yes", "--skip-preview"),
+            task_cmd(
+                "destroy", "--", "--yes", "--skip-preview", *_pulumi_debug_flags()
+            ),
             cwd=rendered_dir,
             check=False,
             timeout_seconds=DESTROY_TIMEOUT_S,
@@ -589,7 +611,7 @@ def run_workload_agent_e2e(
         # full C2W chain: source archive -> upload -> artifact create -> build
         # trigger -> build poll -> workload create.
         run_cmd(
-            task_cmd("deploy", "--", "--yes", "--skip-preview"),
+            task_cmd("deploy", "--", "--yes", "--skip-preview", *_pulumi_debug_flags()),
             cwd=rendered_dir,
             timeout_seconds=PULUMI_UP_TIMEOUT_S,
         )

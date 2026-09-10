@@ -2,7 +2,10 @@
 name: af-component-agent E2E
 on:
   push:
-    branches: ["main"]
+    # TEMPORARY: added mdambski/a2a-e2e-coverage-increase to trigger a full
+    # workload-api deploy run on push, without waiting for a PR/merge to main.
+    # Revert to `branches: ["main"]` before merging.
+    branches: ["main", "mdambski/a2a-e2e-coverage-increase"]
     paths:
       - "template/**"
       - "!template/docs/**"
@@ -165,7 +168,10 @@ jobs:
           RUN_E2E: "1"
           E2E_AGENT_FRAMEWORKS: ${{ matrix.framework }}
           # Deploy + tracing check only on push to main (merges); PRs run build + codespace.
-          RUN_AGENT_DEPLOYMENT_TESTS: ${{ github.event_name == 'push' && '1' || '0' }}
+          # TEMPORARY: pinned to `main` (not just `push`) while the workflow-api
+          # job below is temporarily triggered from a feature branch too, so
+          # this job stays preview-only there. Revert alongside the trigger above.
+          RUN_AGENT_DEPLOYMENT_TESTS: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && '1' || '0' }}
           LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"
           DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
           DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
@@ -291,7 +297,17 @@ jobs:
           # Real `pulumi up` + platform image build + chat call only on push to
           # main (merges); PRs stop after the plan assertions, which create
           # nothing and take a few minutes.
+          # TEMPORARY: this also fires on push to
+          # mdambski/a2a-e2e-coverage-increase (see the `on.push.branches`
+          # override above) so the new A2A coverage gets a real deploy run
+          # before merging. No change needed here: `push` already implies '1'.
           RUN_AGENT_WORKLOAD_DEPLOY_TESTS: ${{ github.event_name == 'push' && '1' || '0' }}
+          # TEMPORARY: pulumi's own CLI has no `PULUMI_LOG_LEVEL` env var --
+          # verbosity is the `-v`/`--logtostderr` flags. `workload_e2e.py`'s
+          # `_pulumi_debug_flags()` reads this var and translates it into those
+          # flags on the preview/deploy/destroy invocations. Revert alongside
+          # the other TEMPORARY markers in this file.
+          PULUMI_LOG_LEVEL: "9"
           LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"
           DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
           DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
