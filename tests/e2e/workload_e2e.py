@@ -58,11 +58,9 @@ from ._process import (
 )
 from .agent_card import (
     AgentIdentity,
-    assert_live_agent_card,
-    assert_registered_agent_card,
+    assert_a2a_end_to_end,
     make_external_id,
     patch_workflow_external_id,
-    post_a2a_message,
 )
 from .helpers import (
     ALL_FRAMEWORKS,
@@ -131,26 +129,6 @@ WORKLOAD_READY_POLL_S = 15
 
 _TERMINAL_WORKLOAD_STATUSES = frozenset({"failed", "error", "stopped", "deleted"})
 _RUNNING_WORKLOAD_STATUSES = frozenset({"running", "active", "ready"})
-
-
-# --- Debug logging -----------------------------------------------------------
-
-
-def _pulumi_debug_flags() -> list[str]:
-    """`-v=<level> --logtostderr`, if `PULUMI_LOG_LEVEL` is set; `[]` otherwise.
-
-    TEMPORARY, for debugging the push-triggered workload deploy on this branch
-    (see the `on.push.branches` override in the E2E workflow). pulumi's CLI has
-    no `PULUMI_LOG_LEVEL` env var of its own -- verbosity is a `-v`/`--verbose`
-    flag, and `--logtostderr` is what actually surfaces it (plain `-v` alone
-    writes to a temp file and prints nothing). Translating the env var here
-    keeps the knob at the one place CI sets env vars, without silently no-oping
-    if someone reaches for `PULUMI_LOG_LEVEL` out of Terraform habit.
-    """
-    level = os.environ.get("PULUMI_LOG_LEVEL", "").strip()
-    if not level:
-        return []
-    return [f"-v={level}", "--logtostderr"]
 
 
 # --- Pulumi preview digest --------------------------------------------------
@@ -271,7 +249,7 @@ def _assert_no_pending_changes(digest: dict[str, Any]) -> None:
 def _run_preview(*, rendered_dir: Path, label: str) -> dict[str, Any]:
     fprint(f"Running `pulumi preview` ({label})")
     raw = run_cmd(
-        task_cmd("preview", "--", "--json", *_pulumi_debug_flags()),
+        task_cmd("preview", "--", "--json"),
         cwd=rendered_dir,
         capture=True,
         timeout_seconds=PREVIEW_TIMEOUT_S,
@@ -405,9 +383,7 @@ def _cleanup_workload_e2e(
             check=False,
         )
         run_cmd(
-            task_cmd(
-                "destroy", "--", "--yes", "--skip-preview", *_pulumi_debug_flags()
-            ),
+            task_cmd("destroy", "--", "--yes", "--skip-preview"),
             cwd=rendered_dir,
             check=False,
             timeout_seconds=DESTROY_TIMEOUT_S,
@@ -468,10 +444,7 @@ def run_workload_agent_e2e(
     # Control whether we run the real deploy phase after the plan assertions.
     run_deploy_tests = os.environ.get("RUN_AGENT_WORKLOAD_DEPLOY_TESTS", "1") == "1"
 
-    # One switch for the whole A2A suite: the `workflow.yaml` external-id patch,
-    # the agent card assertions and the registry lookup. Off, this driver
-    # behaves exactly as it did before A2A coverage existed -- which is what you
-    # want on a cluster without the ENABLE_GENAI_AGENT_TO_AGENT_SUPPORT flag.
+    # One switch for the whole A2A suite: patch, card assertions and registry.
     run_a2a_tests = os.environ.get("RUN_AGENT_A2A_TESTS", "1") == "1"
 
     fprint("==================================================")
@@ -611,7 +584,7 @@ def run_workload_agent_e2e(
         # full C2W chain: source archive -> upload -> artifact create -> build
         # trigger -> build poll -> workload create.
         run_cmd(
-            task_cmd("deploy", "--", "--yes", "--skip-preview", *_pulumi_debug_flags()),
+            task_cmd("deploy", "--", "--yes", "--skip-preview"),
             cwd=rendered_dir,
             timeout_seconds=PULUMI_UP_TIMEOUT_S,
         )
@@ -663,39 +636,18 @@ def run_workload_agent_e2e(
         )
         fprint(f"Workload chat completion returned {len(content)} chars")
 
-        # Step 11b: Discover the agent card, assert it advertises this
-        # workload's identity, then call the URL it advertises -- the A2A
-        # equivalent of Step 11, and a check the chat call above cannot cover:
-        # it proves the card's self-reported entrypoint is itself real and
-        # reachable, not just that the workload answers on a URL we already
-        # know about.
+        # Step 11b: Discover the agent card and call the URL it advertises --
+        # a check the chat call above cannot cover: it proves the card's
+        # self-reported entrypoint is real, not just that the workload answers
+        # on a URL we already knew.
         if run_a2a_tests:
-            identity = AgentIdentity.workload(workload_id)
-            card = assert_live_agent_card(
-                a2a_base_url=f"{endpoint.rstrip('/')}/a2a/",
-                identity=identity,
+            assert_a2a_end_to_end(
+                client=client,
+                identity=AgentIdentity("workload", workload_id),
                 external_id=external_id,
-                datarobot_api_token=datarobot_api_token,
-            )
-            agent_card_url = card["url"]
-            fprint(f"Agent card url: {agent_card_url}")
-            a2a_reply = retry(
-                lambda: post_a2a_message(
-                    a2a_url=agent_card_url,
-                    datarobot_api_token=datarobot_api_token,
-                    user_prompt=user_prompt,
-                ),
-                max_retries=2,
-                delay_seconds=30,
-                label="Workload A2A message/send",
-            )
-            fprint(f"Workload A2A message/send returned {len(a2a_reply)} chars")
-
-            # Step 11c: The platform ingests the card into its catalog
-            # asynchronously, so this runs last -- the message/send above buys
-            # the registry a free head start against its own poll deadline.
-            assert_registered_agent_card(
-                client=client, identity=identity, external_id=external_id
+                a2a_base_url=f"{endpoint.rstrip('/')}/a2a/",
+                token=datarobot_api_token,
+                user_prompt=user_prompt,
             )
 
         # Step 12: Re-plan. Nothing changed, so nothing may be replaced -- see

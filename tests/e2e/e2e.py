@@ -36,12 +36,10 @@ from datarobot.rest import RESTClientObject
 
 from .agent_card import (
     AgentIdentity,
-    assert_live_agent_card,
-    assert_registered_agent_card,
+    assert_a2a_end_to_end,
     deployment_a2a_base_url,
     make_external_id,
     patch_workflow_external_id,
-    post_a2a_message,
 )
 from .helpers import (
     ALL_FRAMEWORKS,
@@ -308,10 +306,7 @@ def run_agent_e2e(
         f"af-component-agent-e2e-{agent_framework}-{int(time.time())}-{uuid.uuid4().hex[:8]}",
     )
 
-    # One switch for the whole A2A suite: the `workflow.yaml` external-id patch,
-    # the agent card assertions and the registry lookup. Off, this driver
-    # behaves exactly as it did before A2A coverage existed -- which is what you
-    # want on a cluster without the ENABLE_GENAI_AGENT_TO_AGENT_SUPPORT flag.
+    # One switch for the whole A2A suite: patch, card assertions and registry.
     run_a2a_tests = os.environ.get("RUN_AGENT_A2A_TESTS", "1") == "1"
 
     fprint("==================================================")
@@ -432,64 +427,29 @@ def run_agent_e2e(
             )
 
             # Step 10b: A2A. The deployment only exists after Step 9, and by
-            # here it has already served real traffic, so its directAccess
-            # route is warm.
+            # here it has served real traffic, so directAccess is warm.
             if run_a2a_tests:
-                # Both the id and the A2A base URL come from this one export
-                # rather than from DATAROBOT_ENDPOINT: the infra composes
-                # deployment URLs with `get_datarobot_url()`, which resolves
-                # the external web-server URL via `/clientConfig/` and differs
-                # from DATAROBOT_ENDPOINT on airgapped clusters.
-                deployment_chat_endpoint = pulumi_stack_output_value(
+                # Both the id and the base URL come from this one export
+                # rather than DATAROBOT_ENDPOINT -- see `deployment_a2a_base_url`.
+                chat_endpoint = pulumi_stack_output_value(
                     infra_dir=infra_dir,
                     pulumi_stack=pulumi_stack,
                     pulumi_home=pulumi_home,
                     contains="Agent Deployment Chat Endpoint ",
                 )
-                deployment_id = extract_id_from_url(
-                    deployment_chat_endpoint, marker="deployments"
-                )
-                identity = AgentIdentity.deployment(deployment_id)
-                a2a_base_url = deployment_a2a_base_url(
-                    deployment_chat_endpoint=deployment_chat_endpoint
-                )
+                deployment_id = extract_id_from_url(chat_endpoint, marker="deployments")
                 fprint(f"Deployment ID: {deployment_id}")
-
-                # `retry` fits here: a cold directAccess route answers
-                # 502/503/504, which `_is_transient` retries, while a 404
-                # (route genuinely absent) propagates immediately.
-                card = retry(
-                    lambda: assert_live_agent_card(
-                        a2a_base_url=a2a_base_url,
-                        identity=identity,
-                        external_id=external_id,
-                        datarobot_api_token=datarobot_api_token,
-                    ),
-                    max_retries=2,
-                    delay_seconds=30,
-                    label="Deployment agent card fetch",
-                )
-                agent_card_url = card["url"]
-                fprint(f"Agent card url: {agent_card_url}")
-
-                a2a_reply = retry(
-                    lambda: post_a2a_message(
-                        a2a_url=agent_card_url,
-                        datarobot_api_token=datarobot_api_token,
-                        user_prompt=user_prompt,
-                    ),
-                    max_retries=2,
-                    delay_seconds=30,
-                    label="Deployment A2A message/send",
-                )
-                fprint(f"Deployment A2A message/send returned {len(a2a_reply)} chars")
-
-                assert_registered_agent_card(
+                assert_a2a_end_to_end(
                     client=dr.Client(
                         endpoint=datarobot_endpoint, token=datarobot_api_token
                     ),
-                    identity=identity,
+                    identity=AgentIdentity("deployment", deployment_id),
                     external_id=external_id,
+                    a2a_base_url=deployment_a2a_base_url(
+                        deployment_chat_endpoint=chat_endpoint
+                    ),
+                    token=datarobot_api_token,
+                    user_prompt=user_prompt,
                 )
 
         fprint("Agent execution completed successfully")
