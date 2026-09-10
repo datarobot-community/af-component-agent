@@ -278,6 +278,11 @@ exclude-dependencies = [
 # `cve-sync sync` regenerates both keys wholesale from policy and drops anything
 # policy lacks. Contribute a needed entry to cve-sync policy/ instead. This note
 # sits ABOVE the begin marker on purpose, since everything inside is replaced.
+#
+# mcp is capped at <2 in override-dependencies: MCP Python SDK 2.x removed
+# streamablehttp_client, which mcpadapt still imports via
+# datarobot_genai.crewai.mcp (and the other framework adapters). Keep that cap
+# in cve-sync policy too so the next sync does not drop it.
 # cve-sync:begin
 # cve-sync:waived chromadb>1.5.9 NOT applied -- no-upstream-fix, expires 2026-12-09
 constraint-dependencies = [
@@ -332,7 +337,7 @@ override-dependencies = [
     "cryptography>=50.0.0",
     "json-repair>=0.60.1",
     "litellm>=1.91.1,<2.0.0",
-    "mcp>=1.28.1",
+    "mcp>=1.28.1,<2",
     "opentelemetry-api>=1.43.0,<2.0.0",
     "opentelemetry-exporter-otlp-proto-common>=1.43.0,<2.0.0",
     "opentelemetry-exporter-otlp-proto-grpc>=1.43.0,<2.0.0",
