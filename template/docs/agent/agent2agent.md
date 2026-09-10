@@ -9,7 +9,6 @@ To expose an agent via A2A:
 To connect an agent to a remote agent via A2A:
 
 - Uncomment the `function_groups` and `workflow.tool_names` blocks in `workflow.yaml`.
-- Deploy the agent. On a hosted deployment, `datarobot-genai` provisions the agent card registry L2 MemorySpace automatically when remote A2A clients are configured (no `task deploy-dev` step). See [Central registry (`registry`)](#central-registry-registry).
 
 Enable the `ENABLE_RUNTIME_PARAMETERS_IMPROVEMENTS` feature flag in DataRobot to use environment variables in `workflow.yaml` files.
 
@@ -70,21 +69,18 @@ Use this when calling a DataRobot-hosted agent protected by Okta XAA or any othe
 
 The RPC base URL is derived from the `url` advertised on the card; specifying it separately is not necessary. When a workflow has many registry-backed function groups, all cards are resolved in a maximum of two HTTP calls (one for deployment IDs, one for external IDs) and cached in-memory until the TTL expires.
 
-Registry lookups use a two-tier cache:
+Registry lookups use a cache. For an agent deployed to a workload on an enclave there is a second tier cache:
 
 | Tier | Backend | Scope |
 |------|---------|-------|
 | L1 | In-process memory | Single worker / replica |
-| L2 | DataRobot MemorySpace (`AGENT_CARD_REGISTRY_MEMORY_SPACE_ID`) | Shared across replicas and pod restarts |
+| L2 | DataRobot MemorySpace (created during agent startup) | Shared across replicas and pod restarts |
 
 The L2 cache uses the MemorySpace Session API, which is covered by `ENABLE_GENAI_EXPERIMENTATION` (already enabled for agent deployments). It does not require `ENABLE_AGENTIC_MEMORY_API` — that flag is only for mem0-compatible [agent memory](./agent-memory.md).
 
-When you connect to remote agents via A2A (`authenticated_a2a_client` in `function_groups`), `datarobot-genai` creates or adopts a MemorySpace for the registry L2 cache at startup when `AGENT_CARD_REGISTRY_MEMORY_SPACE_ID` is unset. The space is scoped to the deployment or workload via a `deduplication_key`, so replicas share one cache without Pulumi wiring. Agents that do not declare remote A2A clients never provision this space. Locally, only in-process L1 caching is used unless you set `AGENT_CARD_REGISTRY_MEMORY_SPACE_ID` yourself.
+When you connect to remote agents via A2A (`authenticated_a2a_client` in `function_groups`), `datarobot-genai` creates or adopts a MemorySpace for the registry L2 cache at startup for agents deployed to a workload on an enclave. The space is scoped to the deployment or workload via a `deduplication_key`, so replicas share one cache without Pulumi wiring. Agents that do not declare remote A2A clients never provision this space. Locally, only in-process L1 caching is used.
 
-When `AGENT_CARD_REGISTRY_MEMORY_SPACE_ID` is set, resolved agent cards are written through to the MemorySpace-backed L2 cache so every replica shares the same registry snapshot. If a registry refresh fails, a card may still be served from cache while it remains within `AGENT_CARD_REGISTRY_CACHE_TTL` (stale-if-error).
-
-> [!IMPORTANT]
-> When you connect to remote agents via A2A (`authenticated_a2a_client` in `function_groups`), the registry L2 MemorySpace is provisioned automatically on deploy. This cache is separate from [agent memory](./agent-memory.md) (`AGENT_MEMORY_SPACE_ID`), which Pulumi still provisions when `use_agent_memory` is `datarobot_memory_service`.
+When configured, resolved agent cards are written through to the MemorySpace-backed L2 cache so every replica shares the same registry snapshot. If a registry refresh fails, a card may still be served from cache while it remains within `AGENT_CARD_REGISTRY_CACHE_TTL` (stale-if-error).
 
 Lookup by deployment ID — use when the DataRobot deployment ID of the remote agent is known:
 
