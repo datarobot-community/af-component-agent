@@ -27,14 +27,6 @@ dev = [
 
 [tool.uv]
 required-version = ">=0.7.0"
-
-[tool.uv.sources]
-datarobot-genai = { index = "testpypi" }
-
-[[tool.uv.index]]
-name = "testpypi"
-url = "https://test.pypi.org/simple/"
-explicit = true
 # cve-sync:begin
 constraint-dependencies = [
     "idna>=3.15",
@@ -45,6 +37,14 @@ constraint-dependencies = [
     "urllib3>=2.7.0",
 ]
 # cve-sync:end
+
+[tool.uv.sources]
+datarobot-genai = { index = "testpypi" }
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+explicit = true
 
 [tool.pytest.ini_options]
 markers = [
