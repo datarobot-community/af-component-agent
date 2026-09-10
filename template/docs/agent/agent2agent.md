@@ -117,7 +117,6 @@ The registry lookup honors the following environment variables:
 | `AGENT_CARD_REGISTRY_CACHE_TTL` | No | Cache TTL in seconds. Default `86400` (24 hours). Set to `0` to disable caching. |
 | `AGENT_CARD_REGISTRY_TIMEOUT` | No | HTTP timeout in seconds for registry requests. Default `30`. |
 | `AGENT_CARD_REGISTRY_ON_DUPLICATE` | No | Resolution strategy when multiple cards share the same external ID: `first` (default) keeps the earliest registered card, `last` keeps the most recently registered card, `error` raises an exception. `first` is recommended for stability — `last` and `error` may alter agent behavior if a duplicate is introduced later. |
-| `AGENT_CARD_REGISTRY_MEMORY_SPACE_ID` | No | DataRobot MemorySpace ID for the registry L2 cache. Provisioned automatically when remote A2A clients are configured in `workflow.yaml`; shared across replicas. When unset, only in-process L1 caching is used. |
 
 
 ## Configuration reference
