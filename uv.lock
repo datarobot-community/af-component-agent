@@ -40,7 +40,7 @@ dev = [
 requires-dist = [
     { name = "backoff", marker = "extra == 'dev'", specifier = ">=2.0.0" },
     { name = "datarobot", extras = ["core"], marker = "extra == 'dev'", specifier = ">=3.18.0,<4.0.0" },
-    { name = "datarobot-genai", marker = "extra == 'dev'", specifier = "==0.29.34.dev1532", index = "https://test.pypi.org/simple/" },
+    { name = "datarobot-genai", marker = "extra == 'dev'", specifier = "==0.29.34" },
     { name = "jinja-cli", specifier = ">=1.2.2" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "openai", marker = "extra == 'dev'", specifier = ">=1.0.0" },
@@ -229,11 +229,11 @@ core = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.29.34.dev1532"
-source = { registry = "https://test.pypi.org/simple/" }
-sdist = { url = "https://test-files.pythonhosted.org/packages/76/17/dea9412cc7f12c277ee5916510d2dcf8c4c509fe8cdc59e0f29be2a584c6/datarobot_genai-0.29.34.dev1532.tar.gz", hash = "sha256:77d957e68ba72c3c4a95d312003d7722daefb8d0e504eb5fe60bb89401eecfba", size = 635162, upload-time = "2026-09-09T16:07:39.992Z" }
+version = "0.29.34"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/2d/03/ce391e450ce2b18edb1c615e6cd18d51dd6c70257f8f55f8aa3e7bfbf00f/datarobot_genai-0.29.34.tar.gz", hash = "sha256:3870fa144a13d89f4f5d50d2c9ca4f41945d0b937d611e4c25b47f3cfef5b16e", size = 634445, upload-time = "2026-09-09T23:38:17.684Z" }
 wheels = [
-    { url = "https://test-files.pythonhosted.org/packages/55/db/31102d25a37cadefeac01137254f3273fd76792d9a7efb30eb1018bf01da/datarobot_genai-0.29.34.dev1532-py3-none-any.whl", hash = "sha256:4b351293f4b86c581808d8bed2f4c82ec976ee6cf228e042972c50e46360ba78", size = 890595, upload-time = "2026-09-09T16:07:37.118Z" },
+    { url = "https://files.pythonhosted.org/packages/4f/85/f2c1e42727fb96d36915c5ccce12a9816f5f26c32630875bc4d25dfce6f9/datarobot_genai-0.29.34-py3-none-any.whl", hash = "sha256:059fb0e440616a81289e35ea8848efc47588136f8ab7624d82b2bc5b7ced121a", size = 890182, upload-time = "2026-09-09T23:38:15.689Z" },
 ]
 
 [[package]]
