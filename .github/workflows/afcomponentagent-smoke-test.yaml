@@ -7,72 +7,19 @@ on:
     paths:
       - "template/*/agent/**"
       - ".github/workflows/afcomponentagent-smoke-test.yaml"
-  # No `paths:` filter on pull_request, on purpose. A workflow that a path
-  # filter skips reports no check at all, so it can never serve as a required
-  # status check: the PR sits pending on it forever. The filtering moved into
-  # the `changes` job below, which lets the gate job report on every PR.
   pull_request:
     branches: ["main"]
+    paths:
+      - "template/*/agent/**"
+      - ".github/workflows/afcomponentagent-smoke-test.yaml"
 
 jobs:
-  changes:
-    name: "Resolve changed paths"
-    permissions:
-      contents: read
-      # dorny/paths-filter reads the PR's changed files through the API.
-      pull-requests: read
-    runs-on: "ubuntu-latest"
-    outputs:
-      run: ${{ steps.decide.outputs.run }}
-    steps:
-      - name: Checkout
-        uses: "actions/checkout@v6"
-      - name: Detect changed paths
-        id: filter
-        if: github.event_name == 'pull_request'
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            relevant:
-              - 'template/*/agent/**'
-              - '.github/workflows/afcomponentagent-smoke-test.yaml'
-      - name: Decide whether to run
-        id: decide
-        shell: bash
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          RELEVANT: ${{ steps.filter.outputs.relevant }}
-        run: |
-          set -euo pipefail
-          # DELIBERATELY no Dependabot override here, unlike the other test
-          # workflows. A `pull_request` event raised by Dependabot runs with
-          # Dependabot secrets, NOT the repository's Actions secrets, and this
-          # repo has zero of those (`/dependabot/secrets` returns 0). The smoke
-          # matrix needs DATAROBOT_API_TOKEN and DATAROBOT_ENDPOINT from the
-          # `integration` environment, so forcing it on for Dependabot would
-          # fail 100% of the time on empty credentials rather than test
-          # anything. `Smoke CI` stays safe to mark required regardless: the
-          # gate job reports success when the matrix is skipped.
-          if [ "$EVENT_NAME" != "pull_request" ]; then
-            # push / workflow_dispatch: the `on: paths` filter already decided.
-            RUN=true
-          else
-            RUN="${RELEVANT:-false}"
-          fi
-          echo "Run tests: $RUN"
-          echo "run=$RUN" >> "$GITHUB_OUTPUT"
-
   smoke-test:
     name: "Smoke / ${{ matrix.framework }} / ${{ matrix.model.label }}"
-    needs: changes
-    # Two independent gates. `changes` decides whether the smoke suite is
-    # relevant at all; the fork check keeps the integration secrets out of
-    # reach of attacker-controlled code. Same-repo branches, pushes to main,
-    # and workflow_dispatch still run normally.
-    if: >-
-      needs.changes.outputs.run == 'true' &&
-      (github.event_name != 'pull_request' ||
-       github.event.pull_request.head.repo.fork == false)
+    # Skip on fork PRs so the integration secrets are never reachable from
+    # attacker-controlled code. Same-repo branches, pushes to main, and
+    # workflow_dispatch still run normally.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
     runs-on: "ubuntu-latest"
     environment: integration
     container:
@@ -156,28 +103,3 @@ jobs:
         with:
           name: smoke-logs-${{ matrix.framework }}-${{ matrix.model.label }}
           path: ./rendered/agent/output.log
-
-  smoke-gate:
-    name: "Smoke CI"
-    # The stable, always-reporting context to mark required on `main`. Matrix
-    # job names are unusable for that (they multiply, and they change whenever
-    # the matrix does), and a skipped job reports nothing to require. This one
-    # always runs: it passes when the work above passed or was legitimately
-    # skipped, and fails when any of it failed or was cancelled.
-    needs: [changes, smoke-test]
-    if: always()
-    runs-on: "ubuntu-latest"
-    steps:
-      - name: Check upstream results
-        shell: bash
-        env:
-          RESULTS: "${{ needs.changes.result }} ${{ needs.smoke-test.result }}"
-        run: |
-          set -euo pipefail
-          for result in $RESULTS; do
-            case "$result" in
-              success|skipped) ;;
-              *) echo "An upstream job finished with: $result"; exit 1 ;;
-            esac
-          done
-          echo "All upstream jobs passed or were skipped."

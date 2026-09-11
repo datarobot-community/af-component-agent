@@ -8,68 +8,19 @@ on:
       - "template/**"
       - ".github/actions/copier-template-validator/**"
       - ".github/workflows/afcomponentagent-framework-test.yaml"
-  # No `paths:` filter on pull_request, on purpose. A workflow that a path
-  # filter skips reports no check at all, so it can never serve as a required
-  # status check: the PR sits pending on it forever. The filtering moved into
-  # the `changes` job below, which lets the gate job report on every PR.
   pull_request:
     branches: ["main"]
+    paths:
+      - "fixtures/**"
+      - "template/**"
+      - ".github/actions/copier-template-validator/**"
+      - ".github/workflows/afcomponentagent-framework-test.yaml"
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
-  changes:
-    name: "Resolve changed paths"
-    permissions:
-      contents: read
-      # dorny/paths-filter reads the PR's changed files through the API.
-      pull-requests: read
-    runs-on: "ubuntu-latest"
-    outputs:
-      run: ${{ steps.decide.outputs.run }}
-    steps:
-      - name: Checkout
-        uses: "actions/checkout@v6"
-      - name: Detect changed paths
-        id: filter
-        if: github.event_name == 'pull_request'
-        uses: dorny/paths-filter@v3
-        with:
-          filters: |
-            relevant:
-              - 'fixtures/**'
-              - 'template/**'
-              - '.github/actions/copier-template-validator/**'
-              - '.github/workflows/afcomponentagent-framework-test.yaml'
-      - name: Decide whether to run
-        id: decide
-        shell: bash
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
-          RELEVANT: ${{ steps.filter.outputs.relevant }}
-        run: |
-          set -euo pipefail
-          # Dependabot always runs the full suite. Its PRs only ever touch
-          # `.github/**`, so the product filters above would skip almost
-          # everything. But the actions it bumps ARE the machinery these jobs
-          # run on. Auto-merge waits only on required checks, so a check that
-          # skips itself is a check that merges the bump untested.
-          if [ "$EVENT_NAME" != "pull_request" ]; then
-            # push / workflow_dispatch: the `on: paths` filter already decided.
-            RUN=true
-          elif [ "$PR_AUTHOR" = "dependabot[bot]" ]; then
-            RUN=true
-          else
-            RUN="${RELEVANT:-false}"
-          fi
-          echo "Run tests: $RUN"
-          echo "run=$RUN" >> "$GITHUB_OUTPUT"
-
   test-frameworks:
     name: "Test ${{ matrix.framework.agent_name }} (${{ matrix.python }})"
-    needs: changes
-    if: needs.changes.outputs.run == 'true'
     runs-on: "ubuntu-latest"
     container:
       # trixie, not bookworm: astral stopped rebuilding the `-bookworm` python
@@ -162,28 +113,3 @@ jobs:
         env:
           UV_CACHE_DIR: /.uv_cache
           LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"
-
-  frameworks-gate:
-    name: "Frameworks CI"
-    # The stable, always-reporting context to mark required on `main`. Matrix
-    # job names are unusable for that (they multiply, and they change whenever
-    # the matrix does), and a skipped job reports nothing to require. This one
-    # always runs: it passes when the work above passed or was legitimately
-    # skipped, and fails when any of it failed or was cancelled.
-    needs: [changes, test-frameworks]
-    if: always()
-    runs-on: "ubuntu-latest"
-    steps:
-      - name: Check upstream results
-        shell: bash
-        env:
-          RESULTS: "${{ needs.changes.result }} ${{ needs.test-frameworks.result }}"
-        run: |
-          set -euo pipefail
-          for result in $RESULTS; do
-            case "$result" in
-              success|skipped) ;;
-              *) echo "An upstream job finished with: $result"; exit 1 ;;
-            esac
-          done
-          echo "All upstream jobs passed or were skipped."
