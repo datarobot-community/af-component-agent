@@ -35,14 +35,36 @@ label: automerge
 #
 # Listing them here is safe in a way that requiring them is not: a required
 # context a PR never fires wedges that PR forever, whereas a missing expected
-# check just means the PR waits for a human instead of self-merging.
+# check just means the PR waits for a human instead of self-merging. That is
+# also why the workflows need no gate jobs and no `if: always()` scaffolding:
+# presence is checked HERE, so each workflow only has to fire. Every suite
+# carries `.github/**` in its path filter for exactly that reason.
 #
-# The first seven are the always-reporting gate jobs added 2026-09-11. Each is
-# either an unconditional single-job workflow or a job with `if: always()`
-# behind a `changes` filter, so every one of them reports on every PR, green
-# via skip when the matrix underneath it was not relevant.
+# THE LIST IS SHORT BECAUSE MOST SUITES ARE NOT GUARANTEED TO FIRE. Only three
+# checks report on every Dependabot bump; an expected check that does not fire
+# means the PR waits for a human forever, so nothing else can go here. What
+# covers the rest is `block_on_any_failure` below: any suite that DOES fire and
+# goes red blocks the merge, listed or not. So this list answers "did the
+# baseline run", and that flag answers "did anything that ran fail".
 #
 # DELIBERATELY ABSENT, verified by reading each workflow's triggers:
+# - `Test Infra`, `Test <agent> (<python>)` — narrow path filters on
+#                        `template/**` and `fixtures/**`. They fire on a bump
+#                        only when Dependabot happens to touch their own
+#                        workflow file, which depends on which actions the
+#                        group picked up that week.
+# - `Smoke / *`, `E2E / *` — both suites skip the `dependabot[bot]` actor, and
+#                        have to. A Dependabot `pull_request` event resolves
+#                        `secrets.*` against the Dependabot secret store, not
+#                        the `integration` environment where DATAROBOT_API_TOKEN
+#                        actually lives, so they would fail on auth on every
+#                        bump. They run on the push to `main` after the merge
+#                        instead.
+#
+# That leaves a real gap: a github-actions bump merges without smoke or E2E
+# having run on it. The Docker build is the deliberate stand-in, since it
+# exercises the render → uv sync → docker build path end to end without needing
+# credentials.
 # - release/`version`  — workflow-create-release-on-merge.yaml is push-to-main
 #                        only, so it never reports on a PR.
 # - `backport`         — workflow-backport.yaml runs on closed/labeled PRs.
@@ -53,17 +75,15 @@ label: automerge
 #
 # If a name here is wrong the PR refuses to merge and escalates rather than
 # merging unverified, so the failure direction is safe. Watch the first live
-# verdict anyway: `Docker Build CI` is a rename, and PR #684 was still
-# reporting the old `Test Docker Build`.
+# verdict anyway.
 # ─────────────────────────────────────────────────────────────────────────────
 expected_checks:
+  # Unconditional single-job workflows: no path filter, so they always report.
   - "Test CLI"
   - "Check for Windows-incompatible file paths"
-  - "Infra CI"
-  - "Frameworks CI"
-  - "Docker Build CI"
-  - "Smoke CI"
-  - "E2E CI"
+  # Carries `.github/**` in its path filter specifically so it fires on every
+  # Dependabot bump. The only suite that does.
+  - "Test Docker Build"
   # Already required by the `main` ruleset and added automatically from the
   # branch rules API. Repeated anyway: if someone edits the ruleset and drops
   # it, this file still holds the line.
