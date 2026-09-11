@@ -112,10 +112,16 @@ jobs:
   e2e-custom-models:
     name: "E2E / ${{ matrix.framework }}"
     needs: setup
-    # Skip on fork PRs so integration secrets are never reachable from
-    # attacker-controlled code. Same-repo branches and pushes to main
-    # still run normally.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+    # Skipped on fork PRs (integration secrets must never be reachable from
+    # attacker-controlled code) and on Dependabot PRs (a Dependabot event reads
+    # the Dependabot secret store, not `integration`, so DATAROBOT_API_TOKEN
+    # arrives empty and the job fails on auth). See the longer note in
+    # afcomponentagent-smoke-test.yaml. Same-repo human branches and pushes to
+    # main still run normally.
+    if: >-
+      github.event_name != 'pull_request'
+      || (github.event.pull_request.head.repo.fork == false
+          && github.actor != 'dependabot[bot]')
     runs-on: "ubuntu-latest"
     environment: integration
     # Single source of truth for the stack name so the Run E2E step and the
@@ -238,10 +244,13 @@ jobs:
   e2e-workload-api:
     name: "E2E / workload-api / ${{ matrix.framework }}"
     needs: setup
-    # Same fork guard as `e2e-custom-models`: `pulumi preview` performs real provider reads
-    # (the execution environment is resolved via `ExecutionEnvironment.get`), so
-    # this job needs the integration secrets too.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+    # Same guard as `e2e-custom-models`, and for the same reason: `pulumi preview`
+    # performs real provider reads (the execution environment is resolved via
+    # `ExecutionEnvironment.get`), so this job needs the integration secrets too.
+    if: >-
+      github.event_name != 'pull_request'
+      || (github.event.pull_request.head.repo.fork == false
+          && github.actor != 'dependabot[bot]')
     runs-on: "ubuntu-latest"
     environment: integration
     # Single source of truth for the stack name so the Run step and the teardown

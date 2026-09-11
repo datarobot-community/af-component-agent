@@ -1,18 +1,34 @@
 ---
 name: af-component-agent Docker Build
+# `.github/**` is in the path filters below on purpose, and it is deliberately
+# the whole folder rather than this file alone.
+#
+# This is the one suite wired to run on ANY `.github` change, which in practice
+# means every Dependabot github-actions bump. It is the suite most worth firing
+# on one: it builds the agent image end to end, so it is where a bumped action
+# is most likely to actually break something, and it needs no secrets, so a
+# Dependabot event can run it. Dependabot touches an arbitrary subset of
+# `.github/workflows/**` and `.github/actions/**`, so matching the folder is
+# what makes that automatic rather than a list to keep in sync.
+#
+# The other suites keep their narrow paths. They fire on a bump only if
+# Dependabot happens to touch their own workflow file, which is why
+# `.github/automerge.yaml` does not list them as expected checks. The smoke and
+# E2E suites go further and skip the `dependabot[bot]` actor outright, because
+# a Dependabot event cannot read the credentials they need.
 on:
   push:
     branches: ["main"]
     paths:
       - "template/**/locks/**"
       - "template/**/pyproject.toml.jinja"
-      - ".github/workflows/afcomponentagent-docker-build.yaml"
+      - ".github/**"
   pull_request:
     branches: ["main"]
     paths:
       - "template/**/locks/**"
       - "template/**/pyproject.toml.jinja"
-      - ".github/workflows/afcomponentagent-docker-build.yaml"
+      - ".github/**"
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
