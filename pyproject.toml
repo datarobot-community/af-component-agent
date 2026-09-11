@@ -19,7 +19,7 @@ dev = [
     "pyyaml>=6.0",
     "types-PyYAML>=6.0",
     "requests>=2.31.0",
-    "datarobot-genai==0.29.40",
+    "datarobot-genai==0.29.41.dev1535",
     # Keep in step with the version the template pins for rendered apps: the E2E harness
     # drives deployed agents through datarobot_genai.core.cli.
     "datarobot[core]>=3.18.0,<4.0.0",
@@ -37,6 +37,14 @@ constraint-dependencies = [
     "urllib3>=2.7.0",
 ]
 # cve-sync:end
+
+[tool.uv.sources]
+datarobot-genai = { index = "testpypi" }
+
+[[tool.uv.index]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+explicit = true
 
 [tool.pytest.ini_options]
 markers = [
