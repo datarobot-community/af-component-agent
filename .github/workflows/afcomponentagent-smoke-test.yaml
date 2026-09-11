@@ -41,19 +41,20 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
-          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           RELEVANT: ${{ steps.filter.outputs.relevant }}
         run: |
           set -euo pipefail
-          # Dependabot always runs the full suite. Its PRs only ever touch
-          # `.github/**`, so the product filters above would skip almost
-          # everything. But the actions it bumps ARE the machinery these jobs
-          # run on. Auto-merge waits only on required checks, so a check that
-          # skips itself is a check that merges the bump untested.
+          # DELIBERATELY no Dependabot override here, unlike the other test
+          # workflows. A `pull_request` event raised by Dependabot runs with
+          # Dependabot secrets, NOT the repository's Actions secrets, and this
+          # repo has zero of those (`/dependabot/secrets` returns 0). The smoke
+          # matrix needs DATAROBOT_API_TOKEN and DATAROBOT_ENDPOINT from the
+          # `integration` environment, so forcing it on for Dependabot would
+          # fail 100% of the time on empty credentials rather than test
+          # anything. `Smoke CI` stays safe to mark required regardless: the
+          # gate job reports success when the matrix is skipped.
           if [ "$EVENT_NAME" != "pull_request" ]; then
             # push / workflow_dispatch: the `on: paths` filter already decided.
-            RUN=true
-          elif [ "$PR_AUTHOR" = "dependabot[bot]" ]; then
             RUN=true
           else
             RUN="${RELEVANT:-false}"

@@ -94,7 +94,6 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
-          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
           RELEVANT: ${{ steps.filter.outputs.relevant }}
           CORE: ${{ steps.filter.outputs.core }}
           CHANGED_base: ${{ steps.filter.outputs.base }}
@@ -105,17 +104,15 @@ jobs:
         run: |
           set -euo pipefail
           ALL='["base","crewai","langgraph","llamaindex","nat"]'
-          # Dependabot runs the whole suite. Its PRs only ever touch
-          # `.github/**`, so `relevant` and every framework filter come back
-          # false. But the actions it bumps ARE the machinery this workflow
-          # runs on, and auto-merge waits only on required checks. A check that
-          # skips itself is a check that merges the bump untested.
-          if [ "$EVENT_NAME" = "pull_request" ] && [ "$PR_AUTHOR" = "dependabot[bot]" ]; then
-            echo "run=true" >> "$GITHUB_OUTPUT"
-            echo "Resolved matrix: $ALL (dependabot)"
-            echo "matrix=$ALL" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
+          # DELIBERATELY no Dependabot override here, unlike the other test
+          # workflows. A `pull_request` event raised by Dependabot runs with
+          # Dependabot secrets, NOT the repository's Actions secrets, and this
+          # repo has zero of those (`/dependabot/secrets` returns 0). Every leg
+          # below needs DATAROBOT_API_TOKEN and DATAROBOT_ENDPOINT from the
+          # `integration` environment, so forcing this on for Dependabot would
+          # fail 100% of the time on empty credentials rather than test
+          # anything. `E2E CI` stays safe to mark required regardless: the gate
+          # job reports success when the matrix is skipped.
           if [ "$EVENT_NAME" = "pull_request" ]; then
             echo "run=${RELEVANT:-false}" >> "$GITHUB_OUTPUT"
           else

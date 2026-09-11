@@ -34,8 +34,17 @@ updates:
           - "patch"
           - "major"
     open-pull-requests-limit: 1
+    # `automerge` opts these PRs into unattended approve-and-merge; see
+    # .github/automerge.yaml for what has to be green first.
+    #
+    # EVERY label here must already exist in the repo. Dependabot silently
+    # drops a label it cannot find: no warning, no label on the PR, and
+    # automerge then finds no candidates and does nothing, forever, with
+    # nothing saying why. Run workflow-ensure-labels.yaml before touching this
+    # list.
     labels:
       - "dependencies"
       - "github-actions"
+      - "automerge"
     commit-message:
       prefix: "ci"
