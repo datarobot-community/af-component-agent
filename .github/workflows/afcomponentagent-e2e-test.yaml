@@ -147,8 +147,8 @@ jobs:
       - name: Install pulumi
         shell: bash
         env:
-          PULUMI_VERSION: "3.249.0"
-          PULUMI_SHA256: "0c4acfac957f578e406a3ae9f7042c57f05c4ad9e4b1c83ba0fcf3395e2a0b74"
+          PULUMI_VERSION: "3.262.0"
+          PULUMI_SHA256: "0469448b9853f723340bf19273c817482bca90f5c02c4cac9fa18a530df6402a"
         run: |
           set -euo pipefail
           workdir="$(mktemp -d)"
@@ -271,8 +271,8 @@ jobs:
         # above; bump both together.
         shell: bash
         env:
-          PULUMI_VERSION: "3.249.0"
-          PULUMI_SHA256: "0c4acfac957f578e406a3ae9f7042c57f05c4ad9e4b1c83ba0fcf3395e2a0b74"
+          PULUMI_VERSION: "3.262.0"
+          PULUMI_SHA256: "0469448b9853f723340bf19273c817482bca90f5c02c4cac9fa18a530df6402a"
         run: |
           set -euo pipefail
           workdir="$(mktemp -d)"

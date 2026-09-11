@@ -34,6 +34,13 @@ from datarobot.models.genai.comparison_prompt import ComparisonPrompt
 from datarobot.models.genai.llm_blueprint import LLMBlueprint
 from datarobot.rest import RESTClientObject
 
+from .agent_card import (
+    AgentIdentity,
+    assert_a2a_end_to_end,
+    deployment_a2a_base_url,
+    make_external_id,
+    patch_workflow_external_id,
+)
 from .helpers import (
     ALL_FRAMEWORKS,
     extract_id_from_url,
@@ -299,15 +306,30 @@ def run_agent_e2e(
         f"af-component-agent-e2e-{agent_framework}-{int(time.time())}-{uuid.uuid4().hex[:8]}",
     )
 
+    # One switch for the whole A2A suite: patch, card assertions and registry.
+    run_a2a_tests = os.environ.get("RUN_AGENT_A2A_TESTS", "1") == "1"
+
     fprint("==================================================")
     fprint(f"Running Full Deployment E2E for: {agent_framework}")
     fprint(f"Pulumi stack: {pulumi_stack}")
+    fprint(f"A2A tests: {'enabled' if run_a2a_tests else 'disabled'}")
     fprint("==================================================")
 
     # Step 1: Render the template for the selected agent framework.
     rendered_dir, infra_dir = render_project(
         repo_root=repo_root, agent_framework=agent_framework
     )
+
+    # Step 1b: Give this run a unique A2A external id and write it into the
+    # rendered `workflow.yaml`. Must happen before Step 7's `task build`, not
+    # merely before the deploy: that is where the whole agent directory is
+    # archived into the custom model.
+    external_id = ""
+    if run_a2a_tests:
+        external_id = make_external_id(
+            runtime="custom-models", agent_framework=agent_framework
+        )
+        patch_workflow_external_id(rendered_dir=rendered_dir, external_id=external_id)
 
     # Step 2: Prepare E2E-specific runtime env (written into rendered project's `.env`).
     extra_env: dict[str, str] = {"LLM_USE_DATAROBOT_LLM_GATEWAY": "1"}
@@ -403,6 +425,32 @@ def run_agent_e2e(
                 delay_seconds=60,
                 label="Deployment playground trace verification",
             )
+
+            # Step 10b: A2A. The deployment only exists after Step 9, and by
+            # here it has served real traffic, so directAccess is warm.
+            if run_a2a_tests:
+                # Both the id and the base URL come from this one export
+                # rather than DATAROBOT_ENDPOINT -- see `deployment_a2a_base_url`.
+                chat_endpoint = pulumi_stack_output_value(
+                    infra_dir=infra_dir,
+                    pulumi_stack=pulumi_stack,
+                    pulumi_home=pulumi_home,
+                    contains="Agent Deployment Chat Endpoint ",
+                )
+                deployment_id = extract_id_from_url(chat_endpoint, marker="deployments")
+                fprint(f"Deployment ID: {deployment_id}")
+                assert_a2a_end_to_end(
+                    client=dr.Client(
+                        endpoint=datarobot_endpoint, token=datarobot_api_token
+                    ),
+                    identity=AgentIdentity("deployment", deployment_id),
+                    external_id=external_id,
+                    a2a_base_url=deployment_a2a_base_url(
+                        deployment_chat_endpoint=chat_endpoint
+                    ),
+                    token=datarobot_api_token,
+                    user_prompt=user_prompt,
+                )
 
         fprint("Agent execution completed successfully")
     finally:

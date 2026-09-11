@@ -56,6 +56,12 @@ from ._process import (
     run_cmd,
     task_cmd,
 )
+from .agent_card import (
+    AgentIdentity,
+    assert_a2a_end_to_end,
+    make_external_id,
+    patch_workflow_external_id,
+)
 from .helpers import (
     ALL_FRAMEWORKS,
     pulumi_stack_output_value,
@@ -336,101 +342,6 @@ def _post_chat_completion(
     return content
 
 
-def _fetch_agent_card(
-    *,
-    endpoint: str,
-    datarobot_api_token: str,
-    read_timeout_s: int = 30,
-) -> dict[str, Any]:
-    """GET the A2A agent card and return it as a dict.
-
-    A2A is on in every framework's default `workflow.yaml` (see
-    `base.IS_A2A_SERVER_ENABLED`), so this card should always be there for this
-    E2E's own render -- failing to fetch it is a real bug, not a skip case.
-    Sent with auth regardless of `enable_unauthenticated_well_known_route`: that
-    flag only widens who can fetch the card, an authenticated caller works either
-    way, and this keeps the check independent of that toggle.
-    """
-    url = f"{endpoint.rstrip('/')}/a2a/.well-known/agent-card.json"
-    response = requests.get(
-        url,
-        headers={"Authorization": f"Bearer {datarobot_api_token}"},
-        timeout=(10, read_timeout_s),
-    )
-    response.raise_for_status()
-    try:
-        card = response.json()
-    except ValueError:
-        pytest.fail(f"Agent card at {url} was not JSON:\n{response.text[:2000]}")
-    if not isinstance(card.get("url"), str) or not card["url"]:
-        pytest.fail(f"Agent card at {url} has no usable 'url' field: {card}")
-    return card
-
-
-def _post_a2a_message(
-    *,
-    a2a_url: str,
-    datarobot_api_token: str,
-    user_prompt: str,
-    read_timeout_s: int = 300,
-) -> str:
-    """POST a `message/send` JSON-RPC request to the card's own `url`; return the
-    agent's reply text.
-
-    Deliberately calls the card's advertised URL rather than a locally
-    reconstructed one -- that URL is server-derived from the workload's own
-    `DATAROBOT_ENDPOINT`/workload-id env vars (see datarobot_genai's
-    `get_a2a_endpoint_url`), so this is what proves the card advertises a URL a
-    real client could actually reach, not just that *some* A2A endpoint exists.
-    """
-    message_id = f"e2e-{uuid.uuid4().hex[:8]}"
-    payload: dict[str, Any] = {
-        "jsonrpc": "2.0",
-        "id": message_id,
-        "method": "message/send",
-        "params": {
-            "message": {
-                "kind": "message",
-                "messageId": message_id,
-                "role": "user",
-                "parts": [{"kind": "text", "text": user_prompt}],
-            },
-        },
-    }
-    response = requests.post(
-        a2a_url,
-        headers={
-            "Authorization": f"Bearer {datarobot_api_token}",
-            "Content-Type": "application/json",
-        },
-        json=payload,
-        timeout=(30, read_timeout_s),
-    )
-    response.raise_for_status()
-
-    try:
-        data = response.json()
-    except ValueError:
-        pytest.fail(
-            f"A2A response from {a2a_url} was not JSON:\n{response.text[:2000]}"
-        )
-    if "error" in data:
-        pytest.fail(f"A2A message/send to {a2a_url} returned an error: {data['error']}")
-
-    result = data.get("result") or {}
-    if result.get("kind") != "message":
-        pytest.fail(f"A2A response has no message result: {data}")
-
-    text_parts = [
-        part.get("text", "")
-        for part in result.get("parts", [])
-        if part.get("kind") == "text" and part.get("text")
-    ]
-    if not text_parts:
-        pytest.fail(f"A2A message result has no text parts: {result}")
-    return "".join(text_parts)
-
-
 def _cleanup_workload_e2e(
     *,
     rendered_dir: Path | None,
@@ -533,18 +444,35 @@ def run_workload_agent_e2e(
     # Control whether we run the real deploy phase after the plan assertions.
     run_deploy_tests = os.environ.get("RUN_AGENT_WORKLOAD_DEPLOY_TESTS", "1") == "1"
 
+    # One switch for the whole A2A suite: patch, card assertions and registry.
+    run_a2a_tests = os.environ.get("RUN_AGENT_A2A_TESTS", "1") == "1"
+
     fprint("==================================================")
     fprint(f"Running Workload API E2E for: {agent_framework}")
     fprint(f"Pulumi stack: {pulumi_stack}")
     fprint(
         f"Deploy phase: {'enabled' if run_deploy_tests else 'disabled (preview only)'}"
     )
+    fprint(f"A2A tests: {'enabled' if run_a2a_tests else 'disabled'}")
     fprint("==================================================")
 
     # Step 1: Render the template for the selected agent framework.
     rendered_dir, infra_dir = render_project(
         repo_root=repo_root, agent_framework=agent_framework
     )
+
+    # Step 1b: Give this run a unique A2A external id and write it into the
+    # rendered `workflow.yaml`. Must happen before any Pulumi invocation: the
+    # program reads the file at import time, and `task deploy` archives the
+    # agent directory into the workload artifact. It also has to be before the
+    # *first* deploy specifically -- Step 12 asserts a re-plan changes nothing,
+    # and mutating a deployed source tree would show up there as a replacement.
+    external_id = ""
+    if run_a2a_tests:
+        external_id = make_external_id(
+            runtime="workload-api", agent_framework=agent_framework
+        )
+        patch_workflow_external_id(rendered_dir=rendered_dir, external_id=external_id)
 
     # Step 2: Prepare E2E-specific runtime env (written into rendered project's `.env`).
     extra_env: dict[str, str] = {
@@ -581,15 +509,17 @@ def run_workload_agent_e2e(
 
     if local_plugin_binary and local_plugin_version:
         normalized_version = local_plugin_version.removeprefix("v")
-        plugin_dir = (pulumi_home / "plugins" / f"resource-datarobot-v{normalized_version}")
+        plugin_dir = (
+            pulumi_home / "plugins" / f"resource-datarobot-v{normalized_version}"
+        )
         plugin_dir.mkdir(parents=True, exist_ok=True)
         dest = plugin_dir / "pulumi-resource-datarobot"
         shutil.copy2(local_plugin_binary, dest)
         dest.chmod(dest.stat().st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
         fprint(
-                f"Using local pulumi-datarobot plugin {local_plugin_version} "
-    f"from {local_plugin_binary} (installed into {plugin_dir})"
-    )
+            f"Using local pulumi-datarobot plugin {local_plugin_version} "
+            f"from {local_plugin_binary} (installed into {plugin_dir})"
+        )
     # --------------------------------------------------------------------
 
     # Step 4: Write the rendered project's `.env` file (Taskfile loads this).
@@ -706,28 +636,19 @@ def run_workload_agent_e2e(
         )
         fprint(f"Workload chat completion returned {len(content)} chars")
 
-        # Step 11b: Discover the agent card, then call the URL it advertises --
-        # the A2A equivalent of Step 11, and a check the chat call above cannot
-        # cover: it proves the card's self-reported entrypoint is itself real
-        # and reachable, not just that the workload answers on a URL we already
-        # know about.
-        card = _fetch_agent_card(
-            endpoint=endpoint,
-            datarobot_api_token=datarobot_api_token,
-        )
-        agent_card_url = card["url"]
-        fprint(f"Agent card url: {agent_card_url}")
-        a2a_reply = retry(
-            lambda: _post_a2a_message(
-                a2a_url=agent_card_url,
-                datarobot_api_token=datarobot_api_token,
+        # Step 11b: Discover the agent card and call the URL it advertises --
+        # a check the chat call above cannot cover: it proves the card's
+        # self-reported entrypoint is real, not just that the workload answers
+        # on a URL we already knew.
+        if run_a2a_tests:
+            assert_a2a_end_to_end(
+                client=client,
+                identity=AgentIdentity("workload", workload_id),
+                external_id=external_id,
+                a2a_base_url=f"{endpoint.rstrip('/')}/a2a/",
+                token=datarobot_api_token,
                 user_prompt=user_prompt,
-            ),
-            max_retries=2,
-            delay_seconds=30,
-            label="Workload A2A message/send",
-        )
-        fprint(f"Workload A2A message/send returned {len(a2a_reply)} chars")
+            )
 
         # Step 12: Re-plan. Nothing changed, so nothing may be replaced -- see
         # `_assert_no_pending_changes` for why this matters to users.
