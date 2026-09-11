@@ -12,17 +12,13 @@ on:
       - "pyproject.toml"
       - "uv.lock"
       - ".github/workflows/afcomponentagent-e2e-test.yaml"
+  # No `paths:` filter on pull_request, on purpose. A workflow that a path
+  # filter skips reports no check at all, so it can never serve as a required
+  # status check: the PR sits pending on it forever. That list moved into the
+  # `relevant` filter in the `setup` job below, which decides the same thing
+  # while still letting `E2E CI` report on every PR.
   pull_request:
     branches: ["main"]
-    paths:
-      - "template/**"
-      - "!template/docs/**"
-      - "!template/.agents/skills/**"
-      - "fixtures/**"
-      - "tests/e2e/**"
-      - "pyproject.toml"
-      - "uv.lock"
-      - ".github/workflows/afcomponentagent-e2e-test.yaml"
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   # Never cancel a running job: it may be mid-deploy, and killing it risks
@@ -34,8 +30,13 @@ permissions:
 jobs:
   setup:
     name: "Resolve framework matrix"
+    permissions:
+      contents: read
+      # dorny/paths-filter reads the PR's changed files through the API.
+      pull-requests: read
     runs-on: "ubuntu-latest"
     outputs:
+      run: ${{ steps.resolve.outputs.run }}
       matrix: ${{ steps.resolve.outputs.matrix }}
     steps:
       - name: Checkout
@@ -47,6 +48,18 @@ jobs:
         uses: dorny/paths-filter@v3
         with:
           filters: |
+            # Replaces what used to be the `on: pull_request: paths:` list.
+            # Answers "is this PR relevant to E2E at all"; the per-framework
+            # filters below then narrow which legs of the matrix run.
+            relevant:
+              - 'template/**'
+              - '!template/docs/**'
+              - '!template/.agents/skills/**'
+              - 'fixtures/**'
+              - 'tests/e2e/**'
+              - 'pyproject.toml'
+              - 'uv.lock'
+              - '.github/workflows/afcomponentagent-e2e-test.yaml'
             base:
               - 'template/**/*_base.*'
               - 'template/**/locks/base/**'
@@ -81,6 +94,8 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          RELEVANT: ${{ steps.filter.outputs.relevant }}
           CORE: ${{ steps.filter.outputs.core }}
           CHANGED_base: ${{ steps.filter.outputs.base }}
           CHANGED_crewai: ${{ steps.filter.outputs.crewai }}
@@ -90,6 +105,23 @@ jobs:
         run: |
           set -euo pipefail
           ALL='["base","crewai","langgraph","llamaindex","nat"]'
+          # Dependabot runs the whole suite. Its PRs only ever touch
+          # `.github/**`, so `relevant` and every framework filter come back
+          # false. But the actions it bumps ARE the machinery this workflow
+          # runs on, and auto-merge waits only on required checks. A check that
+          # skips itself is a check that merges the bump untested.
+          if [ "$EVENT_NAME" = "pull_request" ] && [ "$PR_AUTHOR" = "dependabot[bot]" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Resolved matrix: $ALL (dependabot)"
+            echo "matrix=$ALL" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            echo "run=${RELEVANT:-false}" >> "$GITHUB_OUTPUT"
+          else
+            # push to main: the `on: paths` filter already decided.
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
           if [ "$EVENT_NAME" = "pull_request" ] && [ "${CORE:-}" != "true" ]; then
             # PR touching no shared/core path: run only frameworks whose files
             # changed. Iterate ALL so order is preserved; fail safe to ALL if
@@ -115,7 +147,13 @@ jobs:
     # Skip on fork PRs so integration secrets are never reachable from
     # attacker-controlled code. Same-repo branches and pushes to main
     # still run normally.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+    # Gated twice over: `setup.outputs.run` decides whether this PR is relevant
+    # to E2E at all, and the fork check below keeps the integration secrets out
+    # of reach of attacker-controlled code.
+    if: >-
+      needs.setup.outputs.run == 'true' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.fork == false)
     runs-on: "ubuntu-latest"
     environment: integration
     # Single source of truth for the stack name so the Run E2E step and the
@@ -241,7 +279,13 @@ jobs:
     # Same fork guard as `e2e-custom-models`: `pulumi preview` performs real provider reads
     # (the execution environment is resolved via `ExecutionEnvironment.get`), so
     # this job needs the integration secrets too.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+    # Gated twice over: `setup.outputs.run` decides whether this PR is relevant
+    # to E2E at all, and the fork check below keeps the integration secrets out
+    # of reach of attacker-controlled code.
+    if: >-
+      needs.setup.outputs.run == 'true' &&
+      (github.event_name != 'pull_request' ||
+       github.event.pull_request.head.repo.fork == false)
     runs-on: "ubuntu-latest"
     environment: integration
     # Single source of truth for the stack name so the Run step and the teardown
@@ -351,3 +395,28 @@ jobs:
             e2e-workload-api-${{ matrix.framework }}.log
             ./.rendered/agent_${{ matrix.framework }}/**/*.log
           if-no-files-found: warn
+
+  e2e-gate:
+    name: "E2E CI"
+    # The stable, always-reporting context to mark required on `main`. Matrix
+    # job names are unusable for that (they change with the resolved matrix),
+    # and a skipped job reports nothing to require. This one always runs: it
+    # passes when the work above passed or was legitimately skipped, and fails
+    # when any of it failed or was cancelled.
+    needs: [setup, e2e-custom-models, e2e-workload-api]
+    if: always()
+    runs-on: "ubuntu-latest"
+    steps:
+      - name: Check upstream results
+        shell: bash
+        env:
+          RESULTS: "${{ needs.setup.result }} ${{ needs.e2e-custom-models.result }} ${{ needs.e2e-workload-api.result }}"
+        run: |
+          set -euo pipefail
+          for result in $RESULTS; do
+            case "$result" in
+              success|skipped) ;;
+              *) echo "An upstream job finished with: $result"; exit 1 ;;
+            esac
+          done
+          echo "All upstream jobs passed or were skipped."
