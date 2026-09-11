@@ -1,0 +1,8 @@
+# Changes here will be overwritten by Copier
+_commit: v0.1.0
+_src_path: git@github.com:datarobot/af-component-memory.git
+base_answers_file: .datarobot/answers/base.yml
+llm_answers_file: .datarobot/answers/llm-llm.yml
+memory_provider: datarobot_memory_service
+memory_app_name: memory
+memory_app_name_file: memory

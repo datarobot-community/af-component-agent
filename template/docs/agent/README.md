@@ -229,6 +229,10 @@ All agent types use the same `datarobot_genai` package for LLM configuration, re
 
 ## Migrations
 
+### 11.12.0 — Agent memory moved to af-component-memory
+
+Memory providers left the agent component, and the `use_agent_memory` question was removed with them: memory is now wired by the presence of a `memory_answers_file`. Projects that used `datarobot_memory_service` must read the warning about the existing memory space being destroyed. See [agent memory migration](./migration-agent-memory.md).
+
 ### 11.11.48 — Agent infra module split
 
 Agent component 11.11.48 split `infra/infra/<agent_app_name>.py` into an entry router plus `<agent_app_name>_infra/{base,deployment,workload}.py`. Behaviour and the module's public surface are unchanged, so this only affects projects that edited that file. See [agent infra split migration](./migration-infra-split.md).
@@ -257,6 +261,7 @@ Migration guides per framework:
 | All frameworks | [`workflow.yaml` path (11.9.3)](./migration-workflow-yaml-path.md) |
 | All frameworks | [agent config authority](./migration-config-authority.md) |
 | All frameworks | [agent infra split (11.11.48)](./migration-infra-split.md) |
+| All frameworks | [agent memory to af-component-memory (11.12.0)](./migration-agent-memory.md) |
 
 ## Further reading
 

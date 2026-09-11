@@ -44,6 +44,13 @@ def base_mocks(monkeypatch, tmp_path):
     mock_llm_module = MagicMock()
     mock_llm_module.custom_model_runtime_parameters = []
     monkeypatch.setitem(sys.modules, "infra.{{ _external_data.llm.llm_app_name }}", mock_llm_module)
+{%- if memory_module_name %}
+    # base imports the memory component's module at import time, the same way it
+    # imports the LLM component's -- so it has to exist before base is loaded.
+    mock_memory_module = MagicMock()
+    mock_memory_module.custom_model_runtime_parameters = []
+    monkeypatch.setitem(sys.modules, "infra.{{ memory_module_name }}", mock_memory_module)
+{%- endif %}
 
     mock_mcp_module = MagicMock()
     mock_mcp_module.mcp_custom_model_runtime_parameters = []
@@ -709,27 +716,25 @@ class TestBuildSharedAgentRuntimeParameters:
 
         params = base.build_shared_agent_runtime_parameters()
         assert not any(p.key == "CUSTOM_MODEL_WORKERS" for p in params)
-{%- if use_agent_memory == 'memory_component' %}
+{%- if memory_module_name %}
 
-    def test_memory_parameters_forwarded_from_component(self, monkeypatch, tmp_path):
-        """Whatever the memory component exports lands in the agent's parameters."""
+    def test_memory_parameters_forwarded_from_component(self, monkeypatch):
+        """Whatever the memory component's module exports lands in the agent's parameters."""
         import infra.{{agent_app_name}}_infra.base as base
 
-        memory_params = [
-            base.pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-                key="AGENT_MEMORY_TTL_DAYS", type="string", value="30"
-            ),
-            base.pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
-                key="MEM0_API_KEY", type="credential", value="cred-id"
-            ),
-        ]
+        RuntimeParam = base.pulumi_datarobot.CustomModelRuntimeParameterValueArgs
         monkeypatch.setattr(
-            base, "get_memory_custom_model_runtime_parameters", lambda: memory_params
+            base,
+            "memory_custom_model_runtime_parameters",
+            [
+                RuntimeParam(key="AGENT_MEMORY_TTL_DAYS", type="string", value="30"),
+                RuntimeParam(key="MEM0_API_KEY", type="credential", value="cred-id"),
+            ],
         )
 
         params = base.build_shared_agent_runtime_parameters()
 
-        ttl_param = next(p for p in params if p.key == "AGENT_MEMORY_TTL_DAYS")
+        ttl_param = next(p for p in params if p.key == AGENT_MEMORY_TTL_DAYS)
         assert ttl_param.value == "30"
         # Forwarded as-is: the agent never re-creates a memory credential, so the
         # Workload path can translate it like any other credential entry.
@@ -737,22 +742,11 @@ class TestBuildSharedAgentRuntimeParameters:
         assert mem0_param.type == "credential"
         assert mem0_param.value == "cred-id"
 
-    def test_no_memory_parameters_without_a_memory_component(self, monkeypatch):
-        """A project with the answer set but no memory module still renders."""
-        import infra.{{agent_app_name}}_infra.base as base
-
-        monkeypatch.setattr(base, "find_memory_modules", lambda: [])
-
-        params = base.build_shared_agent_runtime_parameters()
-
-        assert base.get_memory_custom_model_runtime_parameters() == []
-        assert not any(p.key == AGENT_MEMORY_TTL_DAYS for p in params)
-
     def test_agent_creates_no_memory_resources(self, monkeypatch):
         """Memory credentials and MemorySpace belong to the memory component."""
         import infra.{{agent_app_name}}_infra.base as base
 
-        monkeypatch.setattr(base, "find_memory_modules", lambda: [])
+        monkeypatch.setattr(base, "memory_custom_model_runtime_parameters", [])
         base.pulumi_datarobot.MemorySpace.reset_mock()
         monkeypatch.setenv("MEM0_API_KEY", "some_mem0_api_key")
 
@@ -761,50 +755,16 @@ class TestBuildSharedAgentRuntimeParameters:
         base.pulumi_datarobot.MemorySpace.assert_not_called()
         assert not any(p.key == "MEM0_API_KEY" for p in params)
 
-    def test_rejects_multiple_memory_components(self, monkeypatch):
-        """Their parameter keys collide, so this must fail loudly, not merge."""
+    def test_memory_module_is_imported_by_name_from_its_answers_file(self):
+        """The module name comes from memory_answers_file, not from a search.
+
+        A blank `memory_module_name` would render `from .. import
+        custom_model_runtime_parameters`, which silently binds the infra
+        package's own export instead of the memory component's.
+        """
         import infra.{{agent_app_name}}_infra.base as base
 
-        monkeypatch.setattr(
-            base, "find_memory_modules", lambda: ["memory", "mem0_memory"]
-        )
-
-        with pytest.raises(ValueError, match="more than one memory component"):
-            base.get_memory_custom_model_runtime_parameters()
-
-
-class TestFindMemoryModules:
-    def test_discovers_module_by_export(self, monkeypatch, tmp_path):
-        """The module is matched on its export, not its name -- the name varies."""
-        import infra.{{agent_app_name}}_infra.base as base
-
-        (tmp_path / "mem0_memory.py").write_text(
-            "memory_custom_model_runtime_parameters = []\n"
-        )
-        monkeypatch.setattr(base, "maybe_import_from_module", lambda m, o: [])
-
-        assert base.find_memory_modules(tmp_path) == ["mem0_memory"]
-
-    def test_ignores_modules_without_the_export(self, monkeypatch, tmp_path):
-        import infra.{{agent_app_name}}_infra.base as base
-
-        (tmp_path / "llm.py").write_text("custom_model_runtime_parameters = []\n")
-
-        def _unexpected(module, object_name):
-            raise AssertionError(f"must not import non-memory module {module}")
-
-        monkeypatch.setattr(base, "maybe_import_from_module", _unexpected)
-
-        assert base.find_memory_modules(tmp_path) == []
-
-    def test_skips_the_agents_own_modules(self, monkeypatch, tmp_path):
-        """Importing the agent's own module from base would be circular."""
-        import infra.{{agent_app_name}}_infra.base as base
-
-        (tmp_path / "{{agent_app_name_file}}.py").write_text(
-            "memory_custom_model_runtime_parameters = []\n"
-        )
-        monkeypatch.setattr(base, "maybe_import_from_module", lambda m, o: [])
-
-        assert base.find_memory_modules(tmp_path) == []
+        assert "{{ memory_module_name }}"
+        assert sys.modules["infra.{{ memory_module_name }}"] is not None
+        assert base.memory_custom_model_runtime_parameters is not None
 {%- endif %}

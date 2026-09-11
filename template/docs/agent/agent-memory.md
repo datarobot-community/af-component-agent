@@ -15,7 +15,7 @@ Memory is **not** implemented in `myagent.py`. The generated `workflow.yaml` wra
 | [Adding a memory backend](#adding-a-memory-backend) | Wiring up af-component-memory. |
 | [How the agent finds the backend](#how-the-agent-finds-the-backend) | Infra-side discovery, and what it does not do. |
 | [Local development](#local-development) | Verifying memory works. |
-| [Migrating from in-agent memory](#migrating-from-in-agent-memory) | Upgrading projects generated before the split. |
+| [Migrating from in-agent memory](#migrating-from-in-agent-memory) | Pointer to the migration guide for projects generated before the split. |
 
 Enabling memory does **not** change the dependency set. Both providers are already
 reachable through `datarobot-genai`, so the generated `pyproject.toml` is identical
@@ -107,40 +107,51 @@ To remove memory entirely, replace the `streaming_memory_agent` workflow block w
 
 ## Adding a memory backend
 
-Two things are needed, and they are independent:
+Two things are needed, **in this order**:
 
-1. **Answer `use_agent_memory` with the memory-component option** when generating or updating the agent. Stored in `.datarobot/answers/agent-*.yml` as `use_agent_memory: memory_component`. To pass it non-interactively:
-
-   ```sh
-   uvx copier copy . ./my-agent --data use_agent_memory=memory_component
-   ```
-
-2. **Add the memory component** to the same project:
+1. **Add the memory component** to the project:
 
    ```sh
    dr component add af-component-memory
    ```
 
-   That component asks which provider to use and renders `infra/infra/<memory_name>.py` alongside the agent's infra. Provider choice, API keys, TTL, and memory-space LLM routing are all configured there — see its generated `docs/<memory_name>.md`.
+   It asks which provider to use, renders `infra/infra/<memory_name>.py` alongside the agent's infra, and writes `.datarobot/answers/memory-<memory_name>.yml`. Provider choice, API keys, TTL, and memory-space LLM routing are all configured there — see its generated `docs/<memory_name>.md`.
 
-Answering `use_agent_memory=memory_component` without adding the component is not an error: the agent renders, discovery finds nothing, and the workflow passes through. That makes the order of the two steps irrelevant.
+2. **Generate or update the agent**, pointing `memory_answers_file` at the answers file from step 1. To pass it non-interactively:
+
+   ```sh
+   uvx copier copy . ./my-agent \
+     --data memory_answers_file=.datarobot/answers/memory-memory.yml
+   ```
+
+   The default assumes the DataRobot Memory Service, whose instance is named `memory`. Mem0 names its instance `mem0_memory`, so that project needs `.datarobot/answers/memory-mem0_memory.yml`.
+
+There is no separate on/off question — `memory_answers_file` resolving is the signal, exactly as `llm_answers_file` is for the LLM component. The order matters: the agent's infra imports the memory module by the name recorded in that file, so it must exist before the agent renders.
+
+> **A path that does not resolve means "no memory", not an error.** That is what keeps memory optional, but it also means a typo silently disables it. Copier does warn when the path does not resolve:
+>
+> ```
+> MissingFileWarning: File not found; returning empty dict: .datarobot/answers/memory-memory.yml
+> ```
+>
+> It is a warning, not an error, and easy to miss in a long render. After rendering, confirm `base.py` contains a `from ..<memory_name> import` line.
 
 ---
 
 ## How the agent finds the backend
 
-`infra/infra/<agent_app_name>_infra/base.py` discovers the memory component at deploy time and forwards whatever runtime parameters it exports:
+The same way it finds the LLM component. `memory_answers_file` is read as Copier external data, the memory instance's module name comes out of it, and `infra/infra/<agent_app_name>_infra/base.py` imports that module directly:
 
 ```python
-params += get_memory_custom_model_runtime_parameters()
+from ..memory import custom_model_runtime_parameters as memory_custom_model_runtime_parameters
 ```
 
-Discovery matches on the **export**, not the module name: any sibling `infra/infra/*.py` defining `memory_custom_model_runtime_parameters` is treated as the memory component. The memory component names its module after the memory instance, and that name varies by provider, so there is no fixed name to look up the way co-deployed MCP uses `mcp_server`. The agent's own module and package are skipped.
+Those parameters are concatenated into the shared runtime-parameter list next to the LLM component's, with no discovery step in between. The module name is not fixed — af-component-memory names it after the memory instance (`memory` for the DataRobot Memory Service, `mem0_memory` for Mem0) — which is exactly why it has to be read from the answers file rather than guessed.
 
 Two consequences worth knowing:
 
 - **The agent creates no memory resources.** No credential, no memory space. The memory component creates whatever it needs and exports already-resolved values, including credential IDs. That is what keeps memory runtime-agnostic — the Custom Models and Workload API paths consume the identical parameter list, and neither one creates, re-creates, or reaches into a memory credential.
-- **Only one memory component per agent.** Their runtime parameter keys are fixed and would collide. Finding more than one raises a `ValueError` at preview time rather than silently merging them.
+- **One memory component per agent.** `memory_answers_file` names a single instance. A second memory component's runtime parameter keys would collide with the first's, so it is not wired in.
 
 Adding a provider, or changing how one is configured, is therefore a change to `af-component-memory` alone. Nothing in the agent template needs to know a provider exists.
 
@@ -162,25 +173,15 @@ Adding a provider, or changing how one is configured, is therefore a change to `
 
 3. Send repeated prompts under the same user identity across separate conversations, and confirm facts from earlier turns are recalled.
 
-If memory appears to do nothing, check that `infra/infra/` actually contains a memory module — a passthrough is the designed behavior when it does not, so this fails silently by design.
+If memory appears to do nothing, check `base.py` for the `from ..<memory_name> import` line first. Absent, `memory_answers_file` did not resolve. Present, the module is wired in but the backend is not configured — `streaming_memory_agent` passes through when it has no backend, so check the memory component's own settings.
 
 ---
 
 ## Migrating from in-agent memory
 
-Projects generated before the split stored a provider directly in the agent's answers (`use_agent_memory: mem0` or `use_agent_memory: datarobot_memory_service`), and the agent's own infra created the Mem0 credential or the `MemorySpace`.
+Projects generated before the split stored a provider directly in the agent's answers (`use_agent_memory: mem0` or `use_agent_memory: datarobot_memory_service`). That answer no longer exists, and for `datarobot_memory_service` the existing memory space is **destroyed** on the next `pulumi up` unless you act first.
 
-A Copier migration rewrites those answers to `memory_component` on update. It cannot create the memory component for you, so after updating:
-
-```sh
-dr component add af-component-memory
-```
-
-Choose the provider you were using before, and move your settings to that component's environment variables — they are read per-instance first, so `MEM0_API_KEY` becomes `<MEMORY_NAME>_MEM0_API_KEY` (the unprefixed name still works as a fallback).
-
-> **Important:** For `datarobot_memory_service`, the memory space is a Pulumi resource that moves between components. The agent stops managing it and the memory component creates its own, so the previous space is not reused and previously stored memories are not carried over. Export anything you need before updating.
-
-`workflow.yaml` needs no changes — the memory wrapper was already unconditional.
+See [agent memory migration](./migration-agent-memory.md) for the full procedure and the warning.
 
 ---
 

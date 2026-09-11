@@ -42,9 +42,7 @@ The following parameters are provisioned conditionally, depending on which optio
 
 | Runtime parameter | Type | When provisioned | Documented in |
 |---|---|---|---|
-| `AGENT_MEMORY_TTL_DAYS` | string | `use_agent_memory` is set to `mem0` or `datarobot_memory_service` | [Agent memory: Configuration and runtime parameters](./agent-memory.md#configuration-and-runtime-parameters) |
-| `AGENT_MEMORY_SPACE_ID` | string | `use_agent_memory: datarobot_memory_service` | [Agent memory: Configuration and runtime parameters](./agent-memory.md#configuration-and-runtime-parameters) |
-| `MEM0_API_KEY` | credential | `use_agent_memory: mem0`, and `MEM0_API_KEY` is set in the Pulumi environment | [Agent memory: Configuration and runtime parameters](./agent-memory.md#configuration-and-runtime-parameters) |
+| `AGENT_MEMORY_TTL_DAYS`, `AGENT_MEMORY_SPACE_ID`, `MEM0_API_KEY` (whichever the chosen provider uses) | string / credential | An af-component-memory component is present and `memory_answers_file` points at its answers file | [Agent memory: How the agent finds the backend](./agent-memory.md#how-the-agent-finds-the-backend), and the memory component's own `docs/<memory_name>.md` |
 | `SESSION_SECRET_KEY` | credential | `SESSION_SECRET_KEY` is set in the Pulumi environment | `infra/infra/<agent_app_name>_infra/base.py` |
 | `IDP_AGENT_ID` | string | `IDP_AGENT_ID` is set in the Pulumi environment | [A2A Authentication: Infrastructure](./agent2agent-auth.md#infrastructure-automatic-runtime-parameter-provisioning) |
 | `IDP_AGENT_PRIVATE_KEY_JWK` | credential | `IDP_AGENT_PRIVATE_KEY_JWK` is set in the Pulumi environment | [A2A Authentication: Infrastructure](./agent2agent-auth.md#infrastructure-automatic-runtime-parameter-provisioning) |
@@ -62,7 +60,7 @@ Some environment variables only control what `infra/infra/<agent_app_name>_infra
 Override the value of a runtime parameter depending on when the change needs to take effect:
 
 - **Local development** — set the variable in the project `.env` file. It takes effect immediately, the same way it does after deployment, with no deploy needed.
-- **At deploy time** — this works only when the infra registration reads the variable from `os.environ`. Set such variables in the environment that `dr run deploy` (Pulumi) runs in; examples include `AGENT_MEMORY_TTL_DAYS`, `MEM0_API_KEY`, `SESSION_SECRET_KEY`, `IDP_AGENT_ID`, and `IDP_AGENT_PRIVATE_KEY_JWK`. Parameters registered from constants, such as `AGENT_GUNICORN_WORKER_TIMEOUT`, require an infra code change before deployment.
+- **At deploy time** — this works only when the infra registration reads the variable from `os.environ`. Set such variables in the environment that `dr run deploy` (Pulumi) runs in; examples include `SESSION_SECRET_KEY`, `IDP_AGENT_ID`, and `IDP_AGENT_PRIVATE_KEY_JWK`. The memory equivalents (`AGENT_MEMORY_TTL_DAYS`, `MEM0_API_KEY`) work the same way but are read by af-component-memory, not by this component. Parameters registered from constants, such as `AGENT_GUNICORN_WORKER_TIMEOUT`, require an infra code change before deployment.
 - **After deployment** — to update a value on the existing deployment, deactivate the deployment, edit the runtime parameter in **Settings > Resources**, and reactivate it. To avoid downtime, replace the active deployment's model version and set the runtime parameter values during replacement. Neither workflow requires an agent code change.
 
 ## Add a custom runtime parameter
@@ -110,4 +108,4 @@ Adding a custom runtime parameter has two parts: a `Config` field so the agent c
 
    If the value is safe to publish as a default (not a secret, and meaningful without deploy-time context), add its key to `SERVER_PARAMS_WITH_DEFAULTS` so it is written into the `defaultValue` field in `model-metadata.yaml`. This sets a default value for the runtime parameter that is used when no value is provided at deploy time.
 
-For a complete worked example of a conditional, feature-gated runtime parameter (including a `credential`-type one), see the memory space and Mem0 provisioning in [Agent memory: Infrastructure provisioning](./agent-memory.md#infrastructure-provisioning).
+For a complete worked example of a conditional, feature-gated runtime parameter (including a `credential`-type one), see the memory space and Mem0 provisioning in af-component-memory's infra module. This component does not provision memory itself — it forwards what that component exports, as described in [Agent memory: How the agent finds the backend](./agent-memory.md#how-the-agent-finds-the-backend).

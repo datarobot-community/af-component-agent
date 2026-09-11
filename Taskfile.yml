@@ -62,7 +62,7 @@ tasks:
   render-template:
     desc: "Render template"
     vars:
-      USE_MEMORY: '{{.USE_MEMORY| default "none"}}'
+      WITH_MEMORY: '{{.WITH_MEMORY| default "0"}}'
       # The rendered app folder and `[project].name`. Defaults to copier's own
       # default so every existing caller renders exactly where it did before.
       # `update-lock-file` overrides it, and only it: see LOCK_APP_NAME there.
@@ -82,17 +82,24 @@ tasks:
       - cd ./$RENDER_DIR/agent_{{.AGENT}}/ && [ -d . ] && find . -mindepth 1 -maxdepth 1 ! -name '.venv' -exec rm -rf {} + || true
       - mkdir -p ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/
       - cp ./fixtures/.datarobot/answers/llm-llm.yml ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/llm-llm.yml
-      - uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_app_name={{.RENDER_APP_NAME}} --data agent_template_framework={{.AGENT_TEMPLATE_FRAMEWORK}} --data use_agent_memory={{.USE_MEMORY}} --vcs-ref=HEAD
+      # The agent imports the memory component's infra module by the name in its
+      # answers file, so the file has to be in place BEFORE copier runs -- same
+      # ordering requirement as llm-llm.yml above.
+      - |
+        if [ "{{.WITH_MEMORY}}" = "1" ]; then
+          cp ./fixtures/.datarobot/answers/memory-memory.yml ./$RENDER_DIR/agent_{{.AGENT}}/.datarobot/answers/memory-memory.yml
+        fi
+      - uvx copier copy . ./$RENDER_DIR/agent_{{.AGENT}} --defaults --data agent_app_name={{.RENDER_APP_NAME}} --data agent_template_framework={{.AGENT_TEMPLATE_FRAMEWORK}} --vcs-ref=HEAD
       - cp ./fixtures/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/Taskfile.yml
       - mkdir -p ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra
       - cp ./fixtures/infra/Taskfile.yml ./$RENDER_DIR/agent_{{.AGENT}}/infra/Taskfile.yml
       - cp ./fixtures/infra/pyproject.toml ./$RENDER_DIR/agent_{{.AGENT}}/infra/pyproject.toml
       - cp ./fixtures/infra/__init__.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/__init__.py
       - cp ./fixtures/infra/llm.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/llm.py
-      # Stands in for a rendered af-component-memory module so the agent's
-      # discovery path has something to find. Only for memory_component renders.
+      # Stands in for a rendered af-component-memory module, under the name the
+      # answers file copied above declares. Only staged for memory renders.
       - |
-        if [ "{{.USE_MEMORY}}" = "memory_component" ]; then
+        if [ "{{.WITH_MEMORY}}" = "1" ]; then
           cp ./fixtures/infra/memory.py ./$RENDER_DIR/agent_{{.AGENT}}/infra/infra/memory.py
         fi
 
@@ -129,7 +136,7 @@ tasks:
       - task: render-template
         vars:
           AGENT: "{{.AGENT}}"
-          USE_MEMORY: '{{.USE_MEMORY| default "none"}}'
+          WITH_MEMORY: '{{.WITH_MEMORY| default "0"}}'
       - task: install-rendered
         vars:
           AGENT: "{{.AGENT}}"
@@ -164,7 +171,7 @@ tasks:
       - task: render-install
         vars:
           AGENT: "{{.AGENT}}"
-          USE_MEMORY: '{{.USE_MEMORY| default "none"}}'
+          WITH_MEMORY: '{{.WITH_MEMORY| default "0"}}'
       - echo "Running tests for {{.AGENT}}"
       - cd $RENDER_DIR/agent_{{.AGENT}} && echo "LLM_DEFAULT_MODEL='datarobot/azure/gpt-5-mini-2025-08-07'" >> .env
       - |
@@ -197,7 +204,7 @@ tasks:
       - task: test-agent
         vars:
           AGENT: base_memory
-          USE_MEMORY: memory_component
+          WITH_MEMORY: "1"
           SKIP_LINT: "{{.SKIP_LINT| default 0}}"
           SKIP_INFRA: "{{.SKIP_INFRA| default 0}}"
 
@@ -303,7 +310,7 @@ tasks:
         vars:
           AGENT: "{{.AGENT}}"
           RENDER_APP_NAME: "{{.LOCK_APP_NAME}}"
-          USE_MEMORY: '{{.USE_MEMORY| default "none"}}'
+          WITH_MEMORY: '{{.WITH_MEMORY| default "0"}}'
       - |
           if [ "$UPGRADE_LOCK" = "1" ]; then
             uv lock -U --directory {{.LOCK_DIR}}

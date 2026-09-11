@@ -19,18 +19,6 @@ use_low_code_interface:
   help: "Do you want to use low-code YAML-based configuration (i.e. NeMo Agent Toolkit) for your agent? (default: no)"
   default: no
 
-# Provider selection lives in af-component-memory, not here. This only controls
-# whether the agent looks for a memory component's runtime parameters; which
-# backend those parameters describe is that component's business.
-use_agent_memory:
-  type: str
-  help: "Consume agent memory from an af-component-memory component?"
-  default: none
-  choices:
-    # Quoted: bare No/Yes are YAML 1.1 booleans and would become False/True labels.
-    "No": none
-    "Yes (requires the af-component-memory component)": memory_component
-
 agent_template_framework:
   type: str
   default: |-
@@ -66,10 +54,58 @@ llm_answers_file:
     {% elif '.datarobot/answers' not in llm_answers_file %}ERROR: LLM answers file must contain '.datarobot/answers' in the path
     {% endif %}
 
+# Agent memory is opt-in by PRESENCE, the same way the LLM component is wired:
+# there is no separate yes/no question. If this path resolves to a real answers
+# file, the agent imports that memory component's runtime parameters; if it does
+# not, the agent renders without memory. Leave the default alone when not using
+# memory -- the file simply will not exist.
+#
+# The tradeoff of a presence signal is that a typo'd or stale path disables
+# memory silently rather than failing. The validator below catches what it can.
+memory_answers_file:
+  type: str
+  default: ".datarobot/answers/memory-memory.yml"
+  help: "Path to the memory component answers file, if using agent memory (must contain '.datarobot/answers')"
+  # The default matches the DataRobot Memory Service instance name. The Mem0
+  # provider names its instance `mem0_memory`, so that answers file is
+  # `.datarobot/answers/memory-mem0_memory.yml` and must be entered here.
+  #
+  # The third branch turns a silent failure into a loud one. Copier does NOT
+  # error when an `_external_data` path does not exist: it yields an empty
+  # mapping, so `memory_module_name` below renders as the empty string and the
+  # import comes out as `from .. import custom_model_runtime_parameters` --
+  # syntactically valid, ruff-clean, and silently importing the infra package
+  # instead of the memory module. Only absolute paths are checked: a relative
+  # path resolves against the CURRENT WORKING DIRECTORY while questions are
+  # validated but against the DESTINATION directory at render time, and
+  # copier-template-validator relies on the latter, so an empty read here is
+  # legitimate. See af-component-memory's copier.yml, which hit this first.
+  validator: >-
+    {% if not memory_answers_file %}ERROR: Memory answers file path cannot be empty
+    {% elif '.datarobot/answers' not in memory_answers_file %}ERROR: Memory answers file must contain '.datarobot/answers' in the path
+    {% elif memory_answers_file.startswith('/') and not _external_data.memory.memory_app_name_file %}ERROR: Could not read 'memory_app_name_file' from the memory component answers file at '{{ memory_answers_file }}'. That absolute path does not exist or has no 'memory_app_name_file' key. Run `dr component add af-component-memory` first, then point this at the answers file it writes.
+    {% endif %}
+
 # Re-use answers from the components this agent depends on.
 _external_data:
   base: "{{ base_answers_file }}"
   llm: "{{ llm_answers_file }}"
+  memory: "{{ memory_answers_file }}"
+
+# The memory component's infra module name, resolved from its answers file.
+#
+# af-component-memory names its module after the memory instance, and that name
+# varies by provider (`memory` for the DataRobot Memory Service, `mem0_memory`
+# for Mem0), so it can only be learned from the answers file -- the same way the
+# LLM component's module name is learned from `llm_answers_file`.
+#
+# Templates must use `memory_module_name`, never `_external_data.memory.*`
+# directly, so the validator above is always the thing standing between a bad
+# path and a broken render.
+memory_module_name:
+  type: str
+  default: "{{ _external_data.memory.memory_app_name_file | default('', true) }}"
+  when: false
 
 _subdirectory: template
 _answers_file: ".datarobot/answers/agent-{{ agent_app_name }}.yml"
@@ -136,36 +172,6 @@ _migrations:
           rm -rf "$APP/.copier_migration_tmp"
         done
     when: "{{ _stage == 'after' and _copier_operation == 'update' }}"
-  # Migrate legacy boolean memory answers to the current provider choice.
-  #
-  # `use_agent_memory` used to be a bool, so older answers can contain
-  # yes/no or true/false. The current question is a string choice where the
-  # no-memory provider is stored as `none`.
-  - version: "11.8.28"
-    command:
-      - bash
-      - -lc
-      - |
-        set -euo pipefail
-        for ANSWERS_FILE in .datarobot/answers/agent-*.yml; do
-          [ -f "$ANSWERS_FILE" ] || continue
-          python3 - "$ANSWERS_FILE" <<'PY'
-        from pathlib import Path
-        import re
-        import sys
-
-        answers_file = Path(sys.argv[1])
-        text = answers_file.read_text(encoding="utf-8")
-        legacy_bool_answer = re.compile(
-            r"^(\s*use_agent_memory:\s*)(['\"]?)(?:yes|no|true|false)\2(\s*(?:#.*)?)$",
-            re.IGNORECASE | re.MULTILINE,
-        )
-        updated = legacy_bool_answer.sub(r"\1none\3", text)
-        if updated != text:
-            answers_file.write_text(updated, encoding="utf-8")
-        PY
-        done
-    when: "{{ _stage == 'before' and _copier_operation == 'update' }}"
   # Move workflow.yaml from agent/ to the app root (DRAgent default config path).
   #
   # Why 2 steps?
@@ -259,65 +265,62 @@ _migrations:
           echo "" >&2
         done
     when: "{{ _stage == 'before' and _copier_operation == 'update' }}"
-  # Migrate provider-specific memory answers to the memory-component choice.
+  # Warn projects that used the removed in-agent memory providers.
   #
-  # Memory providers moved out of this component into af-component-memory, so
-  # `mem0` / `datarobot_memory_service` are no longer valid answers here. Both
-  # become `memory_component`, which only means "look for a memory component's
-  # runtime parameters". Copier cannot add that component for us, so the note
-  # below tells the user to run `dr component add af-component-memory`.
+  # Memory moved out of this component into af-component-memory, and the
+  # `use_agent_memory` question went with it: whether an agent has memory is now
+  # decided purely by whether `memory_answers_file` resolves. Copier drops the
+  # stale `use_agent_memory` answer on its own, so there is nothing to rewrite --
+  # but it cannot add the memory component, and it cannot guess the new answers
+  # file path. This only reads the old answer, to decide whether to say so.
   #
-  # Answers already on `none` or `memory_component` are left alone, so this is
-  # idempotent.
+  # Projects that never used memory (`none`, or no answer at all) see nothing.
   - version: "11.12.0"
     command:
       - bash
       - -lc
       - |
         set -euo pipefail
-        MIGRATED=""
+        FOUND=""
         for ANSWERS_FILE in .datarobot/answers/agent-*.yml; do
           [ -f "$ANSWERS_FILE" ] || continue
-          PROVIDER="$(python3 - "$ANSWERS_FILE" <<'PY'
-        from pathlib import Path
-        import re
-        import sys
-
-        answers_file = Path(sys.argv[1])
-        text = answers_file.read_text(encoding="utf-8")
-        provider_answer = re.compile(
-            r"^(\s*use_agent_memory:\s*)(['\"]?)(mem0|datarobot_memory_service)\2(\s*(?:#.*)?)$",
-            re.MULTILINE,
-        )
-        match = provider_answer.search(text)
-        if match:
-            answers_file.write_text(
-                provider_answer.sub(r"\1memory_component\4", text), encoding="utf-8"
-            )
-            print(match.group(3))
-        PY
-        )"
-          [ -n "$PROVIDER" ] && MIGRATED="$MIGRATED $ANSWERS_FILE ($PROVIDER)"
+          PROVIDER="$(grep -m1 '^[[:space:]]*use_agent_memory:' "$ANSWERS_FILE" 2>/dev/null | cut -d: -f2- | tr -d "\"' " | tr '[:upper:]' '[:lower:]' || true)"
+          case "$PROVIDER" in
+            # `yes`/`true` are the pre-11.8.28 boolean spelling, back when memory
+            # was on/off and Mem0 was the only backend. Those projects had memory
+            # too, so they get the same notice.
+            mem0|datarobot_memory_service|memory_component|yes|true)
+              FOUND="$FOUND $ANSWERS_FILE ($PROVIDER)"
+              ;;
+          esac
         done
-        if [ -n "$MIGRATED" ]; then
+        if [ -n "$FOUND" ]; then
           echo "" >&2
-          echo "NOTE: agent memory providers moved to af-component-memory." >&2
-          echo "      Rewrote use_agent_memory to 'memory_component' in:$MIGRATED" >&2
+          echo "NOTE: agent memory moved to af-component-memory, and the" >&2
+          echo "      'use_agent_memory' question was removed. Found in:$FOUND" >&2
           echo "" >&2
-          echo "      This agent no longer provisions a memory backend. To keep memory" >&2
-          echo "      working, add the component and pick the same provider:" >&2
+          echo "      Memory is now wired by presence: the agent consumes memory only" >&2
+          echo "      when 'memory_answers_file' points at a real answers file. Add the" >&2
+          echo "      component FIRST, then answer that question during this update:" >&2
           echo "" >&2
           echo "        dr component add af-component-memory" >&2
+          echo "" >&2
+          echo "      The default assumes the DataRobot Memory Service instance name" >&2
+          echo "      (.datarobot/answers/memory-memory.yml); Mem0 writes" >&2
+          echo "      .datarobot/answers/memory-mem0_memory.yml instead. A path that" >&2
+          echo "      does not exist means no memory -- it does not raise an error." >&2
           echo "" >&2
           echo "      Provider settings move with it: MEM0_API_KEY and AGENT_MEMORY_*" >&2
           echo "      are read per-instance first (<MEMORY_NAME>_<VAR>), with the" >&2
           echo "      unprefixed names still honoured as a fallback." >&2
           echo "" >&2
-          echo "      For datarobot_memory_service, the new component creates its OWN" >&2
-          echo "      memory space -- the one this agent used to manage is not reused" >&2
-          echo "      and its stored memories do not carry over." >&2
+          echo "      WARNING, datarobot_memory_service only: the new component creates" >&2
+          echo "      its OWN memory space. The space this agent used to manage is no" >&2
+          echo "      longer declared by any infra module, so the next 'pulumi up' will" >&2
+          echo "      DESTROY it along with everything stored in it. Save anything you" >&2
+          echo "      need first." >&2
           echo "" >&2
-          echo "      See docs/agent/agent-memory.md." >&2
+          echo "      See docs/agent/migration-agent-memory.md." >&2
           echo "" >&2
         fi
     when: "{{ _stage == 'before' and _copier_operation == 'update' }}"

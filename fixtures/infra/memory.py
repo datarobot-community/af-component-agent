@@ -1,9 +1,13 @@
 # This fixture stands in for a rendered af-component-memory module.
 #
-# It mirrors that component's export contract -- the module name varies by
-# provider, and what matters is that it defines
-# `memory_custom_model_runtime_parameters` -- so the agent's discovery path can
-# be exercised without a second component checkout.
+# Paired with fixtures/.datarobot/answers/memory-memory.yml: that answers file
+# is what tells the agent render this module is called `memory`, and this file
+# is what makes the resulting `from ..memory import ...` resolve. Changing the
+# name in one requires changing it in the other.
+#
+# It mirrors the component's export contract -- `custom_model_runtime_parameters`
+# is what the agent imports, and the `memory_`-prefixed name is the component's
+# own internal one, exported here too so the fixture stays faithful.
 #
 # Import-safe by design, like llm.py: it builds parameter values only and
 # creates no Pulumi resources. The real component creates its own credential /

@@ -46,6 +46,13 @@ def deployment_mocks(monkeypatch, tmp_path):
     mock_llm_module = MagicMock()
     mock_llm_module.custom_model_runtime_parameters = []
     monkeypatch.setitem(sys.modules, "infra.{{ _external_data.llm.llm_app_name }}", mock_llm_module)
+{%- if memory_module_name %}
+    # base imports the memory component's module at import time, the same way it
+    # imports the LLM component's -- so it has to exist before base is loaded.
+    mock_memory_module = MagicMock()
+    mock_memory_module.custom_model_runtime_parameters = []
+    monkeypatch.setitem(sys.modules, "infra.{{ memory_module_name }}", mock_memory_module)
+{%- endif %}
 
     mock_mcp_module = MagicMock()
     mock_mcp_module.mcp_custom_model_runtime_parameters = []

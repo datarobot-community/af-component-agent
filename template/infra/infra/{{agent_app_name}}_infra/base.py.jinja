@@ -20,7 +20,8 @@ assembly, and A2A detection. The only Pulumi resources created here are the
 session and IDP credentials — both runtime-agnostic. Memory resources are not
 created here at all: ``af-component-memory`` owns the provider and creates its
 own credential or ``MemorySpace``, and this module only forwards the runtime
-parameters that component exports (see ``get_memory_custom_model_runtime_parameters``).
+parameters that component exports — imported by module name from its answers
+file, exactly like the LLM component's parameters.
 Runtime-specific resources (``CustomModel``/``Playground``/``LlmBlueprint`` for
 Custom Models; ``Artifact``/``Workload`` for Workload API) live in
 ``deployment.py``/``workload.py`` respectively, which never check the runtime
@@ -45,6 +46,11 @@ from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 
 from .. import project_dir
 from ..{{ _external_data.llm.llm_app_name }} import custom_model_runtime_parameters as llm_custom_model_runtime_parameters
+{%- if memory_module_name %}
+from ..{{ memory_module_name }} import (
+    custom_model_runtime_parameters as memory_custom_model_runtime_parameters,
+)
+{%- endif %}
 
 logger = logging.getLogger(__name__)
 
@@ -93,12 +99,6 @@ EXCLUDE_PATTERNS = [
 
 # Co-deployed MCP is auto-wired by this name; renamed/extra MCP → env vars.
 MCP_MODULE_NAME: Final[str] = "mcp_server"
-{%- if use_agent_memory == 'memory_component' %}
-
-# af-component-memory is auto-wired by this export instead of by module name,
-# since the module is named after the memory instance. See find_memory_modules.
-MEMORY_PARAMETERS_EXPORT: Final[str] = "memory_custom_model_runtime_parameters"
-{%- endif %}
 
 # The co-deployed MCP module (if any) lives at infra/mcp_server.py, a sibling
 # of the infra.{{agent_app_name}}_infra package this module lives in -- not inside it.
@@ -353,67 +353,7 @@ def get_mcp_custom_model_runtime_parameters() -> list[
     if mcp_params is not None:
         return mcp_params
     return get_mcp_runtime_parameters_from_env()
-{% if use_agent_memory == 'memory_component' %}
 
-def find_memory_modules(infra_dir: Path | None = None) -> list[str]:
-    """Return the sibling infra modules that export memory runtime parameters.
-
-    af-component-memory names its module after the memory instance, and that
-    name varies by provider (`memory` for the DataRobot Memory Service,
-    `mem0_memory` for Mem0), so there is no single conventional name to look up
-    the way `mcp_server` is. Modules are matched on the export contract instead:
-    any `infra/<name>.py` defining `memory_custom_model_runtime_parameters`.
-
-    The agent's own module and package are skipped -- importing either from here
-    would be circular.
-    """
-    infra_dir = infra_dir or Path(__file__).resolve().parent.parent
-    self_names = {"{{agent_app_name_file}}", "{{agent_app_name}}_infra", "__init__"}
-
-    found: list[str] = []
-    for candidate in sorted(infra_dir.glob("*.py")):
-        name = candidate.stem
-        if name in self_names:
-            continue
-        if MEMORY_PARAMETERS_EXPORT not in candidate.read_text(encoding="utf-8"):
-            # Cheap text check first: never import a module that cannot be a
-            # memory module, since importing runs its Pulumi resource code.
-            continue
-        if maybe_import_from_module(name, MEMORY_PARAMETERS_EXPORT) is not None:
-            found.append(name)
-    return found
-
-
-def get_memory_custom_model_runtime_parameters() -> list[
-    pulumi_datarobot.CustomModelRuntimeParameterValueArgs
-]:
-    """Load runtime parameters from the af-component-memory module, if present.
-
-    Returns an empty list when no memory component is installed, which is the
-    supported "agent renders, memory does not" state -- `streaming_memory_agent`
-    passes through when no backend is configured.
-
-    No Pulumi resources are created here. The memory component owns its own
-    credential / ``MemorySpace``, so what arrives is already-resolved parameter
-    values (including credential IDs). That keeps memory runtime-agnostic: the
-    Custom Models and Workload API paths each consume the same list without
-    either creating, re-creating, or reaching into a memory credential.
-    """
-    modules = find_memory_modules()
-    if not modules:
-        logger.debug("No memory component module found; memory parameters omitted.")
-        return []
-    if len(modules) > 1:
-        raise ValueError(
-            "Found more than one memory component module "
-            f"({', '.join(modules)}). Their runtime parameter keys collide, so "
-            "an agent can consume only one. Remove the extra memory components "
-            "from this project."
-        )
-    memory_params = maybe_import_from_module(modules[0], MEMORY_PARAMETERS_EXPORT)
-    pulumi.info(f"Agent memory configured from infra module: {modules[0]}")
-    return memory_params or []
-{% endif %}
 
 def build_shared_agent_runtime_parameters() -> list[
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs
@@ -428,7 +368,7 @@ def build_shared_agent_runtime_parameters() -> list[
     ``type="credential"`` entries — see ``workload.py``).
 
     As a side effect, creates the session-secret and IDP-JWK credentials — both
-    runtime-agnostic.{% if use_agent_memory == 'memory_component' %} Memory parameters are forwarded from the memory
+    runtime-agnostic.{% if memory_module_name %} Memory parameters are forwarded from the memory
     component, which creates any credential it needs itself.{% endif %} Excludes ``CUSTOM_MODEL_WORKERS``: that parameter is a
     DataRobot custom-model-container gunicorn-wrapper convention with no
     Workload-container equivalent, so it is added only by ``deployment.py``.
@@ -436,6 +376,13 @@ def build_shared_agent_runtime_parameters() -> list[
     params: list[pulumi_datarobot.CustomModelRuntimeParameterValueArgs] = (
         []
         + llm_custom_model_runtime_parameters
+{%- if memory_module_name %}
+        # Forwarded untouched -- these are already-resolved values, including
+        # credential IDs the memory component created. Keeping the agent out of
+        # that lets the Custom Models and Workload API paths consume the
+        # identical list without either one re-creating a memory credential.
+        + memory_custom_model_runtime_parameters
+{%- endif %}
         + get_mcp_custom_model_runtime_parameters()
     )
 
@@ -446,9 +393,6 @@ def build_shared_agent_runtime_parameters() -> list[
             value=DEFAULT_AGENT_GUNICORN_WORKER_TIMEOUT,
         )
     )
-{%- if use_agent_memory == 'memory_component' %}
-    params += get_memory_custom_model_runtime_parameters()
-{%- endif %}
 
     # Handle session secret key credential
     if session_secret_key := os.environ.get(SESSION_SECRET_KEY):

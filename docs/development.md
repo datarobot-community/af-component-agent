@@ -33,7 +33,7 @@ There are four locks for six template variants:
 | `langgraph` | `locks/langgraph/uv.lock` |
 | `llamaindex` | `locks/llamaindex/uv.lock` |
 
-`nat` renders the same `datarobot-genai` extras as `base` and its entry point is metadata rather than a dependency, so uv resolves both identically. The memory providers add no dependencies at all: `pyproject.toml.jinja` has no `use_agent_memory` conditional, and `mem0ai` already arrives through datarobot-genai.
+`nat` renders the same `datarobot-genai` extras as `base` and its entry point is metadata rather than a dependency, so uv resolves both identically. The memory providers add no dependencies at all: they live in af-component-memory, `pyproject.toml.jinja` has no memory conditional, and `mem0ai` already arrives through datarobot-genai.
 
 `nat` and memory previously had locks of their own. Because `uv lock --check` only asks whether a lock satisfies its `pyproject.toml`, and a duplicate always does, those copies drifted unnoticed. Do not add a lock back for a variant until its dependency graph actually differs.
 

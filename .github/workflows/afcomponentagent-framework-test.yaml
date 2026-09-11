@@ -34,33 +34,45 @@ jobs:
         framework:
           - name: base
             agent_name: agent_generic_base
-            use_memory: "none"
+            with_memory: false
           # Provider coverage lives in af-component-memory. This leg only proves
-          # the agent renders and behaves when told to consume a memory component.
+          # the agent renders and behaves when a memory component is present.
           - name: base
             agent_name: agent_with_memory
-            use_memory: "memory_component"
+            with_memory: true
           - name: crewai
             agent_name: agent_crewai
-            use_memory: "none"
+            with_memory: false
           - name: langgraph
             agent_name: agent_langgraph
-            use_memory: "none"
+            with_memory: false
           - name: llamaindex
             agent_name: agent_llamaindex
-            use_memory: "none"
+            with_memory: false
           - name: nat
             agent_name: agent_nat
-            use_memory: "none"
+            with_memory: false
     steps:
       - name: Checkout
         uses: "actions/checkout@v6"
+      # The agent imports the memory component's infra module by the name in its
+      # answers file, so that file has to exist in the render destination before
+      # copier runs -- the same ordering the local `render-template` task uses.
+      # af-component-memory is not in copier-module.yaml (it is optional, and
+      # only this one leg needs it), so the validator action will not produce the
+      # file for us. The action creates the destination but never wipes it.
+      - name: Place memory component answers
+        if: matrix.framework.with_memory
+        shell: sh
+        run: |
+          mkdir -p ./rendered/.datarobot/answers
+          cp ./fixtures/.datarobot/answers/memory-memory.yml ./rendered/.datarobot/answers/memory-memory.yml
       - name: Render template
         uses: ./.github/actions/copier-template-validator
         with:
           working-directory: .
           rendered-dir: ./rendered
-          copier-args: '--data agent_app_name=${{ matrix.framework.agent_name }} --data agent_template_framework=${{ matrix.framework.name }} --data use_agent_memory=${{ matrix.framework.use_memory }} --data base_answers_file=.datarobot/answers/base.yml'
+          copier-args: '--data agent_app_name=${{ matrix.framework.agent_name }} --data agent_template_framework=${{ matrix.framework.name }} --data base_answers_file=.datarobot/answers/base.yml'
       - name: Check lock file
         shell: sh
         working-directory: ./rendered/${{ matrix.framework.agent_name }}

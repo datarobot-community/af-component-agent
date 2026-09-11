@@ -15,8 +15,7 @@ Defined in `copier.yml`:
 | `agent_app_name` | Name and root folder of the generated project. Must be a valid Python identifier. |
 | `agent_template_framework` | Framework flavor: `base`, `crewai`, `langgraph`, `llamaindex`, or `nat`. |
 | `use_low_code_interface` | When `true`, forces `agent_template_framework=nat`. |
-| `use_agent_memory` | Whether to consume a memory backend from af-component-memory: `none` or `memory_component`. Provider choice lives in that component. |
-| `base_answers_file`, `llm_answers_file` | Paths to DataRobot component answer files consumed via `_external_data`. |
+| `base_answers_file`, `llm_answers_file`, `memory_answers_file` | Paths to DataRobot component answer files consumed via `_external_data`. Each supplies a module name the rendered infra imports. Memory is opt-in by presence: `memory_answers_file` resolving to a real file yields a non-empty `memory_module_name`, which is the only thing that gates the memory import — there is no separate on/off question. |
 
 The `_exclude` directive in `copier.yml` ensures that `*.j2` partials, `*_templates/` directories and the `locks/` directory are never copied into the rendered output — they exist only as include sources.
 

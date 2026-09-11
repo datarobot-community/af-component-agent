@@ -25,7 +25,7 @@ One lock exists per *distinct resolution*, which is fewer than one per framework
     `datarobot-genai[dragent, auth]`, and the nat entry point is metadata, not a
     dependency, so uv produces the same graph.
   - The memory providers add no dependencies at all. `pyproject.toml.jinja` has no
-    `use_agent_memory` conditional, and `mem0ai` already arrives transitively
+    memory conditional at all, and `mem0ai` already arrives transitively
     through datarobot-genai.
 
 Both used to have a lock of their own. Because `uv lock --check` only asks whether
