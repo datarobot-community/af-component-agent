@@ -55,7 +55,7 @@ jobs:
             use_memory: "none"
     steps:
       - name: Checkout
-        uses: "actions/checkout@v6"
+        uses: "actions/checkout@v7"
       - name: Render template
         uses: ./.github/actions/copier-template-validator
         with:

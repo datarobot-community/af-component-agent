@@ -15,7 +15,7 @@ runs:
   using: 'composite'
   steps:
     - name: Cache UV dependencies
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: /.uv_cache
         key: uv-${{ inputs.python-version }}-${{ hashFiles(inputs.dependency-files) }}
@@ -23,7 +23,7 @@ runs:
           uv-${{ inputs.python-version }}-
           uv-
     - name: Cache APT packages
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: |
           /var/cache/apt/archives

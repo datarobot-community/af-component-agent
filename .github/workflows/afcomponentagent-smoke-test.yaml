@@ -53,7 +53,7 @@ jobs:
             id: "datarobot/vertex_ai/gemini-3.1-pro-preview"
     steps:
       - name: Checkout
-        uses: "actions/checkout@v6"
+        uses: "actions/checkout@v7"
       - name: Setup caching
         uses: ./.github/actions/setup-caching
         with:
@@ -113,7 +113,7 @@ jobs:
           echo "PASS: smoke test succeeded"
       - name: Upload logs on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: smoke-logs-${{ matrix.framework }}-${{ matrix.model.label }}
           path: ./rendered/agent/output.log
