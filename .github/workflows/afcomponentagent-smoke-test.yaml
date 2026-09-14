@@ -16,10 +16,24 @@ on:
 jobs:
   smoke-test:
     name: "Smoke / ${{ matrix.framework }} / ${{ matrix.model.label }}"
-    # Skip on fork PRs so the integration secrets are never reachable from
-    # attacker-controlled code. Same-repo branches, pushes to main, and
-    # workflow_dispatch still run normally.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+    # Two reasons a pull request can skip this.
+    #
+    # Forks: the integration secrets must never be reachable from
+    # attacker-controlled code.
+    #
+    # Dependabot: a Dependabot `pull_request` event resolves `secrets.*` against
+    # the DEPENDABOT secret store, never the repo's or the `integration`
+    # environment's. DATAROBOT_API_TOKEN lives only in `integration`, so these
+    # jobs would run with empty credentials and fail on auth every time, which
+    # under `block_on_any_failure` in .github/automerge.yaml would wedge every
+    # bump. Copying the token into the Dependabot store is the wrong fix: it
+    # would hand live DataRobot credentials to third-party action code on every
+    # Dependabot run. A github-actions bump is checked by the other suites, and
+    # this one still runs on the push to `main` after it merges.
+    if: >-
+      github.event_name != 'pull_request'
+      || (github.event.pull_request.head.repo.fork == false
+          && github.actor != 'dependabot[bot]')
     runs-on: "ubuntu-latest"
     environment: integration
     container:
