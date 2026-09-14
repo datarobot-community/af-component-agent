@@ -14,8 +14,8 @@ jobs:
     runs-on: "ubuntu-latest"
     steps:
       - name: Checkout
-        uses: "actions/checkout@v6"
+        uses: "actions/checkout@v7"
       - name: Install Task
-        uses: arduino/setup-task@v2
+        uses: arduino/setup-task@v3
       - name: Validate file paths
         run: task validate-windows-compatibility
