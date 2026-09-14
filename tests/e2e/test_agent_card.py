@@ -41,7 +41,6 @@ from .agent_card import (
     _get_registry_rows,
     _row_matches,
     assert_live_agent_card,
-    deployment_a2a_base_url,
     make_external_id,
     patch_workflow_external_id,
 )
@@ -239,17 +238,6 @@ def test_registry_unavailable_names_the_gate(status: int) -> None:
 
 
 # --- Misc -------------------------------------------------------------------
-
-
-def test_deployment_a2a_base_url() -> None:
-    """Derived from the Pulumi export, so an airgapped cluster's host survives."""
-    base = "https://airgap.example.com/api/v2/deployments/abc"
-    assert (
-        deployment_a2a_base_url(deployment_chat_endpoint=f"{base}/chat/completions")
-        == f"{base}/directAccess/a2a/"
-    )
-    with pytest.raises(pytest.fail.Exception, match="chat/completions"):
-        deployment_a2a_base_url(deployment_chat_endpoint=base)
 
 
 def test_external_ids_are_unique_and_traceable(monkeypatch: pytest.MonkeyPatch) -> None:

@@ -641,11 +641,16 @@ def run_workload_agent_e2e(
         # self-reported entrypoint is real, not just that the workload answers
         # on a URL we already knew.
         if run_a2a_tests:
+            # Taken from the export rather than rebuilt here: the suffix follows
+            # `a2a.mount_path`, so fetching the card at this URL is what proves the
+            # path infra advertises is the one the container actually serves.
+            a2a_base_url = _output("Agent Workload A2A Endpoint ")
+            fprint(f"Workload A2A endpoint: {a2a_base_url}")
             assert_a2a_end_to_end(
                 client=client,
                 identity=AgentIdentity("workload", workload_id),
                 external_id=external_id,
-                a2a_base_url=f"{endpoint.rstrip('/')}/a2a/",
+                a2a_base_url=a2a_base_url,
                 token=datarobot_api_token,
                 user_prompt=user_prompt,
             )

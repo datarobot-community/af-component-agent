@@ -37,7 +37,6 @@ from datarobot.rest import RESTClientObject
 from .agent_card import (
     AgentIdentity,
     assert_a2a_end_to_end,
-    deployment_a2a_base_url,
     make_external_id,
     patch_workflow_external_id,
 )
@@ -429,8 +428,10 @@ def run_agent_e2e(
             # Step 10b: A2A. The deployment only exists after Step 9, and by
             # here it has served real traffic, so directAccess is warm.
             if run_a2a_tests:
-                # Both the id and the base URL come from this one export
-                # rather than DATAROBOT_ENDPOINT -- see `deployment_a2a_base_url`.
+                # Both come from Pulumi exports rather than DATAROBOT_ENDPOINT: infra
+                # builds deployment URLs with `get_datarobot_url()`, which resolves the
+                # external web-server URL via `/clientConfig/` and differs from
+                # DATAROBOT_ENDPOINT on airgapped clusters.
                 chat_endpoint = pulumi_stack_output_value(
                     infra_dir=infra_dir,
                     pulumi_stack=pulumi_stack,
@@ -439,15 +440,23 @@ def run_agent_e2e(
                 )
                 deployment_id = extract_id_from_url(chat_endpoint, marker="deployments")
                 fprint(f"Deployment ID: {deployment_id}")
+                # Taken from the export rather than rebuilt here: the suffix follows
+                # `a2a.mount_path`, so fetching the card at this URL is what proves the
+                # path infra advertises is the one the container actually serves.
+                a2a_base_url = pulumi_stack_output_value(
+                    infra_dir=infra_dir,
+                    pulumi_stack=pulumi_stack,
+                    pulumi_home=pulumi_home,
+                    contains="Agent Deployment A2A Endpoint ",
+                )
+                fprint(f"Deployment A2A endpoint: {a2a_base_url}")
                 assert_a2a_end_to_end(
                     client=dr.Client(
                         endpoint=datarobot_endpoint, token=datarobot_api_token
                     ),
                     identity=AgentIdentity("deployment", deployment_id),
                     external_id=external_id,
-                    a2a_base_url=deployment_a2a_base_url(
-                        deployment_chat_endpoint=chat_endpoint
-                    ),
+                    a2a_base_url=a2a_base_url,
                     token=datarobot_api_token,
                     user_prompt=user_prompt,
                 )

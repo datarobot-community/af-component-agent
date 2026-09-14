@@ -116,23 +116,6 @@ def patch_workflow_external_id(*, rendered_dir: Path, external_id: str) -> Path:
     return path
 
 
-def deployment_a2a_base_url(*, deployment_chat_endpoint: str) -> str:
-    """`.../deployments/{id}/chat/completions` -> `.../deployments/{id}/directAccess/a2a/`.
-
-    Derived from the exported chat endpoint rather than recomposed from
-    `DATAROBOT_ENDPOINT`: the infra builds deployment URLs with
-    `get_datarobot_url()`, which resolves the external web-server URL via
-    `/clientConfig/` and differs from `DATAROBOT_ENDPOINT` on airgapped clusters.
-    """
-    suffix = "/chat/completions"
-    if not deployment_chat_endpoint.endswith(suffix):
-        pytest.fail(
-            f"Expected the deployment chat endpoint to end with {suffix!r}, "
-            f"got: {deployment_chat_endpoint!r}"
-        )
-    return f"{deployment_chat_endpoint[: -len(suffix)]}/directAccess/a2a/"
-
-
 # --- Live agent card --------------------------------------------------------
 
 
