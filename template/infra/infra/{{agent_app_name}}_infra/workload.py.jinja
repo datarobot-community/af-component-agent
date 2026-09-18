@@ -43,6 +43,7 @@ import pulumi
 import pulumi_datarobot
 from datarobot_pulumi_utils.pulumi import export
 
+from .. import use_case
 from . import base
 
 WORKLOAD_CONTAINER_NAME: Final[str] = "{{ agent_app_name | replace('_', '-') }}"
@@ -366,6 +367,7 @@ def _create_workload(
         asset_name + " Workload",
         name=asset_name,
         artifact_id=artifact_id,
+        use_case_id=use_case.id,
         importance=os.getenv("WORKLOAD_IMPORTANCE", "high"),
         runtime=pulumi_datarobot.WorkloadRuntimeArgs(
             container_groups=[
