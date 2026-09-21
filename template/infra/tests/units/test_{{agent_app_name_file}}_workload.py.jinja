@@ -478,7 +478,7 @@ class TestEnclavePlacement:
         return workload._provision_from_source_bundle([])
 
     @pytest.mark.parametrize("image_uri", [True, False])
-    def test_omitted_when_not_entitled(self, monkeypatch, tmp_path, image_uri):
+    def test_policy_omitted_when_not_entitled(self, monkeypatch, tmp_path, image_uri):
         workload = _workload_module(monkeypatch)
         monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
 
@@ -486,7 +486,7 @@ class TestEnclavePlacement:
 
         kwargs = _workload_kwargs(workload)
         assert kwargs["runtime"].enclave_selection_policy is None
-        assert kwargs["use_case_id"] is None
+        assert kwargs["use_case_id"] == workload.use_case.id
         workload.fetch_flag_statuses.assert_called_once_with(
             [workload.COMPUTE_ENCLAVE_ENTITLEMENT]
         )
@@ -518,19 +518,31 @@ class TestEnclavePlacement:
 
         kwargs = _workload_kwargs(workload)
         assert kwargs["runtime"].enclave_selection_policy is None
-        assert kwargs["use_case_id"] is None
+        assert kwargs["use_case_id"] == workload.use_case.id
 
     def test_explicit_override_skips_entitlement_check(self, monkeypatch, tmp_path):
         workload = _workload_module(monkeypatch)
         monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
-        monkeypatch.setenv("WORKLOAD_ENCLAVE_SELECTION_POLICY", "manual")
+        monkeypatch.setenv("WORKLOAD_ENCLAVE_SELECTION_POLICY", "availability")
 
         self._run(workload)
 
         kwargs = _workload_kwargs(workload)
-        assert kwargs["runtime"].enclave_selection_policy == "manual"
+        assert kwargs["runtime"].enclave_selection_policy == "availability"
         assert kwargs["use_case_id"] == workload.use_case.id
         workload.fetch_flag_statuses.assert_not_called()
+
+    @pytest.mark.parametrize("override", ["manual", "Availability", "true"])
+    def test_invalid_override_rejected(self, monkeypatch, tmp_path, override):
+        """`manual` requires naming an Enclave via `runtime.enclaves`, which this
+        template does not expose; anything else is a typo. Both must be caught
+        before an apply, not surfaced as a mid-apply 422."""
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
+        monkeypatch.setenv("WORKLOAD_ENCLAVE_SELECTION_POLICY", override)
+
+        with pytest.raises(RuntimeError, match="must be 'availability'"):
+            self._run(workload)
 
     def test_entitlement_check_cached_across_calls_in_one_run(
         self, monkeypatch, tmp_path
@@ -543,21 +555,15 @@ class TestEnclavePlacement:
 
         workload.fetch_flag_statuses.assert_called_once()
 
-    def test_entitlement_check_failure_treated_as_not_entitled(
-        self, monkeypatch, tmp_path
-    ):
+    def test_entitlement_check_failure_raises(self, monkeypatch, tmp_path):
         workload = _workload_module(monkeypatch)
         monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
         workload.fetch_flag_statuses.side_effect = RuntimeError(
             "entitlements unreachable"
         )
 
-        self._run(workload)
-
-        kwargs = _workload_kwargs(workload)
-        assert kwargs["runtime"].enclave_selection_policy is None
-        assert kwargs["use_case_id"] is None
-        workload.pulumi.warn.assert_called_once()
+        with pytest.raises(RuntimeError, match="Could not read"):
+            self._run(workload)
 
 
 class TestProvisionWorkloadAgentRequiredEnv:

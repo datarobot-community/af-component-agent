@@ -83,13 +83,26 @@ def _enclave_selection_policy() -> str | None:
     """Placement policy to request, or None to stay off the Enclave path."""
     override = os.getenv("WORKLOAD_ENCLAVE_SELECTION_POLICY", "").strip()
     if override:
+        # "manual" also requires naming an Enclave via `runtime.enclaves`,
+        # which is not supported yet.
+        if override != "availability":
+            message = (
+                "WORKLOAD_ENCLAVE_SELECTION_POLICY must be 'availability'; "
+                f"got {override!r}"
+            )
+            pulumi.error(message)
+            raise RuntimeError(message)
         return override
 
     try:
         statuses = fetch_flag_statuses([COMPUTE_ENCLAVE_ENTITLEMENT])
     except Exception as exc:
-        pulumi.warn(f"Could not read {COMPUTE_ENCLAVE_ENTITLEMENT}: {exc}")
-        return None
+        # Fails closed: a wrong "not entitled" would silently place an
+        # entitled workload outside any Enclave. A failed request can be
+        # retried; a misplaced workload cannot.
+        message = f"Could not read {COMPUTE_ENCLAVE_ENTITLEMENT}: {exc}"
+        pulumi.error(message)
+        raise RuntimeError(message) from exc
 
     if statuses.get(COMPUTE_ENCLAVE_ENTITLEMENT) is True:
         pulumi.info("Enclave placement selected.")
@@ -97,10 +110,6 @@ def _enclave_selection_policy() -> str | None:
 
     pulumi.info("Enclave placement disabled.")
     return None
-
-
-def _resolve_use_case_id() -> pulumi.Output[str] | None:
-    return use_case.id if _enclave_selection_policy() else None
 
 
 def _require_env(name: str) -> str:
@@ -396,7 +405,7 @@ def _create_workload(
         asset_name + " Workload",
         name=asset_name,
         artifact_id=artifact_id,
-        use_case_id=_resolve_use_case_id(),
+        use_case_id=use_case.id,
         importance=os.getenv("WORKLOAD_IMPORTANCE", "high"),
         runtime=pulumi_datarobot.WorkloadRuntimeArgs(
             enclave_selection_policy=_enclave_selection_policy(),

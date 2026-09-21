@@ -22,7 +22,7 @@ tasks:
     silent: true
     # desc: "⬇️ Install DataRobot Pulumi plugins"
     cmds:
-      - "{{.UV_CMD}} run pulumi plugin install resource datarobot v0.12.2 --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/v0.12.2/"
+      - "{{.UV_CMD}} run pulumi plugin install resource datarobot v0.12.3 --server https://github.com/datarobot-community/pulumi-datarobot/releases/download/v0.12.3/"
   lint-check:
     silent: true
     # desc: "🧹 Check whether the codebase is linted"
