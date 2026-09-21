@@ -94,9 +94,13 @@ def _enclave_selection_policy() -> str | None:
     if statuses.get(COMPUTE_ENCLAVE_ENTITLEMENT):
         pulumi.info("Enclave placement selected.")
         return "availability"
-    
+
     pulumi.info("Enclave placement disabled.")
     return None
+
+
+def _resolve_use_case_id() -> pulumi.Output[str] | None:
+    return use_case.id if _enclave_selection_policy() else None
 
 
 def _require_env(name: str) -> str:
@@ -392,7 +396,7 @@ def _create_workload(
         asset_name + " Workload",
         name=asset_name,
         artifact_id=artifact_id,
-        use_case_id=use_case.id,
+        use_case_id=_resolve_use_case_id(),
         importance=os.getenv("WORKLOAD_IMPORTANCE", "high"),
         runtime=pulumi_datarobot.WorkloadRuntimeArgs(
             enclave_selection_policy=_enclave_selection_policy(),
