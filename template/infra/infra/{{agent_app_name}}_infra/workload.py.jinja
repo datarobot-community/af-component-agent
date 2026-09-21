@@ -38,7 +38,7 @@ import shutil
 import tomllib
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Final
+from typing import Any, Final, NoReturn
 
 import pulumi
 import pulumi_datarobot
@@ -78,20 +78,23 @@ OTEL_ENDPOINT_ENV_VAR: Final[str] = "OTEL_EXPORTER_OTLP_ENDPOINT"
 COMPUTE_ENCLAVE_ENTITLEMENT: Final[str] = "ENABLE_COMPUTE_ENCLAVE"
 
 
+def _fail(message: str, *, cause: Exception | None = None) -> NoReturn:
+    pulumi.error(message)
+    raise RuntimeError(message) from cause
+
+
 @lru_cache(maxsize=1)
 def _enclave_selection_policy() -> str | None:
     """Placement policy to request, or None to stay off the Enclave path."""
     override = os.getenv("WORKLOAD_ENCLAVE_SELECTION_POLICY", "").strip()
     if override:
-        # "manual" also requires naming an Enclave via `runtime.enclaves`,
-        # which is not supported yet.
         if override != "availability":
-            message = (
+            # "manual" also requires naming an Enclave via `runtime.enclaves`,
+            # which is not supported yet.
+            _fail(
                 "WORKLOAD_ENCLAVE_SELECTION_POLICY must be 'availability'; "
                 f"got {override!r}"
             )
-            pulumi.error(message)
-            raise RuntimeError(message)
         return override
 
     try:
@@ -100,16 +103,13 @@ def _enclave_selection_policy() -> str | None:
         # Fails closed: a wrong "not entitled" would silently place an
         # entitled workload outside any Enclave. A failed request can be
         # retried; a misplaced workload cannot.
-        message = f"Could not read {COMPUTE_ENCLAVE_ENTITLEMENT}: {exc}"
-        pulumi.error(message)
-        raise RuntimeError(message) from exc
+        _fail(f"Could not read {COMPUTE_ENCLAVE_ENTITLEMENT}: {exc}", cause=exc)
 
-    if statuses.get(COMPUTE_ENCLAVE_ENTITLEMENT) is True:
-        pulumi.info("Enclave placement selected.")
-        return "availability"
-
-    pulumi.info("Enclave placement disabled.")
-    return None
+    entitled = statuses.get(COMPUTE_ENCLAVE_ENTITLEMENT) is True
+    pulumi.info(
+        "Enclave placement selected." if entitled else "Enclave placement disabled."
+    )
+    return "availability" if entitled else None
 
 
 def _require_env(name: str) -> str:
