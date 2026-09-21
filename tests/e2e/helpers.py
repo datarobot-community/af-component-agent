@@ -155,7 +155,14 @@ def write_testing_env(
     lines = [
         f"DATAROBOT_ENDPOINT={datarobot_endpoint}",
         f"DATAROBOT_API_TOKEN={datarobot_api_token}",
-        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT=Python 3.11 GenAI Agents",
+        # BUZZOK-32498 spike: only "Python 3.11 GenAI Agents" is special-cased
+        # by resolve_agent_execution_environment(); anything else is passed
+        # straight to ExecutionEnvironment.get(id=...), so this must be the
+        # env's actual ID, not a display name. ID/version from
+        # datarobot-user-models public_dropin_notebook_environments/python313_notebook/env_info.json
+        # ("[DataRobot] Python 3.13 Notebook Image").
+        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT=6a0e1a4540c0604389ba70c3",
+        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID=6ab107aa734eae0767a3d4dd",
         "SESSION_SECRET_KEY=test-secret-key",
         f"PULUMI_STACK={pulumi_stack}",
         "PULUMI_CONFIG_PASSPHRASE=123",
