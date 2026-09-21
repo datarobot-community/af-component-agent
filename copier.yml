@@ -14,11 +14,6 @@ agent_app_name_file:
   default: "{{agent_app_name|lower|replace('-','_')}}"
   when: false
 
-use_low_code_interface:
-  type: bool
-  help: "Do you want to use low-code YAML-based configuration (i.e. NeMo Agent Toolkit) for your agent? (default: no)"
-  default: no
-
 use_agent_memory:
   type: str
   help: "Choose an agent memory provider:"
@@ -30,12 +25,7 @@ use_agent_memory:
 
 agent_template_framework:
   type: str
-  default: |-
-    {% if use_low_code_interface -%}
-      nat
-    {%- else -%}
-      base
-    {%- endif %}
+  default: base
   help: "Choose the agentic framework template to start with:"
   choices:
     Base: base
@@ -43,7 +33,6 @@ agent_template_framework:
     LangGraph: langgraph
     LlamaIndex: llamaindex
     "NeMo Agent Toolkit (NAT)": nat
-  when: "{{not use_low_code_interface}}"
 
 base_answers_file:
   type: str
@@ -254,5 +243,40 @@ _migrations:
           echo "      ${MODULE}_infra/deployment.py -- edits left in the router have no effect." >&2
           echo "      See docs/agent/migration-infra-split.md." >&2
           echo "" >&2
+        done
+    when: "{{ _stage == 'before' and _copier_operation == 'update' }}"
+  # Preserve NAT framework selection removed with use_low_code_interface.
+  #
+  # use_low_code_interface used to gate the agent_template_framework question;
+  # when it was true, that question was skipped and copier never recorded
+  # agent_template_framework in the answers file. Now that the gate is gone,
+  # agent_template_framework defaults to `base`, which would silently
+  # downgrade an existing NAT project on update. Inject the missing answer
+  # before the new template renders.
+  - version: "11.11.85"
+    command:
+      - bash
+      - -lc
+      - |
+        set -euo pipefail
+        for ANSWERS_FILE in .datarobot/answers/agent-*.yml; do
+          [ -f "$ANSWERS_FILE" ] || continue
+          python3 - "$ANSWERS_FILE" <<'PY'
+        from pathlib import Path
+        import re
+        import sys
+
+        answers_file = Path(sys.argv[1])
+        text = answers_file.read_text(encoding="utf-8")
+        had_low_code = re.search(
+            r"^use_low_code_interface:\s*(['\"]?)(?:true|yes)\1\s*(?:#.*)?$",
+            text,
+            re.IGNORECASE | re.MULTILINE,
+        )
+        has_framework = re.search(r"^agent_template_framework:", text, re.MULTILINE)
+        if had_low_code and not has_framework:
+            text = text.rstrip("\n") + "\nagent_template_framework: nat\n"
+            answers_file.write_text(text, encoding="utf-8")
+        PY
         done
     when: "{{ _stage == 'before' and _copier_operation == 'update' }}"
