@@ -505,6 +505,21 @@ class TestEnclavePlacement:
         assert kwargs["runtime"].enclave_selection_policy == "availability"
         assert kwargs["use_case_id"] == workload.use_case.id
 
+    def test_truthy_non_bool_value_not_treated_as_entitled(self, monkeypatch, tmp_path):
+        """A stray '"False"' string from the API is truthy in Python but must
+        not be read as entitled."""
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
+        workload.fetch_flag_statuses.return_value = {
+            workload.COMPUTE_ENCLAVE_ENTITLEMENT: "False"
+        }
+
+        self._run(workload)
+
+        kwargs = _workload_kwargs(workload)
+        assert kwargs["runtime"].enclave_selection_policy is None
+        assert kwargs["use_case_id"] is None
+
     def test_explicit_override_skips_entitlement_check(self, monkeypatch, tmp_path):
         workload = _workload_module(monkeypatch)
         monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)

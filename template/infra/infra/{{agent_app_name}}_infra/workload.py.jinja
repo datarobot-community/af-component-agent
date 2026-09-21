@@ -91,7 +91,7 @@ def _enclave_selection_policy() -> str | None:
         pulumi.warn(f"Could not read {COMPUTE_ENCLAVE_ENTITLEMENT}: {exc}")
         return None
 
-    if statuses.get(COMPUTE_ENCLAVE_ENTITLEMENT):
+    if statuses.get(COMPUTE_ENCLAVE_ENTITLEMENT) is True:
         pulumi.info("Enclave placement selected.")
         return "availability"
 
