@@ -81,9 +81,6 @@ Other components in the app receive `<AGENT_APP_NAME>_WORKLOAD_ID` and `<AGENT_A
 | `WORKLOAD_ENCLAVE_SELECTION_POLICY` | unset (auto) | Overrides the Enclave placement policy (`availability` or `manual`) instead of deciding it from the `ENABLE_COMPUTE_ENCLAVE` org entitlement. Leave unset to auto-detect: entitled orgs get scheduler-picked Enclave placement, everyone else gets an ordinary workload. `manual` additionally requires naming an Enclave, which this template does not currently expose. |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | unset | OTel collector base URL (for example `https://app.datarobot.com/otel`), forwarded into the container. A workload gets none from the platform, so set this when telemetry has to leave the container — [moderation](./moderation.md) guard metrics read it directly. Auth headers are not forwarded; the container builds its own. |
 
-> [!NOTE]
-> A workload is linked to the project's Use Case only when Enclave placement is actually requested (auto-detected, or forced via `WORKLOAD_ENCLAVE_SELECTION_POLICY`). `Workload.use_case_id` is not a plain organizational tag — setting it always implies Enclave-governed placement, which a cluster/org without the Enclave entitlement rejects with `422 ENCLAVES_UNAVAILABLE`.
-
 ---
 
 ## Using your own image
