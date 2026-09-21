@@ -74,21 +74,13 @@ A2A_UNAUTHENTICATED_WELL_KNOWN_ROUTE_AUTH: Final[str] = "optional"
 NAT_PLUGIN_ENTRY_POINT_GROUP: Final[str] = "nat.plugins"
 # OTel collector base URL, forwarded from the deploy environment when set.
 OTEL_ENDPOINT_ENV_VAR: Final[str] = "OTEL_EXPORTER_OTLP_ENDPOINT"
-# Org entitlement that decides whether Enclave placement is available here. The
-# same entitlement the Workload API checks, read from the same endpoint, so the
-# template never asks for a placement the platform will refuse.
+# Org entitlement for Enclave placement.
 COMPUTE_ENCLAVE_ENTITLEMENT: Final[str] = "ENABLE_COMPUTE_ENCLAVE"
 
 
 @lru_cache(maxsize=1)
 def _enclave_selection_policy() -> str | None:
-    """The placement policy to request, or None to stay off the Enclave path.
-
-    WORKLOAD_ENCLAVE_SELECTION_POLICY wins when set, so a pin or an explicit
-    'availability' is never second-guessed. Otherwise the organization's
-    entitlement decides: entitled orgs get scheduler-chosen placement, everyone
-    else gets an ordinary workload.
-    """
+    """Placement policy to request, or None to stay off the Enclave path."""
     override = os.getenv("WORKLOAD_ENCLAVE_SELECTION_POLICY", "").strip()
     if override:
         return override
@@ -96,26 +88,10 @@ def _enclave_selection_policy() -> str | None:
     try:
         statuses = fetch_flag_statuses([COMPUTE_ENCLAVE_ENTITLEMENT])
     except Exception as exc:
-        message = f"Could not read {COMPUTE_ENCLAVE_ENTITLEMENT}: {exc}"
-        pulumi.error(message)
-        raise RuntimeError(message) from exc
+        pulumi.warn(f"Could not read {COMPUTE_ENCLAVE_ENTITLEMENT}: {exc}")
+        return None
 
     return "availability" if statuses.get(COMPUTE_ENCLAVE_ENTITLEMENT) else None
-
-
-def _workload_use_case_id() -> pulumi.Output[str] | None:
-    """``use_case.id`` only when Enclave placement is actually going to be requested.
-
-    ``Workload.use_case_id`` is not an organizational tag the way
-    ``CustomModel.use_case_ids``/``Playground.use_case_id`` are -- setting it
-    unconditionally implies Enclave-governed placement (the provider defaults
-    ``runtime.enclave_selection_policy`` to ``"availability"`` whenever
-    ``use_case_id`` is present, regardless of what this module sends for that
-    field), which a cluster/org without the Enclave entitlement rejects with
-    ``422 ENCLAVES_UNAVAILABLE``. So this rides on the same derived policy as
-    ``_enclave_selection_policy()``: no policy, no Use Case link.
-    """
-    return use_case.id if _enclave_selection_policy() else None
 
 
 def _require_env(name: str) -> str:
@@ -411,7 +387,7 @@ def _create_workload(
         asset_name + " Workload",
         name=asset_name,
         artifact_id=artifact_id,
-        use_case_id=_workload_use_case_id(),
+        use_case_id=use_case.id,
         importance=os.getenv("WORKLOAD_IMPORTANCE", "high"),
         runtime=pulumi_datarobot.WorkloadRuntimeArgs(
             enclave_selection_policy=_enclave_selection_policy(),

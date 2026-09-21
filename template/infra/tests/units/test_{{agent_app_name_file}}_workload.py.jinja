@@ -470,13 +470,6 @@ class TestRuntimeParamEnvVars:
 
 
 class TestEnclavePlacement:
-    """`Workload.use_case_id` is not an organizational tag -- setting it always
-    implies Enclave-governed placement, which a cluster/org without the Enclave
-    entitlement rejects with `422 ENCLAVES_UNAVAILABLE`. Both `use_case_id` and
-    `runtime.enclave_selection_policy` must therefore stay tied to the same
-    derived decision (entitlement check, or an explicit override).
-    """
-
     def _run(self, workload, *, image_uri=True):
         if image_uri:
             return workload._provision_from_image_uri(
@@ -485,21 +478,29 @@ class TestEnclavePlacement:
         return workload._provision_from_source_bundle([])
 
     @pytest.mark.parametrize("image_uri", [True, False])
-    def test_omitted_when_not_entitled(self, monkeypatch, tmp_path, image_uri):
+    def test_use_case_id_always_set(self, monkeypatch, tmp_path, image_uri):
+        workload = _workload_module(monkeypatch)
+        monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
+
+        self._run(workload, image_uri=image_uri)
+
+        assert _workload_kwargs(workload)["use_case_id"] == workload.use_case.id
+
+    @pytest.mark.parametrize("image_uri", [True, False])
+    def test_policy_omitted_when_not_entitled(self, monkeypatch, tmp_path, image_uri):
         workload = _workload_module(monkeypatch)
         monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
 
         self._run(workload, image_uri=image_uri)
 
         kwargs = _workload_kwargs(workload)
-        assert kwargs["use_case_id"] is None
         assert kwargs["runtime"].enclave_selection_policy is None
         workload.fetch_flag_statuses.assert_called_once_with(
             [workload.COMPUTE_ENCLAVE_ENTITLEMENT]
         )
 
     @pytest.mark.parametrize("image_uri", [True, False])
-    def test_included_when_entitled(self, monkeypatch, tmp_path, image_uri):
+    def test_policy_included_when_entitled(self, monkeypatch, tmp_path, image_uri):
         workload = _workload_module(monkeypatch)
         monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
         workload.fetch_flag_statuses.return_value = {
@@ -508,9 +509,8 @@ class TestEnclavePlacement:
 
         self._run(workload, image_uri=image_uri)
 
-        kwargs = _workload_kwargs(workload)
-        assert kwargs["use_case_id"] == workload.use_case.id
-        assert kwargs["runtime"].enclave_selection_policy == "availability"
+        policy = _workload_kwargs(workload)["runtime"].enclave_selection_policy
+        assert policy == "availability"
 
     def test_explicit_override_skips_entitlement_check(self, monkeypatch, tmp_path):
         workload = _workload_module(monkeypatch)
@@ -519,35 +519,35 @@ class TestEnclavePlacement:
 
         self._run(workload)
 
-        kwargs = _workload_kwargs(workload)
-        assert kwargs["use_case_id"] == workload.use_case.id
-        assert kwargs["runtime"].enclave_selection_policy == "manual"
+        policy = _workload_kwargs(workload)["runtime"].enclave_selection_policy
+        assert policy == "manual"
         workload.fetch_flag_statuses.assert_not_called()
 
     def test_entitlement_check_cached_across_calls_in_one_run(
         self, monkeypatch, tmp_path
     ):
-        """One entitlement lookup per `pulumi up`, not one per resource built."""
         workload = _workload_module(monkeypatch)
         monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
 
         workload._enclave_selection_policy()
-        workload._workload_use_case_id()
         self._run(workload)
 
         workload.fetch_flag_statuses.assert_called_once()
 
-    def test_entitlement_check_failure_raises(self, monkeypatch, tmp_path):
-        """Fails closed: a broken entitlement check must not silently deploy
-        outside (or inside) an Enclave -- it aborts the run instead."""
+    def test_entitlement_check_failure_treated_as_not_entitled(
+        self, monkeypatch, tmp_path
+    ):
         workload = _workload_module(monkeypatch)
         monkeypatch.setattr(workload.base, "{{agent_app_name}}_application_path", tmp_path)
         workload.fetch_flag_statuses.side_effect = RuntimeError(
             "entitlements unreachable"
         )
 
-        with pytest.raises(RuntimeError, match="Could not read"):
-            self._run(workload)
+        self._run(workload)
+
+        assert _workload_kwargs(workload)["runtime"].enclave_selection_policy is None
+        assert _workload_kwargs(workload)["use_case_id"] == workload.use_case.id
+        workload.pulumi.warn.assert_called_once()
 
 
 class TestProvisionWorkloadAgentRequiredEnv:
