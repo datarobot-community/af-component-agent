@@ -180,7 +180,7 @@ dev = [
 requires-dist = [
     { name = "ag-ui-protocol", specifier = "==0.1.15" },
     { name = "datarobot", extras = ["core"], specifier = ">=3.18.0,<4.0.0" },
-    { name = "datarobot-genai", extras = ["llamaindex", "dragent", "auth"], specifier = "==0.29.46" },
+    { name = "datarobot-genai", extras = ["llamaindex", "dragent", "auth"], specifier = "==0.29.50" },
     { name = "datarobot-mlops", specifier = "==11.1.28" },
     { name = "debugpy", marker = "extra == 'dev'", specifier = ">=1.8.20" },
     { name = "ecs-logging", marker = "extra == 'agentic-playground'", specifier = ">=2.2.0" },
@@ -999,11 +999,11 @@ core = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.29.46"
+version = "0.29.50"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/36/1d/4b1a2b7484e17543c366c09ec09cdeded6925d07b33950f5f366b072e748/datarobot_genai-0.29.46.tar.gz", hash = "sha256:782ee0eef1e4867fb2d8d5ff434b7baffd5d01aca97adbcfe98a062799e13f59", size = 626171, upload-time = "2026-09-18T11:39:25.303Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/57/ac/f58d72bf431d3199812b29043fd519dc824e805fb750b0ee72e5fe8aa78a/datarobot_genai-0.29.50.tar.gz", hash = "sha256:249d3b82bd34ee53dea0aceb354dc081ec1653d5ca60fee7c365f58e30cc0eb5", size = 627876, upload-time = "2026-09-21T15:40:57.028Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/25/f4/f728c865458363d42d187488bc87ae58541715ea630ea8d656c5d734e50c/datarobot_genai-0.29.46-py3-none-any.whl", hash = "sha256:01d3c4a36eb201bb499c83b206ed3ac6f0a13a00c74310db26ed4ef13fbf26f3", size = 881274, upload-time = "2026-09-18T11:39:22.847Z" },
+    { url = "https://files.pythonhosted.org/packages/31/da/17d9a431390a6026fb9f8a9341a815a1c8b83109a30f9630f5c88eb7923d/datarobot_genai-0.29.50-py3-none-any.whl", hash = "sha256:a5db0c1b1f4d66474baa3c8f147f0810ab1fa84a7b44b203aa662d6e8ee649a8", size = 883333, upload-time = "2026-09-21T15:40:54.996Z" },
 ]
 
 [package.optional-dependencies]
@@ -1089,7 +1089,7 @@ wheels = [
 
 [[package]]
 name = "datarobot-moderations"
-version = "11.3.6"
+version = "11.3.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -1109,7 +1109,7 @@ dependencies = [
     { name = "tiktoken" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/31/31/4ff69bf7ac961cc3a51cff498c0057b24dd9bfb24b5e8366d558ca4007a7/datarobot_moderations-11.3.6-py3-none-any.whl", hash = "sha256:b1b97ebd724a64b6629a35a56f23055b212e6df561f9b3976770c6df046875c4", size = 183969, upload-time = "2026-09-09T16:07:15.348Z" },
+    { url = "https://files.pythonhosted.org/packages/14/c6/9fe7de3e3b0c5b64686d2e99b6715d3c94a371952bff21e0f295627d1adb/datarobot_moderations-11.3.7-py3-none-any.whl", hash = "sha256:7a296ad5d0bd1c5d8ba32964c7a9ec0ba0506a96ef94f13fcbd7493e71fcf087", size = 184001, upload-time = "2026-09-21T11:48:10.42Z" },
 ]
 
 [package.optional-dependencies]
@@ -1120,6 +1120,8 @@ all = [
     { name = "deepeval" },
     { name = "google-cloud-aiplatform" },
     { name = "langchain" },
+    { name = "langchain-classic" },
+    { name = "langchain-community" },
     { name = "langchain-core" },
     { name = "langchain-nvidia-ai-endpoints" },
     { name = "langchain-openai" },
@@ -3622,33 +3624,27 @@ wheels = [
 
 [[package]]
 name = "nemoguardrails"
-version = "0.21.0"
+version = "0.24.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "aiofiles" },
     { name = "aiohttp" },
     { name = "aiohttp-retry" },
-    { name = "fastapi" },
+    { name = "dataclasses-json" },
     { name = "httpx" },
     { name = "jinja2" },
-    { name = "langchain" },
-    { name = "langchain-community" },
-    { name = "langchain-core" },
+    { name = "jsonschema" },
     { name = "lark" },
     { name = "nest-asyncio" },
-    { name = "opentelemetry-api" },
-    { name = "pandas" },
+    { name = "numpy" },
     { name = "prompt-toolkit" },
     { name = "protobuf" },
     { name = "pydantic" },
     { name = "pyyaml" },
     { name = "rich" },
     { name = "simpleeval" },
-    { name = "starlette" },
-    { name = "uvicorn" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8d/f7/e11bdc5451b06706dd7f4e02035ad7f62aafc82eec974b4091a874ec51b3/nemoguardrails-0.21.0-py3-none-any.whl", hash = "sha256:b338453b371751f5b09637415702e2ee25f0885317b691cbb0d2f2f164eeea5d", size = 11349994, upload-time = "2026-03-12T14:17:23.709Z" },
+    { url = "https://files.pythonhosted.org/packages/59/5c/e44694350e4867436bc897365b8e0d6383b9e990fa18b56fb4bf9fe35939/nemoguardrails-0.24.1-py3-none-any.whl", hash = "sha256:4fcfc9d9456cdcbcc939fbd4ba884e9fc89b7f200bd9d8ed77836298bf31680f", size = 1060573, upload-time = "2026-09-16T17:17:10.794Z" },
 ]
 
 [[package]]
