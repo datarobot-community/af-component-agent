@@ -384,19 +384,26 @@ def run_agent_e2e(
         )
         use_case_id = extract_id_from_url(playground_url, marker="usecases")
         fprint(f"Playground ID: {playground_id}  Use case ID: {use_case_id}")
-        retry(
-            lambda: _verify_playground_run(
-                playground_id=playground_id,
-                use_case_id=use_case_id,
-                user_prompt=user_prompt,
-                datarobot_endpoint=datarobot_endpoint,
-                datarobot_api_token=datarobot_api_token,
-                run_label="codespace",
-            ),
-            max_retries=3,
-            delay_seconds=60,
-            label="Codespace run + trace verification",
-        )
+        try:
+            retry(
+                lambda: _verify_playground_run(
+                    playground_id=playground_id,
+                    use_case_id=use_case_id,
+                    user_prompt=user_prompt,
+                    datarobot_endpoint=datarobot_endpoint,
+                    datarobot_api_token=datarobot_api_token,
+                    run_label="codespace",
+                ),
+                max_retries=3,
+                delay_seconds=60,
+                label="Codespace run + trace verification",
+            )
+        except Exception as exc:
+            # BUZZOK-32498 spike only: the codespace path is already known to fail
+            # against python313_notebook (that's the finding). Don't let it block
+            # reaching the real Deployment path below, which is what this run is
+            # actually here to test. Revert before merge (this PR is spike-only).
+            fprint(f"Codespace verification failed (spike: continuing anyway): {exc}")
 
         if run_deployment_tests:
             # Step 9: Deploy phase (Pulumi up with AGENT_DEPLOY=1).

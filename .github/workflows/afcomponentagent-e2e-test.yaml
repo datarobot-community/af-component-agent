@@ -170,8 +170,11 @@ jobs:
           UV_CACHE_DIR: /.uv_cache
           RUN_E2E: "1"
           E2E_AGENT_FRAMEWORKS: ${{ matrix.framework }}
-          # Deploy + tracing check only on push to main (merges); PRs run build + codespace.
-          RUN_AGENT_DEPLOYMENT_TESTS: ${{ github.event_name == 'push' && '1' || '0' }}
+          # BUZZOK-32498 spike: forced on for this PR so the full deploy runs against
+          # the python313_notebook override instead of stopping at build+codespace.
+          # Normally: deploy + tracing check only on push to main (merges); PRs run
+          # build + codespace. Revert before merge (this PR is spike-only, not for merge).
+          RUN_AGENT_DEPLOYMENT_TESTS: "1"
           LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"
           DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
           DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
@@ -297,10 +300,11 @@ jobs:
           UV_CACHE_DIR: /.uv_cache
           RUN_E2E: "1"
           E2E_AGENT_FRAMEWORKS: ${{ matrix.framework }}
-          # Real `pulumi up` + platform image build + chat call only on push to
-          # main (merges); PRs stop after the plan assertions, which create
-          # nothing and take a few minutes.
-          RUN_AGENT_WORKLOAD_DEPLOY_TESTS: ${{ github.event_name == 'push' && '1' || '0' }}
+          # BUZZOK-32498 spike: forced on for this PR so the real `pulumi up` +
+          # platform image build + chat call runs against the python313_notebook
+          # override instead of stopping at the plan assertions. Normally: only on
+          # push to main. Revert before merge (this PR is spike-only, not for merge).
+          RUN_AGENT_WORKLOAD_DEPLOY_TESTS: "1"
           LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"
           DATAROBOT_ENDPOINT: ${{ secrets.DATAROBOT_ENDPOINT }}
           DATAROBOT_API_TOKEN: ${{ secrets.DATAROBOT_API_TOKEN }}
