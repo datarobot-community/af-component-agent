@@ -43,7 +43,7 @@ dev = [
 requires-dist = [
     { name = "backoff", marker = "extra == 'dev'", specifier = ">=2.0.0" },
     { name = "datarobot", extras = ["core"], marker = "extra == 'dev'", specifier = ">=3.18.0,<4.0.0" },
-    { name = "datarobot-genai", marker = "extra == 'dev'", specifier = "==0.29.46" },
+    { name = "datarobot-genai", marker = "extra == 'dev'", specifier = "==0.29.50" },
     { name = "jinja-cli", specifier = ">=1.2.2" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.8.0" },
     { name = "openai", marker = "extra == 'dev'", specifier = ">=1.0.0" },
@@ -234,11 +234,11 @@ core = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.29.46"
+version = "0.29.50"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/36/1d/4b1a2b7484e17543c366c09ec09cdeded6925d07b33950f5f366b072e748/datarobot_genai-0.29.46.tar.gz", hash = "sha256:782ee0eef1e4867fb2d8d5ff434b7baffd5d01aca97adbcfe98a062799e13f59", size = 626171, upload-time = "2026-09-18T11:39:25.303Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/57/ac/f58d72bf431d3199812b29043fd519dc824e805fb750b0ee72e5fe8aa78a/datarobot_genai-0.29.50.tar.gz", hash = "sha256:249d3b82bd34ee53dea0aceb354dc081ec1653d5ca60fee7c365f58e30cc0eb5", size = 627876, upload-time = "2026-09-21T15:40:57.028Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/25/f4/f728c865458363d42d187488bc87ae58541715ea630ea8d656c5d734e50c/datarobot_genai-0.29.46-py3-none-any.whl", hash = "sha256:01d3c4a36eb201bb499c83b206ed3ac6f0a13a00c74310db26ed4ef13fbf26f3", size = 881274, upload-time = "2026-09-18T11:39:22.847Z" },
+    { url = "https://files.pythonhosted.org/packages/31/da/17d9a431390a6026fb9f8a9341a815a1c8b83109a30f9630f5c88eb7923d/datarobot_genai-0.29.50-py3-none-any.whl", hash = "sha256:a5db0c1b1f4d66474baa3c8f147f0810ab1fa84a7b44b203aa662d6e8ee649a8", size = 883333, upload-time = "2026-09-21T15:40:54.996Z" },
 ]
 
 [[package]]
