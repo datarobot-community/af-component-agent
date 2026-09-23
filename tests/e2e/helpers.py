@@ -155,7 +155,7 @@ def write_testing_env(
     lines = [
         f"DATAROBOT_ENDPOINT={datarobot_endpoint}",
         f"DATAROBOT_API_TOKEN={datarobot_api_token}",
-        # BUZZOK-32498 spike: only "Python 3.11 GenAI Agents" is special-cased
+        # Only "Python 3.11 GenAI Agents" is special-cased
         # by resolve_agent_execution_environment(); anything else is passed
         # straight to ExecutionEnvironment.get(id=...), so this must be the
         # env's actual ID, not a display name. ID/version from

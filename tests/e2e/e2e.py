@@ -399,11 +399,10 @@ def run_agent_e2e(
                 label="Codespace run + trace verification",
             )
         except Exception as exc:
-            # BUZZOK-32498 spike only: the codespace path is already known to fail
-            # against python313_notebook (that's the finding). Don't let it block
-            # reaching the real Deployment path below, which is what this run is
-            # actually here to test. Revert before merge (this PR is spike-only).
-            fprint(f"Codespace verification failed (spike: continuing anyway): {exc}")
+            # Temporary: the codespace path is already known to fail against
+            # python313_notebook. Don't let it block reaching the real Deployment
+            # path below, which is what this run is here to test. Revert before merge.
+            fprint(f"Codespace verification failed (continuing anyway): {exc}")
 
         if run_deployment_tests:
             # Step 9: Deploy phase (Pulumi up with AGENT_DEPLOY=1).
