@@ -111,15 +111,19 @@ expected_checks:
   # Unconditional single-job workflows: no path filter, so they always report.
   - "Test CLI"
   - "Check for Windows-incompatible file paths"
-  # Path-filtered, and listable only because the filter was widened to cover
-  # what BOTH bots write: `.github/**` for Dependabot, and the template jinja,
-  # the pre-baked locks and the root `pyproject.toml`/`uv.lock` for cve-sync.
-  # The root pair is the one that is easy to miss. This repo has two resolution
-  # roots, and the root one carries build-tooling floors (pytest, pygments,
-  # idna), so a floor landing on one of those produces a resync that touches no
-  # template file at all. Before the widening that PR fired no Docker build,
-  # and an expected check that never reports waits forever. Do not narrow the
-  # filter in afcomponentagent-docker-build.yaml without dropping this line.
+  # Path-filtered, and listable only because the filter in
+  # afcomponentagent-docker-build.yaml was widened to cover every path in
+  # `allowed_paths` below. That is the invariant to preserve: a context in this
+  # list has to report on every pull request either bot can open, so any path a
+  # bot may write must also start that job. Do not narrow that filter without
+  # dropping this line in the same change.
+  #
+  # The root `pyproject.toml`/`uv.lock` pair is the one that was easy to miss.
+  # This repo has two resolution roots, and the root one carries build-tooling
+  # floors (pytest, pygments, idna), so a floor landing on one of those produces
+  # a resync that touches no template file at all. Before the widening that pull
+  # request fired no Docker build, and an expected check that never reports
+  # waits forever holding `automerge`.
   - "Test Docker Build"
   # Already required by the `main` ruleset and added automatically from the
   # branch rules API. Repeated anyway: if someone edits the ruleset and drops

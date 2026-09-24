@@ -27,6 +27,20 @@ name: af-component-agent Docker Build
 #
 # It earns the run on its own terms too: the root is what renders the template
 # and drives `uv sync`, so a change there can break this build.
+#
+# `.taskfiles/cve-sync.yml` is the odd one out: it is in `allowed_paths` but it
+# is NOT a file this build cares about. It is listed to keep one simple
+# invariant true without anybody having to reason about it -- every path a
+# cve-sync pull request may carry also starts this job. Today the vendored
+# command file provably cannot arrive alone, because the resync refreshes it
+# before splicing and then gates the push on residue having moved, so a run
+# where only this file changed pushes nothing and the refresh rides the next
+# run that has something to say. That is an invariant in
+# datarobot-oss/cve-sync, not here. If it ever relaxes, the failure is a pull
+# request that holds `automerge` and waits forever with every run green, which
+# is the worst shape in this system and the hardest to notice. One extra path
+# on a filter is a cheap way not to depend on someone else's gating staying
+# the way it is.
 on:
   push:
     branches: ["main"]
@@ -35,6 +49,7 @@ on:
       - "template/**/pyproject.toml.jinja"
       - "pyproject.toml"
       - "uv.lock"
+      - ".taskfiles/cve-sync.yml"
       - ".github/**"
   pull_request:
     branches: ["main"]
@@ -43,6 +58,7 @@ on:
       - "template/**/pyproject.toml.jinja"
       - "pyproject.toml"
       - "uv.lock"
+      - ".taskfiles/cve-sync.yml"
       - ".github/**"
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
