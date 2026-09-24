@@ -50,6 +50,11 @@ dependencies = [
     # Keep this in sync with the ag-ui-protocol version in fastapi_server/pyproject.toml of the
     # recipe-datarobot-agent-application.
     "ag-ui-protocol==0.1.15",
+    # Trajectory capture into DataRobot tracing. Nothing imports it: tensile registers
+    # a `nat.plugins` entry point that NAT loads at startup, which records each LLM
+    # call's wire request and response as an OTel log record on the agent's trace.
+    # Set TENSILE_OTEL_DISABLED=1 to turn capture off without removing the package.
+    "tensile==0.11.0",
 ]
 
 [project.optional-dependencies]
