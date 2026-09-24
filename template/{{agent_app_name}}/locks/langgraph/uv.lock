@@ -21,6 +21,7 @@ supported-markers = [
 [manifest]
 constraints = [
     { name = "aiohttp", specifier = ">=3.14.3" },
+    { name = "anyio", specifier = ">=4.14.2" },
     { name = "authlib", specifier = ">=1.7.1" },
     { name = "banks", specifier = ">=2.4.5" },
     { name = "bleach", specifier = ">=6.4.0" },
@@ -181,7 +182,7 @@ dev = [
 requires-dist = [
     { name = "ag-ui-protocol", specifier = "==0.1.15" },
     { name = "datarobot", extras = ["core"], specifier = ">=3.18.0,<4.0.0" },
-    { name = "datarobot-genai", extras = ["langgraph", "dragent", "auth"], specifier = "==0.29.50" },
+    { name = "datarobot-genai", extras = ["langgraph", "dragent", "auth"], specifier = "==0.29.53" },
     { name = "datarobot-mlops", specifier = "==11.1.28" },
     { name = "debugpy", marker = "extra == 'dev'", specifier = ">=1.8.20" },
     { name = "ecs-logging", marker = "extra == 'agentic-playground'", specifier = ">=2.2.0" },
@@ -420,16 +421,15 @@ wheels = [
 
 [[package]]
 name = "anyio"
-version = "4.11.0"
+version = "4.14.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "idna" },
-    { name = "sniffio" },
     { name = "typing-extensions", marker = "python_full_version < '3.13'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c6/78/7d432127c41b50bccba979505f272c16cbcadcc33645d5fa3a738110ae75/anyio-4.11.0.tar.gz", hash = "sha256:82a8d0b81e318cc5ce71a5f1f8b5c4e63619620b63141ef8c995fa0db95a57c4", size = 219094, upload-time = "2025-09-23T09:19:12.58Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/61/cc/a381afa6efea9f496eff839d4a6a1aed3bfafc7b3ab4b0d1b243a12573dd/anyio-4.14.2.tar.gz", hash = "sha256:cfa139f3ed1a23ee8f88a145ddb5ac7605b8bbfd8592baacd7ce3d8bb4313c7f", size = 260176, upload-time = "2026-07-12T20:29:07.082Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/15/b3/9b1a8074496371342ec1e796a96f99c82c945a339cd81a8e73de28b4cf9e/anyio-4.11.0-py3-none-any.whl", hash = "sha256:0287e96f4d26d4149305414d4e3bc32f0dcd0862365a4bddea19d7a1ec38c4fc", size = 109097, upload-time = "2025-09-23T09:19:10.601Z" },
+    { url = "https://files.pythonhosted.org/packages/da/35/f2287558c17e29fafc8ef3daf819bb9834061cfa43bff8014f7df7f63bdc/anyio-4.14.2-py3-none-any.whl", hash = "sha256:9f505dda5ac9f0c8309b5e8bd445a8c2bf7246f3ce950121e45ea15bc41d1494", size = 125813, upload-time = "2026-07-12T20:29:05.763Z" },
 ]
 
 [[package]]
@@ -638,6 +638,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/28/a3/81d3a47c2dbfd76f185d3b894f2ad01a75096c006a2dd91f237dca182188/botocore-1.40.61.tar.gz", hash = "sha256:a2487ad69b090f9cccd64cf07c7021cd80ee9c0655ad974f87045b02f3ef52cd", size = 14393956, upload-time = "2025-10-28T19:26:46.108Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/38/c5/f6ce561004db45f0b847c2cd9b19c67c6bf348a82018a48cb718be6b58b0/botocore-1.40.61-py3-none-any.whl", hash = "sha256:17ebae412692fd4824f99cde0f08d50126dc97954008e5ba2b522eb049238aa7", size = 14055973, upload-time = "2025-10-28T19:26:42.15Z" },
+]
+
+[[package]]
+name = "cachetools"
+version = "7.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/29/2c/3f18755527b03ca9ff6be724bd5370cb777c76a87f17301377cf04a4729b/cachetools-7.2.0.tar.gz", hash = "sha256:bcac1a1b8da6909994a2957238a57b8140dab7c5c5c69a43669654fe87a33c1d", size = 41129, upload-time = "2026-09-16T20:48:27.209Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cc/bb/1c6e7a89b11da19f137e4ef5a5c5fe47a5bb686449ba343944ccf8fb34b2/cachetools-7.2.0-py3-none-any.whl", hash = "sha256:3045213f186b89fdd95d94441354c4bd87c570b7a38d8c3fd1d9dd37f6dc90d8", size = 16918, upload-time = "2026-09-16T20:48:25.575Z" },
 ]
 
 [[package]]
@@ -972,11 +981,11 @@ core = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.29.50"
+version = "0.29.53"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/57/ac/f58d72bf431d3199812b29043fd519dc824e805fb750b0ee72e5fe8aa78a/datarobot_genai-0.29.50.tar.gz", hash = "sha256:249d3b82bd34ee53dea0aceb354dc081ec1653d5ca60fee7c365f58e30cc0eb5", size = 627876, upload-time = "2026-09-21T15:40:57.028Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4a/04/b6b0b391985a83a0219d79d70cae062fea0c92a552452f6354216db66617/datarobot_genai-0.29.53.tar.gz", hash = "sha256:1e6c9f5ed8a883f179b69aa170ff17c4e26075f2cfda61a62ca2789856ca22cc", size = 632392, upload-time = "2026-09-24T15:53:15.124Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/31/da/17d9a431390a6026fb9f8a9341a815a1c8b83109a30f9630f5c88eb7923d/datarobot_genai-0.29.50-py3-none-any.whl", hash = "sha256:a5db0c1b1f4d66474baa3c8f147f0810ab1fa84a7b44b203aa662d6e8ee649a8", size = 883333, upload-time = "2026-09-21T15:40:54.996Z" },
+    { url = "https://files.pythonhosted.org/packages/82/b1/03d2168d620f80ec8fa4279d08e44c18f1a42805ce8dd2381944b320bbcb/datarobot_genai-0.29.53-py3-none-any.whl", hash = "sha256:d3ab4b7d3eddf285782e3ed6a2ca679b2a4e5aacf447f7b841464c72a7068fdc", size = 886847, upload-time = "2026-09-24T15:53:12.928Z" },
 ]
 
 [package.optional-dependencies]
@@ -991,7 +1000,7 @@ auth = [
 ]
 dragent = [
     { name = "ag-ui-protocol" },
-    { name = "anyio" },
+    { name = "cachetools" },
     { name = "colorama" },
     { name = "datarobot", extra = ["application-utils", "core"] },
     { name = "datarobot-moderations", extra = ["all"] },

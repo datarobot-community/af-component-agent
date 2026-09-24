@@ -19,7 +19,7 @@ dev = [
     "pyyaml>=6.0",
     "types-PyYAML>=6.0",
     "requests>=2.31.0",
-    "datarobot-genai==0.29.50",
+    "datarobot-genai==0.29.53",
     # Keep in step with the version the template pins for rendered apps: the E2E harness
     # drives deployed agents through datarobot_genai.core.cli.
     "datarobot[core]>=3.18.0,<4.0.0",
@@ -29,6 +29,7 @@ dev = [
 required-version = ">=0.7.0"
 # cve-sync:begin
 constraint-dependencies = [
+    "anyio>=4.14.2",
     "idna>=3.15",
     "openai>=2.30.0",
     "pydantic-settings>=2.14.2",
