@@ -74,10 +74,20 @@ general:
 
 The DataRobot exporter only activates when the DataRobot deployment environment is present. In local development (`task run` / the dev server), `instrument()` detects that the deployment env is incomplete and the tracer provider silently no-ops — the agent runs normally, but traces aren't exported. Full traces appear once the agent is deployed to DataRobot.
 
+The exception is trajectory capture (below): when it can resolve an API token and an entity id from the environment, `.env`, or `pulumi_config.json`, it bootstraps a tracer provider aimed at DataRobot so local runs are traced too.
+
+## Trajectory capture (`tensile`)
+
+The agent depends on [`tensile`](https://github.com/datarobot-oss/tensile), which registers a `nat.plugins` entry point. NAT loads it at startup, so no agent code calls it. It records the exact wire request and response of every LLM call made through the OpenAI SDK or LiteLLM (which every DataRobot LLM configuration uses) and emits each one as an OTel log record linked to the current span. `tensile trace pull` turns a DataRobot trace back into a trajectory that `tensile inspect` and `tensile replay` can read.
+
+Log records carry prompts, tool definitions, and tool results verbatim; only credential headers are redacted. Capture never raises into the agent: a failure is logged and the LLM call proceeds unchanged.
+
+To turn capture off, set `TENSILE_OTEL_DISABLED=1` in the agent's environment, or remove `tensile` from `agent/pyproject.toml`.
+
 ## View traces
 
 For a deployed agent, open the **Monitoring > Data exploration** tab of the deployment to see end-to-end request traces, including LLM calls, tool invocations, and agent actions. See [Debugging deployed agents](./debugging.md#debugging-deployed-agents) and the [DataRobot tracing documentation](https://docs.datarobot.com/en/docs/agentic-ai/agentic-develop/agentic-tracing-code.html).
 
 ## Disable tracing
 
-Tracing is on by default and recommended. To disable it, remove the `instrument()` block from `agent/agent/register.py` and the `telemetry` block from `agent/workflow.yaml`. Removing this code disables all monitoring, tracing, and telemetry for the agent.
+Tracing is on by default and recommended. To disable it, remove the `instrument()` block from `agent/agent/register.py` and the `telemetry` block from `agent/workflow.yaml`. Removing this code disables all monitoring, tracing, and telemetry for the agent. Also set `TENSILE_OTEL_DISABLED=1` (see [Trajectory capture](#trajectory-capture-tensile)), since capture can bootstrap its own tracer provider.
