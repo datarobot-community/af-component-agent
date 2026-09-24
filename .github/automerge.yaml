@@ -1,5 +1,5 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Automerge policy.
+# Automerge policy for dr-auto-merge.
 #
 # The presence of this file is what enrols the repo. Delete it and automerge
 # stops, with no workflow edit needed.
@@ -11,16 +11,42 @@
 # and note the one rule that matters: the ruleset is the enforcer, this file is
 # an EXTRA gate on top of it. `main` carries required_status_checks with an
 # empty bypass list, so nothing here can cause a failing PR to merge.
+#
+# Wiring cve-sync into this file: the enroll-automerge skill in cve-sync.
 # ─────────────────────────────────────────────────────────────────────────────
 
 version: 1
 
-# Only Dependabot for now. cve-sync opens its PRs as the `cve-sync` App, but
-# the COMMITS on those PRs are authored by `github-actions[bot]`, and
-# allow-listing that would trust every workflow in the repo. Adding cve-sync
-# needs that solved separately; do not just append it here.
+# Spelled with the `[bot]` suffix, exactly. Authors are compared with no
+# normalization, and a mismatch is SILENT: the PR is not a candidate at all, so
+# it gets no comment and no hand-over, just one row in a job summary in another
+# repo.
+#
+# Dependabot enrolled 2026-09-11, cve-sync[bot] 2026-09-16, one at a time so a
+# surprise has an obvious source.
+#
+# THE BLOCKER THAT HELD cve-sync BACK IS GONE, and it is worth knowing what it
+# was, because `cve-sync automerge-enrollment` cannot see it. dr-auto-merge
+# checks the author and committer of EVERY COMMIT on the branch, not just
+# whoever opened the PR. cve-sync opened its PRs as its App while writing the
+# commits as `github-actions[bot]`, so every PR failed on its first commit, and
+# that refusal is TRANSIENT: the PR keeps the `automerge` label and waits
+# forever for a poll that reaches the same answer. cve-sync 0.0.67 makes the
+# commit identity follow the PR identity. This repo tracks the resync workflow
+# at `@main`, so it already has the fix; the `cve-sync/resync` branch tip from
+# 2026-09-14 predates it and is the last one written under the old identity.
+#
+# Do NOT "fix" a recurrence by adding `github-actions[bot]` here. That would
+# trust every workflow in the repo.
+#
+# cve-sync decides for itself whether a resync is boring enough to carry the
+# `automerge` label at all, reading the uv.lock diff to do it: a major version
+# crossing, a package entering or leaving the resolution, or a removed ceiling
+# all get `00 - Ready for Review` instead. That is upstream of this policy, not
+# a substitute for it.
 allowed_authors:
   - dependabot[bot]
+  - cve-sync[bot]
 
 label: automerge
 
@@ -31,40 +57,39 @@ label: automerge
 # THIS LIST IS WHERE THE REAL COVERAGE LIVES ON THIS REPO. The ruleset on
 # `main` requires exactly one context, `gate / cve-sync gate`. Everything else
 # below is unrequired, so native auto-merge or a rules-API-only bot would merge
-# a Dependabot bump having verified almost nothing.
+# a bot PR having verified almost nothing.
 #
 # Listing them here is safe in a way that requiring them is not: a required
 # context a PR never fires wedges that PR forever, whereas a missing expected
-# check just means the PR waits for a human instead of self-merging. That is
-# also why the workflows need no gate jobs and no `if: always()` scaffolding:
-# presence is checked HERE, so each workflow only has to fire. Every suite
-# carries `.github/**` in its path filter for exactly that reason.
+# check just means the PR waits for a human instead of self-merging.
 #
-# THE LIST IS SHORT BECAUSE MOST SUITES ARE NOT GUARANTEED TO FIRE. Only three
-# checks report on every Dependabot bump; an expected check that does not fire
-# means the PR waits for a human forever, so nothing else can go here. What
-# covers the rest is `block_on_any_failure` below: any suite that DOES fire and
-# goes red blocks the merge, listed or not. So this list answers "did the
-# baseline run", and that flag answers "did anything that ran fail".
+# ONE LIST, BOTH AUTHORS. There is no per-author path scoping, so every context
+# here has to be one that BOTH bots' PRs fire. That is the constraint that
+# keeps the list short, and it is what the `.github/**` and root-manifest
+# entries in the Docker build's path filter are there to satisfy.
+#
+# THE LIST IS SHORT BECAUSE MOST SUITES ARE NOT GUARANTEED TO FIRE. An expected
+# check that does not fire means the PR waits for a human forever, so nothing
+# else can go here. What covers the rest is `block_on_any_failure` below: any
+# suite that DOES fire and goes red blocks the merge, listed or not. So this
+# list answers "did the baseline run", and that flag answers "did anything that
+# ran fail".
 #
 # DELIBERATELY ABSENT, verified by reading each workflow's triggers:
 # - `Test Infra`, `Test <agent> (<python>)` — narrow path filters on
-#                        `template/**` and `fixtures/**`. They fire on a bump
-#                        only when Dependabot happens to touch their own
-#                        workflow file, which depends on which actions the
-#                        group picked up that week.
+#                        `template/**` and `fixtures/**`. A cve-sync resync
+#                        fires them, a Dependabot bump fires them only when the
+#                        group happens to touch their own workflow file, which
+#                        varies week to week.
 # - `Smoke / *`, `E2E / *` — both suites skip the `dependabot[bot]` actor, and
 #                        have to. A Dependabot `pull_request` event resolves
 #                        `secrets.*` against the Dependabot secret store, not
 #                        the `integration` environment where DATAROBOT_API_TOKEN
 #                        actually lives, so they would fail on auth on every
 #                        bump. They run on the push to `main` after the merge
-#                        instead.
-#
-# That leaves a real gap: a github-actions bump merges without smoke or E2E
-# having run on it. The Docker build is the deliberate stand-in, since it
-# exercises the render → uv sync → docker build path end to end without needing
-# credentials.
+#                        instead. A cve-sync PR would resolve those secrets
+#                        fine, since the App is an ordinary GitHub App, but one
+#                        list serves both authors so neither can be listed.
 # - release/`version`  — workflow-create-release-on-merge.yaml is push-to-main
 #                        only, so it never reports on a PR.
 # - `backport`         — workflow-backport.yaml runs on closed/labeled PRs.
@@ -72,6 +97,11 @@ label: automerge
 #                        to red-X a PR, and they fire on label/review events
 #                        that a bot PR may never raise. `block_on_any_failure`
 #                        below still catches them if one does go red.
+#
+# That leaves a real gap on the Dependabot side: a github-actions bump merges
+# without smoke or E2E having run on it. The Docker build is the deliberate
+# stand-in, since it exercises the render → uv sync → docker build path end to
+# end without needing credentials.
 #
 # If a name here is wrong the PR refuses to merge and escalates rather than
 # merging unverified, so the failure direction is safe. Watch the first live
@@ -81,8 +111,19 @@ expected_checks:
   # Unconditional single-job workflows: no path filter, so they always report.
   - "Test CLI"
   - "Check for Windows-incompatible file paths"
-  # Carries `.github/**` in its path filter specifically so it fires on every
-  # Dependabot bump. The only suite that does.
+  # Path-filtered, and listable only because the filter in
+  # afcomponentagent-docker-build.yaml was widened to cover every path in
+  # `allowed_paths` below. That is the invariant to preserve: a context in this
+  # list has to report on every pull request either bot can open, so any path a
+  # bot may write must also start that job. Do not narrow that filter without
+  # dropping this line in the same change.
+  #
+  # The root `pyproject.toml`/`uv.lock` pair is the one that was easy to miss.
+  # This repo has two resolution roots, and the root one carries build-tooling
+  # floors (pytest, pygments, idna), so a floor landing on one of those produces
+  # a resync that touches no template file at all. Before the widening that pull
+  # request fired no Docker build, and an expected check that never reports
+  # waits forever holding `automerge`.
   - "Test Docker Build"
   # Already required by the `main` ruleset and added automatically from the
   # branch rules API. Repeated anyway: if someone edits the ruleset and drops
@@ -93,20 +134,53 @@ expected_checks:
 # `skipped` and `neutral` count as a pass.
 block_on_any_failure: true
 
+# Cursor Bugbot reports through a review comment rather than a check, so without
+# this flag its findings are decorative: a PR can carry a high-severity finding
+# and still merge itself with everything green. Bugbot was the only thing that
+# noticed #692 letting generated agents resolve MCP 2.x against adapters written
+# for 1.x, on a PR where every check passed. Only OPEN threads block; resolving
+# the conversation, or changing the code so the thread goes outdated, clears it.
+block_on_cursor_comments: true
+
+# Quiet time required after the last check completes, measured from the check
+# timestamps. Its real job is catching a workflow that has not reported yet.
 settle_seconds: 300
 
-# A grouped github-actions bump touches one file per workflow that pins an
-# action. That is 13 workflows plus `.github/actions/setup-caching/action.yml`,
-# so 14 is the realistic ceiling today and 20 leaves room for a few more
-# workflows. Anything much larger is not the PR we think it is.
+# Sized for the larger of the two bots, which is Dependabot: a grouped
+# github-actions bump touches one file per workflow that pins an action, so 13
+# workflows plus `.github/actions/setup-caching/action.yml` is 14 today, and 20
+# leaves room for a few more. A cve-sync resync is nowhere near it: 8 files at
+# absolute worst, being both roots' manifest and lock, the vendored task file,
+# the template jinja and the four pre-baked locks.
 max_changed_files: 20
 
-# Dependabot here is scoped to the github-actions ecosystem across `/` and
-# `/.github/actions/*`, so a PR touching anything outside those is by
-# definition not the PR this policy is for. `.github/actions/**` matters: the
-# composite actions pin their own dependencies (setup-caching pins
-# `actions/cache`) and Dependabot bumps them in the same grouped PR.
+# The union of what both bots touch. dr-auto-merge has no per-author path rules,
+# so anything either bot needs is allowed for both.
+#
+# cve-sync's half is the first five. This repo has TWO resolution roots, so the
+# root `pyproject.toml`/`uv.lock` pair and the template's jinja both get
+# residue spliced in, and `regenerate-task: update-lock-file-all` rebuilds the
+# four pre-baked `locks/<variant>/uv.lock` artifacts a rendered agent starts
+# from. `.taskfiles/cve-sync.yml` is the vendored command file the resync
+# rewrites from the upstream definition; it moves only when that definition
+# does, so most resyncs leave it alone and it is the easy one to forget here.
+#
+# The template entries are spelled file-by-file rather than as `template/**` on
+# purpose. A resync has no business editing template SOURCE, and the narrow
+# globs are what hand the PR to a person if one ever does.
+#
+# Dependabot's half is the `.github/` entries. It is scoped to the
+# github-actions ecosystem across `/` and `/.github/actions/*`, so a PR
+# touching anything outside those is by definition not the PR this policy is
+# for. `.github/actions/**` matters: the composite actions pin their own
+# dependencies (setup-caching pins `actions/cache`) and Dependabot bumps them in
+# the same grouped PR.
 allowed_paths:
+  - "pyproject.toml"
+  - "uv.lock"
+  - ".taskfiles/cve-sync.yml"
+  - "template/**/pyproject.toml.jinja"
+  - "template/**/locks/**/uv.lock"
   - ".github/workflows/**"
   - ".github/actions/**"
   - ".github/dependabot.yml"
@@ -119,7 +193,8 @@ merge_method: squash
 #
 # Transient refusals (checks still running, settling, branch behind base) just
 # wait for the next poll. Terminal ones do not: a red check never goes green on
-# its own, and a PR touching files outside `allowed_paths` never will.
+# its own, a PR touching files outside `allowed_paths` never will, and neither
+# does an open Bugbot thread.
 #
 # On a terminal refusal the bot drops the `automerge` label, applies the label
 # below, and posts a new comment explaining why. Dropping `automerge` is what
@@ -129,5 +204,10 @@ merge_method: squash
 # label is applied with the App token rather than GITHUB_TOKEN, it also
 # triggers workflow-pr-automation.yaml's Slack ping, so somebody actually hears
 # about it.
-# ─────────────────────────────────────────────────────────────────────────────
+#
+# cve-sync applies this same label itself, before anything has run, when it
+# decides a change is not one a green check run settles. Same destination, two
+# routes, and a reviewer can tell which by where the reason is: in the PR body
+# means cve-sync refused up front, in a comment means dr-auto-merge gave up
+# after the fact.
 escalate_label: "00 - Ready for Review"
