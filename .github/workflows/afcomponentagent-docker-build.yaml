@@ -16,18 +16,33 @@ name: af-component-agent Docker Build
 # `.github/automerge.yaml` does not list them as expected checks. The smoke and
 # E2E suites go further and skip the `dependabot[bot]` actor outright, because
 # a Dependabot event cannot read the credentials they need.
+# The `pyproject.toml` / `uv.lock` pair is this repo's OTHER resolution root, and
+# it is here for automerge rather than for coverage. `.github/automerge.yaml`
+# lists "Test Docker Build" as an expected check, which requires it to report on
+# every PR either bot opens. A cve-sync resync driven by a floor on a
+# build-tooling package (pytest, pygments, idna) rewrites only that root and no
+# template file, and an expected check that never reports leaves the PR carrying
+# `automerge` and waiting forever. Narrowing this filter means dropping that line
+# from the policy in the same change.
+#
+# It earns the run on its own terms too: the root is what renders the template
+# and drives `uv sync`, so a change there can break this build.
 on:
   push:
     branches: ["main"]
     paths:
       - "template/**/locks/**"
       - "template/**/pyproject.toml.jinja"
+      - "pyproject.toml"
+      - "uv.lock"
       - ".github/**"
   pull_request:
     branches: ["main"]
     paths:
       - "template/**/locks/**"
       - "template/**/pyproject.toml.jinja"
+      - "pyproject.toml"
+      - "uv.lock"
       - ".github/**"
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
