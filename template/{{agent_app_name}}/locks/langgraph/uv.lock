@@ -202,7 +202,7 @@ requires-dist = [
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.1.1" },
     { name = "requests-mock", marker = "extra == 'dev'", specifier = ">=1.12.1" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.12.0" },
-    { name = "tensile", specifier = "==0.11.0" },
+    { name = "tensile", specifier = "==0.12.0" },
     { name = "types-requests", marker = "extra == 'dev'", specifier = ">=2.32.4.20250913" },
     { name = "yamlfix", marker = "extra == 'dev'", specifier = ">=1.17.0" },
 ]
@@ -5563,7 +5563,7 @@ wheels = [
 
 [[package]]
 name = "tensile"
-version = "0.11.0"
+version = "0.12.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
@@ -5580,7 +5580,7 @@ dependencies = [
     { name = "wrapt" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e6/e5/40c32c9ef442e40069f3b713ab3b469a5a804421328193bc4f3696cedd13/tensile-0.11.0-py3-none-any.whl", hash = "sha256:6f0bcb0527995417a0a99b7dc8ef88d50a10d425418ba7412ec899581f63d5cc", size = 829285, upload-time = "2026-09-23T21:12:49.518Z" },
+    { url = "https://files.pythonhosted.org/packages/13/30/d05e71ce03bf4d01fe6f1dc66911322d53f8786dd53246854d65bbc3b9f2/tensile-0.12.0-py3-none-any.whl", hash = "sha256:6d744fbf882ed211a208839e1b1d41b579f008eed4c99c1aa80594eb117dd0d9", size = 835095, upload-time = "2026-09-28T14:20:34.589Z" },
 ]
 
 [[package]]
