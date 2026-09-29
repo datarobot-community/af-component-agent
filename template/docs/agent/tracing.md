@@ -72,9 +72,7 @@ general:
 
 ## Local development vs. deployed
 
-The DataRobot exporter only activates when the DataRobot deployment environment is present. In local development (`task run` / the dev server), `instrument()` detects that the deployment env is incomplete and the tracer provider silently no-ops — the agent runs normally, but traces aren't exported. Full traces appear once the agent is deployed to DataRobot.
-
-The exception is trajectory capture (below): when it can resolve an API token and an entity id from the environment, `.env`, or `pulumi_config.json`, it bootstraps a tracer provider aimed at DataRobot so local runs are traced too.
+In local development (`dr run dev` / `task dev`), the `datarobot_otelcollector` exporter sends NAT's workflow spans to DataRobot when the entity is configured. `instrument()` only bootstraps its global tracer provider in a DataRobot-hosted runtime. Locally, trajectory capture (below) starts one when none exists, so framework chat spans and captured LLM calls are exported alongside the NAT spans.
 
 ## Trajectory capture (`tensile`)
 
