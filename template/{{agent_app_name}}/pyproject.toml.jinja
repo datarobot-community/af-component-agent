@@ -25,7 +25,7 @@ description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
 requires-python = ">=3.11, <3.14"
 dependencies = [
-    "datarobot-genai[{{ genai_extras | join(', ') }}]==0.29.50",
+    "datarobot-genai[{{ genai_extras | join(', ') }}]==0.29.54",
     "datarobot-mlops==11.1.28",
     # datarobot.core.config gives us getenv-based runtime parameter loading, plus the
     # DataRobotAppFrameworkBaseSettings and LLMConfig classes that agent/config.py and
@@ -259,6 +259,7 @@ exclude-dependencies = [
     # deepeval — CLI / reporting stack pulled in via datarobot-moderations[all]; not used at runtime
     "pyfiglet",                 # ASCII banner renderer for deepeval CLI; not used
     "wheel",                    # build-time packaging tool; not a runtime dependency
+    "pip",                      # nvidia-nat-core dep; vendors msgpack and setuptools
     "datarobot-early-access",   # randomly overlaps the core `datarobot`
 ]
 # Managed by cve-sync from policy/. Do not hand-edit between the markers below:
@@ -274,6 +275,7 @@ exclude-dependencies = [
 # cve-sync:waived chromadb>1.5.9 NOT applied -- no-upstream-fix, expires 2026-12-09
 constraint-dependencies = [
     "aiohttp>=3.14.3",
+    "anyio>=4.14.2",
     "authlib>=1.7.1",
     "banks>=2.4.5",
     "bleach>=6.4.0",
@@ -289,6 +291,7 @@ constraint-dependencies = [
     "langchain>=1.3.9",
     "langchain-classic>=1.0.7",
     "langchain-core>=1.3.3",
+    "langchain-nvidia-ai-endpoints>=1.4.2",
     "langchain-openai>=1.1.14",
     "langchain-text-splitters>=1.1.2",
     "langgraph-checkpoint>=4.1.1",
