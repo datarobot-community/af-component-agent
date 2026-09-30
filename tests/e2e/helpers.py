@@ -155,12 +155,18 @@ def write_testing_env(
     lines = [
         f"DATAROBOT_ENDPOINT={datarobot_endpoint}",
         f"DATAROBOT_API_TOKEN={datarobot_api_token}",
-        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT=Python 3.11 GenAI Agents",
+        # Anything other than a canonical DataRobot agent env name is passed straight
+        # to ExecutionEnvironment.get(id=...), so E2E_EXECUTION_ENVIRONMENT must be
+        # an env ID when it is set.
+        "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT="
+        + os.environ.get("E2E_EXECUTION_ENVIRONMENT", "Python 3 GenAI Agents"),
         "SESSION_SECRET_KEY=test-secret-key",
         f"PULUMI_STACK={pulumi_stack}",
         "PULUMI_CONFIG_PASSPHRASE=123",
         f"PULUMI_HOME={pulumi_home}",
     ]
+    if version_id := os.environ.get("E2E_EXECUTION_ENVIRONMENT_VERSION_ID"):
+        lines.append(f"DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID={version_id}")
     if extra_env:
         for k, v in extra_env.items():
             lines.append(f"{k}={v}")
