@@ -81,3 +81,18 @@ For every agent:
 ```bash
 UPGRADE_LOCK=1 task update-lock-file-all
 ```
+
+## Execution environment image
+
+`DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT` set to a canonical name (one of `CANONICAL_EXECUTION_ENVIRONMENTS` in `base.py.jinja`: `Python 3 GenAI Agents` is the default, `Python 3.11 GenAI Agents` still resolves until that env is removed) or to an environment ID makes a generated agent run on that environment's image in two places: the custom model container behind a deployment, and the kernel of the ephemeral codespace buzok starts for the Playground when the agent has no deployment. The image is `custom-models/base-image:<image build id>` in the cluster's ECR; the tag is an ObjectId adjacent to the environment version ID and changes with every version, so the kernel pod's image tag tells you which build a codespace actually got.
+
+A codespace is two pods in the `notebooks-pods` namespace, both named after the notebook ID: `kernel-<notebook id>-...` runs the environment image and its `start_server.sh`, and `runner-<notebook id>-...` runs nbx-services. The runner's startup probe only passes once the kernel gateway answers on port 8888, so a runner in CrashLoopBackOff with `httpx.ConnectError` in its logs is a symptom of the kernel, not a fault of its own.
+
+What the image has to provide for both uses:
+
+- **`linux/amd64`.** Nodes are amd64. An image built on an Apple Silicon Mac without `--platform linux/amd64` is arm64 and dies on the first line of the start script with `exec format error`. Creating the environment version from a docker context instead of an uploaded image avoids this, since the platform builds it.
+- **`/opt/venv`, `/opt/code` and `/tmp/uv-cache` writable by UID 1000.** The custom model container runs as user 1000, and both `run_agent.py` (codespace) and `start_server.sh` (deployment) bootstrap the agent venv there. `python3_genai_agents` creates all three with `a+rwx`; `python313_notebook` does not, which is why it fails with `failed to create directory /opt/venv: Permission denied`.
+- **`uv` on `PATH`.** The agent syncs its own `pyproject.toml` and `uv.lock` at start. Nothing from the agent's lock needs to be preinstalled; none of the template locks needs a compiler either, every compiled package ships a manylinux cp313 wheel.
+- **`notebook` in the environment's use cases** next to `customModel`, or the Playground's codespace fallback does not find it.
+
+The staging walkthrough for checking all of this on a live codespace is the `test-agent-codespace-staging` skill under `.agents/skills/`.
