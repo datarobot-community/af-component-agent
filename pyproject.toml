@@ -36,7 +36,7 @@ constraint-dependencies = [
     "pygments>=2.20.0",
     "pytest>=9.0.3",
     "requests>=2.33.0",
-    "urllib3>=2.7.0",
+    "urllib3>=2.8.0",
 ]
 # cve-sync:end
 
