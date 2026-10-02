@@ -318,9 +318,10 @@ def resolve_agent_execution_environment(
     """
     dr_exec_env = os.environ.get("DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT", "").strip()
     if len(dr_exec_env) > 0:
-        execution_environment_id, fell_back = resolve_canonical_execution_environment_id(
-            dr_exec_env
-        ) or (dr_exec_env, False)
+        execution_environment_id, fell_back = (
+            resolve_canonical_execution_environment_id(dr_exec_env)
+            or (dr_exec_env, False)
+        )
 
         # A version pin belongs to the environment it was taken from, so it does not
         # apply to a fallback environment: use its latest version.

@@ -280,12 +280,17 @@ class TestResolveAgentExecutionEnvironment:
         import infra.{{agent_app_name}}_infra.base as base
         from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
 
-        with patch.object(
-            RuntimeEnvironments.PYTHON_3_GENAI_AGENTS.value.__class__,
-            "id",
-            new_callable=PropertyMock,
-            side_effect=ValueError("missing"),
-        ), pytest.raises(ValueError, match="No execution environment for Python 3 GenAI Agents"):
+        with (
+            patch.object(
+                RuntimeEnvironments.PYTHON_3_GENAI_AGENTS.value.__class__,
+                "id",
+                new_callable=PropertyMock,
+                side_effect=ValueError("missing"),
+            ),
+            pytest.raises(
+                ValueError, match="No execution environment for Python 3 GenAI Agents"
+            ),
+        ):
             base.resolve_agent_execution_environment(
                 asset_name="[unittest] [{{agent_app_name}}]",
                 application_path=tmp_path,
