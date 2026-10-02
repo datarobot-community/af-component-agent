@@ -303,9 +303,12 @@ def resolve_agent_execution_environment(
       ``docker_context.tar.gz`` when present under ``application_path``, otherwise
       from the ``docker_context`` folder.
     - **set to a DataRobot agent environment name** (one of
-      ``CANONICAL_EXECUTION_ENVIRONMENTS``): resolved to the matching
-      ``RuntimeEnvironments`` entry and referenced via ``ExecutionEnvironment.get``
-      (optionally pinned with ``DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID``).
+      ``CANONICAL_EXECUTION_ENVIRONMENTS``): resolved to the first available
+      ``RuntimeEnvironments`` entry listed for that name and referenced via
+      ``ExecutionEnvironment.get`` (optionally pinned with
+      ``DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID``; the pin is ignored
+      when a later entry in the list was used, see
+      ``resolve_canonical_execution_environment_id``).
     - **set to any other value**: treated as a pre-existing execution environment
       ID and referenced via ``ExecutionEnvironment.get`` (same version pinning).
 
