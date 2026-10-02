@@ -16,11 +16,12 @@
 import asyncio
 import os
 import sys
-from pathlib import Path
-import yaml
-import pytest
-from unittest.mock import patch, MagicMock, PropertyMock
 from collections import namedtuple
+from pathlib import Path
+from unittest.mock import MagicMock, PropertyMock, patch
+
+import pytest
+import yaml
 
 # Ensure the test directory is in sys.path for proper imports
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -364,8 +365,9 @@ def test_reset_environment_between_tests(monkeypatch, tmp_path):
 
 class TestResolveExecutionEnvironmentVersion:
     def test_not_found_returns_none(self, monkeypatch):
-        import infra.{{agent_app_name}}_infra.base as base
         from datarobot.errors import ClientError
+
+        import infra.{{agent_app_name}}_infra.base as base
 
         monkeypatch.setenv(
             "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
@@ -385,8 +387,9 @@ class TestResolveExecutionEnvironmentVersion:
         assert "6a4e0e5874d3a4076d933c72" in base.pulumi.warn.call_args[0][0]
 
     def test_found(self, monkeypatch):
-        import infra.{{agent_app_name}}_infra.base as base
         from datarobot.enums import EXECUTION_ENVIRONMENT_VERSION_BUILD_STATUS
+
+        import infra.{{agent_app_name}}_infra.base as base
 
         monkeypatch.setenv(
             "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
@@ -888,6 +891,7 @@ class TestBuildSharedAgentRuntimeParameters:
     def test_memory_ttl_env_override(self, monkeypatch):
         """AGENT_MEMORY_TTL_DAYS is read at base's import time; reload to re-parse."""
         import importlib
+
         import infra.{{agent_app_name}}_infra.base as base
 
         monkeypatch.setenv(AGENT_MEMORY_TTL_DAYS, "1")
@@ -901,6 +905,7 @@ class TestBuildSharedAgentRuntimeParameters:
     def test_memory_ttl_excluded_when_memory_disabled(self, monkeypatch):
         """With memory off the TTL parameter is absent, even if the env var is set."""
         import importlib
+
         import infra.{{agent_app_name}}_infra.base as base
 
         monkeypatch.setenv(AGENT_MEMORY_TTL_DAYS, "1")
@@ -1313,6 +1318,7 @@ class TestEnableAgentHAMode:
     def test_disabled_by_default(self, monkeypatch):
         monkeypatch.delenv("ENABLE_AGENT_HA_MODE", raising=False)
         import importlib
+
         import infra.{{agent_app_name}}_infra.base as base
 
         importlib.reload(base)
@@ -1322,6 +1328,7 @@ class TestEnableAgentHAMode:
         """'false' is disabled, same as unset -- only 'true' enables HA."""
         monkeypatch.setenv("ENABLE_AGENT_HA_MODE", "false")
         import importlib
+
         import infra.{{agent_app_name}}_infra.base as base
 
         importlib.reload(base)
@@ -1330,6 +1337,7 @@ class TestEnableAgentHAMode:
     def test_enabled(self, monkeypatch):
         monkeypatch.setenv("ENABLE_AGENT_HA_MODE", "true")
         import importlib
+
         import infra.{{agent_app_name}}_infra.base as base
 
         importlib.reload(base)
@@ -1337,6 +1345,7 @@ class TestEnableAgentHAMode:
 
     def test_case_insensitive_true_only(self, monkeypatch):
         import importlib
+
         import infra.{{agent_app_name}}_infra.base as base
 
         for value, expected in [
