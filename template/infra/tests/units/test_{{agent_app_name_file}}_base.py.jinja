@@ -243,8 +243,9 @@ class TestResolveAgentExecutionEnvironment:
             "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
             "6a4e0e5874d3a4076d933c72",
         )
-        import infra.{{agent_app_name}}_infra.base as base
         from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
+
+        import infra.{{agent_app_name}}_infra.base as base
 
         base.pulumi_datarobot.ExecutionEnvironment.reset_mock()
         with patch.object(
@@ -277,8 +278,9 @@ class TestResolveAgentExecutionEnvironment:
             "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT",
             "[DataRobot] Python 3 GenAI Agents",
         )
-        import infra.{{agent_app_name}}_infra.base as base
         from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
+
+        import infra.{{agent_app_name}}_infra.base as base
 
         with (
             patch.object(
