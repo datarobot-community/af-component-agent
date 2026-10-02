@@ -206,7 +206,7 @@ class TestResolveAgentExecutionEnvironment:
         )
 
         base.pulumi.info.assert_any_call(
-            "Using DataRobot execution environment: Python 3 GenAI Agents."
+            "Using DataRobot execution environment: [DataRobot] Python 3 GenAI Agents."
         )
         base.pulumi_datarobot.ExecutionEnvironment.get.assert_called_once()
         _, kwargs = base.pulumi_datarobot.ExecutionEnvironment.get.call_args
@@ -229,10 +229,73 @@ class TestResolveAgentExecutionEnvironment:
         )
 
         base.pulumi.info.assert_any_call(
-            "Using DataRobot execution environment: Python 3.11 GenAI Agents."
+            "Using DataRobot execution environment: [DataRobot] Python 3.11 GenAI Agents."
         )
         _, kwargs = base.pulumi_datarobot.ExecutionEnvironment.get.call_args
         assert kwargs["id"] == "genai-agents-id"
+
+    def test_default_env_falls_back_to_python311(self, monkeypatch, tmp_path):
+        monkeypatch.setenv(
+            "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT",
+            "[DataRobot] Python 3 GenAI Agents",
+        )
+        monkeypatch.setenv(
+            "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT_VERSION_ID",
+            "6a4e0e5874d3a4076d933c72",
+        )
+        import infra.{{agent_app_name}}_infra.base as base
+        from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
+
+        base.pulumi_datarobot.ExecutionEnvironment.reset_mock()
+        with patch.object(
+            RuntimeEnvironments.PYTHON_3_GENAI_AGENTS.value.__class__,
+            "id",
+            new_callable=PropertyMock,
+            side_effect=[ValueError("missing"), "python311-id"],
+        ):
+            base.resolve_agent_execution_environment(
+                asset_name="[unittest] [{{agent_app_name}}]",
+                application_path=tmp_path,
+                use_cases=["customModel", "notebook"],
+            )
+
+        base.pulumi.info.assert_any_call(
+            "Execution environment [DataRobot] Python 3 GenAI Agents not found "
+            "on this DataRobot installation."
+        )
+        base.pulumi.info.assert_any_call(
+            "Using DataRobot execution environment: [DataRobot] Python 3.11 GenAI Agents."
+        )
+        _, kwargs = base.pulumi_datarobot.ExecutionEnvironment.get.call_args
+        assert kwargs["id"] == "python311-id"
+        # The pin belongs to the Python 3 env, so the fallback uses latest without a lookup.
+        assert kwargs["version_id"] is None
+        base.pulumi.warn.assert_not_called()
+
+    def test_default_env_missing_everywhere(self, monkeypatch, tmp_path):
+        monkeypatch.setenv(
+            "DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT",
+            "[DataRobot] Python 3 GenAI Agents",
+        )
+        import infra.{{agent_app_name}}_infra.base as base
+        from datarobot_pulumi_utils.schema.exec_envs import RuntimeEnvironments
+
+        with (
+            patch.object(
+                RuntimeEnvironments.PYTHON_3_GENAI_AGENTS.value.__class__,
+                "id",
+                new_callable=PropertyMock,
+                side_effect=ValueError("missing"),
+            ),
+            pytest.raises(
+                ValueError, match="No execution environment for Python 3 GenAI Agents"
+            ),
+        ):
+            base.resolve_agent_execution_environment(
+                asset_name="[unittest] [{{agent_app_name}}]",
+                application_path=tmp_path,
+                use_cases=["customModel", "notebook"],
+            )
 
     def test_default_env_pinned(self, monkeypatch, tmp_path):
         monkeypatch.setenv(
