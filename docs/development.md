@@ -94,5 +94,3 @@ What the image has to provide for both uses:
 - **`/opt/venv`, `/opt/code` and `/tmp/uv-cache` writable by UID 1000.** The custom model container runs as user 1000, and both `run_agent.py` (codespace) and `start_server.sh` (deployment) bootstrap the agent venv there. `python3_genai_agents` creates all three with `a+rwx`; `python313_notebook` does not, which is why it fails with `failed to create directory /opt/venv: Permission denied`.
 - **`uv` on `PATH`.** The agent syncs its own `pyproject.toml` and `uv.lock` at start. Nothing from the agent's lock needs to be preinstalled; none of the template locks needs a compiler either, every compiled package ships a manylinux cp313 wheel.
 - **`notebook` in the environment's use cases** next to `customModel`, or the Playground's codespace fallback does not find it.
-
-The staging walkthrough for checking all of this on a live codespace is the `test-agent-codespace-staging` skill under `.agents/skills/`.
