@@ -19,12 +19,13 @@ ENABLE_AGENT_ON_WORKLOAD_API branch picks the right one and never both.
 """
 
 import asyncio
-import sys
 import importlib
+import sys
 from pathlib import Path
 from typing import Any
-import pytest
 from unittest.mock import MagicMock
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 

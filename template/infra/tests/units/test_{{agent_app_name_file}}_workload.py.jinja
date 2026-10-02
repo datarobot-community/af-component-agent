@@ -15,12 +15,13 @@
 
 import asyncio
 import sys
+from collections import namedtuple
 from pathlib import Path
 from typing import Any
-import pytest
+from unittest.mock import MagicMock, PropertyMock, patch
+
 import pulumi
-from unittest.mock import MagicMock, patch, PropertyMock
-from collections import namedtuple
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 

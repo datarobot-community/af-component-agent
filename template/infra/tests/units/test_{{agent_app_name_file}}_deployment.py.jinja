@@ -14,12 +14,13 @@
 """Tests for infra.{{agent_app_name}}_infra.deployment: the Custom Models runtime (default)."""
 
 import asyncio
-import sys
 import importlib
-from pathlib import Path
-import pytest
-from unittest.mock import patch, MagicMock, PropertyMock
+import sys
 from collections import namedtuple
+from pathlib import Path
+from unittest.mock import MagicMock, PropertyMock, patch
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
