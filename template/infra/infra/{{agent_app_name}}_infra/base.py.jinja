@@ -586,6 +586,31 @@ def _configure_memory_space_llm_routing(
 {%- endif %}
 
 
+def deployment_proxy_runtime_parameters() -> list[
+    pulumi_datarobot.CustomModelRuntimeParameterValueArgs
+]:
+    """Forward an egress proxy to the deployed custom model as runtime parameters.
+
+    Runtime parameters reach the container as plain env vars, so this is how
+    ``HTTPS_PROXY``/``NO_PROXY`` get to a model on a cluster whose only route to
+    PyPI is an HTTP proxy. Read from ``DEPLOYMENT_*`` names so the Pulumi runner's
+    own traffic is never proxied. Empty when unset.
+    """
+    proxy = os.environ.get("DEPLOYMENT_HTTPS_PROXY", "").strip()
+    if not proxy:
+        return []
+    values = {"HTTPS_PROXY": proxy, "HTTP_PROXY": proxy}
+    no_proxy = os.environ.get("DEPLOYMENT_NO_PROXY", "").strip()
+    if no_proxy:
+        values["NO_PROXY"] = no_proxy
+    return [
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key=key, type="string", value=value
+        )
+        for key, value in values.items()
+    ]
+
+
 def build_shared_agent_runtime_parameters() -> list[
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs
 ]:
@@ -745,4 +770,5 @@ def build_shared_agent_runtime_parameters() -> list[
         )
         pulumi.info("Configured with IDP_AGENT_PRIVATE_KEY_JWK credential")
 
+    params.extend(deployment_proxy_runtime_parameters())
     return params

@@ -829,6 +829,28 @@ class TestBuildSharedAgentRuntimeParameters:
         params = base.build_shared_agent_runtime_parameters()
         assert not any(p.key == "SESSION_SECRET_KEY" for p in params)
 
+    def test_deployment_proxy_forwarded(self, monkeypatch):
+        import infra.{{agent_app_name}}_infra.base as base
+
+        monkeypatch.setenv("DEPLOYMENT_HTTPS_PROXY", "http://squid:3128")
+        monkeypatch.setenv("DEPLOYMENT_NO_PROXY", "localhost,.svc")
+        params = base.build_shared_agent_runtime_parameters()
+        by_key = {p.key: p for p in params}
+        assert by_key["HTTPS_PROXY"].value == "http://squid:3128"
+        assert by_key["HTTP_PROXY"].value == "http://squid:3128"
+        assert by_key["NO_PROXY"].value == "localhost,.svc"
+        assert by_key["HTTPS_PROXY"].type == "string"
+
+    def test_deployment_proxy_absent_when_unset(self, monkeypatch):
+        import infra.{{agent_app_name}}_infra.base as base
+
+        monkeypatch.delenv("DEPLOYMENT_HTTPS_PROXY", raising=False)
+        monkeypatch.setenv("DEPLOYMENT_NO_PROXY", "localhost")
+        params = base.build_shared_agent_runtime_parameters()
+        assert not any(
+            p.key in ("HTTPS_PROXY", "HTTP_PROXY", "NO_PROXY") for p in params
+        )
+
     def test_idp_agent_id_included_when_set(self, monkeypatch):
         import infra.{{agent_app_name}}_infra.base as base
 
