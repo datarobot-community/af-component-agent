@@ -291,7 +291,7 @@ _migrations:
   # which only ever changes the agent. Projects that update the agent with
   # `dr component update` see this once, before they pull. It only prints, so it
   # never blocks an update, and it runs on the copier Python so it also works on Windows.
-  - version: "11.11.104"
+  - version: "11.11.105"
     command:
       - "{{ _copier_python }}"
       - "-c"
