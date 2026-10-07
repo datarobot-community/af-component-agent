@@ -280,3 +280,34 @@ _migrations:
         PY
         done
     when: "{{ _stage == 'before' and _copier_operation == 'update' }}"
+  # Point projects that still bundle an MCP server at the Agentic Starter migration.
+  #
+  # The Agentic Starter template stopped bundling the MCP component, and projects
+  # lose it when they pull a template version without it, not through this update,
+  # which only ever changes the agent. Projects that update the agent with
+  # `dr component update` see this once, before they pull. It only prints, so it
+  # never blocks an update, and it runs on the copier Python so it also works on Windows.
+  - version: "11.11.104"
+    command:
+      - "{{ _copier_python }}"
+      - "-c"
+      - |
+        import glob
+        import sys
+
+        found = sorted(
+            glob.glob(".datarobot/answers/drmcp-*.y*ml")
+            + glob.glob(".datarobot/answers/fastmcp-*.y*ml")
+        )
+        if found:
+            print(
+                "\nNOTE: This project bundles an MCP server (" + ", ".join(found) + ").\n"
+                "      Newer versions of the Agentic Starter template no longer include one.\n"
+                "      This update does not change your MCP server. If this project follows\n"
+                "      that template, pulling its latest version backs up your own MCP tools,\n"
+                "      and the next deploy asks before it removes the server. See\n"
+                "      docs/mcp-migration.md in\n"
+                "      https://github.com/datarobot-community/datarobot-agent-application\n",
+                file=sys.stderr,
+            )
+    when: "{{ _stage == 'before' and _copier_operation == 'update' }}"
