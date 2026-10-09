@@ -29,8 +29,6 @@ node_modules
 .mypy_cache
 .pytest_cache
 .ruff_cache
-
-# Tensile project dir (local trajectories, extracted prompts, sessions)
 .tensile
 
 # Terraform: source.dir can be the directory holding the configuration that
