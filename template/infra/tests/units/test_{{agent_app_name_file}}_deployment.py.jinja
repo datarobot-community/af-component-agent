@@ -184,7 +184,9 @@ class TestCustomModelFiles:
         (tmp_path / "myagent.py").write_text("x = 1\n")
         tensile_dir = tmp_path / ".tensile"
         (tensile_dir / "trajectories").mkdir(parents=True)
-        (tensile_dir / "config.yaml").write_text("trajectory_logging:\n  enabled: true\n")
+        (tensile_dir / "config.yaml").write_text(
+            "trajectory_logging:\n  enabled: true\n"
+        )
         (tensile_dir / "trajectories" / "trace-abc.jsonl.gz").write_bytes(b"")
 
         files = deployment.get_custom_model_files(str(tmp_path), [])
