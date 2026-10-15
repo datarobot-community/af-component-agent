@@ -284,3 +284,17 @@ _migrations:
         PY
         done
     when: "{{ _stage == 'before' and _copier_operation == 'update' }}"
+  # Point projects that still bundle an MCP server at the Agentic Starter migration.
+  #
+  # The Agentic Starter template stopped bundling the MCP component, and projects
+  # lose it when they pull a template version without it, not through this update,
+  # which only ever changes the agent. Projects that update the agent with
+  # `dr component update` see this once, before they pull. It only prints, so it
+  # never blocks an update, and it runs on the copier Python so it also works on Windows.
+  # The script is a file (migrations/mcp_note.py, outside template/) because copier
+  # prints a migration's whole command before it runs it.
+  - version: "11.11.105"
+    command:
+      - "{{ _copier_python }}"
+      - "{{ _copier_conf.src_path }}/migrations/mcp_note.py"
+    when: "{{ _stage == 'before' and _copier_operation == 'update' }}"
