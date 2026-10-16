@@ -10,14 +10,32 @@ To connect an agent to a remote agent via A2A:
 
 - Uncomment the `function_groups` and `workflow.tool_names` blocks in `workflow.yaml`.
 
-Enable the `ENABLE_RUNTIME_PARAMETERS_IMPROVEMENTS` feature flag in DataRobot to use environment variables in `workflow.yaml` files.
+### Environment variables in `workflow.yaml`
+
+Use placeholders of the form `${VAR_NAME}` in `workflow.yaml` to read a value from an environment variable when the workflow is loaded. For example, to avoid hard-coding the remote agent URL:
+
+```yaml
+function_groups:
+  remote_agent:
+    _type: authenticated_a2a_client
+    url: "${REMOTE_AGENT_URL}"
+    auth_provider: datarobot_auth
+```
+
+Set the variable in `.env` for local runs. A deployed agent must receive the variable in its runtime environment, for example as a DataRobot runtime parameter. Infra registers only specific variables from `.env` automatically, so add any custom variable to the deployment's runtime parameters yourself. The same placeholders work in authentication settings; see [A2A authentication](./agent2agent-auth.md).
 
 ### Agent cards and DataRobot deployments
 
-When the `ENABLE_GENAI_AGENT_TO_AGENT_SUPPORT` feature flag is enabled, deploying an agent that exposes A2A server endpoints stores the agent card in DataRobot. Use the following endpoints:
+Deploying an agent that exposes A2A server endpoints stores the agent card in DataRobot. The card is fetched from the agent when the deployment is created and again when its model is replaced. This requires the `ENABLE_GENAI_EXPERIMENTATION` feature flag, which is already enabled for agent deployments. Use the following endpoints:
 
 - List deployments with agent cards—`GET deployments/?isA2AAgent=true`.
 - Retrieve an agent card—`GET deployments/DEPLOYMENT_ID/agentCard`.
+
+### Agent cards and DataRobot workloads
+
+On the [Workload API runtime](./deployment-runtimes.md), the Workload API registers the agent card in DataRobot while the workload is running, keeps it while the workload is suspended, and removes it when the workload stops. This requires the `ENABLE_WORKLOAD_API_AGENT` feature flag; reading the card also requires `ENABLE_GENAI_EXPERIMENTATION`. Use the following endpoint:
+
+- Retrieve an agent card—`GET agentCards/?workloadIds=WORKLOAD_ID`.
 
 ## Unauthenticated agent card access
 
