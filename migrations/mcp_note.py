@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Copier migration (11.11.105): a one-time note for projects that bundle an MCP server.
+"""Copier migration (11.11.113): a one-time note for projects that bundle an MCP server.
 
 The Agentic Starter template no longer bundles one. Projects that only update the agent
 (`dr component update`) see this before they pull the template. It only prints, so it
@@ -26,10 +26,11 @@ found = sorted(glob.glob(".datarobot/answers/drmcp-*.y*ml") + glob.glob(".dataro
 if found:
     print(
         f"\nNOTE: This project includes an MCP server ({', '.join(found)}).\n"
-        "      The latest Agentic Starter template removes it: MCP servers now run as\n"
-        "      standalone apps. This update doesn't change your MCP server. When you\n"
-        "      pull the latest template, your own MCP tools are backed up, and\n"
-        "      `dr run deploy` asks you before it removes the server. See\n"
+        "      The latest Agentic Starter template removes it, a breaking change: MCP\n"
+        "      servers now run as standalone apps. This update doesn't change your MCP\n"
+        "      server. When you pull the latest template, your agent loses the old\n"
+        "      server's tools, and a deployed app's next deploy stops until you move\n"
+        "      them to a standalone MCP server or confirm you don't need them. See\n"
         "      docs/mcp-migration.md in\n"
         "      https://github.com/datarobot-community/datarobot-agent-application\n",
         file=sys.stderr,

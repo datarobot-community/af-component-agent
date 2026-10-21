@@ -400,6 +400,10 @@ def maybe_import_from_module(module: str, object_name: str) -> Optional[Any]:
         return None
 
 
+# The settings that point the agent at an MCP server, in datarobot-genai's precedence.
+MCP_SERVER_SETTINGS = ("MCP_WORKLOAD_ID", "MCP_DEPLOYMENT_ID", "EXTERNAL_MCP_URL")
+
+
 def get_mcp_runtime_parameters_from_env() -> list[
     pulumi_datarobot.CustomModelRuntimeParameterValueArgs
 ]:
@@ -470,6 +474,13 @@ def get_mcp_runtime_parameters_from_env() -> list[
         )
         pulumi.info(f"External MCP configured with transport: {external_mcp_transport}")
 
+    if not any(os.environ.get(key) for key in MCP_SERVER_SETTINGS):
+        pulumi.info(
+            "MCP not configured: the agent deploys without MCP tools. To add some, set "
+            + ", ".join(MCP_SERVER_SETTINGS[:-1])
+            + f" or {MCP_SERVER_SETTINGS[-1]} (docs/agent/mcp.md)."
+        )
+
     return mcp_runtime_parameters
 
 
@@ -478,12 +489,14 @@ def get_mcp_custom_model_runtime_parameters() -> list[
 ]:
     """
     Load MCP runtime parameters from the conventionally-named MCP module when it
-    is present in the project, otherwise fall back to environment variables.
+    is present in the project and passes some, otherwise fall back to environment
+    variables. The module passes none when its server runs on the Workload API, so
+    the agent then uses the settings in .env, such as MCP_WORKLOAD_ID.
     """
     mcp_params = maybe_import_from_module(
         MCP_MODULE_NAME, "mcp_custom_model_runtime_parameters"
     )
-    if mcp_params is not None:
+    if mcp_params:
         return mcp_params
     return get_mcp_runtime_parameters_from_env()
 

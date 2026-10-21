@@ -30,11 +30,24 @@ Two more settings apply to `EXTERNAL_MCP_URL` only:
 - `EXTERNAL_MCP_HEADERS`: a JSON object of headers, for example `'{"Authorization": "Bearer <token>"}'`.
 - `EXTERNAL_MCP_TRANSPORT`: `streamable-http` (default) or `sse`.
 
-With none of these set, the agent uses its other tools only.
+For example, the [DataRobot Global MCP](https://docs.datarobot.com/en/docs/agentic-ai/agentic-mcp/agentic-mcp-overview.html), which DataRobot runs on every instance. Its address is the DataRobot endpoint followed by `/genai/globalmcp/mcp`:
+
+```sh
+EXTERNAL_MCP_URL=https://app.datarobot.com/api/v2/genai/globalmcp/mcp
+EXTERNAL_MCP_HEADERS='{"Authorization": "Bearer <DataRobot API key>"}'
+```
+
+The agent then gets every tool the Global MCP has. To give it only some, list their names, separated by commas, in the `x-datarobot-mcp-tools` header (the name starts with `x-`):
+
+```sh
+EXTERNAL_MCP_HEADERS='{"Authorization": "Bearer <DataRobot API key>", "x-datarobot-mcp-tools": "<tool name>,<tool name>"}'
+```
+
+With none of the table's settings set, the agent uses only its other tools.
 
 ## Deployed agents
 
-`dr run deploy` passes `MCP_WORKLOAD_ID`, `MCP_DEPLOYMENT_ID`, `EXTERNAL_MCP_URL`, `EXTERNAL_MCP_HEADERS`, and `EXTERNAL_MCP_TRANSPORT` from `.env` to the deployed agent as [runtime parameters](./runtime-parameters.md), whichever of them are set. `MCP_SERVER_PORT` is not passed, because it only means something on your machine.
+`dr run deploy` passes the following parameters, if set, from `.env` to the deployed agent as [runtime parameters](./runtime-parameters.md): `MCP_WORKLOAD_ID`, `MCP_DEPLOYMENT_ID`, `EXTERNAL_MCP_URL`, `EXTERNAL_MCP_HEADERS`, and `EXTERNAL_MCP_TRANSPORT`. `MCP_SERVER_PORT` is not passed, because it is only meaningful to the local machine.
 
 To point a deployed agent at another server, change the setting in `.env` and run `dr run deploy` again, or edit the runtime parameter on the deployment in DataRobot.
 
@@ -42,10 +55,10 @@ To point a deployed agent at another server, change the setting in `.env` and ru
 
 A project can also contain an MCP server built from the [DataRobot MCP component](https://github.com/datarobot-community/af-component-datarobot-mcp). When that server is added under the default name `mcp_server`, its infrastructure module `infra/infra/mcp_server.py` exists, and:
 
-- `dr run deploy` deploys the server and, in the server's default serverless deployment mode, connects the deployed agent to it automatically.
-- That module decides the deployed agent's MCP settings. The settings in `.env` are not passed to the deployed agent while it exists.
+- `dr run deploy` deploys the server in the server's default serverless deployment mode and connects the deployed agent to it automatically.
+- In that mode, the module decides the deployed agent's MCP settings, and the settings in `.env` are not passed to the deployed agent.
 
-When the server is deployed to the Workload API instead (`ENABLE_MCP_ON_WORKLOAD_API=true`), the module passes no MCP settings, so the deployed agent has no MCP server. An MCP server added under any other name is not connected automatically either. Point the agent at it with `MCP_DEPLOYMENT_ID`.
+When the server is deployed to the Workload API instead (`ENABLE_MCP_ON_WORKLOAD_API=true`), the module passes no MCP settings, so the deployed agent uses the settings in `.env`: set `MCP_WORKLOAD_ID` to the server's workload ID. An MCP server added under any other name is not connected automatically either. Point the agent at it with `MCP_DEPLOYMENT_ID` or `MCP_WORKLOAD_ID`.
 
 When the agent runs locally, it always uses the settings in `.env`.
 
@@ -72,6 +85,6 @@ The function group reads the server's published XAA requirements and exchanges t
 | Symptom | Cause | Fix |
 |---|---|---|
 | The agent answers without MCP tools, and the log has a warning about the MCP server | The server could not be reached. The agent keeps running without MCP tools. | Check that the server is running and that the setting points at it. |
-| A setting in `.env` has no effect | A setting higher in the [table](#point-the-agent-at-an-mcp-server) is also set. | Unset the settings you do not use. |
-| The deployed agent ignores `MCP_DEPLOYMENT_ID` or `EXTERNAL_MCP_URL` | The project contains `infra/infra/mcp_server.py`. | See [MCP server deployed with the agent](#mcp-server-deployed-with-the-agent). |
+| A setting in `.env` has no effect | A setting higher in the [table](#point-the-agent-at-an-mcp-server) is also set. | Remove the settings you do not use. |
+| The deployed agent ignores `MCP_DEPLOYMENT_ID` or `EXTERNAL_MCP_URL` | The project contains `infra/infra/mcp_server.py`, in its default serverless mode. | See [MCP server deployed with the agent](#mcp-server-deployed-with-the-agent). |
 | The deployed agent finds no workload server | The agent's API token cannot read the workload, or the workload is not running yet. | Check the workload in DataRobot. The agent looks the endpoint up again on the next request. |
