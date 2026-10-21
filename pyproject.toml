@@ -30,6 +30,7 @@ required-version = ">=0.7.0"
 # cve-sync:begin
 constraint-dependencies = [
     "anyio>=4.14.2",
+    "certifi>=2026.10.19",
     "idna>=3.15",
     "openai>=2.30.0",
     "pydantic-settings>=2.14.2",
