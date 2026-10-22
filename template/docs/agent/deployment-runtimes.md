@@ -83,6 +83,24 @@ Other components in the app receive `<AGENT_APP_NAME>_WORKLOAD_ID` and `<AGENT_A
 
 ---
 
+## Tagging the workload
+
+Workload tags are name/value pairs attached to the workload in DataRobot. The Workload runtime requires `pulumi-datarobot>=0.13.0` in `infra/pyproject.toml`, even when no tags are set. The template ships an empty placeholder, `WORKLOAD_TAGS`, in `infra/infra/<agent_app_name>_infra/workload.py`. Add entries to it to tag the deployed agent:
+
+```python
+WORKLOAD_TAGS: Final[list[pulumi_datarobot.WorkloadTagArgs]] = [
+    pulumi_datarobot.WorkloadTagArgs(name="team", value="agents"),
+    pulumi_datarobot.WorkloadTagArgs(name="cost-center", value="1234"),
+]
+```
+
+- A name is 1–4096 characters, cannot contain `{`, `}`, `;` or `|`, and cannot start with `datarobot.` or `integrations.`. A value is 1–4096 characters.
+- Tags are applied in place on the next `dr run deploy`, with no rebuild or rollout.
+- A non-empty list makes Pulumi own the workload's full tag set, so tags added in the DataRobot UI show up as drift on a refreshed plan and are removed on the next deploy.
+- An empty list means tags are not managed at all. Emptying the list later does **not** remove tags already on the workload; remove those in DataRobot.
+
+---
+
 ## Using your own image
 
 Set `WORKLOAD_AGENT_IMAGE_URI` to an image DataRobot can pull. The image must listen on `WORKLOAD_CONTAINER_PORT` (default `8080`) and serve `/health`, or replicas never become ready.
@@ -99,7 +117,7 @@ Leave `WORKLOAD_ENTRYPOINT` unset to keep the image's own entrypoint — unlike 
 An artifact is locked before its image is built, and nothing inside a locked artifact can be edited afterwards. Anything that lives in the artifact spec therefore costs a new artifact and a new build:
 
 - **New artifact and image build** — agent source, dependencies, container port, entrypoint, or any environment variable passed to the container.
-- **Workload update only, no rebuild** — CPU, memory, replica count, and importance.
+- **Workload update only, no rebuild** — CPU, memory, replica count, importance, and tags.
 
 Environment variables landing in the first group is the surprising one: they are part of the artifact spec, not of the running workload, so changing one is as expensive as changing code.
 
@@ -159,3 +177,4 @@ Two things to plan for either way:
 | `ValueError` on `WORKLOAD_MEMORY` | The value must be integer bytes, not a Kubernetes quantity. Use `2147483648`, not `2Gi`. |
 | `pulumi destroy` fails with a missing token | `DATAROBOT_API_TOKEN` is never stored in Pulumi state, so it must be set in the environment for destroy as well as deploy. |
 | `403 Route configuration is disabled on this cluster` | The artifact asked the platform to configure a route on a cluster where that is switched off. Only `enable_unauthenticated_well_known_route` in `workflow.yaml` requests one; unset it, or ask an administrator to enable unauthenticated routing on the cluster. |
+| `TypeError: ... unexpected keyword argument 'tags'` | The installed `pulumi-datarobot` predates workload tags. Raise it to `>=0.13.0` in `infra/pyproject.toml` and re-run `task infra:install`. |
