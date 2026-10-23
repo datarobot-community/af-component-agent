@@ -58,7 +58,9 @@ A project can also contain an MCP server built from the [DataRobot MCP component
 - `dr run deploy` deploys the server in the server's default serverless deployment mode and connects the deployed agent to it automatically.
 - In that mode, the module decides the deployed agent's MCP settings, and the settings in `.env` are not passed to the deployed agent.
 
-When the server is deployed to the Workload API instead (`ENABLE_MCP_ON_WORKLOAD_API=true`), the module passes no MCP settings, so the deployed agent uses the settings in `.env`: set `MCP_WORKLOAD_ID` to the server's workload ID. An MCP server added under any other name is not connected automatically either. Point the agent at it with `MCP_DEPLOYMENT_ID` or `MCP_WORKLOAD_ID`.
+When the server is deployed to the Workload API instead (`ENABLE_MCP_ON_WORKLOAD_API=true`), newer versions of the MCP component pass the workload's ID as `MCP_WORKLOAD_ID`, so the deployed agent connects to it automatically there too, and again the settings in `.env` are not passed to it. Older versions pass no MCP settings: the deployed agent then uses the settings in `.env`, so set `MCP_WORKLOAD_ID` to the server's workload ID.
+
+An MCP server added under any other name is not connected automatically. Point the agent at it with `MCP_DEPLOYMENT_ID` or `MCP_WORKLOAD_ID`.
 
 When the agent runs locally, it always uses the settings in `.env`.
 
@@ -86,5 +88,5 @@ The function group reads the server's published XAA requirements and exchanges t
 |---|---|---|
 | The agent answers without MCP tools, and the log has a warning about the MCP server | The server could not be reached. The agent keeps running without MCP tools. | Check that the server is running and that the setting points at it. |
 | A setting in `.env` has no effect | A setting higher in the [table](#point-the-agent-at-an-mcp-server) is also set. | Remove the settings you do not use. |
-| The deployed agent ignores `MCP_DEPLOYMENT_ID` or `EXTERNAL_MCP_URL` | The project contains `infra/infra/mcp_server.py`, in its default serverless mode. | See [MCP server deployed with the agent](#mcp-server-deployed-with-the-agent). |
+| The deployed agent ignores the MCP settings in `.env` | The project contains `infra/infra/mcp_server.py`, which connects the deployed agent to its own server: in the default serverless mode, and on the Workload API with newer versions of the MCP component. | See [MCP server deployed with the agent](#mcp-server-deployed-with-the-agent). |
 | The deployed agent finds no workload server | The agent's API token cannot read the workload, or the workload is not running yet. | Check the workload in DataRobot. The agent looks the endpoint up again on the next request. |

@@ -490,8 +490,9 @@ def get_mcp_custom_model_runtime_parameters() -> list[
     """
     Load MCP runtime parameters from the conventionally-named MCP module when it
     is present in the project and passes some, otherwise fall back to environment
-    variables. The module passes none when its server runs on the Workload API, so
-    the agent then uses the settings in .env, such as MCP_WORKLOAD_ID.
+    variables. Older versions of the MCP component pass none when their server
+    runs on the Workload API (newer ones pass MCP_WORKLOAD_ID), so the agent then
+    uses the settings in .env, such as MCP_WORKLOAD_ID.
     """
     mcp_params = maybe_import_from_module(
         MCP_MODULE_NAME, "mcp_custom_model_runtime_parameters"

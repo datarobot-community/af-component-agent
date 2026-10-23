@@ -293,7 +293,7 @@ _migrations:
   # never blocks an update, and it runs on the copier Python so it also works on Windows.
   # The script is a file (migrations/mcp_note.py, outside template/) because copier
   # prints a migration's whole command before it runs it.
-  - version: "11.11.113"
+  - version: "11.11.115"
     command:
       - "{{ _copier_python }}"
       - "{{ _copier_conf.src_path }}/migrations/mcp_note.py"

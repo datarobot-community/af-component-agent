@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Copier migration (11.11.113): a one-time note for projects that bundle an MCP server.
+"""Copier migration (11.11.115): a one-time note for projects that bundle an MCP server.
 
 The Agentic Starter template no longer bundles one. Projects that only update the agent
 (`dr component update`) see this before they pull the template. It only prints, so it
