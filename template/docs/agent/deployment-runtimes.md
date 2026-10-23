@@ -94,10 +94,12 @@ WORKLOAD_TAGS: Final[list[pulumi_datarobot.WorkloadTagArgs]] = [
 ]
 ```
 
-- A name is 1–4096 characters, cannot contain `{`, `}`, `;` or `|`, and cannot start with `datarobot.` or `integrations.`. A value is 1–4096 characters.
-- Tags are applied in place on the next `dr run deploy`, with no rebuild or rollout.
-- A non-empty list makes Pulumi own the workload's full tag set, so tags added in the DataRobot UI show up as drift on a refreshed plan and are removed on the next deploy.
-- An empty list means tags are not managed at all. Emptying the list later does **not** remove tags already on the workload; remove those in DataRobot.
+- Name: 1–4096 characters. A name can't contain `{`, `}`, `;`, or `|`, and can't start with `datarobot.` or `integrations.`.
+- Value: 1–4096 characters.
+- When tags apply: Tags are updated on the existing workload the next time you run `dr run deploy`. The agent isn't rebuilt or rolled out again.
+- Tags in code and in DataRobot: How Pulumi handles tags depends on whether `WORKLOAD_TAGS` is empty.
+    - If the list has entries, Pulumi manages all of the workload's tags. Any tag added in DataRobot is reported as drift when Pulumi refreshes, and is removed on the next deploy. Add tags to `WORKLOAD_TAGS` instead.
+    - If the list is empty, Pulumi doesn't manage tags, and tags added in DataRobot are kept. If you empty a list that had entries, the tags already on the workload stay. Remove them in DataRobot.
 
 ---
 
