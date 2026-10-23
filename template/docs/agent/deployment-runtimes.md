@@ -85,7 +85,7 @@ Other components in the app receive `<AGENT_APP_NAME>_WORKLOAD_ID` and `<AGENT_A
 
 ## Tagging the workload
 
-Workload tags are name/value pairs attached to the workload in DataRobot. The Workload runtime requires `pulumi-datarobot>=0.13.0` in `infra/pyproject.toml`, even when no tags are set. The template ships an empty placeholder, `WORKLOAD_TAGS`, in `infra/infra/<agent_app_name>_infra/workload.py`. Add entries to it to tag the deployed agent:
+Workload tags are name/value pairs attached to the workload in DataRobot. The workload runtime requires `pulumi-datarobot>=0.13.0` in `infra/pyproject.toml`, even when no tags are set. The template ships an empty placeholder, `WORKLOAD_TAGS`, in `infra/infra/<agent_app_name>_infra/workload.py`. Add entries to it to tag the deployed agent:
 
 ```python
 WORKLOAD_TAGS: Final[list[pulumi_datarobot.WorkloadTagArgs]] = [
