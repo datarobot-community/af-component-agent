@@ -246,6 +246,63 @@ def _assert_no_pending_changes(digest: dict[str, Any]) -> None:
     fprint("Re-plan is a no-op: no resource would be created, updated or replaced.")
 
 
+def _workload_tags(*, pulumi_stack: str, agent_framework: str) -> dict[str, str]:
+    """The two tags this run sets on the workload; the stack name makes them unique."""
+    return {
+        "e2e-run": pulumi_stack,
+        "e2e-framework": agent_framework,
+    }
+
+
+def _patch_workload_tags(*, infra_dir: Path, tags: dict[str, str]) -> Path:
+    """Fill the rendered `WORKLOAD_TAGS` placeholder with `tags`.
+
+    MUST run after `render_project()` (which wipes the rendered dir) and before
+    the first Pulumi invocation. The template ships the list empty, so this is
+    the only coverage of tags actually reaching the platform.
+    """
+    placeholder = "WORKLOAD_TAGS: Final[list[pulumi_datarobot.WorkloadTagArgs]] = []"
+    paths = sorted(infra_dir.glob("infra/*_infra/workload.py"))
+    if len(paths) != 1:
+        pytest.fail(f"Expected one rendered infra workload.py, found: {paths}")
+    path = paths[0]
+
+    source = path.read_text(encoding="utf-8")
+    if source.count(placeholder) != 1:
+        pytest.fail(
+            f"`{placeholder}` not found exactly once in {path}. The template's "
+            "WORKLOAD_TAGS placeholder moved or changed shape."
+        )
+    entries = "".join(
+        f"    pulumi_datarobot.WorkloadTagArgs(name={name!r}, value={value!r}),\n"
+        for name, value in tags.items()
+    )
+    path.write_text(
+        source.replace(placeholder, f"{placeholder[:-2]}[\n{entries}]"),
+        encoding="utf-8",
+    )
+    fprint(f"Patched WORKLOAD_TAGS = {tags} in {path}")
+    return path
+
+
+def _assert_planned_workload_tags(
+    digest: dict[str, Any], expected: dict[str, str]
+) -> None:
+    """Assert the planned Workload carries exactly `expected` as its tags input."""
+    for step in digest.get("steps") or []:
+        if _step_type(step) != WORKLOAD_TYPE:
+            continue
+        inputs = (step.get("newState") or {}).get("inputs") or {}
+        planned = {tag["name"]: tag["value"] for tag in inputs.get("tags") or []}
+        assert planned == expected, (
+            f"Planned Workload tags {planned!r} != expected {expected!r}. "
+            f"Workload inputs: {sorted(inputs)}"
+        )
+        fprint(f"Planned Workload tags: {planned}")
+        return
+    pytest.fail("No Workload step in the plan to read tags from.")
+
+
 def _run_preview(*, rendered_dir: Path, label: str) -> dict[str, Any]:
     fprint(f"Running `pulumi preview` ({label})")
     raw = run_cmd(
@@ -294,6 +351,33 @@ def _wait_for_workload_running(
                 f"(last status: {last_status!r})."
             )
         time.sleep(poll_s)
+
+
+def _assert_live_workload_tags(
+    *, client: RESTClientObject, workload_id: str, expected: dict[str, str]
+) -> None:
+    """Assert the deployed workload carries `expected` among its tags.
+
+    Reads `keyValues/`, which owns workload tags, rather than the `tags` field
+    of `workloads/{id}/`: workload-api fills that field best-effort and returns
+    `[]` when the lookup fails, which would make this check flaky.
+    """
+    response = client.get(
+        "keyValues/",
+        params={"entityType": "workload", "entityId": workload_id, "limit": 100},
+    )
+    response.raise_for_status()
+    live = {
+        item["name"]: item.get("value")
+        for item in (response.json() or {}).get("data") or []
+    }
+    missing = {
+        name: value for name, value in expected.items() if live.get(name) != value
+    }
+    assert not missing, (
+        f"Workload {workload_id} is missing tags {missing!r}; it has {live!r}."
+    )
+    fprint(f"Workload {workload_id} tags: {live}")
 
 
 def _post_chat_completion(
@@ -474,6 +558,14 @@ def run_workload_agent_e2e(
         )
         patch_workflow_external_id(rendered_dir=rendered_dir, external_id=external_id)
 
+    # Step 1c: Fill the empty WORKLOAD_TAGS placeholder with two tags, so the
+    # plan and the deployed workload both prove tags reach the platform. Same
+    # before-any-Pulumi constraint as Step 1b.
+    workload_tags = _workload_tags(
+        pulumi_stack=pulumi_stack, agent_framework=agent_framework
+    )
+    _patch_workload_tags(infra_dir=infra_dir, tags=workload_tags)
+
     # Step 2: Prepare E2E-specific runtime env (written into rendered project's `.env`).
     extra_env: dict[str, str] = {
         "USE_DATAROBOT_LLM_GATEWAY": "1",
@@ -554,6 +646,7 @@ def run_workload_agent_e2e(
         # read, and provider-side validation of the Workload/Artifact arguments.
         digest = _run_preview(rendered_dir=rendered_dir, label="initial plan")
         _assert_serving_only_plan(digest)
+        _assert_planned_workload_tags(digest, workload_tags)
 
         # The router exports the resolved runtime. Asserting it turns a baffling
         # "unexpected CustomModel in plan" into "the flag did not take effect".
@@ -622,6 +715,9 @@ def run_workload_agent_e2e(
         # Step 10: Wait for the replica to pass its /health readiness probe.
         client = dr.Client(endpoint=datarobot_endpoint, token=datarobot_api_token)
         _wait_for_workload_running(client=client, workload_id=workload_id)
+        _assert_live_workload_tags(
+            client=client, workload_id=workload_id, expected=workload_tags
+        )
 
         # Step 11: Call the served agent through its chat endpoint.
         content = retry(
