@@ -62,6 +62,10 @@ DEFAULT_GENERATED_ENTRYPOINT: Final[list[str]] = [
 # Field holding the token inside a DataRobot api_token credential; the `key` of
 # "dr-credential" env var references in Workload artifact specs.
 DR_CREDENTIAL_API_TOKEN_KEY: Final[str] = "apiToken"
+# Custom Models exposes each declared runtime parameter as
+# ``MLOPS_RUNTIME_PARAM_<KEY>`` = ``{"type": ..., "payload": ...}``; readers built on
+# ``datarobot_dome.runtime`` (e.g. the moderation middleware) only look there.
+MLOPS_RUNTIME_PARAM_PREFIX: Final[str] = "MLOPS_RUNTIME_PARAM_"
 DEFAULT_WORKLOAD_CPU: Final[str] = "1"
 # 1.5 GiB: room for an agent process (LLM client libraries, framework deps)
 # without over-provisioning every deployment by default.
@@ -236,10 +240,14 @@ def _runtime_param_env_vars(
     |------------------------------------------------------|--------------------------------------|
     | ``type="credential"`` (session secret, Mem0 key, IDP JWK) | ``dr-credential`` reference   |
     | everything else (LLM/MCP params, ``IDP_AGENT_ID``, ``AGENT_GUNICORN_WORKER_TIMEOUT``, ``AGENT_MEMORY_SPACE_ID``) | plain ``name``/``value`` pair |
+    | ``type="boolean"`` (``MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS``) | plain pair, plus ``MLOPS_RUNTIME_PARAM_<KEY>`` JSON |
 
     ``CUSTOM_MODEL_WORKERS`` never reaches here — it's added only in
     ``deployment.py``, since ``base.build_shared_agent_runtime_parameters()``
     excludes it (no Workload-container equivalent).
+
+    Boolean parameters also get the Custom Models ``MLOPS_RUNTIME_PARAM_<KEY>``
+    JSON form, because their readers (``datarobot_dome``) ignore the plain name.
     """
     env_vars: list[
         pulumi_datarobot.ArtifactSpecContainerGroupContainerEnvironmentVarArgs
@@ -254,7 +262,26 @@ def _runtime_param_env_vars(
                     name=key, value=param.value
                 )
             )
+            if param.type == "boolean":
+                env_vars.append(_mlops_boolean_runtime_param_env_var(key, param.value))
     return env_vars
+
+
+def _mlops_boolean_runtime_param_env_var(
+    key: str, value: Any
+) -> pulumi_datarobot.ArtifactSpecContainerGroupContainerEnvironmentVarArgs:
+    """``MLOPS_RUNTIME_PARAM_<KEY>`` as Custom Models would inject a boolean parameter."""
+
+    def _encode(v: Any) -> str:
+        enabled = v is True or str(v).strip().lower() == "true"
+        return json.dumps({"type": "boolean", "payload": enabled})
+
+    payload = (
+        value.apply(_encode) if isinstance(value, pulumi.Output) else _encode(value)
+    )
+    return pulumi_datarobot.ArtifactSpecContainerGroupContainerEnvironmentVarArgs(
+        name=MLOPS_RUNTIME_PARAM_PREFIX + key, value=payload
+    )
 
 
 def _otel_endpoint_env_var() -> list[

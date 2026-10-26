@@ -103,6 +103,20 @@ MEM0_API_KEY: Final[str] = "MEM0_API_KEY"
 IDP_AGENT_ID_PARAM: Final[str] = "IDP_AGENT_ID"
 PRIVATE_JWK_PARAM: Final[str] = "IDP_AGENT_PRIVATE_KEY_JWK"
 AGENT_CARD_REGISTRY_SOFT_CACHE_TTL: Final[str] = "AGENT_CARD_REGISTRY_SOFT_CACHE_TTL"
+# Read by the ``datarobot_moderation`` middleware (via ``datarobot_dome``) when
+# ``allow_external_access_tokens`` is not set in workflow.yaml: lets guard calls
+# authenticate with the caller's ``x-datarobot-external-access-token``. Always
+# declared so it can be toggled on a deployed agent without a code change.
+MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS: Final[str] = (
+    "MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS"
+)
+_TRUTHY_ENV_VALUES: Final[frozenset[str]] = frozenset({"1", "true", "yes", "on"})
+
+
+def _env_flag(name: str) -> bool:
+    """Return whether env var ``name`` holds a truthy value (unset/blank is False)."""
+    return os.environ.get(name, "").strip().lower() in _TRUTHY_ENV_VALUES
+
 
 EXCLUDE_PATTERNS = [
     re.compile(pattern)
@@ -643,6 +657,15 @@ def build_shared_agent_runtime_parameters() -> list[
             key="AGENT_GUNICORN_WORKER_TIMEOUT",
             type="string",  # string is type-agnostic; numeric fails str settings fields
             value=DEFAULT_AGENT_GUNICORN_WORKER_TIMEOUT,
+        )
+    )
+    params.append(
+        pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+            key=MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS,
+            # boolean, not string: datarobot_dome reads the payload with bool(), so a
+            # string "false" would switch the feature on.
+            type="boolean",
+            value=str(_env_flag(MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS)).lower(),
         )
     )
 {% if use_agent_memory in ['mem0', 'datarobot_memory_service'] %}

@@ -11,6 +11,7 @@ The `datarobot-moderations[all]` package is already included in `pyproject.toml`
 | [Wire the middleware](#wire-the-middleware) | Hook `datarobot_moderation` into the workflow. |
 | [Configure guards](#configure-guards) | Two ways to specify guards (external file or inline). |
 | [Test moderations locally](#test-moderations-locally) | Run prompts through the configured guards. |
+| [Authenticate guards with the caller's token](#authenticate-guards-with-the-callers-token) | Use the caller's external (for example, Okta) access token for guard calls. |
 | [Environment variables](#environment-variables) | Credentials and runtime toggles. |
 | [Disable moderations](#disable-moderations) | Turn guards off without removing configuration. |
 | [Local evaluation](#local-evaluation) | Offline `nat eval` quality checks during development (separate from runtime guards). |
@@ -201,24 +202,50 @@ dr run agent:dev
 
 Blocked responses surface as content-filter events in the streaming path or as the guard intervention message in non-streaming mode.
 
+## Authenticate guards with the caller's token
+
+By default, guards call DataRobot with the agent's own `DATAROBOT_API_TOKEN`. When external access tokens are allowed, every guard call to DataRobot instead authenticates with the caller's IdP (for example, Okta) access token from the `x-datarobot-external-access-token` request header, which the DataRobot API gateway forwards. The middleware falls back to the configured key for requests without that header. The caller's token is also sent to `faas_url` and NIM guards unless they set `forward_token: false`. With this enabled, a missing or disabled `DATAROBOT_API_TOKEN` no longer fails startup.
+
+Enable it in one of two ways:
+
+- **In `workflow.yaml`**&mdash;uncomment `allow_external_access_tokens: true` under `middleware.datarobot_moderation`. Works on every runtime and locally, and takes precedence over the runtime parameter (set it to `false` to force it off).
+
+  ```yaml
+  middleware:
+    datarobot_moderation:
+      _type: datarobot_moderation
+      allow_external_access_tokens: true
+  ```
+
+- **With the `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS` runtime parameter**&mdash;used when `allow_external_access_tokens` is omitted from `workflow.yaml`. `dr run deploy` always declares this `boolean` runtime parameter on the agent, set from `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS` in the deploy environment (`false` when unset), so it can also be toggled on a deployed agent afterwards. See [Runtime parameters](./runtime-parameters.md#overriding-values).
+
+The moderation middleware reads runtime parameters through `datarobot-moderations`, which only looks at the `MLOPS_RUNTIME_PARAM_<NAME>` JSON form that the Custom Models runtime injects; a plain `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS` variable is ignored. The Workload API infra writes that JSON form into the container for you. For local development, use the `workflow.yaml` field, or set the JSON form in `.env`:
+
+```sh
+MLOPS_RUNTIME_PARAM_MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS={"type":"boolean","payload":true}
+```
+
+> **Note:** The flag only has an effect when the `datarobot_moderation` middleware is attached to the workflow and guards are configured. NAT and agent memory workflows don't attach it by default; see [Wire the middleware](#wire-the-middleware).
+
 ## Environment variables
 
 | Variable | Required | Description |
 |---|---|---|
 | `DATAROBOT_ENDPOINT` | Yes (for LLM Gateway and DataRobot model guards) | DataRobot instance URL (for example, `https://app.datarobot.com/api/v2`). Set in `.env` by `dr start`. |
-| `DATAROBOT_API_TOKEN` | Yes (for LLM Gateway and DataRobot model guards) | DataRobot API token. Set in `.env` by `dr start`. |
-| `DISABLE_MODERATION` | No | Set to `true` to disable all guards at runtime without removing configuration. |
+| `DATAROBOT_API_TOKEN` | Yes (for LLM Gateway and DataRobot model guards), unless external access tokens are allowed | DataRobot API token. Set in `.env` by `dr start`. |
+| `MLOPS_RUNTIME_PARAM_MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS` | No | `{"type":"boolean","payload":true}` authenticates guard calls with the caller's access token. Set through the `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS` runtime parameter when deployed. See [Authenticate guards with the caller's token](#authenticate-guards-with-the-callers-token). |
+| `MLOPS_RUNTIME_PARAM_DISABLE_MODERATION` | No | `{"type":"boolean","payload":true}` disables all guards at runtime without removing configuration. |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | On the Workload API runtime | OTel collector base URL for guard telemetry. Custom Models deployments get one from the platform; workloads do not, so set it in `.env` and the infra forwards it into the container. See [Deployment runtimes](./deployment-runtimes.md#configuration). |
 
 ## Disable moderations
 
-To temporarily disable all guards without deleting configuration:
+To temporarily disable all guards without deleting configuration, set the `DISABLE_MODERATION` runtime parameter. The middleware reads it in the `MLOPS_RUNTIME_PARAM_` JSON form that the Custom Models runtime injects, so a plain `DISABLE_MODERATION=true` has no effect. Locally, export it (or add the same line to `.env`):
 
 ```sh
-export DISABLE_MODERATION=true
+export MLOPS_RUNTIME_PARAM_DISABLE_MODERATION='{"type":"boolean","payload":true}'
 ```
 
-Or add `DISABLE_MODERATION=true` to `.env`. Guards resume when the variable is unset or set to any value other than `true`.
+Guards resume when the variable is unset or its payload is `false`.
 
 ## Local evaluation
 
