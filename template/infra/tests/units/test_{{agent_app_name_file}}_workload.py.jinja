@@ -14,6 +14,7 @@
 """Tests for infra.{{agent_app_name}}_infra.workload: the Workload API runtime."""
 
 import asyncio
+import json
 import sys
 from collections import namedtuple
 from pathlib import Path
@@ -445,6 +446,29 @@ class TestRuntimeParamEnvVars:
         assert len(env_vars) == 1
         assert env_vars[0].name == "AGENT_GUNICORN_WORKER_TIMEOUT"
         assert env_vars[0].value == "600"
+
+    @pytest.mark.parametrize(("value", "payload"), [("true", True), ("false", False)])
+    def test_boolean_type_also_gets_mlops_runtime_param_json(
+        self, monkeypatch, value, payload
+    ):
+        """datarobot_dome only reads MLOPS_RUNTIME_PARAM_<KEY>, as Custom Models sets it."""
+        workload = _workload_module(monkeypatch)
+        params = [
+            RuntimeParam(
+                key="MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS",
+                type="boolean",
+                value=value,
+            )
+        ]
+        env_vars = workload._runtime_param_env_vars(params)
+        assert len(env_vars) == 2
+        assert env_vars[0].name == "MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS"
+        assert env_vars[0].value == value
+        assert (
+            env_vars[1].name
+            == "MLOPS_RUNTIME_PARAM_MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS"
+        )
+        assert json.loads(env_vars[1].value) == {"type": "boolean", "payload": payload}
 
     def test_workload_environment_vars_leads_with_api_key_source(self, monkeypatch):
         workload = _workload_module(monkeypatch)
