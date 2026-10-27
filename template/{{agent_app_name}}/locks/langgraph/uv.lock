@@ -182,7 +182,7 @@ dev = [
 requires-dist = [
     { name = "ag-ui-protocol", specifier = "==0.1.15" },
     { name = "datarobot", extras = ["core"], specifier = ">=3.18.0,<4.0.0" },
-    { name = "datarobot-genai", extras = ["langgraph", "dragent", "auth"], specifier = "==0.29.54" },
+    { name = "datarobot-genai", extras = ["langgraph", "dragent", "auth"], specifier = ">=0.29.54,<0.30.0" },
     { name = "datarobot-mlops", specifier = "==11.1.28" },
     { name = "debugpy", marker = "extra == 'dev'", specifier = ">=1.8.20" },
     { name = "ecs-logging", marker = "extra == 'agentic-playground'", specifier = ">=2.2.0" },
