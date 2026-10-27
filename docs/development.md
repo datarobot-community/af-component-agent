@@ -82,6 +82,22 @@ For every agent:
 UPGRADE_LOCK=1 task update-lock-file-all
 ```
 
+### Upgrade one package (`UPGRADE_PACKAGE`)
+
+Use this to move a single package to its newest allowed version and leave everything else in the lock where it is.
+
+```bash
+UPGRADE_PACKAGE=datarobot-genai task update-lock-file-all
+```
+
+### Why datarobot-genai moves in CVE resync PRs
+
+`datarobot-genai` is pinned to a range within one minor version (for example `>=0.29.54,<0.30.0`), in both the root `pyproject.toml` and `pyproject.toml.jinja`. A minor bump in datarobot-genai can break things; a patch bump should not.
+
+The range lets a cve-sync resync pull in a newer genai patch when a raised CVE floor needs one to resolve. On top of that, every resync that changes anything runs `task cve-sync-finalize` as cve-sync's finalize hook, which moves genai to the newest patch in its range in the root lock and every shipped lock. No other package is upgraded this way.
+
+The lower bound is a compatibility floor. Raise it by hand when the template starts depending on something a newer genai release added.
+
 ## Execution environment image
 
 `DATAROBOT_DEFAULT_EXECUTION_ENVIRONMENT` set to a canonical name (one of `CANONICAL_EXECUTION_ENVIRONMENTS` in `base.py.jinja`: `Python 3 GenAI Agents` is the default and falls back to `Python 3.11 GenAI Agents` on installations that do not have it yet) or to an environment ID makes a generated agent run on that environment's image in two places: the custom model container behind a deployment, and the kernel of the ephemeral codespace buzok starts for the Playground when the agent has no deployment. The image is `custom-models/base-image:<image build id>` in the cluster's ECR; the tag is an ObjectId adjacent to the environment version ID and changes with every version, so the kernel pod's image tag tells you which build a codespace actually got.

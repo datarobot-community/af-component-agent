@@ -290,9 +290,13 @@ tasks:
           AGENT: "{{.AGENT}}"
           RENDER_APP_NAME: "{{.LOCK_APP_NAME}}"
           USE_MEMORY: '{{.USE_MEMORY| default "none"}}'
+      # UPGRADE_PACKAGE moves one named package to its newest allowed version and
+      # leaves the rest of the lock alone; see cve-sync-finalize.
       - |
           if [ "$UPGRADE_LOCK" = "1" ]; then
             uv lock -U --directory {{.LOCK_DIR}}
+          elif [ -n "{{.UPGRADE_PACKAGE}}" ]; then
+            uv lock --upgrade-package "{{.UPGRADE_PACKAGE}}" --directory {{.LOCK_DIR}}
           else
             uv lock --directory {{.LOCK_DIR}}
           fi
@@ -331,15 +335,29 @@ tasks:
       - task: update-lock-file
         vars:
           AGENT: "base"
+          UPGRADE_PACKAGE: '{{.UPGRADE_PACKAGE}}'
       - task: update-lock-file
         vars:
           AGENT: "crewai"
+          UPGRADE_PACKAGE: '{{.UPGRADE_PACKAGE}}'
       - task: update-lock-file
         vars:
           AGENT: "langgraph"
+          UPGRADE_PACKAGE: '{{.UPGRADE_PACKAGE}}'
       - task: update-lock-file
         vars:
           AGENT: "llamaindex"
+          UPGRADE_PACKAGE: '{{.UPGRADE_PACKAGE}}'
+
+  cve-sync-finalize:
+    desc: "Advance datarobot-genai to its newest allowed version in every lock (cve-sync's finalize hook)"
+    # datarobot-genai is the one package a resync may move without a floor
+    # forcing it; its pin is a minor-version range, so this only takes patches.
+    cmds:
+      - uv lock --upgrade-package datarobot-genai
+      - task: update-lock-file-all
+        vars:
+          UPGRADE_PACKAGE: datarobot-genai
 
   run-cli:
     desc: "Run CLI"
