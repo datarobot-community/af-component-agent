@@ -208,7 +208,7 @@ By default, guards call DataRobot with the agent's own `DATAROBOT_API_TOKEN`. Wh
 
 Turn it on in either of two places:
 
-- **`.env`**&mdash;set `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS=true`. It applies to local runs, and `dr run deploy` carries it to the deployment on either runtime.
+- **`.env`**&mdash;set `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS=true`.
 - **`workflow.yaml`**&mdash;uncomment `allow_external_access_tokens: true` under `middleware.datarobot_moderation`. When set, this field takes precedence over `.env` (set it to `false` to force the feature off).
 
   ```yaml
@@ -218,16 +218,7 @@ Turn it on in either of two places:
       allow_external_access_tokens: true
   ```
 
-To change the `.env` value on an agent that's already deployed:
-
-- **Custom Models runtime (default)**&mdash;edit the `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS` runtime parameter on the deployment; no redeploy needed. See [Runtime parameters](./runtime-parameters.md#overriding-values).
-- **Workload API runtime**&mdash;change `.env` and run `dr run deploy` again. Container environment variables are part of the artifact, so this [rebuilds the image](./deployment-runtimes.md#what-changes-trigger-a-rebuild).
-
-> **Note:** The flag only has an effect when the `datarobot_moderation` middleware is attached to the workflow and guards are configured. NAT and agent memory workflows don't attach it by default; see [Wire the middleware](#wire-the-middleware).
-
 ## Environment variables
-
-Set these in `.env`. `dr run deploy` carries the moderation flags to the deployment on either runtime, as runtime parameters of the same name.
 
 | Variable | Required | Description |
 |---|---|---|
@@ -239,9 +230,13 @@ Set these in `.env`. `dr run deploy` carries the moderation flags to the deploym
 
 ## Disable moderations
 
-To temporarily disable all guards without deleting configuration, set `DISABLE_MODERATION=true` in `.env`. Guards resume when it is unset or `false`.
+To temporarily disable all guards without deleting configuration:
 
-This applies to local runs straight away, and `dr run deploy` carries it to the deployment. To change it on a deployed agent, edit the `DISABLE_MODERATION` runtime parameter (Custom Models runtime), or change `.env` and redeploy (Workload API runtime).
+```sh
+export DISABLE_MODERATION=true
+```
+
+Or add `DISABLE_MODERATION=true` to `.env`. Guards resume when the variable is unset or set to any value other than `true`.
 
 ## Local evaluation
 

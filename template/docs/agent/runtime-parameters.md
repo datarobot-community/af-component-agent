@@ -66,7 +66,7 @@ Override the value of a runtime parameter depending on when the change needs to 
 
 - **Local development** — set the variable in the project `.env` file. It takes effect immediately, the same way it does after deployment, with no deploy needed.
 - **At deploy time** — this works only when the infra registration reads the variable from `os.environ`. Set such variables in the environment that `dr run deploy` (Pulumi) runs in; examples include `AGENT_MEMORY_TTL_DAYS`, `DISABLE_MODERATION`, `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS`, `MEM0_API_KEY`, `SESSION_SECRET_KEY`, `IDP_AGENT_ID`, `IDP_AGENT_PRIVATE_KEY_JWK`, and `AGENT_CARD_REGISTRY_SOFT_CACHE_TTL`. Parameters registered from constants, such as `AGENT_GUNICORN_WORKER_TIMEOUT`, require an infra code change before deployment.
-- **After deployment** — to update a value on the existing deployment, deactivate the deployment, edit the runtime parameter in **Settings > Resources**, and reactivate it. To avoid downtime, replace the active deployment's model version and set the runtime parameter values during replacement. Neither workflow requires an agent code change. On the [Workload API runtime](./deployment-runtimes.md) there is nothing to edit after deployment: values are container env vars, so change them in the deploy environment and run `dr run deploy` again, which rebuilds the image.
+- **After deployment** — to update a value on the existing deployment, deactivate the deployment, edit the runtime parameter in **Settings > Resources**, and reactivate it. To avoid downtime, replace the active deployment's model version and set the runtime parameter values during replacement. Neither workflow requires an agent code change.
 
 ## Add a custom runtime parameter
 
