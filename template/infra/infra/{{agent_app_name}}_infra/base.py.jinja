@@ -103,10 +103,10 @@ MEM0_API_KEY: Final[str] = "MEM0_API_KEY"
 IDP_AGENT_ID_PARAM: Final[str] = "IDP_AGENT_ID"
 PRIVATE_JWK_PARAM: Final[str] = "IDP_AGENT_PRIVATE_KEY_JWK"
 AGENT_CARD_REGISTRY_SOFT_CACHE_TTL: Final[str] = "AGENT_CARD_REGISTRY_SOFT_CACHE_TTL"
-# Read by the ``datarobot_moderation`` middleware (via ``datarobot_dome``) when
-# ``allow_external_access_tokens`` is not set in workflow.yaml: lets guard calls
-# authenticate with the caller's ``x-datarobot-external-access-token``. Always
-# declared so it can be toggled on a deployed agent without a code change.
+# Read by the ``datarobot_moderation`` middleware when ``allow_external_access_tokens``
+# is not set in workflow.yaml: lets guard calls authenticate with the caller's
+# ``x-datarobot-external-access-token``. Set from the deploy environment. Always
+# declared, so it can be changed on a Custom Models deployment without redeploying.
 MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS: Final[str] = (
     "MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS"
 )
@@ -663,7 +663,8 @@ def build_shared_agent_runtime_parameters() -> list[
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
             key=MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS,
             # boolean, not string: datarobot_dome reads the payload with bool(), so a
-            # string "false" would switch the feature on.
+            # string "false" would switch the feature on. workload.py relies on the
+            # value being exactly "true"/"false".
             type="boolean",
             value=str(_env_flag(MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS)).lower(),
         )
