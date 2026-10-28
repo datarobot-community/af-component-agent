@@ -103,10 +103,9 @@ MEM0_API_KEY: Final[str] = "MEM0_API_KEY"
 IDP_AGENT_ID_PARAM: Final[str] = "IDP_AGENT_ID"
 PRIVATE_JWK_PARAM: Final[str] = "IDP_AGENT_PRIVATE_KEY_JWK"
 AGENT_CARD_REGISTRY_SOFT_CACHE_TTL: Final[str] = "AGENT_CARD_REGISTRY_SOFT_CACHE_TTL"
-# Toggles for the ``datarobot_moderation`` middleware, carried from .env to the
-# deployment (agent/config.py ``ModerationSettings`` reads them on the other side).
-# Always declared, so they can be changed on a Custom Models deployment without
-# redeploying.
+# Toggles for the ``datarobot_moderation`` middleware (datarobot-genai >= 0.31.2 reads
+# the plain env var), carried from .env to the deployment. Always declared, so they can
+# be changed on a Custom Models deployment without redeploying.
 #   DISABLE_MODERATION: turn every guard off without removing the configuration.
 #   MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS: when ``allow_external_access_tokens`` is
 #     not set in workflow.yaml, authenticate guard calls with the caller's
@@ -673,8 +672,6 @@ def build_shared_agent_runtime_parameters() -> list[
     params.extend(
         pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
             key=name,
-            # boolean, not string: datarobot_dome reads the payload with bool(), so a
-            # string "false" would switch the flag on.
             type="boolean",
             value=str(_env_flag(name)).lower(),
         )
