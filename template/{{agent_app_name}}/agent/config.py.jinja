@@ -23,13 +23,11 @@ of its own defaults, so whatever is set here is what the agent runs with. Adding
 field here is all it takes to make it available; nothing needs to be registered.
 """
 
-import json
 import os
 from typing import Any
 
 from datarobot.core.config import DataRobotAppFrameworkBaseSettings
 from pydantic import Field, ValidationInfo, field_validator, model_validator
-from pydantic_settings import SettingsConfigDict
 
 
 class Config(DataRobotAppFrameworkBaseSettings):  # type: ignore[misc]
@@ -91,33 +89,3 @@ class Config(DataRobotAppFrameworkBaseSettings):  # type: ignore[misc]
                 if data.get(field_name) == "SET_VIA_PULUMI_OR_MANUALLY":
                     data[field_name] = field_info.default
         return data
-
-
-class ModerationSettings(DataRobotAppFrameworkBaseSettings):  # type: ignore[misc]
-    """Moderation toggles, set like any other setting: in `.env`, or as runtime
-    parameters on a deployment (declared by the infra from `.env` at deploy time)."""
-
-    model_config = SettingsConfigDict(env_ignore_empty=True)
-
-    disable_moderation: bool = False
-    moderation_allow_external_access_tokens: bool = False
-
-
-_RUNTIME_PARAM_PREFIX = "MLOPS_RUNTIME_PARAM_"
-
-
-def publish_moderation_settings() -> None:
-    """Make `ModerationSettings` visible to the `datarobot_moderation` middleware.
-
-    The middleware reads these flags through `datarobot-moderations`, which only checks
-    the `MLOPS_RUNTIME_PARAM_<NAME>` form that Custom Models sets. Locally and on the
-    Workload API runtime only the plain `<NAME>` (or `.env`) is set, so write the
-    prefixed form for each flag that was set and isn't already there. Must run before
-    the workflow is built; `agent/__init__.py` calls it on import.
-    """
-    settings = ModerationSettings()
-    for field in settings.model_fields_set:
-        env_name = _RUNTIME_PARAM_PREFIX + field.upper()
-        if env_name not in os.environ:
-            value = getattr(settings, field)
-            os.environ[env_name] = json.dumps({"type": "boolean", "payload": value})

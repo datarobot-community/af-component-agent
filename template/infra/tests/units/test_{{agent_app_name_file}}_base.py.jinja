@@ -875,7 +875,6 @@ class TestBuildSharedAgentRuntimeParameters:
         monkeypatch.delenv(name, raising=False)
         params = base.build_shared_agent_runtime_parameters()
         param = next(p for p in params if p.key == name)
-        # boolean, not string: datarobot_dome reads the payload with bool().
         assert param.type == "boolean"
         assert param.value == "false"
 

@@ -14,11 +14,7 @@
 
 from datarobot_genai.core.config import register_config_provider
 
-from agent.config import Config, publish_moderation_settings
-
-# Before the workflow is built: lets the moderation middleware see DISABLE_MODERATION
-# and MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS set in .env or as plain env vars.
-publish_moderation_settings()
+from agent.config import Config
 
 # Hand agent/config.py to datarobot-genai as the authoritative config for this agent
 # component: from here on the library resolves the DataRobot connection and every LLM
