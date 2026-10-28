@@ -206,47 +206,42 @@ Blocked responses surface as content-filter events in the streaming path or as t
 
 By default, guards call DataRobot with the agent's own `DATAROBOT_API_TOKEN`. When external access tokens are allowed, every guard call to DataRobot instead authenticates with the caller's IdP (for example, Okta) access token from the `x-datarobot-external-access-token` request header, which the DataRobot API gateway forwards. The middleware falls back to the configured key for requests without that header. The caller's token is also sent to `faas_url` and NIM guards unless they set `forward_token: false`. With this enabled, a missing or disabled `DATAROBOT_API_TOKEN` no longer fails startup.
 
-Enable it in `workflow.yaml` or through the `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS` runtime parameter. The `workflow.yaml` field takes precedence when set (set it to `false` to force the feature off):
+Turn it on in either of two places:
 
-```yaml
-middleware:
-  datarobot_moderation:
-    _type: datarobot_moderation
-    allow_external_access_tokens: true
-```
+- **`.env`**&mdash;set `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS=true`. It applies to local runs, and `dr run deploy` carries it to the deployment on either runtime.
+- **`workflow.yaml`**&mdash;uncomment `allow_external_access_tokens: true` under `middleware.datarobot_moderation`. When set, this field takes precedence over `.env` (set it to `false` to force the feature off).
 
-When the field is omitted, the runtime parameter decides. `dr run deploy` always declares it as a `boolean` runtime parameter, set from `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS` in the deploy environment (`false` when unset). How to set or change it depends on where the agent runs:
+  ```yaml
+  middleware:
+    datarobot_moderation:
+      _type: datarobot_moderation
+      allow_external_access_tokens: true
+  ```
 
-| Where | How to turn it on | How to change it later |
-|---|---|---|
-| Custom Models runtime (default) | Set `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS=true` in `.env` (or the Pulumi environment) before `dr run deploy`. | Edit the runtime parameter on the deployment; see [Runtime parameters](./runtime-parameters.md#overriding-values). No redeploy needed. |
-| Workload API runtime | Same: set `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS=true` before `dr run deploy`. The infra passes it to the container as `MLOPS_RUNTIME_PARAM_MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS`. | Change the value and run `dr run deploy` again. Container env vars are part of the artifact, so this [rebuilds the image](./deployment-runtimes.md#what-changes-trigger-a-rebuild). |
-| Local development | Use the `workflow.yaml` field, or add `MLOPS_RUNTIME_PARAM_MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS='{"type":"boolean","payload":true}'` to `.env`. | Edit the same line. |
+To change the `.env` value on an agent that's already deployed:
 
-> **Note:** The middleware reads this flag (and `DISABLE_MODERATION`) through `datarobot-moderations`, which only checks the `MLOPS_RUNTIME_PARAM_<NAME>` JSON form. Custom Models sets that form for every runtime parameter, and the Workload API infra writes it for you, but a plain `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS=true` in the container or in a local `.env` is ignored.
+- **Custom Models runtime (default)**&mdash;edit the `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS` runtime parameter on the deployment; no redeploy needed. See [Runtime parameters](./runtime-parameters.md#overriding-values).
+- **Workload API runtime**&mdash;change `.env` and run `dr run deploy` again. Container environment variables are part of the artifact, so this [rebuilds the image](./deployment-runtimes.md#what-changes-trigger-a-rebuild).
 
 > **Note:** The flag only has an effect when the `datarobot_moderation` middleware is attached to the workflow and guards are configured. NAT and agent memory workflows don't attach it by default; see [Wire the middleware](#wire-the-middleware).
 
 ## Environment variables
 
+Set these in `.env`. `dr run deploy` carries the moderation flags to the deployment on either runtime, as runtime parameters of the same name.
+
 | Variable | Required | Description |
 |---|---|---|
 | `DATAROBOT_ENDPOINT` | Yes (for LLM Gateway and DataRobot model guards) | DataRobot instance URL (for example, `https://app.datarobot.com/api/v2`). Set in `.env` by `dr start`. |
 | `DATAROBOT_API_TOKEN` | Yes (for LLM Gateway and DataRobot model guards), unless external access tokens are allowed | DataRobot API token. Set in `.env` by `dr start`. |
-| `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS` | No | Read by `dr run deploy`: `true` declares the runtime parameter of the same name as on, so guard calls authenticate with the caller's access token. See [Authenticate guards with the caller's token](#authenticate-guards-with-the-callers-token). |
-| `MLOPS_RUNTIME_PARAM_MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS` | No | Local development only: `{"type":"boolean","payload":true}` turns the same setting on in a locally run agent. |
-| `MLOPS_RUNTIME_PARAM_DISABLE_MODERATION` | No | `{"type":"boolean","payload":true}` disables all guards at runtime without removing configuration. |
+| `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS` | No | `true` authenticates guard calls with the caller's access token. See [Authenticate guards with the caller's token](#authenticate-guards-with-the-callers-token). |
+| `DISABLE_MODERATION` | No | `true` disables all guards without removing configuration. See [Disable moderations](#disable-moderations). |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | On the Workload API runtime | OTel collector base URL for guard telemetry. Custom Models deployments get one from the platform; workloads do not, so set it in `.env` and the infra forwards it into the container. See [Deployment runtimes](./deployment-runtimes.md#configuration). |
 
 ## Disable moderations
 
-To temporarily disable all guards without deleting configuration, set `DISABLE_MODERATION`. The middleware only reads it in the `MLOPS_RUNTIME_PARAM_` JSON form, so a plain `DISABLE_MODERATION=true` has no effect. Locally, export it (or add the same line to `.env`):
+To temporarily disable all guards without deleting configuration, set `DISABLE_MODERATION=true` in `.env`. Guards resume when it is unset or `false`.
 
-```sh
-export MLOPS_RUNTIME_PARAM_DISABLE_MODERATION='{"type":"boolean","payload":true}'
-```
-
-Guards resume when the variable is unset or its payload is `false`.
+This applies to local runs straight away, and `dr run deploy` carries it to the deployment. To change it on a deployed agent, edit the `DISABLE_MODERATION` runtime parameter (Custom Models runtime), or change `.env` and redeploy (Workload API runtime).
 
 ## Local evaluation
 

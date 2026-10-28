@@ -19,6 +19,9 @@ fail, the library has fallen back to reading the environment on its own and the 
 in `agent/config.py` are being ignored.
 """
 
+import json
+
+import pytest
 from datarobot_genai.core.config import Config as GenAIConfig
 from datarobot_genai.core.config import (
     LLMType,
@@ -29,6 +32,7 @@ from datarobot_genai.core.config import (
 )
 
 from agent import Config
+from agent.config import publish_moderation_settings
 
 
 def test_genai_resolves_the_agent_config() -> None:
@@ -80,3 +84,87 @@ def test_library_reads_the_agent_config_runtime_defaults() -> None:
         default_assume_native_tool_calling_when_unmapped()
         == config.assume_native_tool_calling_when_unmapped
     )
+
+
+_MODERATION_FLAGS = ("DISABLE_MODERATION", "MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS")
+
+
+@pytest.fixture
+def moderation_env(monkeypatch, tmp_path):
+    """No moderation flags set, and no developer .env or pulumi_config.json in reach."""
+    monkeypatch.chdir(tmp_path)
+    for name in _MODERATION_FLAGS:
+        monkeypatch.delenv(name, raising=False)
+        monkeypatch.delenv(f"MLOPS_RUNTIME_PARAM_{name}", raising=False)
+    return monkeypatch
+
+
+def _published(name: str) -> object:
+    import os
+
+    raw = os.environ.get(f"MLOPS_RUNTIME_PARAM_{name}")
+    return None if raw is None else json.loads(raw)
+
+
+@pytest.mark.parametrize("name", _MODERATION_FLAGS)
+@pytest.mark.parametrize(("value", "payload"), [("true", True), ("false", False)])
+def test_moderation_flag_from_env_var_reaches_middleware(
+    moderation_env, name, value, payload
+) -> None:
+    """A plain env var (Workload container, exported .env) is republished in the
+    MLOPS_RUNTIME_PARAM_ form, the only one datarobot-genai's moderation reads."""
+    moderation_env.setenv(name, value)
+
+    publish_moderation_settings()
+
+    assert _published(name) == {"type": "boolean", "payload": payload}
+
+
+@pytest.mark.parametrize("name", _MODERATION_FLAGS)
+def test_moderation_flag_from_dotenv_file_reaches_middleware(
+    moderation_env, tmp_path, name
+) -> None:
+    """A value only in .env (not exported to the process) still reaches the middleware."""
+    (tmp_path / ".env").write_text(f"{name}=true\n")
+
+    publish_moderation_settings()
+
+    assert _published(name) == {"type": "boolean", "payload": True}
+
+
+@pytest.mark.parametrize("name", _MODERATION_FLAGS)
+def test_moderation_flag_from_runtime_parameter_is_left_alone(
+    moderation_env, name
+) -> None:
+    """On Custom Models the platform already set the prefixed form; keep it."""
+    runtime_param = json.dumps({"type": "boolean", "payload": True})
+    moderation_env.setenv(f"MLOPS_RUNTIME_PARAM_{name}", runtime_param)
+    moderation_env.setenv(name, "false")
+
+    publish_moderation_settings()
+
+    assert _published(name) == {"type": "boolean", "payload": True}
+
+
+def test_unset_moderation_flags_publish_nothing(moderation_env) -> None:
+    publish_moderation_settings()
+
+    assert all(_published(name) is None for name in _MODERATION_FLAGS)
+
+
+@pytest.mark.parametrize("value", [True, False])
+def test_moderation_middleware_sees_flags_from_env(moderation_env, value) -> None:
+    """End to end against datarobot-genai's own reader: plain env in, middleware decision out."""
+    middleware = pytest.importorskip(
+        "datarobot_genai.dragent.plugins.datarobot_moderation_middleware"
+    )
+    from datarobot_dome.runtime import get_runtime_parameter_value_bool
+
+    moderation_env.setenv("MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS", str(value).lower())
+    moderation_env.setenv("DISABLE_MODERATION", str(value).lower())
+
+    publish_moderation_settings()
+
+    config = middleware.DataRobotModerationConfig()
+    assert middleware.allow_external_access_tokens(config) is value
+    assert get_runtime_parameter_value_bool("DISABLE_MODERATION", False) is value
