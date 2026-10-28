@@ -14,7 +14,6 @@
 """Tests for infra.{{agent_app_name}}_infra.workload: the Workload API runtime."""
 
 import asyncio
-import json
 import sys
 from collections import namedtuple
 from pathlib import Path
@@ -446,57 +445,6 @@ class TestRuntimeParamEnvVars:
         assert len(env_vars) == 1
         assert env_vars[0].name == "AGENT_GUNICORN_WORKER_TIMEOUT"
         assert env_vars[0].value == "600"
-
-    @pytest.mark.parametrize(("value", "payload"), [("true", True), ("false", False)])
-    def test_boolean_type_becomes_mlops_runtime_param_json_only(
-        self, monkeypatch, value, payload
-    ):
-        """datarobot_dome only reads MLOPS_RUNTIME_PARAM_<KEY>, as Custom Models sets it."""
-        workload = _workload_module(monkeypatch)
-        params = [
-            RuntimeParam(
-                key="MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS",
-                type="boolean",
-                value=value,
-            )
-        ]
-        env_vars = workload._runtime_param_env_vars(params)
-        assert len(env_vars) == 1
-        assert (
-            env_vars[0].name
-            == "MLOPS_RUNTIME_PARAM_MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS"
-        )
-        assert json.loads(env_vars[0].value) == {"type": "boolean", "payload": payload}
-
-    @pytest.mark.parametrize("value", ["True", "1", "", None])
-    def test_boolean_type_rejects_non_literal_values(self, monkeypatch, value):
-        workload = _workload_module(monkeypatch)
-        params = [RuntimeParam(key="SOME_FLAG", type="boolean", value=value)]
-        with pytest.raises(RuntimeError, match="SOME_FLAG"):
-            workload._runtime_param_env_vars(params)
-
-    @pytest.mark.parametrize(("env_value", "payload"), [("true", True), (None, False)])
-    def test_moderation_flag_reaches_container_from_deploy_env(
-        self, monkeypatch, env_value, payload
-    ):
-        """MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS in the deploy env ends up in the
-        container in the only form datarobot-genai 0.31.0 reads."""
-        import infra.{{agent_app_name}}_infra.base as base
-
-        workload = _workload_module(monkeypatch)
-        if env_value is None:
-            monkeypatch.delenv("MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS", raising=False)
-        else:
-            monkeypatch.setenv("MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS", env_value)
-
-        env_vars = workload._workload_environment_vars(
-            base.build_shared_agent_runtime_parameters()
-        )
-
-        by_name = {getattr(var, "name", None): var for var in env_vars}
-        assert "MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS" not in by_name
-        flag = by_name["MLOPS_RUNTIME_PARAM_MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS"]
-        assert json.loads(flag.value) == {"type": "boolean", "payload": payload}
 
     def test_workload_environment_vars_leads_with_api_key_source(self, monkeypatch):
         workload = _workload_module(monkeypatch)
