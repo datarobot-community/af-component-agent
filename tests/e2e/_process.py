@@ -83,8 +83,8 @@ def is_truthy(value: str | None) -> bool:
 
 
 def task_cmd(*args: str) -> list[str]:
-    # `uvx --from go-task-bin task`.
-    return ["uvx", "--from", "go-task-bin", "task", *args]
+    # Task comes from PATH: setup-task in CI, the dev's own install locally.
+    return ["task", *args]
 
 
 def run_cmd(

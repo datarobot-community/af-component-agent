@@ -65,6 +65,11 @@ concurrency:
   cancel-in-progress: true
 permissions:
   contents: read
+env:
+  # Exact version, so arduino/setup-task skips its anonymous tag lookup on
+  # api.github.com (rate-limited per shared runner IP). Keep in step across repos.
+  TASK_VERSION: "3.50.0"
+
 jobs:
   docker-build:
     name: "Test Docker Build"
@@ -75,6 +80,11 @@ jobs:
     steps:
       - name: Checkout
         uses: "actions/checkout@v7"
+      - name: Install Task
+        uses: arduino/setup-task@v3
+        with:
+          version: ${{ env.TASK_VERSION }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -95,6 +105,6 @@ jobs:
         # skips exporting it to a tarball.
         shell: bash
         working-directory: ./rendered
-        run: uvx --from go-task-bin task agent:build-docker-context
+        run: task agent:build-docker-context
         env:
           SKIP_DOCKER_SAVE: "true"
