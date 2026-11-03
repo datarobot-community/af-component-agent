@@ -18,6 +18,11 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+env:
+  # Exact version, so arduino/setup-task skips its anonymous tag lookup on
+  # api.github.com (rate-limited per shared runner IP). Keep in step across repos.
+  TASK_VERSION: "3.50.0"
+
 jobs:
   test-frameworks:
     name: "Test ${{ matrix.framework.agent_name }} (${{ matrix.python }})"
@@ -56,6 +61,11 @@ jobs:
     steps:
       - name: Checkout
         uses: "actions/checkout@v7"
+      - name: Install Task
+        uses: arduino/setup-task@v3
+        with:
+          version: ${{ env.TASK_VERSION }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Render template
         uses: ./.github/actions/copier-template-validator
         with:
@@ -75,7 +85,7 @@ jobs:
         shell: sh
         working-directory: ./rendered/${{ matrix.framework.agent_name }}
         run: |
-          uvx --from go-task-bin task install
+          task install
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: License Header Check
@@ -87,14 +97,14 @@ jobs:
         shell: sh
         working-directory: ./rendered/${{ matrix.framework.agent_name }}
         run: |
-          uvx --from go-task-bin task lint-check
+          task lint-check
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: Run unit tests
         shell: sh
         working-directory: ./rendered/${{ matrix.framework.agent_name }}
         run: |
-          uvx --from go-task-bin task test-coverage
+          task test-coverage
         env:
           UV_CACHE_DIR: /.uv_cache
           LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"
@@ -109,7 +119,7 @@ jobs:
         shell: sh
         working-directory: ./rendered/${{ matrix.framework.agent_name }}
         run: |
-          uvx --from go-task-bin task test-coverage
+          task test-coverage
         env:
           UV_CACHE_DIR: /.uv_cache
           LLM_DEFAULT_MODEL: "datarobot/azure/gpt-5-mini-2025-08-07"

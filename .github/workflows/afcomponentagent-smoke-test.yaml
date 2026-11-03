@@ -13,6 +13,11 @@ on:
       - "template/*/agent/**"
       - ".github/workflows/afcomponentagent-smoke-test.yaml"
 
+env:
+  # Exact version, so arduino/setup-task skips its anonymous tag lookup on
+  # api.github.com (rate-limited per shared runner IP). Keep in step across repos.
+  TASK_VERSION: "3.50.0"
+
 jobs:
   smoke-test:
     name: "Smoke / ${{ matrix.framework }} / ${{ matrix.model.label }}"
@@ -54,6 +59,11 @@ jobs:
     steps:
       - name: Checkout
         uses: "actions/checkout@v7"
+      - name: Install Task
+        uses: arduino/setup-task@v3
+        with:
+          version: ${{ env.TASK_VERSION }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Setup caching
         uses: ./.github/actions/setup-caching
         with:
@@ -66,7 +76,7 @@ jobs:
       - name: Install agent dependencies
         shell: sh
         working-directory: ./rendered
-        run: uvx --from go-task-bin task agent:install
+        run: task agent:install
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: Write credentials
@@ -86,7 +96,7 @@ jobs:
         shell: sh
         working-directory: ./rendered
         run: |
-          uvx --from go-task-bin task agent:cli -- \
+          task agent:cli -- \
             execute \
             --user_prompt "Reply with one word: OK." \
             > ./agent/output.log 2>&1

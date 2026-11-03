@@ -31,6 +31,11 @@ concurrency:
   cancel-in-progress: false
 permissions:
   contents: read
+env:
+  # Exact version, so arduino/setup-task skips its anonymous tag lookup on
+  # api.github.com (rate-limited per shared runner IP). Keep in step across repos.
+  TASK_VERSION: "3.50.0"
+
 jobs:
   setup:
     name: "Resolve framework matrix"
@@ -140,6 +145,11 @@ jobs:
     steps:
       - name: Checkout
         uses: "actions/checkout@v7"
+      - name: Install Task
+        uses: arduino/setup-task@v3
+        with:
+          version: ${{ env.TASK_VERSION }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Setup caching
         uses: ./.github/actions/setup-caching
         with:
@@ -220,7 +230,7 @@ jobs:
           # inherits the login via PULUMI_HOME.
           (cd "$infra" && uv run pulumi login --local) || true
           (cd "$infra" && uv run pulumi cancel --yes --stack "$stack") || true
-          (cd "$rendered" && uvx --from go-task-bin task destroy -- --yes --skip-preview) || true
+          (cd "$rendered" && task destroy -- --yes --skip-preview) || true
           (cd "$infra" && uv run pulumi stack rm -f -y "$stack") || true
       - name: Upload E2E logs
         # Also on cancellation: a runner eviction/timeout ends as `cancelled`, not
@@ -270,6 +280,11 @@ jobs:
     steps:
       - name: Checkout
         uses: "actions/checkout@v7"
+      - name: Install Task
+        uses: arduino/setup-task@v3
+        with:
+          version: ${{ env.TASK_VERSION }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Setup caching
         uses: ./.github/actions/setup-caching
         with:
@@ -346,7 +361,7 @@ jobs:
           # Destroys the Workload before its Artifact (the workload depends_on
           # the artifact); the platform refuses to delete an artifact that still
           # backs a live workload.
-          (cd "$rendered" && uvx --from go-task-bin task destroy -- --yes --skip-preview) || true
+          (cd "$rendered" && task destroy -- --yes --skip-preview) || true
           (cd "$infra" && uv run pulumi stack rm -f -y "$stack") || true
       - name: Upload E2E logs
         if: failure() || cancelled()

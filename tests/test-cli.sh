@@ -21,7 +21,7 @@ trap cleanup EXIT
 
 if [ ! -d "${BASE_RENDER_DIR}/agent" ]; then
     echo "Rendering base agent for CLI smoke test"
-    uvx --from go-task-bin task render-template AGENT=base
+    task render-template AGENT=base
 fi
 
 if [ -n "$1" ] && [ "$1" != "$BASE_RENDER_DIR" ]; then
@@ -35,7 +35,7 @@ echo "DATAROBOT_ENDPOINT = https://test.com/api/v2" >> .env
 
 # Run the CLI command with a sample user prompt
 echo "Initial execution"
-uvx --from go-task-bin task agent:cli -- \
+task agent:cli -- \
     execute \
     --user_prompt '{"topic": "Artificial Intelligence"}' \
     > ./agent/output.log 2>&1

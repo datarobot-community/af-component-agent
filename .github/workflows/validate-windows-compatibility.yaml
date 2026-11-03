@@ -8,6 +8,11 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+env:
+  # Exact version, so arduino/setup-task skips its anonymous tag lookup on
+  # api.github.com (rate-limited per shared runner IP). Keep in step across repos.
+  TASK_VERSION: "3.50.0"
+
 jobs:
   validate-paths:
     name: "Check for Windows-incompatible file paths"
@@ -17,5 +22,8 @@ jobs:
         uses: "actions/checkout@v7"
       - name: Install Task
         uses: arduino/setup-task@v3
+        with:
+          version: ${{ env.TASK_VERSION }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Validate file paths
         run: task validate-windows-compatibility

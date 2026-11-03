@@ -8,6 +8,11 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
+env:
+  # Exact version, so arduino/setup-task skips its anonymous tag lookup on
+  # api.github.com (rate-limited per shared runner IP). Keep in step across repos.
+  TASK_VERSION: "3.50.0"
+
 jobs:
   test-cli:
     name: "Test CLI"
@@ -19,6 +24,11 @@ jobs:
     steps:
       - name: Checkout
         uses: "actions/checkout@v7"
+      - name: Install Task
+        uses: arduino/setup-task@v3
+        with:
+          version: ${{ env.TASK_VERSION }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Setup caching
         uses: ./.github/actions/setup-caching
         id: setup-cache
@@ -34,7 +44,7 @@ jobs:
         shell: sh
         working-directory: ./rendered
         run: |
-          uvx --from go-task-bin task install
+          task install
         env:
           UV_CACHE_DIR: /.uv_cache
       - name: Run CLI Tests
