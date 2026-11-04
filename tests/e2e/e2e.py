@@ -23,6 +23,7 @@ import os
 import time
 import uuid
 from pathlib import Path
+from typing import Any
 
 import backoff
 import datarobot as dr
@@ -30,9 +31,10 @@ import pytest
 import requests
 from datarobot.errors import ClientError, ServerError
 from datarobot.models.genai.comparison_chat import ComparisonChat
-from datarobot.models.genai.comparison_prompt import ComparisonPrompt
 from datarobot.models.genai.llm_blueprint import LLMBlueprint
 from datarobot.rest import RESTClientObject
+from datarobot.utils import from_api
+from datarobot.utils.waiters import wait_for_async_resolution
 
 from .agent_card import (
     AgentIdentity,
@@ -151,32 +153,60 @@ def _assert_agent_workflow_trace(
         time.sleep(poll_s)
 
 
-def _assert_comparison_prompt_completed(prompt: ComparisonPrompt) -> None:
+def _run_comparison_prompt(
+    client: RESTClientObject, *, llm_blueprint_id: str, chat_id: str, text: str
+) -> dict[str, Any]:
+    """Submit a ComparisonPrompt and return the finished prompt as raw JSON.
+
+    Not `ComparisonPrompt.create(wait_for_completion=True)`: the SDK's schema
+    rejects `errorMessage: ""`, which the platform sometimes sends, and its
+    DataError hides the result we actually need to judge.
+    """
+    response = client.post(
+        "genai/comparisonPrompts/",
+        data={
+            "llm_blueprint_ids": [llm_blueprint_id],
+            "comparison_chat_id": chat_id,
+            "text": text,
+        },
+    )
+    location = wait_for_async_resolution(client, response.headers["Location"])
+    prompt = from_api(client.get(location).json())
+    if not isinstance(prompt, dict):
+        pytest.fail(f"Unexpected ComparisonPrompt payload at {location}: {prompt!r}")
+    return prompt
+
+
+def _assert_comparison_prompt_completed(prompt: dict[str, Any]) -> None:
     """Fail unless a result reached COMPLETED without an error.
 
-    result_text is just "streaming success" for streaming agents, so we key on the
-    SDK's framework-agnostic execution_status / error_message instead.
+    result_text is just "streaming success" for streaming agents, so we key on
+    the framework-agnostic execution_status / error_message instead. A blank
+    error_message means no error.
     """
-    results = prompt.results or []
-    completed = [r for r in results if r.execution_status == "COMPLETED"]
+
+    def _error(result: dict[str, Any]) -> str:
+        return (
+            (result.get("result_metadata") or {}).get("error_message") or ""
+        ).strip()
+
+    prompt_id = prompt.get("id")
+    results = prompt.get("results") or []
+    completed = [r for r in results if r.get("execution_status") == "COMPLETED"]
     if not completed:
-        details = []
-        for r in results:
-            meta = r.result_metadata
-            error = meta.error_message if meta is not None else None
-            details.append(
-                f"result {r.id}: status={r.execution_status}"
-                + (f", error={error}" if error else "")
-            )
+        details = [
+            f"result {r.get('id')}: status={r.get('execution_status')}"
+            + (f", error={_error(r)}" if _error(r) else "")
+            for r in results
+        ]
         joined = "; ".join(details) if details else "no results returned"
-        pytest.fail(f"ComparisonPrompt {prompt.id} did not complete: {joined}")
+        pytest.fail(f"ComparisonPrompt {prompt_id} did not complete: {joined}")
 
     for result in completed:
-        meta = result.result_metadata
-        if meta is not None and meta.error_message:
+        if error := _error(result):
             pytest.fail(
-                f"ComparisonPrompt {prompt.id} result {result.id} returned an error: "
-                f"{meta.error_message}"
+                f"ComparisonPrompt {prompt_id} result {result.get('id')} "
+                f"returned an error: {error}"
             )
 
 
@@ -202,11 +232,11 @@ def _verify_playground_run(
         name="e2e trace verification", playground=playground_id
     )
     try:
-        prompt = ComparisonPrompt.create(
-            llm_blueprints=[blueprints[0].id],
+        prompt = _run_comparison_prompt(
+            client,
+            llm_blueprint_id=blueprints[0].id,
+            chat_id=chat.id,
             text=user_prompt,
-            comparison_chat=chat.id,
-            wait_for_completion=True,
         )
         _assert_comparison_prompt_completed(prompt)
         _assert_agent_workflow_trace(
