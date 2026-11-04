@@ -38,13 +38,18 @@ dependencies = [
     # recipe-datarobot-agent-application.
     "ag-ui-protocol==0.1.15",
 
-    # datarobot-moderations[all] pulls llama-index-llms-bedrock-converse without its async
-    # extra. From 0.15 the package made aioboto3 optional; litellm>=1.98 hard-requires
-    # boto3>=1.43, which cannot resolve with aiobotocore, so a bare lock drops aioboto3
-    # and async Bedrock Converse (moderations / customized LlamaIndex) breaks. Declaring
-    # the async extra forces aioboto3 back and keeps litellm on a boto3-1.40-compatible
-    # release that still satisfies the CVE floor (>=1.96.2).
-    "llama-index-llms-bedrock-converse[async]>=0.15.0",
+    # No [async] extra, and aioboto3 is excluded in [tool.uv] below. Every patched litellm
+    # (CVE floor >=1.100.4) needs boto3>=1.43, but aioboto3 pins aiobotocore, which caps
+    # boto3 below 1.40.62, so the two cannot be installed together. This used to declare
+    # [async] to keep aioboto3, which held litellm below the floor; datarobot-genai also
+    # pulls [async] in, which is why the exclusion is needed and not just this line.
+    #
+    # Current for datarobot-moderations as of 2026-11-04: its faithfulness and
+    # task-adherence guards await a Bedrock Converse LLM when configured for Amazon.
+    # From 0.15.3 bedrock-converse runs those async calls in a thread when aioboto3 is
+    # missing, so they keep working. Revisit if aioboto3 supports boto3 1.43, or if
+    # datarobot-genai drops its [async] extra.
+    "llama-index-llms-bedrock-converse>=0.15.3",
 ]
 
 [project.optional-dependencies]
@@ -245,6 +250,7 @@ exclude-dependencies = [
     "diskcache",                # not used and having CVEs
     "annoy",                    # not used, issues with building it
     "uv",                       # not a runtime dependency
+    "aioboto3",                 # blocks patched litellm; see llama-index-llms-bedrock-converse
     # crewai / crewai-tools bloat
     "build",                    # Python build system pulled in by crewai; runtime unnecessary
     "kubernetes",               # K8s client pulled in by crewai-tools; not used
