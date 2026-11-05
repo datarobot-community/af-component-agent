@@ -326,7 +326,7 @@ def _get_registry_rows(
         pytest.fail(
             f"GET {_REGISTRY_PATH} (params={params}) failed with HTTP "
             f"{e.status_code}: {e}. If this cluster does not serve the agent "
-            "card registry -- ENABLE_GENAI_AGENT_TO_AGENT_SUPPORT off, or the "
+            "card registry -- ENABLE_GENAI_EXPERIMENTATION off, or the "
             "endpoint not mounted -- set RUN_AGENT_A2A_TESTS=0."
         )
     return [row for row in (body.get("data") or []) if isinstance(row, dict)]
@@ -376,7 +376,8 @@ def assert_registered_agent_card(
                     f"No matching agentCards row for {identity} / "
                     f"{external_id!r} after {timeout_s}s (query {params}). "
                     "Registration is asynchronous and needs the "
-                    "ENABLE_GENAI_AGENT_TO_AGENT_SUPPORT feature flag; set "
+                    "ENABLE_GENAI_EXPERIMENTATION feature flag (plus "
+                    "ENABLE_WORKLOAD_API_AGENT on the Workload API); set "
                     "RUN_AGENT_A2A_TESTS=0 if it is off on this cluster. "
                     f"Last rows: {[_trim_row(r) for r in seen] or 'none'}"
                 )
