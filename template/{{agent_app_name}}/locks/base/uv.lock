@@ -49,7 +49,7 @@ constraints = [
     { name = "multidict", specifier = ">=6.9.1" },
     { name = "nbconvert", specifier = ">=7.17.2" },
     { name = "nltk", specifier = ">=3.10.4" },
-    { name = "oauthlib", specifier = ">=4.0.0" },
+    { name = "oauthlib", specifier = ">=4.0.1" },
     { name = "openai", specifier = ">=2.30.0" },
     { name = "pdfminer-six", specifier = ">=20251230" },
     { name = "pillow", specifier = ">=13.0.0" },
