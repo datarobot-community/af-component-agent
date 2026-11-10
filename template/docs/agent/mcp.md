@@ -51,6 +51,8 @@ With none of the table's settings set, the agent uses only its other tools.
 
 To point a deployed agent at another server, change the setting in `.env` and run `dr run deploy` again, or edit the runtime parameter on the deployment in DataRobot.
 
+An agent that connects with the Okta function group gets `MCP_SERVER_URL` in place of `MCP_WORKLOAD_ID` and `MCP_DEPLOYMENT_ID`, and `MCP_SERVER_URL` is then the runtime parameter to edit. See [MCP servers that require Okta XAA](#mcp-servers-that-require-okta-xaa).
+
 ## MCP server deployed with the agent
 
 A project can also contain an MCP server built from the [DataRobot MCP component](https://github.com/datarobot-community/af-component-datarobot-mcp). When that server is added under the default name `mcp_server`, its infrastructure module `infra/infra/mcp_server.py` exists, and:
@@ -70,15 +72,19 @@ When the agent runs locally, it always uses the settings in `.env`.
 
 For an MCP server that only accepts Okta cross-application access (XAA) tokens, connect to it with an `mcp_client_with_xaa_support` function group in `workflow.yaml`. The group exchanges the caller's Okta token for a token the server accepts and sends only that token. It never sends the agent's DataRobot API token.
 
+In `workflow.yaml`, add the group under `function_groups`. Add that key if the file has none:
+
 ```yaml
-function_groups:
   mcp_tools:
     _type: mcp_client_with_xaa_support
     server:
       url: ${MCP_SERVER_URL}
       auth_provider: okta_auth
+```
 
-authentication:
+Add the Okta auth provider under the existing `authentication` key, or uncomment it there:
+
+```yaml
   okta_auth:
     _type: okta_cross_app_access
 ```
@@ -89,23 +95,26 @@ The group exchanges tokens with the agent's Okta identity, `IDP_AGENT_ID` and `I
 
 ### The server URL
 
-`${MCP_SERVER_URL}` is filled from the `MCP_SERVER_URL` setting when the agent starts. When a `mcp_client_with_xaa_support` group has `${MCP_SERVER_URL}` as its `url`, `dr run deploy` does the following:
+`${MCP_SERVER_URL}` is filled from the `MCP_SERVER_URL` setting when the agent starts. When the `url` of a `mcp_client_with_xaa_support` group uses `${MCP_SERVER_URL}`, `dr run deploy` does the following:
 
-- It passes `MCP_SERVER_URL` to the deployed agent as a [runtime parameter](./runtime-parameters.md). For an [MCP server deployed with the agent](#mcp-server-deployed-with-the-agent), the value is that server's endpoint, in both deployment modes. Otherwise it is `MCP_SERVER_URL` from `.env`, for example `https://app.datarobot.com/api/v2/deployments/<deployment-id>/directAccess/mcp/`, and the deployment fails when that is not set.
-- It does not pass `MCP_WORKLOAD_ID` or `MCP_DEPLOYMENT_ID`, so the agent does not also connect to the server with its DataRobot API token.
+- It passes `MCP_SERVER_URL` to the deployed agent as a [runtime parameter](./runtime-parameters.md). For an [MCP server deployed with the agent](#mcp-server-deployed-with-the-agent), the value is that server's endpoint, in both deployment modes. Otherwise it is `MCP_SERVER_URL` from `.env`, for example `https://app.datarobot.com/api/v2/deployments/<deployment-id>/directAccess/mcp`. The deployment fails when that is not set, or is a local address.
+- It does not pass `MCP_WORKLOAD_ID` or `MCP_DEPLOYMENT_ID`, so the agent does not also connect to the server with its DataRobot API token. They are left out even when they point at another server.
 
-`EXTERNAL_MCP_URL` and its settings are passed as before. A group with any other `url` does not change what `dr run deploy` passes.
+`EXTERNAL_MCP_URL` and its settings are passed as before. If `.env` has an `EXTERNAL_MCP_URL` that `MCP_WORKLOAD_ID` or `MCP_DEPLOYMENT_ID` used to take precedence over, the agent now connects to it. Remove it if you do not use it.
+
+A group with any other `url` does not change what `dr run deploy` passes.
+
+Callers without an Okta token, such as chats in the playground and calls made with a DataRobot API key, get no MCP tools from this group.
 
 An agent deployed as a custom model gets `MCP_SERVER_URL` as an environment variable on DataRobot 11.9 and newer. On 11.5 to 11.8, enable the `ENABLE_RUNTIME_PARAMETERS_IMPROVEMENTS` feature flag. An agent on the Workload API always gets it.
 
-When the agent runs locally, set `MCP_SERVER_URL` in `.env`, or give the `url` a default, for example `${MCP_SERVER_URL:-http://localhost:9000/mcp/}`. Without a value the agent does not start. Local runs are otherwise unchanged: with `MCP_SERVER_PORT` set, the agent also connects to that server with your DataRobot API token.
+When the agent runs locally, `${MCP_SERVER_URL}` needs a value, or the agent does not start. Give the `url` a default, for example `${MCP_SERVER_URL:-http://localhost:9000/mcp/}`, or set `MCP_SERVER_URL` in `.env`. `dr run deploy` never passes a local address to the deployed agent. Local runs are otherwise unchanged: with `MCP_SERVER_PORT` set, the agent also connects to that server with your DataRobot API token.
 
 ### DataRobot 11.13 and older
 
 Without a `cross_application_access` block, the group reads the Okta settings from the document the MCP server publishes at `/.well-known/oauth-protected-resource`. For an MCP server deployed as a custom model, the agent can read that document on DataRobot 11.14 and newer. On 11.13 and older it cannot, and the agent runs without the server's tools. On those versions, set the block on the group:
 
 ```yaml
-function_groups:
   mcp_tools:
     _type: mcp_client_with_xaa_support
     server:
@@ -143,4 +152,4 @@ With the block, the agent requests exactly the scopes listed. Without it, the ag
 | The deployed agent ignores the MCP settings in `.env` | The project contains `infra/infra/mcp_server.py`, which connects the deployed agent to its own server: in the default serverless mode, and on the Workload API with newer versions of the MCP component. | See [MCP server deployed with the agent](#mcp-server-deployed-with-the-agent). |
 | The deployed agent finds no workload server | The agent's API token cannot read the workload, or the workload is not running yet. | Check the workload in DataRobot. The agent looks the endpoint up again on the next request. |
 | The agent answers without MCP tools, and the log has an error about a connection or XAA exchange | The `mcp_client_with_xaa_support` group could not read the server's Okta settings or exchange the caller's token. A request without an Okta token, such as a chat in the playground, always ends this way. | Call the agent with an Okta token. On DataRobot 11.13 and older, set `cross_application_access` on the group. See [MCP servers that require Okta XAA](#mcp-servers-that-require-okta-xaa). |
-| `dr run deploy` fails with `MCP_SERVER_URL is not set` | `workflow.yaml` connects to `${MCP_SERVER_URL}`, and the project has no MCP server to take the URL from. | Set `MCP_SERVER_URL` in `.env` to the MCP server's URL. |
+| `dr run deploy` fails with `MCP_SERVER_URL is not set` or `MCP_SERVER_URL in .env is a local address` | `workflow.yaml` connects to `${MCP_SERVER_URL}`, the project has no MCP server to take the URL from, and `.env` has no URL that a deployed agent can reach. | Set `MCP_SERVER_URL` in `.env` to the MCP server's URL in DataRobot. For local runs, give the `url` a default. |

@@ -10,7 +10,7 @@ To connect an agent to a remote agent via A2A:
 
 - Uncomment the `function_groups` and `workflow.tool_names` blocks in `workflow.yaml`.
 
-Enable the `ENABLE_RUNTIME_PARAMETERS_IMPROVEMENTS` feature flag in DataRobot to use environment variables in `workflow.yaml` files.
+On DataRobot 11.5 to 11.8, an agent deployed as a custom model needs the `ENABLE_RUNTIME_PARAMETERS_IMPROVEMENTS` feature flag to use environment variables in `workflow.yaml`. DataRobot 11.9 and newer need no flag.
 
 ### Agent cards and DataRobot deployments
 
