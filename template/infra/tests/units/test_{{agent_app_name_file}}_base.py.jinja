@@ -18,6 +18,7 @@ import os
 import sys
 from collections import namedtuple
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, PropertyMock, patch
 
 import pytest
@@ -625,6 +626,148 @@ class TestGetMcpCustomModelRuntimeParameters:
         monkeypatch.setattr(base, "maybe_import_from_module", lambda m, o: sentinel)
 
         assert base.get_mcp_custom_model_runtime_parameters() == sentinel
+
+    @pytest.mark.parametrize(
+        ("group_type", "url", "mcp_module", "env", "expected", "warns"),
+        [
+            pytest.param(
+                "mcp_client_with_xaa_support",
+                "${MCP_SERVER_URL}",
+                {"MCP_DEPLOYMENT_ID": "76543210fedcba9876543210"},
+                {"MCP_SERVER_URL": "http://localhost:9000/mcp/"},
+                [("MCP_SERVER_URL", "https://dr.example/co-deployed/mcp")],
+                False,
+                id="own-server-in-the-project",
+            ),
+            pytest.param(
+                "mcp_client_with_xaa_support",
+                "${MCP_SERVER_URL}",
+                {},
+                {"MCP_WORKLOAD_ID": "0123456789abcdef01234567"},
+                [("MCP_SERVER_URL", "https://dr.example/co-deployed/mcp")],
+                False,
+                id="older-mcp-component-on-the-workload-api",
+            ),
+            pytest.param(
+                "mcp_client_with_xaa_support",
+                "${MCP_SERVER_URL}",
+                {"MCP_DEPLOYMENT_ID": "76543210fedcba9876543210"},
+                {"MCP_SERVER_URL": "https://dr.example/in-env/mcp"},
+                [("MCP_SERVER_URL", "https://dr.example/co-deployed/mcp")],
+                True,
+                id="project-server-overrides-env",
+            ),
+            pytest.param(
+                "mcp_client_with_xaa_support",
+                "${MCP_SERVER_URL:-http://localhost:9000/mcp/}",
+                None,
+                {
+                    "MCP_SERVER_URL": "https://dr.example/in-env/mcp",
+                    "MCP_WORKLOAD_ID": "0123456789abcdef01234567",
+                    "EXTERNAL_MCP_URL": "https://example.com/mcp",
+                },
+                [
+                    ("EXTERNAL_MCP_URL", "https://example.com/mcp"),
+                    ("MCP_SERVER_URL", "https://dr.example/in-env/mcp"),
+                ],
+                False,
+                id="own-server-in-env-url-with-a-default",
+            ),
+            pytest.param(
+                "mcp_client_with_xaa_support",
+                "${MCP_SERVER_URL}",
+                None,
+                {},
+                "MCP_SERVER_URL is not set",
+                False,
+                id="no-server-url",
+            ),
+            pytest.param(
+                "mcp_client_with_xaa_support",
+                "${MCP_SERVER_URL}",
+                None,
+                {"MCP_SERVER_URL": "http://[::1]:9000/mcp/"},
+                "is a local address",
+                False,
+                id="local-url-in-env",
+            ),
+            pytest.param(
+                "mcp_client_with_xaa_support",
+                "https://other.example/mcp/",
+                {"MCP_DEPLOYMENT_ID": "76543210fedcba9876543210"},
+                {},
+                [("MCP_DEPLOYMENT_ID", "76543210fedcba9876543210")],
+                False,
+                id="okta-group-for-another-server",
+            ),
+            pytest.param(
+                "datarobot_mcp_client",
+                "${MCP_SERVER_URL}",
+                {"MCP_DEPLOYMENT_ID": "76543210fedcba9876543210"},
+                {},
+                [("MCP_DEPLOYMENT_ID", "76543210fedcba9876543210")],
+                False,
+                id="another-group-type",
+            ),
+        ],
+    )
+    def test_okta_mcp_group_replaces_the_api_token_settings(
+        self, monkeypatch, tmp_path, group_type, url, mcp_module, env, expected, warns
+    ):
+        """Only an Okta MCP group on ${MCP_SERVER_URL} changes what the agent gets."""
+        import infra.{{agent_app_name}}_infra.base as base
+
+        _write_okta_mcp_workflow(monkeypatch, tmp_path, group_type, url)
+        for key, value in env.items():
+            monkeypatch.setenv(key, value)
+        # None in sys.modules makes the import fail, as when infra/mcp_server.py is absent.
+        monkeypatch.setitem(
+            sys.modules,
+            "infra.mcp_server",
+            None
+            if mcp_module is None
+            else SimpleNamespace(
+                mcp_custom_model_runtime_parameters=[
+                    base.pulumi_datarobot.CustomModelRuntimeParameterValueArgs(
+                        key=key, type="string", value=value
+                    )
+                    for key, value in mcp_module.items()
+                ],
+                mcp_server_mcp_endpoint="https://dr.example/co-deployed/mcp",
+            ),
+        )
+
+        # A string is the text of the deploy error.
+        if isinstance(expected, str):
+            with pytest.raises(ValueError, match=expected):
+                base.get_mcp_custom_model_runtime_parameters()
+            return
+        result = base.get_mcp_custom_model_runtime_parameters()
+
+        assert [(p.key, p.value) for p in result] == expected
+        assert base.pulumi.warn.called is warns
+
+
+def _write_okta_mcp_workflow(monkeypatch, tmp_path, group_type, url):
+    """Write a workflow.yaml with one MCP function group, and clear the MCP settings."""
+    _write_workflow_yaml(
+        monkeypatch,
+        tmp_path,
+        {
+            "function_groups": {
+                "mcp_tools": {"_type": group_type, "server": {"url": url}}
+            }
+        },
+    )
+    for key in (
+        "MCP_WORKLOAD_ID",
+        "MCP_DEPLOYMENT_ID",
+        "EXTERNAL_MCP_URL",
+        "EXTERNAL_MCP_HEADERS",
+        "EXTERNAL_MCP_TRANSPORT",
+        "MCP_SERVER_URL",
+    ):
+        monkeypatch.delenv(key, raising=False)
 
 
 # --- A2A workflow.yaml helpers ----------------------------------------------
