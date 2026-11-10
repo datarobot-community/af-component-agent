@@ -47,6 +47,7 @@ The following parameters are provisioned conditionally, depending on which optio
 | `AGENT_MEMORY_TTL_DAYS` | string | `use_agent_memory` is set to `mem0` or `datarobot_memory_service` | [Agent memory: Configuration and runtime parameters](./agent-memory.md#configuration-and-runtime-parameters) |
 | `AGENT_MEMORY_SPACE_ID` | string | `use_agent_memory: datarobot_memory_service` | [Agent memory: Configuration and runtime parameters](./agent-memory.md#configuration-and-runtime-parameters) |
 | `MEM0_API_KEY` | credential | `use_agent_memory: mem0`, and `MEM0_API_KEY` is set in the Pulumi environment | [Agent memory: Configuration and runtime parameters](./agent-memory.md#configuration-and-runtime-parameters) |
+| `MCP_SERVER_URL` | string | `workflow.yaml` has an `mcp_client_with_xaa_support` function group whose `url` is `${MCP_SERVER_URL}`. It replaces `MCP_WORKLOAD_ID` and `MCP_DEPLOYMENT_ID`. | [MCP tools: MCP servers that require Okta XAA](./mcp.md#mcp-servers-that-require-okta-xaa) |
 | `SESSION_SECRET_KEY` | credential | `SESSION_SECRET_KEY` is set in the Pulumi environment | `infra/infra/<agent_app_name>_infra/base.py` |
 | `IDP_AGENT_ID` | string | `IDP_AGENT_ID` is set in the Pulumi environment | [A2A Authentication: Infrastructure](./agent2agent-auth.md#infrastructure-automatic-runtime-parameter-provisioning) |
 | `IDP_AGENT_PRIVATE_KEY_JWK` | credential | `IDP_AGENT_PRIVATE_KEY_JWK` is set in the Pulumi environment | [A2A Authentication: Infrastructure](./agent2agent-auth.md#infrastructure-automatic-runtime-parameter-provisioning) |
