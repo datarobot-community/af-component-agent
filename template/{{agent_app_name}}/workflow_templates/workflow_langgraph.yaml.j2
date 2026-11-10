@@ -46,6 +46,9 @@ general:
       #     audience: "https://example.com/agents/my-agent-id"
       #     scopes:
       #       - "dr.impersonation"
+      # Optional: reject inbound IdP tokens whose aud claim doesn't exactly match
+      # cross_application_access.token_request.audience. Off by default; requires that block.
+      # oauth_claim_validation: true
       # Optional: external identity and URL overrides published on the agent card.
       # external:
       #   id: "my-agent-id"
