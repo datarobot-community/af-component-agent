@@ -57,7 +57,7 @@ Both load automatically from environment variables, `.env`, or DataRobot runtime
 Alternatively, define `principal_id` and `private_jwk` directly under `authentication.okta_auth` (or whichever key holds `_type: okta_cross_app_access`) in `workflow.yaml`:
 
 - Static values — Use a plain string for the Okta principal ID or for the private JWK (same formats as the `IDP_AGENT_ID` / `IDP_AGENT_PRIVATE_KEY_JWK` environment variables).
-- Dynamic values — Use placeholders of the form `${VAR_NAME}` so the value is read from an environment variable at runtime when the workflow is loaded. On DataRobot 11.5 to 11.8, an agent deployed as a custom model needs the `ENABLE_RUNTIME_PARAMETERS_IMPROVEMENTS` feature flag for this. DataRobot 11.9 and newer need no flag.
+- Dynamic values — Use placeholders of the form `${VAR_NAME}` so the value is read from an environment variable at runtime when the workflow is loaded. For DataRobot Release 11.5-11.8, an agent deployed as a custom model needs the `ENABLE_RUNTIME_PARAMETERS_IMPROVEMENTS` feature flag for this. Release 11.9 and newer need no flag.
 
 ### Installation
 

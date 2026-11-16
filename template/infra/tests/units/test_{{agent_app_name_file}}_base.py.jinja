@@ -628,7 +628,7 @@ class TestGetMcpCustomModelRuntimeParameters:
         assert base.get_mcp_custom_model_runtime_parameters() == sentinel
 
     @pytest.mark.parametrize(
-        ("group_type", "url", "mcp_module", "env", "expected", "warns"),
+        ("group_type", "url", "mcp_module", "env", "expected"),
         [
             pytest.param(
                 "mcp_client_with_xaa_support",
@@ -636,7 +636,6 @@ class TestGetMcpCustomModelRuntimeParameters:
                 {"MCP_DEPLOYMENT_ID": "76543210fedcba9876543210"},
                 {"MCP_SERVER_URL": "http://localhost:9000/mcp/"},
                 [("MCP_SERVER_URL", "https://dr.example/co-deployed/mcp")],
-                False,
                 id="own-server-in-the-project",
             ),
             pytest.param(
@@ -645,7 +644,6 @@ class TestGetMcpCustomModelRuntimeParameters:
                 {},
                 {"MCP_WORKLOAD_ID": "0123456789abcdef01234567"},
                 [("MCP_SERVER_URL", "https://dr.example/co-deployed/mcp")],
-                False,
                 id="older-mcp-component-on-the-workload-api",
             ),
             pytest.param(
@@ -653,9 +651,11 @@ class TestGetMcpCustomModelRuntimeParameters:
                 "${MCP_SERVER_URL}",
                 {"MCP_DEPLOYMENT_ID": "76543210fedcba9876543210"},
                 {"MCP_SERVER_URL": "https://dr.example/in-env/mcp"},
-                [("MCP_SERVER_URL", "https://dr.example/co-deployed/mcp")],
-                True,
-                id="project-server-overrides-env",
+                [
+                    ("MCP_DEPLOYMENT_ID", "76543210fedcba9876543210"),
+                    ("MCP_SERVER_URL", "https://dr.example/in-env/mcp"),
+                ],
+                id="env-url-for-another-server-keeps-the-project-server",
             ),
             pytest.param(
                 "mcp_client_with_xaa_support",
@@ -667,11 +667,27 @@ class TestGetMcpCustomModelRuntimeParameters:
                     "EXTERNAL_MCP_URL": "https://example.com/mcp",
                 },
                 [
+                    ("MCP_WORKLOAD_ID", "0123456789abcdef01234567"),
                     ("EXTERNAL_MCP_URL", "https://example.com/mcp"),
                     ("MCP_SERVER_URL", "https://dr.example/in-env/mcp"),
                 ],
-                False,
-                id="own-server-in-env-url-with-a-default",
+                id="env-id-for-another-server-is-kept-url-with-a-default",
+            ),
+            pytest.param(
+                "mcp_client_with_xaa_support",
+                "${MCP_SERVER_URL}",
+                None,
+                {
+                    "MCP_SERVER_URL": "https://dr.example/api/v2/deployments/76543210fedcba9876543210/directAccess/mcp",
+                    "MCP_DEPLOYMENT_ID": "76543210fedcba9876543210",
+                },
+                [
+                    (
+                        "MCP_SERVER_URL",
+                        "https://dr.example/api/v2/deployments/76543210fedcba9876543210/directAccess/mcp",
+                    )
+                ],
+                id="env-id-for-the-same-server-is-dropped",
             ),
             pytest.param(
                 "mcp_client_with_xaa_support",
@@ -679,7 +695,6 @@ class TestGetMcpCustomModelRuntimeParameters:
                 None,
                 {},
                 "MCP_SERVER_URL is not set",
-                False,
                 id="no-server-url",
             ),
             pytest.param(
@@ -688,7 +703,6 @@ class TestGetMcpCustomModelRuntimeParameters:
                 None,
                 {"MCP_SERVER_URL": "http://[::1]:9000/mcp/"},
                 "is a local address",
-                False,
                 id="local-url-in-env",
             ),
             pytest.param(
@@ -697,7 +711,6 @@ class TestGetMcpCustomModelRuntimeParameters:
                 {"MCP_DEPLOYMENT_ID": "76543210fedcba9876543210"},
                 {},
                 [("MCP_DEPLOYMENT_ID", "76543210fedcba9876543210")],
-                False,
                 id="okta-group-for-another-server",
             ),
             pytest.param(
@@ -706,13 +719,12 @@ class TestGetMcpCustomModelRuntimeParameters:
                 {"MCP_DEPLOYMENT_ID": "76543210fedcba9876543210"},
                 {},
                 [("MCP_DEPLOYMENT_ID", "76543210fedcba9876543210")],
-                False,
                 id="another-group-type",
             ),
         ],
     )
     def test_okta_mcp_group_replaces_the_api_token_settings(
-        self, monkeypatch, tmp_path, group_type, url, mcp_module, env, expected, warns
+        self, monkeypatch, tmp_path, group_type, url, mcp_module, env, expected
     ):
         """Only an Okta MCP group on ${MCP_SERVER_URL} changes what the agent gets."""
         import infra.{{agent_app_name}}_infra.base as base
@@ -745,7 +757,6 @@ class TestGetMcpCustomModelRuntimeParameters:
         result = base.get_mcp_custom_model_runtime_parameters()
 
         assert [(p.key, p.value) for p in result] == expected
-        assert base.pulumi.warn.called is warns
 
 
 def _write_okta_mcp_workflow(monkeypatch, tmp_path, group_type, url):
