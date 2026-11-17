@@ -49,7 +49,7 @@ Use this when calling an agent protected by Okta's federated identity model. The
 
 | Variable | Description |
 |----------|-------------|
-| `IDP_AGENT_ID` | Okta AI agent principal ID used in the XAA token exchange flow (as `iss`/`sub` in JWT client assertions). Also used by the API gateway to enforce audience matching when an external IDP is configured. |
+| `IDP_AGENT_ID` | Okta AI agent principal ID used in the XAA token exchange flow (as `iss`/`sub` in JWT client assertions). Not used to check the audience of inbound tokens. To accept only tokens issued for this agent, see [Validate the inbound token audience](#validate-the-inbound-token-audience). |
 | `IDP_AGENT_PRIVATE_KEY_JWK` | Base64-encoded or raw-JSON private JWK. Required for the XAA token exchange flow — the agent uses it to sign JWT client assertions for authentication and grant generation. |
 
 Both load automatically from environment variables, `.env`, or DataRobot runtime parameters when `principal_id` or `private_jwk` are not set on the `okta_cross_app_access` block.
@@ -65,7 +65,7 @@ The `auth` extra is included in the generated `pyproject.toml` and provides the 
 
 ### `workflow.yaml` configuration for Okta XAA
 
-1. Enable XAA on the A2A server for this agent (server-side). Uncomment the `cross_application_access` block under `general.front_end.a2a`:
+1. Enable XAA on the A2A server for this agent (server-side). Uncomment the `cross_application_access` block under `general.front_end.a2a`. To reject tokens issued for any other audience, also set `oauth_claim_validation: true`, as described in [Validate the inbound token audience](#validate-the-inbound-token-audience):
 
 ```yaml
 general:
@@ -75,6 +75,7 @@ general:
       server:
         name: "My Agent"
         description: "My agent description."
+      oauth_claim_validation: true
       cross_application_access:
         token_exchange:
           trusted_issuer: "https://your-org.okta.com"
@@ -126,6 +127,34 @@ The XAA flow operates in two steps:
 
 Both steps authenticate the client using a private JWT key, signing assertions with the key from `IDP_AGENT_PRIVATE_KEY_JWK`.
 
+### Validate the inbound token audience
+
+The DataRobot API gateway verifies that an inbound IdP token is well-formed and signed by a trusted issuer, then forwards it to the agent unchanged in the `x-datarobot-external-access-token` header. The gateway doesn't check which resource the token was issued for. Without audience validation, the agent accepts any trusted token, including one issued for a broader audience, such as the DataRobot base URL, or for a different agent.
+
+To accept only tokens issued for this agent, set `oauth_claim_validation: true` under `general.front_end.a2a`. The agent then requires the token `aud` claim to contain the value of `cross_application_access.token_request.audience`:
+
+```yaml
+general:
+  front_end:
+    _type: dragent_fastapi
+    a2a:
+      oauth_claim_validation: true
+      cross_application_access:
+        token_request:
+          audience: "https://example.com/agents/my-agent-id"
+          # ...remaining cross_application_access fields
+```
+
+The check behaves as follows:
+
+- **Opt-in**. Validation is off by default. Setting `IDP_AGENT_ID` or configuring `cross_application_access` doesn't turn it on.
+- **Exact match**. One entry in the `aud` claim must equal `token_request.audience` exactly. Case and trailing slashes aren't normalized.
+- **Every route**. The check covers every route the agent serves, not only `/a2a`. A request for the agent card that carries a token is validated before the card is returned.
+- **IdP tokens only**. Requests authenticated with a DataRobot API key carry no IdP token and pass through. The agent doesn't re-verify signature, issuer, or expiry; the gateway checks those.
+- **Fail fast**. When `oauth_claim_validation` is `true` and `token_request.audience` is unset, the agent fails at startup.
+
+A request whose token audience doesn't match returns `401 Unauthorized`. A header value that isn't a decodable JWT returns `422 Unprocessable Entity`. The agent logs each rejection with `reason=audience_mismatch` or `reason=undecodable_token`, and an audience mismatch entry includes the expected and received audiences.
+
 ## Server-side configuration reference: `cross_application_access`
 
 | Field | Required | Purpose |
@@ -135,6 +164,8 @@ Both steps authenticate the client using a private JWT key, signing assertions w
 | `token_request.token_url` | Yes | Token endpoint of the resource AS. |
 | `token_request.audience` | Yes | Final resource identifier for the agent. |
 | `token_request.scopes` | No | Scopes the caller must request. Defaults to `["read_data"]`. |
+
+To enforce `token_request.audience` on inbound tokens, set `oauth_claim_validation: true` under `general.front_end.a2a`. See [Validate the inbound token audience](#validate-the-inbound-token-audience).
 
 ## Client-side configuration reference: `okta_cross_app_access`
 
@@ -166,4 +197,8 @@ authentication:
 | `RuntimeError: Failed to fetch agent card` | Network/auth issue reaching the agent card URL. | Check the `url` in the `function_groups` config and network connectivity. |
 | `GET /.well-known/agent-card.json` returns 401 when testing locally | Unauthenticated access is disabled by default (`datarobot-genai` 0.27.0+). | Send `X-DataRobot-User-Id` (any value) or `X-DataRobot-Authorization-Context` for the full card, or set `enable_unauthenticated_well_known_route: true` in `workflow.yaml` to allow a redacted card. See [Debugging agents → Local agent card](./debugging.md#local-agent-card). |
 | Agent card shows `"skills": []` when testing locally | Unauthenticated request with `enable_unauthenticated_well_known_route: true` returns a redacted card. | Send `X-DataRobot-User-Id` (any value) or `X-DataRobot-Authorization-Context` on the request for the full card. See [Debugging agents → Local agent card](./debugging.md#local-agent-card). |
+| The agent accepts a trusted token issued for a different audience | `oauth_claim_validation` is off, which is the default. | Set `oauth_claim_validation: true` under `general.front_end.a2a`. See [Validate the inbound token audience](#validate-the-inbound-token-audience). |
+| `401 {"detail": "Authorization audience claim validation failed"}` | The token `aud` claim doesn't exactly match `cross_application_access.token_request.audience`. | Compare `expected_audience` and `token_aud` in the `audience_mismatch` log entry, then align the Okta resource audience or `token_request.audience`. |
+| `422` with `Malformed authorization token` | The `x-datarobot-external-access-token` header doesn't hold a decodable JWT. | Ensure the caller forwards the Okta access token, not another credential, in that header. |
+| `ValueError: a2a.oauth_claim_validation is true but no expected audience is configured` | `oauth_claim_validation` is `true`, but `cross_application_access.token_request.audience` is unset. | Set `token_request.audience`, or set `oauth_claim_validation` to `false`. |
 | `IDP_AGENT_PRIVATE_KEY_JWK` not provisioned to runtime | The variable was not set in `.env` at deploy time. | Set `IDP_AGENT_PRIVATE_KEY_JWK` in the `.env` file and redeploy. |
