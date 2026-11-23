@@ -23,7 +23,7 @@ name = "{{ agent_app_name }}"
 version = "0.1.0"
 description = "Implementation of {{ agent_app_name }}"
 readme = "README.md"
-requires-python = ">=3.11, <3.14"
+requires-python = ">=3.11.5, <3.14"
 dependencies = [
     "datarobot-genai[{{ genai_extras | join(', ') }}]>=0.31.3,<0.32.0",
     "datarobot-mlops==11.1.28",
