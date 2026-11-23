@@ -3,13 +3,13 @@ revision = 5
 requires-python = ">=3.11.5, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13' and sys_platform == 'darwin'",
-    "python_full_version == '3.12.*' and sys_platform == 'darwin'",
-    "python_full_version < '3.12' and sys_platform == 'darwin'",
     "python_full_version >= '3.13' and sys_platform == 'linux'",
-    "python_full_version == '3.12.*' and sys_platform == 'linux'",
-    "python_full_version < '3.12' and sys_platform == 'linux'",
     "python_full_version >= '3.13' and sys_platform == 'win32'",
+    "python_full_version == '3.12.*' and sys_platform == 'darwin'",
+    "python_full_version == '3.12.*' and sys_platform == 'linux'",
     "python_full_version == '3.12.*' and sys_platform == 'win32'",
+    "python_full_version < '3.12' and sys_platform == 'darwin'",
+    "python_full_version < '3.12' and sys_platform == 'linux'",
     "python_full_version < '3.12' and sys_platform == 'win32'",
 ]
 supported-markers = [
@@ -79,12 +79,12 @@ overrides = [
     { name = "litellm", specifier = ">=1.100.4,<2.0.0" },
     { name = "mcp", specifier = ">=1.30.0,<2" },
     { name = "mem0ai", specifier = ">=2.0.18,<3" },
-    { name = "opentelemetry-api", specifier = ">=1.45.1,<2.0.0" },
-    { name = "opentelemetry-exporter-otlp-proto-common", specifier = ">=1.45.1,<2.0.0" },
-    { name = "opentelemetry-exporter-otlp-proto-grpc", specifier = ">=1.45.1,<2.0.0" },
-    { name = "opentelemetry-exporter-otlp-proto-http", specifier = ">=1.45.1,<2.0.0" },
-    { name = "opentelemetry-instrumentation", specifier = ">=0.66b0,<0.67" },
-    { name = "opentelemetry-sdk", specifier = ">=1.45.1,<2.0.0" },
+    { name = "opentelemetry-api", specifier = "==1.45.2,<2.0.0" },
+    { name = "opentelemetry-exporter-otlp-proto-common", specifier = "==1.45.2,<2.0.0" },
+    { name = "opentelemetry-exporter-otlp-proto-grpc", specifier = "==1.45.2,<2.0.0" },
+    { name = "opentelemetry-exporter-otlp-proto-http", specifier = "==1.45.2,<2.0.0" },
+    { name = "opentelemetry-instrumentation", specifier = "==0.66b2,<0.67" },
+    { name = "opentelemetry-sdk", specifier = "==1.45.2,<2.0.0" },
     { name = "python-dotenv", specifier = ">=1.2.2,<2.0.0" },
 ]
 excludes = [
@@ -930,11 +930,11 @@ core = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.31.3"
+version = "0.31.7"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/2d/3f/137006d21ed4f8d9338109472eaed0eb87d96f7184fbddb34363b37821d4/datarobot_genai-0.31.3.tar.gz", hash = "sha256:07da884ac6b46dab9af174cb49be562be6b7c7d53eb6e8648dee749c38e99952", size = 596869, upload-time = "2026-11-02T10:47:57.879Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/77/ec/697734194a54923570e3a01e90f828fdfa9994c21875263aaf6364a68747/datarobot_genai-0.31.7.tar.gz", hash = "sha256:b96f45ddffba37b68c6821a4c5b5dad99e51d1dea6deb099e580b413a0d4fd78", size = 608207, upload-time = "2026-11-18T15:35:36.403Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/20/8c/32a922a5d130e802fa280097ce9916098b84a2448b90844de47145570e86/datarobot_genai-0.31.3-py3-none-any.whl", hash = "sha256:d5c9564a357157bd6c671940c5630a20bc6e737c2ef26d1e1eb949ed83954cac", size = 835322, upload-time = "2026-11-02T10:47:55.299Z" },
+    { url = "https://files.pythonhosted.org/packages/e2/02/b7ea71e1147b2bcb3890ffa53b54ad1608b9421e1e54748bb8e500dc41ac/datarobot_genai-0.31.7-py3-none-any.whl", hash = "sha256:f7aaadc72c96ca9e93fc23a655d0a35aff2e9712e3a115fb6b524bafcf9ee47f", size = 849815, upload-time = "2026-11-18T15:35:33.298Z" },
 ]
 
 [package.optional-dependencies]
@@ -971,7 +971,7 @@ dragent = [
     { name = "opentelemetry-instrumentation-requests" },
     { name = "opentelemetry-instrumentation-threading" },
     { name = "pyarrow" },
-    { name = "pyjwt" },
+    { name = "pyjwt", extra = ["crypto"] },
     { name = "requests" },
     { name = "starlette" },
     { name = "tensile" },
@@ -1519,10 +1519,10 @@ version = "2.19.0"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version == '3.12.*' and sys_platform == 'darwin'",
-    "python_full_version < '3.12' and sys_platform == 'darwin'",
     "python_full_version == '3.12.*' and sys_platform == 'linux'",
-    "python_full_version < '3.12' and sys_platform == 'linux'",
     "python_full_version == '3.12.*' and sys_platform == 'win32'",
+    "python_full_version < '3.12' and sys_platform == 'darwin'",
+    "python_full_version < '3.12' and sys_platform == 'linux'",
     "python_full_version < '3.12' and sys_platform == 'win32'",
 ]
 dependencies = [
@@ -2052,10 +2052,10 @@ version = "9.12.0"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version >= '3.13' and sys_platform == 'darwin'",
-    "python_full_version == '3.12.*' and sys_platform == 'darwin'",
     "python_full_version >= '3.13' and sys_platform == 'linux'",
-    "python_full_version == '3.12.*' and sys_platform == 'linux'",
     "python_full_version >= '3.13' and sys_platform == 'win32'",
+    "python_full_version == '3.12.*' and sys_platform == 'darwin'",
+    "python_full_version == '3.12.*' and sys_platform == 'linux'",
     "python_full_version == '3.12.*' and sys_platform == 'win32'",
 ]
 dependencies = [
