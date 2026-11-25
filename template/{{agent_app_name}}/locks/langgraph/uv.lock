@@ -189,7 +189,7 @@ dev = [
 requires-dist = [
     { name = "ag-ui-protocol", specifier = "==0.1.15" },
     { name = "datarobot", extras = ["core"], specifier = ">=3.18.0,<4.0.0" },
-    { name = "datarobot-genai", extras = ["langgraph", "dragent", "auth"], specifier = ">=0.34.1,<0.35.0" },
+    { name = "datarobot-genai", extras = ["langgraph", "dragent", "auth"], specifier = ">=0.34.2,<0.35.0" },
     { name = "datarobot-mlops", specifier = "==11.1.28" },
     { name = "debugpy", marker = "extra == 'dev'", specifier = ">=1.8.20" },
     { name = "ecs-logging", marker = "extra == 'agentic-playground'", specifier = ">=2.2.0" },
@@ -958,11 +958,11 @@ core = [
 
 [[package]]
 name = "datarobot-genai"
-version = "0.34.1"
+version = "0.34.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/0a/92/f7de97ea9ecbf46b5d63ded4d8979596586a6e04b33e12363f7d9c80dc6b/datarobot_genai-0.34.1.tar.gz", hash = "sha256:20685589605697b9a2f96cee40a542c859937fc35a48a1135e42f007e281eaf0", size = 629525, upload-time = "2026-11-23T18:55:02.616Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9e/47/01c8ac7e7d9a847f826d7771e7b0715631d073be15a0cab4dddeb0981542/datarobot_genai-0.34.2.tar.gz", hash = "sha256:7c4b65f24046edc6df2782924297e6e5099af41af172c7cbedfb7efbb70a9f1c", size = 630245, upload-time = "2026-11-25T15:01:16.543Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/66/1c/d124cebdbd986a22908039c4130bb0b378956cb0ab5b35038992f54fdbec/datarobot_genai-0.34.1-py3-none-any.whl", hash = "sha256:25aebd1d53745ec7c9d8b1d326fd0bb102c9f6925833d9b008b23349a40ef05d", size = 879927, upload-time = "2026-11-23T18:55:00.36Z" },
+    { url = "https://files.pythonhosted.org/packages/c6/f5/696870a408f5c3d578b3d475d6c2f2f67fb240c0054fd15af2698c765c97/datarobot_genai-0.34.2-py3-none-any.whl", hash = "sha256:5a72fe4b54d7aefc8c1351f6abec5d7b1f649f53cc1d894d0462118173cf54e9", size = 880702, upload-time = "2026-11-25T15:01:14.154Z" },
 ]
 
 [package.optional-dependencies]
@@ -1045,7 +1045,7 @@ wheels = [
 
 [[package]]
 name = "datarobot-moderations"
-version = "11.4.2"
+version = "11.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -1064,7 +1064,7 @@ dependencies = [
     { name = "tiktoken" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8c/0b/d3e94fb9756b95ee70242daee1523135600abd4abacedd5ba58c44c72e70/datarobot_moderations-11.4.2-py3-none-any.whl", hash = "sha256:1a9ea0259fcbdb1feccbc0f1408fba3d6b66ac0660755220f5de44ad3f4cc1d6", size = 192516, upload-time = "2026-10-27T17:22:12.795Z" },
+    { url = "https://files.pythonhosted.org/packages/14/c6/61f1b5120cc16950f6eaa79e517fbbd4eb90840cd58ec4b0803a4cfa67c8/datarobot_moderations-11.5.0-py3-none-any.whl", hash = "sha256:8d1ea6793ecba53c0ed2ebdf1a71fc452979e4e5357aeb19c1f9553e3de4931d", size = 197058, upload-time = "2026-11-24T17:47:05.728Z" },
 ]
 
 [package.optional-dependencies]
