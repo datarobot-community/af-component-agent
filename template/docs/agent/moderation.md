@@ -204,7 +204,7 @@ Blocked responses surface as content-filter events in the streaming path or as t
 
 ## Authenticate guards with the caller's token
 
-By default, guards call DataRobot with the agent's own `DATAROBOT_API_TOKEN`. When external access tokens are allowed, every guard call to DataRobot instead authenticates with the caller's IdP (for example, Okta) access token from the `x-datarobot-external-access-token` request header, which the DataRobot API gateway forwards. The middleware falls back to the configured key for requests without that header. The caller's token is also sent to `faas_url` and NIM guards unless they set `forward_token: false`. With this enabled, a missing or disabled `DATAROBOT_API_TOKEN` no longer fails startup.
+By default, guards call DataRobot with the agent's own `DATAROBOT_API_TOKEN`. When external access tokens are allowed, every guard call to DataRobot instead authenticates with the caller's IdP (for example, Okta) access token from the `x-datarobot-external-access-token` request header, which the DataRobot API gateway forwards. The middleware falls back to the configured key for requests without that header. The caller's token is also sent to `faas_url` and NIM guards unless they set `forward_token: false`. With this enabled, a missing or disabled `DATAROBOT_API_TOKEN` no longer fails startup. Moderation events and custom metrics still use `DATAROBOT_API_TOKEN`: they write to the agent's own deployment, which callers don't have access to.
 
 Turn it on in either of two places:
 
@@ -223,7 +223,7 @@ Turn it on in either of two places:
 | Variable | Required | Description |
 |---|---|---|
 | `DATAROBOT_ENDPOINT` | Yes (for LLM Gateway and DataRobot model guards) | DataRobot instance URL (for example, `https://app.datarobot.com/api/v2`). Set in `.env` by `dr start`. |
-| `DATAROBOT_API_TOKEN` | Yes (for LLM Gateway and DataRobot model guards), unless external access tokens are allowed | DataRobot API token. Set in `.env` by `dr start`. |
+| `DATAROBOT_API_TOKEN` | Yes (for LLM Gateway and DataRobot model guards, and always for moderation events and custom metrics). With external access tokens allowed, guards run without it. | DataRobot API token. Set in `.env` by `dr start`. |
 | `MODERATION_ALLOW_EXTERNAL_ACCESS_TOKENS` | No | `true` authenticates guard calls with the caller's access token. See [Authenticate guards with the caller's token](#authenticate-guards-with-the-callers-token). |
 | `DISABLE_MODERATION` | No | `true` disables all guards without removing configuration. See [Disable moderations](#disable-moderations). |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | On the Workload API runtime | OTel collector base URL for guard telemetry. Custom Models deployments get one from the platform; workloads do not, so set it in `.env` and the infra forwards it into the container. See [Deployment runtimes](./deployment-runtimes.md#configuration). |
